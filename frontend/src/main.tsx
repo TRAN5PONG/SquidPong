@@ -4,6 +4,7 @@ import { BrowserRouter } from "@/contexts/RouterProvider";
 import { SoundProvider } from "./contexts/SoundProvider";
 import { AppProvider } from "./contexts/AppProviders";
 
+
 const Root = () => ({
   type: BrowserRouter,
   props: {
