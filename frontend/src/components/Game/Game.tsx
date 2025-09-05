@@ -10,8 +10,9 @@ import Loader from "../Loader/Loader";
 import { GiveUpIcon, PauseIcon } from "../Svg/Svg";
 import { MatchResultOverlay } from "./Elements/MatchResultOverlay";
 import { GamePowerUps } from "@/types/game";
-import { useAmbientSound } from "@/contexts/SoundProvider";
+
 import { Client } from "colyseus.js";
+import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -98,29 +99,16 @@ const StyledGame = styled("div")`
 const Game = () => {
   const canvasRef = Zeroact.useRef<HTMLCanvasElement>(null);
   const { camera } = useGameScene(canvasRef);
-  const AmbientSound = useAmbientSound();
+  const { ambianceSound } = useSounds();
 
-  // GameState [null = not ended, true = user won, false = user lost]
   const [userGameRes, setUserGameRes] = Zeroact.useState<boolean | null>(null); // null = game ongoing, true = user won, false = user lost
 
   const onPause = () => {
-    AmbientSound.play();
+    ambianceSound.play();
     camera.cameraRotate();
   };
   const onGiveUp = () => {};
   const onGameStart = () => {};
-
-  // useEffect(() => {
-  //   const client = new Client("ws://localhost:3000");
-  //   // setTimeout(() => {
-  //   //   AmbientSound.play();
-  //   // }, 500);
-
-  //   // setTimeout(() => {
-  //   //   setUserGameRes(true);
-  //   // }, 1000);
-  // }, []);
-
 
   useEffect(() => {
     const connect = async () => {
@@ -131,11 +119,14 @@ const Game = () => {
         const room = await client.joinOrCreate("ping-pong");
         console.log("✅ Connected to Colyseus server!");
         console.log("🎮 Joined room:", room);
-
       } catch (err) {
         console.error("❌ Failed to connect to Colyseus:", err);
       }
     };
+
+    setTimeout(() => {
+      setUserGameRes(true);
+    }, 1000);
 
     connect();
   }, []);
@@ -161,9 +152,9 @@ const Game = () => {
           ))}
         </div>
       </div>
-      {/* <canvas ref={canvasRef} className="game-canvas"></canvas> */}
+      <canvas ref={canvasRef} className="game-canvas"></canvas>
       {/* {userGameRes && (
-        <MatchResultOverlay isWinner={userGameRes} opponentName={"Opponent"} />
+        <MatchResultOverlay isWinner={false} opponentName={"Opponent"} />
       )} */}
     </StyledGame>
   );

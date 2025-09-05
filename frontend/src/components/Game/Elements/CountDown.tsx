@@ -1,4 +1,3 @@
-import { useAmbientSound } from "@/contexts/SoundProvider";
 import { useSound } from "@/hooks/useSound";
 import Zeroact from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
