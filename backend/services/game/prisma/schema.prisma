@@ -1,0 +1,195 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =================================== Enums 
+// ***** Game ***** 
+enum GameStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum GameMode {
+  ONE_VS_ONE
+  ONE_VS_AI
+  TOURNAMENT
+  BOUNCE_CHALLENGE
+}
+
+enum AIDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  INSANE
+}
+
+enum BetStatus {
+  PENDING
+  WON
+  LOST
+  CANCELLED
+}
+
+// ***** Invitations *****
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum InvitationType {
+  PUBLIC
+  PRIVATE
+}
+
+// ===================================== Models
+model MatchSpectator {
+  id       String @id @default(cuid())
+  userId   String
+  username String
+
+  match   Match  @relation(fields: [matchId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+  matchId String
+}
+
+model MatchPlayer {
+  id       String  @id @default(cuid())
+  userId   String? // Nullable, since AI doesn't have a User record
+  gmUserId String?
+
+  // PlayerInfos
+  username  String
+  avatarUrl String?
+
+  // Player match info
+  isAI       Boolean @default(false)
+  finalScore Int     @default(0)
+  isReady    Boolean @default(false)
+  isHost     Boolean @default(false)
+  isWinner   Boolean @default(false)
+  isResigned Boolean @default(false)
+
+  // player metadata
+  characterId  String
+  paddleId     String
+  rankTier     String
+  rankDivision String
+  rankChange   Int?
+
+  // Relations
+  matchAsOpponent1 Match? @relation("Opponent1")
+  matchAsOpponent2 Match? @relation("Opponent2")
+  User             User?  @relation(fields: [userId], references: [id])
+}
+
+model Match {
+  id          String     @id @default(cuid())
+  mode        GameMode
+  status      GameStatus
+  duration    Int
+  createdAt   DateTime   @default(now())
+  confirmedAt DateTime?
+  winnerId    String?
+
+  // Relations
+  opponent1   MatchPlayer @relation("Opponent1", fields: [opponent1Id], references: [id])
+  opponent1Id String      @unique
+
+  opponent2   MatchPlayer? @relation("Opponent2", fields: [opponent2Id], references: [id])
+  opponent2Id String?      @unique
+
+  spectators   MatchSpectator[]
+  bets         Bet[]
+  matchSetting MatchSetting?    @relation("MatchToSetting")
+  // Link back to invitation that created this match
+  invitation   Invitation?      @relation("InvitationMatch")
+}
+
+model MatchSetting {
+  id               String        @id @default(cuid())
+  matchId          String        @unique
+  scoreLimit       Int
+  pauseTime        Int
+  allowPowerUps    Boolean       @default(false)
+  aiDifficulty     AIDifficulty?
+  createdAt        DateTime      @default(now())
+  requiredCurrency Int // Coins required to start the match
+
+  match Match @relation("MatchToSetting", fields: [matchId], references: [id])
+}
+
+model User {
+  id     String @id
+  userId Int    @unique // id from GM
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  matchPlayers        MatchPlayer[]
+  matchSpectators     MatchSpectator[]
+  bets                Bet[]
+  invitationsSent     Invitation[]     @relation("InvitationSender")
+  invitationsReceived Invitation[]     @relation("InvitationReceiver")
+}
+
+model Invitation {
+  id         String           @id @default(cuid())
+  senderId   String
+  receiverId String?
+  status     InvitationStatus @default(PENDING)
+  type       InvitationType   @default(PUBLIC)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inviteCode String    @unique // Unique code for the invitation
+  expiresAt  DateTime? // Expiration time for the invitation
+
+  // 1v1 Match Settings
+  scoreLimit       Int
+  pauseTime        Int
+  allowPowerUps    Boolean
+  requiredCurrency Int     @default(0)
+
+  message String? // Optional message from the sender
+
+  // Link to created match (when accepted)
+  matchId String? @unique
+  match   Match?  @relation("InvitationMatch", fields: [matchId], references: [id])
+
+  sender   User  @relation("InvitationSender", fields: [senderId], references: [id])
+  receiver User? @relation("InvitationReceiver", fields: [receiverId], references: [id])
+}
+
+model Bet {
+  id                String    @id @default(cuid())
+  amount            Int // Coins bet
+  predictedWinnerId String? // User.id or 'AI'
+  status            BetStatus @default(PENDING)
+  createdAt         DateTime  @default(now())
+  resolvedAt        DateTime?
+
+  // Relations
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  match   Match  @relation(fields: [matchId], references: [id])
+  matchId String
+}

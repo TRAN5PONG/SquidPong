@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserStatus {
+  ONLINE
+  OFFLINE
+  IDLE
+  DO_NOT_DISTURB
+}
+
+enum RankDivision {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+  MASTER
+}
+
+
+enum RankTier {
+  I
+  II
+  III
+}
+
+
+enum AIDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+
+enum MatchStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum GameMode {
+  CLASSIC
+  TOURNAMENT
+  VS_AI
+  BOUNCE_CHALLENGE
+}
+
+
+enum MatchResult {
+  WIN
+  LOSS
+  DRAW
+}
+
+
+enum TournamentStatus {
+  REGISTRATION
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+
+enum PlayerCharacter {
+  Zero
+  Taizen
+  Kira
+  Ryu
+  Akira
+  Sora_F2
+  Sora_M3
+  Sora_F3
+}
+
+enum PlayerPaddle {
+  Boss
+  Survivor
+  Guard
+  Army
+}
+
+
+// Main Profile model
+model Profile {
+  id        String       @id @default(cuid())
+
+  userId    Int          @unique
+  username  String       
+  firstName String
+  lastName  String
+
+  status    UserStatus   @default(ONLINE)
+  lastSeen  DateTime     @default(now())
+  avatar    String        @default("testing.png")
+  banner    String        @default("testing.png")
+  bio       String        @default("Just here to have fun, level up, and make some epic memories!")
+  
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  isVerified    Boolean    @default(false)
+  walletBalance Int        @default(0)
+  level         Int        @default(1)
+  rankDivision  RankDivision @default(BRONZE)
+  rankTier      RankTier   @default(I)
+
+
+
+  // Relationships
+
+
+  preferences         ProfilePreferences?
+
+ 
+  playerCharacters   Json @default("[\"Zero\"]")
+  playerSelectedCharacter PlayerCharacter @default(Zero)
+
+  playerPaddles Json @default("[\"Boss\"]")
+  playerSelectedPaddle    PlayerPaddle @default(Boss)
+
+
+
+  // Friendships
+  sentFriendRequests     Friendship[] @relation("SentFriendRequests")
+  receivedFriendRequests Friendship[] @relation("ReceivedFriendRequests")
+}
+
+
+
+
+
+
+
+
+// Profile preferences
+model ProfilePreferences {
+  id               String @id @default(cuid())
+  profileId        String @unique
+
+  soundEnabled     Boolean @default(true)
+  musicEnabled     Boolean @default(true)
+  twoFactorEnabled Boolean @default(false)
+
+  profile       Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  notifications NotificationSettings?
+}
+
+
+
+// Notification settings
+model NotificationSettings {
+  id                String @id @default(cuid())
+  preferencesId     String @unique
+
+  friendRequests    Boolean @default(true)
+  chatMessages      Boolean @default(true)
+  gameInvites       Boolean @default(true)
+  tournamentUpdates Boolean @default(true)
+
+  preferences ProfilePreferences @relation(fields: [preferencesId], references: [id], onDelete: Cascade)
+}
+
+
+
+model Friendship {
+  id        String @id @default(cuid())
+
+  senderId  String
+  receiverId String
+  status    FriendshipStatus @default(PENDING)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sender   Profile @relation("SentFriendRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver Profile @relation("ReceivedFriendRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+}
