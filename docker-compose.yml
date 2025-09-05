@@ -21,7 +21,8 @@ services:
     env_file:
       - ./frontend/.env
     volumes:
-      - ./frontend:/frontend/src
+      - ./frontend:/frontend
+      - /frontend/node_modules
     networks:
       - web
   redis:
