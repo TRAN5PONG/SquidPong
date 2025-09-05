@@ -15,7 +15,6 @@ import { store } from "@/store";
 import { userActions } from "@/store/user/actions";
 import { AnimateHeight, FloatBounce } from "@/utils/gsap";
 import { useNavigate } from "@/contexts/RouterProvider";
-import { useAmbientSound } from "@/contexts/SoundProvider";
 import { useAppContext } from "@/contexts/AppProviders";
 import {
   API_BASE_URL,
@@ -26,6 +25,7 @@ import {
 } from "@/api/auth";
 import { LoaderSpinner } from "../Loader/Loader";
 import { getUserProfile } from "@/api/user";
+import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledHome = styled("div")`
   width: 100vw;
@@ -157,7 +157,8 @@ const Home = () => {
   const [showModal, setShowModal] = Zeroact.useState(true);
   const [isHoveredOnBtn, setIsHoveredOnBtn] = Zeroact.useState(false);
 
-  const AmbientSound = useAmbientSound();
+  const { backgroundSound } =
+    useSounds();
 
   useEffect(() => {
     // FloatBounce(ImgRef);
@@ -167,7 +168,7 @@ const Home = () => {
   }, [ImgRef]);
 
   const onStartClick = () => {
-    AmbientSound.play();
+    backgroundSound.play();
     setShowModal(true);
   };
 

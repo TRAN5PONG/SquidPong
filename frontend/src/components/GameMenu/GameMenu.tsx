@@ -1,6 +1,5 @@
 import Zeroact, { useContext, useEffect } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { useAmbientSound } from "@/contexts/SoundProvider";
 import { RouterContext, useNavigate } from "@/contexts/RouterProvider";
 import { useSound } from "@/hooks/useSound";
 import {
@@ -14,6 +13,7 @@ import {
 import { useAppContext } from "@/contexts/AppProviders";
 import { socketManager } from "@/utils/socket";
 import { Match } from "@/types/game";
+import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledGameMenu = styled("div")`
   position: absolute;
@@ -185,10 +185,9 @@ const menuElements = [
 ];
 
 const GameMenu = () => {
-  const AmbientSound = useAmbientSound();
   const { navigate, currentPath } = useContext(RouterContext);
-  const startSound = useSound("/sounds/start.mp3");
-  const elHoverSound = useSound("/sounds/elHover.mp3");
+  const { el_hoverSound, backgroundSound, startSound } =
+    useSounds();
 
   const { match, user, toasts } = useAppContext();
 
@@ -239,8 +238,8 @@ const GameMenu = () => {
 
   return (
     <StyledGameMenu
-      onMouseEnter={() => AmbientSound.setMuffled(true)}
-      onMouseLeave={() => AmbientSound.setMuffled(false)}
+      onMouseEnter={() => backgroundSound.setMuffled(true)}
+      onMouseLeave={() => backgroundSound.setMuffled(false)}
     >
       <button className="BottomPanPlayBtn" onClick={onStartGame}>
         START
@@ -253,7 +252,7 @@ const GameMenu = () => {
               el.navigateTo === currentPath ? "active" : ""
             }`}
             onMouseEnter={() => {
-              elHoverSound.play();
+              el_hoverSound.play();
             }}
             onClick={() => {
               navigate(`${el.navigateTo}`);

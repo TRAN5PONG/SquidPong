@@ -1,3 +1,4 @@
+import { useSounds } from "@/contexts/SoundProvider";
 import { useSound } from "@/hooks/useSound";
 import Zeroact, { useEffect } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
@@ -114,18 +115,16 @@ interface MatchResultOverlayProps {
 }
 
 export const MatchResultOverlay = (props: MatchResultOverlayProps) => {
-  const WonSound = useSound("/sounds/won.mp3", { volume: 0.5 });
-  const LostSound = useSound("/sounds/lost.mp3", { volume: 0.5 });
+  const {wonSound, lostSound} = useSounds();
 
   useEffect(() => {
     if (props.isWinner) {
-      WonSound.play();
+      wonSound.play();
     } else {
-      LostSound.play();
+      lostSound.play();
     }
   }, [props.isWinner]);
 
-  
   return (
     <StyledMatchResultOverlay isWinner={props.isWinner}>
       <div className="match-result-overlay">

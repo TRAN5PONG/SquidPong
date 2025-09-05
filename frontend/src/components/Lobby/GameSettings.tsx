@@ -41,6 +41,7 @@ import { User } from "@/types/user";
 import { useCountdown } from "@/hooks/useCountdown";
 import { socketManager } from "@/utils/socket";
 import { getUserCurrentMatch } from "@/api/match";
+import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledGameSettings = styled("div")`
   width: 450px;
@@ -382,10 +383,7 @@ const GameSettings = (props: GameSettingsProps) => {
   const [isInviteOponentOpen, setIsInviteOponentOpen] = useState(false);
 
   // Sounds
-  const errorSound = useSound("/sounds/error.mp3");
-  const ReadySound = useSound("/sounds/ready.mp3");
-  const popUpSound = useSound("/sounds/popup.mp3");
-  const updateSound = useSound("/sounds/update.mp3");
+  const { errorSound, readySound, notificationSound } = useSounds();
   // Settings
   const [selectedGameSettings, setSelectedGameSettings] =
     Zeroact.useState<GameSettingsType>({
@@ -432,7 +430,7 @@ const GameSettings = (props: GameSettingsProps) => {
       return;
     }
 
-    ReadySound.play();
+    readySound.play();
     setUserPlayer((prev) => {
       if (!prev) return prev;
       return { ...prev, isReady: !prev.isReady };
@@ -493,7 +491,6 @@ const GameSettings = (props: GameSettingsProps) => {
     // Listen for game invitations
     const handleInvite = (data: any) => {
       if (data.invitation) {
-        popUpSound.play();
         setSelectedInvitation(data.invitation);
       }
       if (data.match) {
@@ -504,7 +501,7 @@ const GameSettings = (props: GameSettingsProps) => {
     };
     const handleMatchPlayerUpdate = (data: { matchPlayer: MatchPlayer }) => {
       const { matchPlayer } = data;
-      updateSound.play();
+      notificationSound.play();
 
       setOpponentPlayer(matchPlayer);
     };
@@ -512,7 +509,7 @@ const GameSettings = (props: GameSettingsProps) => {
       const { match } = data;
       if (match.status === "CANCELLED") {
         console.log("==match cancelled==", match);
-        updateSound.play();
+        notificationSound.play();
 
         setCurrentMatch(match);
         toasts.addToastToQueue({
@@ -532,12 +529,12 @@ const GameSettings = (props: GameSettingsProps) => {
           message: data.message,
         });
       }
-    }
+    };
 
     socketManager.subscribe("game-invitation", handleInvite);
     socketManager.subscribe("match-update", handleMatchUpdate);
     socketManager.subscribe("match-player-update", handleMatchPlayerUpdate);
-    socketManager.subscribe("match-error", handleError)
+    socketManager.subscribe("match-error", handleError);
     return () => {
       socketManager.unsubscribe("game-invitation", handleInvite);
       socketManager.unsubscribe("match-player-update", handleMatchPlayerUpdate);
@@ -1468,6 +1465,8 @@ const InviteOponent = (props: InviteOponentProps) => {
   const handleChange = (value: ExpirationOption) =>
     setSelectedExpireOption(value);
 
+  const {popupSound} = useSounds();
+
   const [userInvitations, setUserInvitations] = useState<GameInvitation[]>([]);
 
   // Fetch user invitations on modalMode = "InvitationsList"
@@ -1486,6 +1485,7 @@ const InviteOponent = (props: InviteOponentProps) => {
 
   // Invitation preview
   useEffect(() => {
+    popupSound.play();
     if (props.selectedInvitation) setModalMode("inviteData");
   }, [props.selectedInvitation]);
 

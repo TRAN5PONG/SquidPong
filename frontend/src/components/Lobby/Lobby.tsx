@@ -9,14 +9,14 @@ import {
 import { useSound } from "@/hooks/useSound";
 import { useNavigate } from "@/contexts/RouterProvider";
 import GameSettings from "./GameSettings";
-import { useAmbientSound } from "@/contexts/SoundProvider";
 import { useAppContext } from "@/contexts/AppProviders";
 import { socketManager } from "@/utils/socket";
+import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledLobby = styled("div")`
   width: 100%;
   height: 100%;
-  background-size: cover;
+  backgroundsound-size: cover;
   background-position: center;
   display: flex;
   align-items: center;
@@ -357,10 +357,6 @@ const StyledLobby = styled("div")`
 `;
 
 const Lobby = () => {
-  const elSelectSound = useSound("/sounds/elSelect.mp3");
-  const elHoverSound = useSound("/sounds/elHover.mp3");
-  const errorSound = useSound("/sounds/error.mp3");
-  const AmbientSound = useAmbientSound();
   const { user, match, toasts } = useAppContext();
 
   const [selectedMode, setSelectedMode] = Zeroact.useState<GameModeType | null>(
@@ -368,6 +364,10 @@ const Lobby = () => {
   );
   const [selectedChar, setSelectedChar] =
     Zeroact.useState<GameCharacter | null>(null); //todo => USER WILL ALWAYS HAVE A SELECTED CHAR
+
+  // Sounds
+  const { errorSound, el_clickSound, el_hoverSound, backgroundSound } =
+    useSounds();
 
   const onModeSelect = (mode: GameModeType) => {
     if (selectedMode === mode) return;
@@ -378,7 +378,7 @@ const Lobby = () => {
         message: "You are already in a match!",
       });
     } else {
-      elSelectSound.play();
+      el_clickSound.play();
       setSelectedMode(mode);
     }
   };
@@ -394,8 +394,8 @@ const Lobby = () => {
       )!
     );
     console.log(selectedChar);
-    if (AmbientSound.isMuffled) {
-      AmbientSound.setMuffled(false);
+    if (backgroundSound.isMuffled) {
+      backgroundSound.setMuffled(false);
     }
     return () => {
       // lobbySound.stop();
@@ -417,12 +417,12 @@ const Lobby = () => {
       <div
         className="GameModes"
         onMouseEnter={() => {
-          AmbientSound.setMuffled(true);
-          AmbientSound.setVolume(0.2);
+          backgroundSound.setMuffled(true);
+          backgroundSound.setVolume(0.2);
         }}
         onMouseLeave={() => {
-          AmbientSound.setMuffled(false);
-          AmbientSound.setVolume(0.5);
+          backgroundSound.setMuffled(false);
+          backgroundSound.setVolume(0.5);
         }}
       >
         <div
@@ -431,7 +431,7 @@ const Lobby = () => {
           }`}
           onClick={() => onModeSelect("ONE_VS_ONE")}
           onMouseEnter={() => {
-            elHoverSound.play();
+            el_hoverSound.play();
           }}
         >
           <img src="/assets/1vs1.png" />
@@ -443,7 +443,7 @@ const Lobby = () => {
               selectedMode === "Tournament" ? "selected" : ""
             }`}
             onClick={() => onModeSelect("Tournament")}
-            onMouseEnter={() => elHoverSound.play()}
+            onMouseEnter={() => el_hoverSound.play()}
           >
             <img src="/icons/trophy.webp" />
             <h1>TOURNAMENT</h1>
@@ -453,7 +453,7 @@ const Lobby = () => {
               selectedMode === "1vsAI" ? "selected" : ""
             }`}
             onClick={() => onModeSelect("1vsAI")}
-            onMouseEnter={() => elHoverSound.play()}
+            onMouseEnter={() => el_hoverSound.play()}
           >
             <img src="/assets/1vsAI.png" />
             <h1>VS AI</h1>
@@ -463,7 +463,7 @@ const Lobby = () => {
               selectedMode === "BounceChallenge" ? "selected" : ""
             }`}
             onClick={() => onModeSelect("BounceChallenge")}
-            onMouseEnter={() => elHoverSound.play()}
+            onMouseEnter={() => el_hoverSound.play()}
           >
             <img src="/characters/green_f2.webp" />
             <h1>Mini Game</h1>
