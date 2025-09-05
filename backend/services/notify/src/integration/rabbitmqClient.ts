@@ -1,0 +1,70 @@
+import amqp from "amqplib";
+
+import { sendEmailMessage } from "../utils/verification_messenger";
+import { createNotification , updateNotification , deleteNotification } from "../controllers/helps.controller";
+let connection: any;
+let channel: any;
+import { isUserOnline } from "../utils/utils";
+
+export async function initRabbitMQ() 
+{
+  connection = await amqp.connect("amqp://rabbitmq:5672");
+  channel = await connection.createChannel();
+  
+  await channel.assertQueue("emailhub");
+  await channel.assertQueue("friends");
+
+  console.log("Connected to RabbitMQ");
+}
+
+
+export async function sendDataToQueue(data: any, queue: string) 
+{
+  try 
+  {
+    const msgBuffer = Buffer.from(JSON.stringify(data));
+    channel.sendToQueue(queue, msgBuffer);
+  } 
+  catch (error) 
+  {
+    console.log("Error in rabbit connection:", error);
+  }
+}
+
+// Consumer function for RabbitMQ
+
+export async function receiveFromQueue(queue: string) 
+{
+  try 
+  {
+    channel.consume(queue, async (msg: any) => {
+      if (!msg) return;
+
+      const data = JSON.parse(msg.content.toString());
+      channel.ack(msg);
+
+      if(queue == 'friends')
+        await notifyFromFriendsQueue(data);
+      else if(queue == 'emailhub')
+        sendEmailMessage(data);
+    });
+  }
+  catch (err: any) 
+  {
+    console.error('RabbitMQ error:', err.message);
+  }
+}
+
+
+async function notifyFromFriendsQueue(data:any) 
+{
+  
+  
+  if(await isUserOnline(data.to))
+    await sendDataToQueue(data , 'test');
+  else
+    console.log(`from notify user ${data.to} is not online `)
+  
+  await createNotification({userId : Number(data.to) , title : "FRIEND_REQUEST" , message : data.message , type : "FRIEND"})
+  
+}

@@ -1,0 +1,75 @@
+import {FastifyReply } from "fastify";
+import app from "../app";
+import prisma from "../db/database";
+import { sendDataToQueue } from "../integration/rabbitmqClient";
+import redis from "../integration/redisClient";
+import { ApiResponse } from "../utils/errorHandler";
+
+
+function generateToken(length = 10) 
+{
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  for (let i = 0; i < length; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
+
+
+export async function setJwtTokens(res: FastifyReply, user: any | null) 
+{
+  const accessToken = await app.jwt.sign({ userId: user.id }, { expiresIn: "7d" });
+  const refreshToken = await app.jwt.sign({ userId: user.id }, { expiresIn: "7d" });
+
+  res.setCookie("accessToken", accessToken, { httpOnly: true, path: "/", sameSite: "lax", secure: false });
+  res.setCookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    path: "/api/auth/refresh",
+    maxAge: 7 * 24 * 60 * 60,
+  });
+
+  await redis.set(accessToken, "valid", "EX", 60 * 24 * 7 * 60);
+
+}
+
+
+
+
+
+
+export async function isTwoFactorEnabled(res: FastifyReply, user: any | null , respond: ApiResponse ) : Promise<any>
+{
+
+  if(!user.is2FAEnabled)
+  {
+    respond.data.is2FAEnabled = false;
+    await setJwtTokens(res , user);
+    return ;
+  }
+  
+  respond.data.is2FAEnabled = true;
+  respond.data.token = generateToken();
+  await redis.set(respond.data.token, user.id, "EX", "260");
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
