@@ -31,7 +31,7 @@ export async function twofaSetupController(): Promise<ApiResponse<TwoFASetupData
 }
 
 
-export async function twofaVerifyController(code: string, email?: string): Promise<ApiResponse<TwoFAVerifyData>> 
+export async function twofaVerifyController(code: string): Promise<ApiResponse<TwoFAVerifyData>> 
 {
   const response = await fetch(`${API_BASE_URL}/2fa/verify`, {
     method: "POST",
@@ -39,7 +39,7 @@ export async function twofaVerifyController(code: string, email?: string): Promi
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ code, email }),
+    body: JSON.stringify({ code }),
   });
 
   if (!response.ok) {

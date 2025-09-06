@@ -96,8 +96,8 @@ export enum AuthMessage {
     PASSWORDS_DO_NOT_MATCH = 'Passwords do not match.',
     SIGNUP_DISABLED = 'Signup is currently disabled.',
     USER_ALREADY_EXISTS = 'User already exists.', // ✅ NEW
-  OAUTH_LOGIN_REQUIRED = 'Please login using your OAuth provider.', // ✅ NEW
-  INVALID_CREDENTIALS = 'Invalid email or password.',  
+    OAUTH_LOGIN_REQUIRED = 'Please login using your OAuth provider.', // ✅ NEW
+    INVALID_CREDENTIALS = 'Invalid email or password.',  
     USER_NOT_FOUND = 'User not found.',
     PROFILE_NOT_COMPLETE = 'User profile is incomplete.',
     AVATAR_UPLOAD_SUCCESS = 'Avatar uploaded successfully.',

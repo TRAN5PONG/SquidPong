@@ -25,9 +25,9 @@ export async function setupAuthenticatorHandler(req: FastifyRequest, res: Fastif
     if(!user)
       throw new Error(UserProfileMessage.USER_NOT_FOUND)
 
-    if(user.is2FAEnabled)
+    if (user.twoFAQRCode && user.twoFAKey) 
     {
-      respond.data = {QRCode : user.twoFAQRCode! , key : user.twoFAKey!}
+      respond.data = { QRCode: user.twoFAQRCode, key: user.twoFAKey };
       return res.send(respond);
     }
     
@@ -93,13 +93,18 @@ export async function statusAuthenticatorHandler(req: FastifyRequest, res: Fasti
 export async function verifyTwofaHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond : ApiResponse<null > = {success : true  , message : '2fa code success'}
-  const {code , email} = req.body as any;
+  const {code} = req.body as any;
 
-  const user = await prisma.user.findUnique({ where: { email} });
+  const headers = req.headers as any;
+  const id = Number(headers['x-user-id'])
+
+
+  console.log("Verify 2fa Handler called with code:", code, "for user ID:", id);
   
   try
   {
-
+    
+    const user = await prisma.user.findUnique({ where: { id} });
     if (!user)
       throw new Error(UserProfileMessage.USER_NOT_FOUND);
     if(!user.is2FAEnabled)
@@ -120,7 +125,7 @@ export async function verifyTwofaHandler(req: FastifyRequest, res: FastifyReply)
       }
   }
 
-  await setJwtTokens(res , String(user?.id));
+  await setJwtTokens(res , String(id));
   return res.send(respond);
 }
 

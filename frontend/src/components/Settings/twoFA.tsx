@@ -181,6 +181,8 @@ const TwoFAModal = (props: { onClose: () => void }) => {
   const [isScanned, setIsScanned] = useState(false);
   const [showScanEffect, setShowScanEffect] = useState(false);
 
+  const [code, set2fa] = useState("");
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -215,8 +217,8 @@ const TwoFAModal = (props: { onClose: () => void }) => {
       <div className="Main">
         {isScanned ? (
           <div className="VerificationCode">
-            <input placeholder="put your verification code" />
-            <button className="ProgBtn" onClick={props.onClose}>
+            <input placeholder="put your verification code" onChange={(e: any) => set2fa(e.target.value)} />
+            <button className="ProgBtn" onClick={ async() => { await twofaVerifyController(code) }}>
               Verify
             </button>
           </div>

@@ -72,7 +72,7 @@ export const twofaVerifySchema = {
         description: '6-digit 2FA code from authenticator app'
       }
     },
-    required: ['token', 'code']
+    required: ['code']
   },
   response: {
     200: {
