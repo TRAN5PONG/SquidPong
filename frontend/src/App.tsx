@@ -71,7 +71,7 @@ export const routes: Route[] = [
     exact: true,
     showLoader: true,
   },
-  { path: "/game", component: Game, exact: true, showLoader: true },
+  { path: "/game", component: Game, exact: false, showLoader: true },
   {
     path: "/select-paddle",
     component: SelectPaddle,

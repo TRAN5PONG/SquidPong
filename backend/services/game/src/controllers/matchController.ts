@@ -1,9 +1,11 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../lib/prisma";
 import { CreateMatchBody } from "../types/match";
-import { Invitation, Match, MatchPlayer, Prisma } from "../generated/prisma";
+import { Match, MatchPlayer, Prisma } from "../generated/prisma";
 import { User } from "../types/users";
 import { sendDataToQueue } from "../integration/rabbitmqClient";
+import { matchMaker } from "colyseus";
+import { spec } from "node:test/reporters";
 
 export async function createMatch(
   request: FastifyRequest,
@@ -102,7 +104,25 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
       tx
     );
 
-    return match;
+    // assign to colyseus room
+    const room = await matchMaker.createRoom("ping-pong", {
+      matchId: match.id,
+      players: [hostPlayer.userId, guestPlayer.userId],
+      spectator: [],
+    });
+
+    // update match with roomId
+    const updatedMatch = await tx.match.update({
+      where: { id: match.id },
+      data: { roomId: room.roomId },
+      include: {
+        opponent1: true,
+        opponent2: true,
+        matchSetting: true,
+      },
+    });
+
+    return updatedMatch;
   });
 }
 export async function createMatchPlayer(

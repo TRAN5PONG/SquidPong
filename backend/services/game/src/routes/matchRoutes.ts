@@ -41,6 +41,22 @@ export async function matchRoutes(server: FastifyInstance) {
     },
     createMatch
   );
+  // get Match by ID
+  server.get(
+    "/api/game/match/:matchId",
+    {
+      schema: {
+        params: {
+          type: "object",
+          properties: {
+            matchId: { type: "string" },
+          },
+          required: ["matchId"],
+        },
+      },
+    },
+    getMatch
+  );
   // current user's pending match (limited to one)
   server.get(
     "/api/game/match/current/:userId",

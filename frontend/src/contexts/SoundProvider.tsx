@@ -22,13 +22,10 @@ export function SoundProvider({ children }: { children: ZeroactNode[] }) {
   // Preload all sounds immediately
   const ambianceSound = useSound("/sounds/pause_ambient.mp3", { volume: 0.7 });
   const backgroundSound = useSound("/sounds/background.wav", { volume: 0.5 });
-
   const wonSound = useSound("/sounds/won.mp3", { volume: 0.5 });
   const lostSound = useSound("/sounds/lost.mp3", { volume: 0.5 });
-
   const el_clickSound = useSound("/sounds/elSelect.mp3");
   const el_hoverSound = useSound("/sounds/elHover.mp3");
-
   const errorSound = useSound("/sounds/error.mp3");
   const startSound = useSound("/sounds/start.mp3");
   const readySound = useSound("/sounds/ready.mp3");

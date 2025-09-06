@@ -103,6 +103,7 @@ model Match {
   id          String     @id @default(cuid())
   mode        GameMode
   status      GameStatus
+  roomId      String?    @unique
   duration    Int
   createdAt   DateTime   @default(now())
   confirmedAt DateTime?
