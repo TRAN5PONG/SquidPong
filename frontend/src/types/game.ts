@@ -52,6 +52,7 @@ export interface GameRules {
 
 export interface Match {
   id: string;
+  roomId: string; // Colyseus room ID
   mode: GameMode;
   status: GameStatus;
   opponent1: MatchPlayer;

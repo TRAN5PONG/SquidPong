@@ -187,8 +187,9 @@ const Navbar = () => {
   useEffect(() => {
     setUser(appCTX.user);
   }, [appCTX.user]);
-  
-  if (!user || currentPath === "/" || currentPath === "/game") return null;
+
+  if (!user || currentPath === "/" || currentPath.startsWith("/game"))
+    return null;
 
   return (
     <StyledNav className="GlassMorphism" avatar={user.avatar}>

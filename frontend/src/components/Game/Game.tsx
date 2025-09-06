@@ -1,4 +1,4 @@
-import Zeroact, { useEffect } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 
 import ScoreBoard from "./Elements/ScoreBoard";
@@ -6,13 +6,17 @@ import { db } from "@/db";
 import CountDown from "./Elements/CountDown";
 import { useGameScene } from "./scenes/GameScene";
 import { useSound } from "@/hooks/useSound";
-import Loader from "../Loader/Loader";
+import Loader, { LoaderSpinner } from "../Loader/Loader";
 import { GiveUpIcon, PauseIcon } from "../Svg/Svg";
 import { MatchResultOverlay } from "./Elements/MatchResultOverlay";
-import { GamePowerUps } from "@/types/game";
+import { GamePowerUps, Match } from "@/types/game";
 
-import { Client } from "colyseus.js";
+import { Client, Room } from "colyseus.js";
 import { useSounds } from "@/contexts/SoundProvider";
+import { useRouteParam } from "@/hooks/useParam";
+import { getMatchById } from "@/api/match";
+import NotFound from "../NotFound/NotFound";
+import { useAppContext } from "@/contexts/AppProviders";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -96,12 +100,109 @@ const StyledGame = styled("div")`
   }
 `;
 
+interface Player {
+  id: string;
+  username: string;
+  isReady: boolean;
+  x: number;
+  y: number;
+}
+interface Spectator {
+  id: string;
+  username: string;
+}
+interface PingPongState {
+  players: Map<string, Player>;
+  spectators: Map<string, Spectator>;
+  phase: "waiting" | "countdown" | "playing" | "ended";
+  countdown: number;
+  winnerId: string | null;
+}
+
 const Game = () => {
   const canvasRef = Zeroact.useRef<HTMLCanvasElement>(null);
   const { camera } = useGameScene(canvasRef);
   const { ambianceSound } = useSounds();
+  const { user } = useAppContext();
 
-  const [userGameRes, setUserGameRes] = Zeroact.useState<boolean | null>(null); // null = game ongoing, true = user won, false = user lost
+  // GetMacth
+  const matchId = useRouteParam("/game/:id", "id");
+  const [match, setMatch] = useState<Match | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [room, setRoom] = useState<Room<PingPongState> | null>(null);
+
+  // Game States
+  const [matchPhase, setMatchPhase] = useState<
+    "waiting" | "countdown" | "playing" | "ended"
+  >("waiting");
+  const [countdownValue, setCountdownValue] = useState<number | null>(null);
+  const [players, setPlayers] = useState<Map<string, Player>>(new Map());
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (matchId) {
+      setTimeout(() => {
+        const getMatch = async () => {
+          try {
+            const res = await getMatchById(matchId);
+
+            if (res) setMatch(res.data);
+            else setNotFound(true);
+          } catch (err) {
+            setNotFound(true);
+            console.error(err);
+          }
+        };
+        getMatch();
+      }, 2000);
+    }
+  }, [matchId]);
+
+  useEffect(() => {
+    if (!match || !match.roomId) return;
+
+    const setupRoom = async () => {
+      const client = new Client("ws://localhost:3000");
+      let room;
+
+      try {
+        console.log(match);
+        room = (await client.joinById(match.roomId, {
+          userId: user?.id,
+        })) as Room<PingPongState>;
+
+        setRoom(room);
+        console.log("✅ Joined room:", room);
+
+        // Room event listeners
+        // room.onStateChange((state) => {
+        //   console.log("Room state changed:", state);
+        // });
+      } catch (err) {
+        console.error("❌ Failed to join room:", err);
+      }
+    };
+
+    setupRoom();
+
+    return () => {
+      room?.leave();
+      setRoom(null);
+    };
+  }, [match, user?.id]);
+
+  useEffect(() => {
+    if (!room) return;
+
+    room.onStateChange((state) => {
+      // console.log("Room state changed:", state);
+      setMatchPhase(state.phase);
+
+      // Set countdown value
+      if (state.phase === "countdown") setCountdownValue(state.countdown);
+      else setCountdownValue(null);
+    });
+  }, [room]);
 
   const onPause = () => {
     ambianceSound.play();
@@ -110,30 +211,18 @@ const Game = () => {
   const onGiveUp = () => {};
   const onGameStart = () => {};
 
-  useEffect(() => {
-    const connect = async () => {
-      const client = new Client("ws://localhost:3000");
-
-      try {
-        console.log("🔄 Trying to connect to Colyseus...");
-        const room = await client.joinOrCreate("ping-pong");
-        console.log("✅ Connected to Colyseus server!");
-        console.log("🎮 Joined room:", room);
-      } catch (err) {
-        console.error("❌ Failed to connect to Colyseus:", err);
-      }
-    };
-
-    setTimeout(() => {
-      setUserGameRes(true);
-    }, 1000);
-
-    connect();
-  }, []);
+  if (notFound) return <NotFound />;
+  if (!match) return <LoaderSpinner />;
 
   return (
     <StyledGame>
       <ScoreBoard oponent1={db.users[0]} oponent2={db.users[1]} />
+
+      <button onClick={() => room?.send("player:ready", { isReady: true })}>
+        Ready
+      </button>
+      <h1 style={{ color: "white" }}>GAME STATUS :{matchPhase}</h1>
+
       <div className="GameSettings">
         <button className="GiveUpButton BtnSecondary" onClick={onGiveUp}>
           <GiveUpIcon size={20} fill="var(--main_color)" />
@@ -152,7 +241,11 @@ const Game = () => {
           ))}
         </div>
       </div>
-      <canvas ref={canvasRef} className="game-canvas"></canvas>
+
+      {matchPhase === "countdown" && countdownValue && (
+        <CountDown value={countdownValue} onComplete={onGameStart} />
+      )}
+      {/* <canvas ref={canvasRef} className="game-canvas"></canvas> */}
       {/* {userGameRes && (
         <MatchResultOverlay isWinner={false} opponentName={"Opponent"} />
       )} */}

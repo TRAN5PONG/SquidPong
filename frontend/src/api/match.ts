@@ -17,3 +17,22 @@ export async function getUserCurrentMatch(userId: string) {
 
   return await response.json();
 }
+
+export async function getMatchById(matchId: string) {
+  const response = await fetch(
+    `http://localhost:4000/api/game/match/${matchId}`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch match");
+  }
+
+  return await response.json();
+}

@@ -186,8 +186,7 @@ const menuElements = [
 
 const GameMenu = () => {
   const { navigate, currentPath } = useContext(RouterContext);
-  const { el_hoverSound, backgroundSound, startSound } =
-    useSounds();
+  const { el_hoverSound, backgroundSound, startSound } = useSounds();
 
   const { match, user, toasts } = useAppContext();
 
@@ -224,13 +223,13 @@ const GameMenu = () => {
       });
       startSound.play();
       setTimeout(() => {
-        navigate("/game");
+        navigate(`/game/${data.match.id}`);
       }, 2500);
     });
   }, []);
 
   if (
-    currentPath === "/game" ||
+    currentPath.startsWith("/game") ||
     currentPath === "/spectate" ||
     currentPath === "/"
   )

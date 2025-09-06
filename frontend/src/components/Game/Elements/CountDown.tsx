@@ -20,43 +20,26 @@ const StyledCountDown = styled("div")`
   }
 `;
 
-const CountDown = () => {
+const CountDown = (props: { value: number; onComplete?: () => void }) => {
   const CountDownRef = Zeroact.useRef<HTMLElement>(null);
-  const [countDown, setCountDown] = Zeroact.useState(9);
 
   // Sounds
   const countDownSound = useSound("/sounds/countdown.mp3");
   const countDownEndSound = useSound("/sounds/countdown_done.mp3");
 
   Zeroact.useEffect(() => {
-
-    const timer = setInterval(() => {
-      setCountDown((prev) => {
-        if (prev === 1) {
-          countDownEndSound.play();
-        } else {
-          countDownSound.play();
-        }
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 900);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, []); // only once on mount for timer setup
-
-  Zeroact.useEffect(() => {
+    if (props.value === 1) {
+      countDownEndSound.play();
+      if (props.onComplete) props.onComplete();
+    } else {
+      countDownSound.play();
+    }
     AnimateIn(CountDownRef);
-  }, [countDown]); // animate on each countdown update
+  }, [props.value]); // animate on each countdown update
 
   return (
     <StyledCountDown>
-      <h1 ref={CountDownRef}>{countDown != 0 ? countDown : "GO!"}</h1>
+      <h1 ref={CountDownRef}>{props.value != 0 ? props.value : "GO!"}</h1>
     </StyledCountDown>
   );
 };
