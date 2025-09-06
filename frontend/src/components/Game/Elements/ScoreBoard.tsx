@@ -1,19 +1,100 @@
+import { PaddleIcon } from "@/components/Svg/Svg";
 import Zeroact from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
+import { RankDivision } from "@/types/game";
 import { User } from "@/types/user";
+import { getRankMetaData } from "@/utils/game";
 
 const StyledScoreBoard = styled("div")`
-  display: flex;
-  flex-direction: column;
-  position: absolute;
-  top: 10px;
-  left: 50px;
+  width: 800px;
+  height: 50px;
   display: flex;
   align-items: center;
-  .OponentCard:first-child {
-    transform: translate(-30px, 1px);
+  justify-content: center;
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  background: linear-gradient(
+    90deg,
+    rgba(224, 189, 47, 0) 0%,
+    rgba(153, 128, 26, 0.6) 50%,
+    rgba(224, 189, 47, 0) 100%
+  );
+  &:after {
+    width: 100%;
+    height: 1px;
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(202, 47, 60, 0) 0%,
+      rgba(153, 128, 26, 1) 50%,
+      rgba(202, 47, 60, 0) 100%
+    );
+    z-index: 1;
   }
-  .RoundNumber{
+  &:before {
+    width: 100%;
+    height: 1px;
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(202, 47, 60, 0) 0%,
+      rgba(153, 128, 26, 1) 50%,
+      rgba(202, 47, 60, 0) 100%
+    );
+    z-index: 1;
+  }
+
+  .CenterContent {
+    width: 200px;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(30deg, #e0bd2f, rgba(255, 217, 68, 1), #e0bd2f);
+    margin-top: 8px;
+    clip-path: path("M 5,0 L 195,0 L 200,5 L 180,70 L 20,70 L 0,5 L 0,5 Z");
+    z-index: 2;
+    .Timer {
+      height: 65%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      span {
+        font-family: var(--span_font);
+        font-weight: 100;
+        font-size: 1.8rem;
+        color: #887115;
+      }
+    }
+    .RoundNumber {
+      flex: 1;
+      background: linear-gradient(0deg, #e0bd2f, #e0bd2f, #e0bd2f);
+      border-top: 1px solid #f5d34c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      span {
+        font-family: var(--span_font);
+        font-weight: 100;
+        font-size: 1rem;
+        color: #887115;
+      }
+    }
+  }
+
+  .OponentCard:first-child {
+    /* transform: translate(-30px, 1px); */
+  }
+  .RoundNumber {
     background-color: var(--main_color);
     width: 100px;
     height: 30px;
@@ -21,7 +102,7 @@ const StyledScoreBoard = styled("div")`
     display: flex;
     align-items: center;
     justify-content: center;
-    h1{
+    h1 {
       font-family: var(--main_font);
       font-weight: 100;
       font-size: 1.3rem;
@@ -41,105 +122,99 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         OponentAvatar={props.oponent1.avatar}
         className="OponentCard"
       >
-        <div className="OponentCardBorder" />
-        <div className="OponentCardContent">
-          <div className="Avatar" />
-          <h1 className="Username">{props.oponent1.username}</h1>
-
-          <div className="Score">
-            <span className="ScoreValue">0</span>
-          </div>
+        <div className="OponentScore">
+          <span>10</span>
+        </div>
+        <div className="OponentCardAvatar" />
+        <div className="OponentCardInfo">
+          <h1 className="OponentCardUsername">{props.oponent1.username}</h1>
         </div>
       </OponentCard>
 
-      <OponentCard OponentAvatar={props.oponent2.avatar} isReversed={true}>
-        <div className="OponentCardBorder" />
-        <div className="OponentCardContent">
-          <div className="Avatar" />
-          <h1 className="Username">{props.oponent2.username}</h1>
-
-          <div className="Score">
-            <span className="ScoreValue">5</span>
-          </div>
+      <div className="CenterContent">
+        <div className="Timer">
+          <span>00:15</span>
         </div>
-      </OponentCard>
 
-      <div className="RoundNumber">
-        <h1>Round 1</h1>
+        <div className="RoundNumber">
+          <span>Round 4</span>
+        </div>
       </div>
-      
+
+      <OponentCard
+        OponentAvatar={props.oponent2.avatar}
+        className="OponentCard"
+        isRightSide={true}
+      >
+        <div className="OponentScore">
+          <span>10</span>
+        </div>
+        <div className="OponentCardAvatar" />
+        <div className="OponentCardInfo">
+          <h1 className="OponentCardUsername">{props.oponent2.username}</h1>
+          <PaddleIcon size={20} fill="white" />
+        </div>
+      </OponentCard>
     </StyledScoreBoard>
   );
 };
 
 const OponentCard = styled("div")`
-  width: 300px;
-  height: 60px;
+  height: 100%;
+  flex: 1;
   position: relative;
   display: flex;
+  flex-direction: ${(props: any) =>
+    props.isRightSide ? "row" : "row-reverse"};
   align-items: center;
-  justify-content: center;
-
-  .OponentCardBorder {
-    background: rgba(202, 47, 60, 1);
-    transform: scale(1.15);
-    z-index: 0;
-    top: 0;
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    clip-path: path(
-      "M 25,0 L 255,4 L 300,43 L 290,55 L 44,59 L 15,17 L 25,0 Z"
-    );
-  }
-  .OponentCardContent {
+  justify-content: ${(props: any) =>
+    props.isRightSide ? "flex-start" : "flex-end"};
+  .OponentCardAvatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+    background-image: url(${(props: any) => props.OponentAvatar});
+    background-size: cover;
+    background-position: center;
     z-index: 1;
-    background-color: var(--bg_color);
-    position: absolute;
-    top: 0;
-    width: 100%;
+  }
+  .OponentCardInfo {
+    flex: 1;
     height: 100%;
-    clip-path: path("M 10,0 L 270,0 L 300,45 L 290,60 L 30,60 L 0,15 L 10,0 Z");
     display: flex;
+    flex-direction: ${(props: any) =>
+      props.isRightSide ? "row" : "row-reverse"};
     align-items: center;
+    gap: 10px;
 
-    .Avatar {
-      width: 80px;
-      height: 100%;
-      background-color: white;
-      clip-path: path("M 0,0 L 50,0 L 80,60 L 0,60 L 0,0 Z");
-      background-image: url(${(props: any) => props.OponentAvatar});
-      background-size: cover;
-      background-position: center;
-      position: relative;
-    }
-    .Username {
-      color: white;
+    .OponentCardUsername {
       font-family: var(--squid_font);
       font-weight: 100;
-      font-size: 1.5rem;
+      font-size: 1.3rem;
+      color: #ffffff;
     }
-    .Score {
-      margin-left: auto;
-      width: 60px;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      padding-left: 5px;
-      background: linear-gradient(
-        90deg,
-        rgba(202, 47, 60, 1) 0%,
-        rgba(202, 47, 60, 0.3) 100%
-      );
-      clip-path: path("M 0,0 L 60,0 L 60,60 L 0,60 L 50,100 L 0,50 L 0,0 Z");
-      span {
-        color: white;
-        font-family: var(--game_font);
-        margin-top: 10px;
-        font-weight: 100;
-        font-size: 2rem;
-      }
+  }
+  .OponentScore {
+    background: ${(props: any) =>
+      props.isRightSide
+        ? "linear-gradient(90deg, #e0bd2f, rgba(255, 217, 68, 0))"
+        : "linear-gradient(90deg, rgba(255, 217, 68, 0), #e0bd2f)"};
+
+    width: 90px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-right: ${(props: any) => (props.isRightSide ? "0" : "10px")};
+    padding-left: ${(props: any) => (props.isRightSide ? "10px" : "0")};
+    margin-right: ${(props: any) => (props.isRightSide ? "0" : "-20px")};
+    margin-left: ${(props: any) => (props.isRightSide ? "-20px" : "0")};
+
+    span {
+      font-family: var(--span_font);
+      font-weight: 100;
+      font-size: 1.4rem;
+      color: white;
     }
   }
 `;

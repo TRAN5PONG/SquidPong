@@ -5,7 +5,7 @@ import { matchRoutes } from "./routes/matchRoutes";
 import { invitationRoutes } from "./routes/invitationRoutes";
 import { initRabbitMQ, receiveFromQueue } from "./integration/rabbitmqClient";
 import cors from "@fastify/cors";
-import { PingPongRoom } from "./rooms/PingPongRoom";
+import { MatchRoom } from "./rooms/PingPongRoom";
 import { prisma } from "./lib/prisma";
 
 dotenv.config();
@@ -41,7 +41,7 @@ async function recreateActiveRooms() {
 
     for (const match of activeMatches) {
       try {
-        const room = await matchMaker.createRoom("ping-pong", {
+        const room = await matchMaker.createRoom("ping-pong-game", {
           matchId: match.id,
           players: [match.opponent1.userId, match.opponent2?.userId],
           spectators: [],
@@ -85,7 +85,7 @@ const start = async () => {
     await receiveFromQueue("game");
 
     // Register Colyseus rooms
-    gameServer.define("ping-pong", PingPongRoom);
+    gameServer.define("ping-pong-game", MatchRoom);
 
     // Recreate rooms for existing matches (dev mode)
     if (process.env.NODE_ENV === "development") {
