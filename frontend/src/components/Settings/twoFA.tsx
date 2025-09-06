@@ -203,6 +203,7 @@ const TwoFAModal = (props: { onClose: () => void }) => {
     }, 2000); // Simulate scan effect for 3 seconds
     // setIsScanned(true);
   };
+  
 
 
   return (

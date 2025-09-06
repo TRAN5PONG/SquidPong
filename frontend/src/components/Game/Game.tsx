@@ -1,4 +1,4 @@
-import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 
 import ScoreBoard from "./Elements/ScoreBoard";
@@ -6,7 +6,7 @@ import { db } from "@/db";
 import CountDown from "./Elements/CountDown";
 import { useGameScene } from "./scenes/GameScene";
 import { useSound } from "@/hooks/useSound";
-import Loader, { LoaderSpinner } from "../Loader/Loader";
+import { LoaderSpinner } from "../Loader/Loader";
 import { GiveUpIcon, PauseIcon } from "../Svg/Svg";
 import { MatchResultOverlay } from "./Elements/MatchResultOverlay";
 import { GamePowerUps, Match } from "@/types/game";
@@ -111,17 +111,20 @@ interface Spectator {
   id: string;
   username: string;
 }
-interface PingPongState {
+interface MatchState {
   players: Map<string, Player>;
   spectators: Map<string, Spectator>;
-  phase: "waiting" | "countdown" | "playing" | "ended";
+  phase: "waiting" | "countdown" | "playing" | "paused" | "ended";
   countdown: number;
   winnerId: string | null;
 }
 
 const Game = () => {
-  const canvasRef = Zeroact.useRef<HTMLCanvasElement>(null);
-  const { camera } = useGameScene(canvasRef);
+  // Game Scene
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { camera, arena } = useGameScene(canvasRef);
+
+  // Context
   const { ambianceSound } = useSounds();
   const { user } = useAppContext();
 
@@ -129,15 +132,19 @@ const Game = () => {
   const matchId = useRouteParam("/game/:id", "id");
   const [match, setMatch] = useState<Match | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [room, setRoom] = useState<Room<PingPongState> | null>(null);
+  const [room, setRoom] = useState<Room<MatchState> | null>(null);
 
   // Game States
   const [matchPhase, setMatchPhase] = useState<
-    "waiting" | "countdown" | "playing" | "ended"
+    "waiting" | "countdown" | "playing" | "paused" | "ended"
   >("waiting");
   const [countdownValue, setCountdownValue] = useState<number | null>(null);
   const [players, setPlayers] = useState<Map<string, Player>>(new Map());
   const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+console.log(arena);
+  }, [arena])
 
   useEffect(() => {
     if (matchId) {
@@ -169,7 +176,7 @@ const Game = () => {
         console.log(match);
         room = (await client.joinById(match.roomId, {
           userId: user?.id,
-        })) as Room<PingPongState>;
+        })) as Room<MatchState>;
 
         setRoom(room);
         console.log("✅ Joined room:", room);
@@ -195,6 +202,15 @@ const Game = () => {
     if (!room) return;
 
     room.onStateChange((state) => {
+      // track opponent's ready status
+      if (state.players) {
+        setPlayers(new Map(state.players));
+        const opponent = Array.from(state.players.values()).find(
+          (p) => p.id !== room.sessionId
+        );
+        if (opponent) console.log("Opponent ready status:", opponent.isReady);
+      }
+
       // console.log("Room state changed:", state);
       setMatchPhase(state.phase);
 
@@ -216,12 +232,25 @@ const Game = () => {
 
   return (
     <StyledGame>
-      <ScoreBoard oponent1={db.users[0]} oponent2={db.users[1]} />
+      {/* <ScoreBoard oponent1={db.users[0]} oponent2={db.users[1]} /> */}
 
-      <button onClick={() => room?.send("player:ready", { isReady: true })}>
+      <button
+        onClick={() => room?.send("player:ready", { isReady: true })}
+        style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}
+      >
         Ready
       </button>
-      <h1 style={{ color: "white" }}>GAME STATUS :{matchPhase}</h1>
+      <h1
+        style={{
+          position: "absolute",
+          top: 60,
+          left: 20,
+          zIndex: 10,
+          color: "white",
+        }}
+      >
+        GAME STATUS :{matchPhase}
+      </h1>
 
       <div className="GameSettings">
         <button className="GiveUpButton BtnSecondary" onClick={onGiveUp}>
@@ -242,10 +271,12 @@ const Game = () => {
         </div>
       </div>
 
+      <canvas ref={canvasRef} className="game-canvas"></canvas>
+
+
       {matchPhase === "countdown" && countdownValue && (
         <CountDown value={countdownValue} onComplete={onGameStart} />
       )}
-      {/* <canvas ref={canvasRef} className="game-canvas"></canvas> */}
       {/* {userGameRes && (
         <MatchResultOverlay isWinner={false} opponentName={"Opponent"} />
       )} */}

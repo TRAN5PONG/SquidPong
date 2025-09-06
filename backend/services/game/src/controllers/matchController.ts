@@ -105,7 +105,7 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
     );
 
     // assign to colyseus room
-    const room = await matchMaker.createRoom("ping-pong", {
+    const room = await matchMaker.createRoom("ping-pong-game", {
       matchId: match.id,
       players: [hostPlayer.userId, guestPlayer.userId],
       spectator: [],

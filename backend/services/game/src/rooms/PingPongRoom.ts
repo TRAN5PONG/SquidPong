@@ -3,7 +3,7 @@ import { Schema, type, MapSchema } from "@colyseus/schema";
 import jwt from "jsonwebtoken";
 
 // ====================
-// 1. Define room state
+// room state
 // ====================
 class Player extends Schema {
   @type("string") id!: string;
@@ -18,22 +18,26 @@ class Spectator extends Schema {
   @type("string") username!: string;
 }
 
-class PingPongState extends Schema {
+class MatchState extends Schema {
   @type({ map: Player }) players = new MapSchema<Player>();
   @type({ map: Spectator }) spectators = new MapSchema<Spectator>();
-  @type("string") phase: "waiting" | "countdown" | "playing" | "ended" =
-    "waiting";
+  @type("string") phase:
+    | "waiting"
+    | "countdown"
+    | "playing"
+    | "paused"
+    | "ended" = "waiting";
   @type("number") countdown = 6; // seconds
   @type("string") winnerId: string | null = null;
 }
 
-export class PingPongRoom extends Room<PingPongState> {
+export class MatchRoom extends Room<MatchState> {
   maxClients = 10; // 2 players + 8 spectators
   private countdownInterval?: NodeJS.Timeout;
 
   onCreate(options: any) {
     console.log("new Room created!", this.roomId);
-    this.state = new PingPongState();
+    this.state = new MatchState();
     this.setMetadata({
       matchId: options.matchId,
       players: options.players,
