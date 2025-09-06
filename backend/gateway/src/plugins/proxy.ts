@@ -1,14 +1,28 @@
 import { FastifyInstance , FastifyRequest, FastifyReply } from 'fastify'
-import fastifyHttpProxy from '@fastify/http-proxy'
-import fastifySwagger from '@fastify/swagger';
+import fastifyHttpProxy, { FastifyHttpProxyOptions } from '@fastify/http-proxy';
+import fastifySwagger , {FastifySwaggerOptions} from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 
-export default async function registerProxy(app: FastifyInstance)
+
+
+async function buildProxyOptions(service:string , port : number , proxyPath : string) : Promise<FastifyHttpProxyOptions>
 {
 
+  const option:FastifyHttpProxyOptions  = {
+  upstream: `http://${service}:${port}`,
+  prefix: `${proxyPath}`,
+  rewritePrefix: `${proxyPath}`,
+  http2: false,
+
+  preHandler: async (req:FastifyRequest, res:FastifyReply) => { req.headers['x-user-id'] = req.id; },
+  }
+
+  return option;
+}
 
 
-app.register(fastifySwagger, {
+
+const swaggerConfig  = {
     openapi: {
       openapi: '3.0.0',
       info: {
@@ -22,103 +36,20 @@ app.register(fastifySwagger, {
         }
       ],
     }
-  })
+  }
 
 
-app.register(fastifySwaggerUi, { routePrefix: '/api/auth/docs', });
+export default async function registerProxy(app: FastifyInstance)
+{
 
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://user:4001',
-  prefix: '/api/user',
-  rewritePrefix: '/api/user',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://auth:4444',
-  prefix: '/api/auth',
-  rewritePrefix: '/api/auth',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://user:4001',
-  prefix: '/api/friend',
-  rewritePrefix: '/api/friend',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://user:4001',
-  prefix: '/api/blocked',
-  rewritePrefix: '/api/blocked',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://game:3000',
-  prefix: '/api/game',
-  rewritePrefix: '/api/game',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://game:3000',
-  prefix: '/api/room',
-  rewritePrefix: '/api/room',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
+  app.register(fastifySwagger, swaggerConfig)
+  app.register(fastifySwaggerUi, { routePrefix: '/api/auth/docs', });
+  
+  app.register(fastifyHttpProxy, await buildProxyOptions('user' , 4001 , '/api/user'));
+  app.register(fastifyHttpProxy, await buildProxyOptions('auth' , 4444 , '/api/auth'));
+  app.register(fastifyHttpProxy, await buildProxyOptions('user' , 4001 , '/api/friend'));
+  app.register(fastifyHttpProxy, await buildProxyOptions('user' , 4001 , '/api/blocked'));
+  app.register(fastifyHttpProxy, await buildProxyOptions('game' , 3000 , '/api/game'));
+  app.register(fastifyHttpProxy, await buildProxyOptions('game' , 3000 , '/api/room'));
 
 }

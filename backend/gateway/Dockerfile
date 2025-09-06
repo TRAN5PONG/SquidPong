@@ -8,8 +8,9 @@ COPY ./*.json .
 
 RUN npm install
 
-COPY ./src ./src
+RUN npm install --save-dev @types/ws
 
+COPY ./src ./src
 
 RUN npm run build
 

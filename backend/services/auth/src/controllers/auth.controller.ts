@@ -80,8 +80,8 @@ export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
 export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
 {
     const body = req.body as any;
-    const respond : ApiResponse<{is2FAEnabled : boolean , token : string} > = {success : true  , message : 'login success'}
-    respond.data = {is2FAEnabled : false , token : ''}
+    const respond : ApiResponse<{is2FAEnabled : boolean} > = {success : true  , message : 'login success'}
+    respond.data = {is2FAEnabled : false}
 
     try 
     {
@@ -90,7 +90,7 @@ export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
         throw new Error(UserProfileMessage.USER_NOT_FOUND)
 
       await isUserAllowedToLogin(body , user);
-      await isTwoFactorEnabled(res , user , respond);
+      await isTwoFactorEnabled(res , {is2FAEnabled: user.is2FAEnabled  , userId : String(user.id)} , respond);
     }
     catch (error) 
     {
@@ -113,7 +113,7 @@ export async function postLogoutHandler(req:FastifyRequest , res:FastifyReply)
     res.clearCookie('accessToken', { path : '/' , httpOnly: true });
     res.clearCookie('refreshToken', { path : '/api/auth/refresh' , httpOnly: true });
   
-    const token = req.cookies['accessToken'] as any;
+    const token = req.cookies['accessToken'] as string;
     await redis.del(token);
     
   } 
@@ -173,15 +173,15 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
 export async function getGooglCallbackehandler(req: FastifyRequest, res: FastifyReply)
 {
 
-  const respond: ApiResponse<{ is2FAEnabled: boolean; token: string }> = { success: true, message: 'login success', };
-  respond.data = { is2FAEnabled: false, token: '' };
+  const respond: ApiResponse<{ is2FAEnabled: boolean }> = { success: true, message: 'login success', };
+  respond.data = { is2FAEnabled: false};
 
   try 
   {
     const googleData = await fetchGoogleUser(req);
     
     const user = await createAccount(googleData);
-    await isTwoFactorEnabled(res, user, respond);
+    await isTwoFactorEnabled(res, {is2FAEnabled: user.is2FAEnabled  , userId : String(user.id)}, respond);
   } 
   catch (error) 
   {
@@ -208,9 +208,9 @@ export async function getIntrahandler(req:FastifyRequest , res:FastifyReply)
 
 export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyReply)
 {
-  const respond: ApiResponse<{ is2FAEnabled: boolean; token: string }> = { success: true, message: 'login success', };
+  const respond: ApiResponse<{ is2FAEnabled: boolean }> = { success: true, message: 'login success', };
 
-  respond.data = { is2FAEnabled: false, token: '' };
+  respond.data = { is2FAEnabled: false };
   const { code } = req.query as any;
 
   try
@@ -218,8 +218,8 @@ export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyR
     const access_token = await fetchIntraToken(code);
     const userJSON = await fetchIntraUser(access_token);
 
-    const account = await createAccount(userJSON);
-    await isTwoFactorEnabled(res, account, respond);
+    const user = await createAccount(userJSON);
+    await isTwoFactorEnabled(res, {is2FAEnabled: user.is2FAEnabled  , userId : String(user.id)}, respond);
 
   }
   catch (error) 

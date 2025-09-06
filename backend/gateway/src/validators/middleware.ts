@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import app from '../app';
 import { ApiResponse } from '../utils/errorHandler';
 import redis from '../integration/redisClient';
-
+import { getUserIdFromRequest } from '../utils/utils';
 
 export async function authenticateUser(req: FastifyRequest, res: FastifyReply) 
 {
@@ -34,22 +34,11 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
   if ((isExactPublic || isCallbackPublic)) 
     return;
 
+  
   try 
   {
 
-    const cookie = req.headers.cookie;
-    if (!cookie) throw new Error("Not allowed");
-
-    const token = cookie.split('=')[1];
-    if (!token) throw new Error("Missing access token");
-
-    const tokenExists = await redis.get(token);
-    if (!tokenExists) throw new Error("Token expired or invalid");
-
-    const payload: any = await app.jwt.verify(token);
-
-    req.id = payload.userId;
-
+    req.id = await getUserIdFromRequest(req, app);
   } 
   catch (error) 
   {
@@ -59,6 +48,5 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
 
     return res.status(400).send(respond);
   }
-
 
 }

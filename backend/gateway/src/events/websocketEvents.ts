@@ -1,12 +1,14 @@
 import { sendDataToQueue  } from '../integration/rabbitmqClient'
 import { FastifyRequest } from "fastify";
-import { WebSocket } from "ws";
 import redis from '../integration/redisClient';
 import { ws } from '../server';
+import type { Socket } from 'net';
+import { MyWebSocket } from '../utils/types';
+
 import app from '../app';
+import { getUserIdFromRequest } from '../utils/utils';
 
-
-
+// Function to send multipart/form-data with a single field
 async function sendSingleMultipartVoid(url: string, fieldName: string, value: string | File | Blob , userId : string )
 {
   const formData = new FormData();
@@ -24,37 +26,29 @@ async function sendSingleMultipartVoid(url: string, fieldName: string, value: st
 }
 
 
-
-export const onlineUsers = new Map<string, WebSocket>();
-
-
+// Map to keep track of online users and their WebSocket connections
+export const onlineUsers = new Map<string, MyWebSocket>();
 
 
 
-export async function handleWsConnect(ws: any, req: FastifyRequest) 
+// Handle new WebSocket connections
+export async function handleWsConnect(ws : MyWebSocket) 
 {
   try 
   {
-    const type = req.url === '/game' ? 'game' : 'chat-notification';
-    const userId = ws.userId;
+    const type = 'chat-notification';
+    const userId:string = ws.userId ?? '';
 
     const socketKey = `user:${userId}:sockets:${type}`;
     await redis.set(socketKey, `${ws.userId}`);
     onlineUsers.set(socketKey , ws)
     
+    console.log('WebSocket connection established for user:', userId);
 
-    console.log(`User ${userId} connected via ${type} socket (ws.id: ${ws.userId})`);
+    ws.on("message", onChatNotificationMessage);
+    ws.on("close", async () => { onClientDisconnect(ws) });
 
-    // Handle messages per type
-    if (type === 'game') 
-      ws.on("message", onGameMessage);
-    else 
-      ws.on("message", onChatNotificationMessage);
-
-    ws.on("close", async () => {
-      onClientDisconnect(ws);
-    });
-
+    
     // Notify user-service that user is online
     await sendSingleMultipartVoid(
       'http://user:4001/api/user/me',
@@ -62,6 +56,7 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
       "DO_NOT_DISTURB",
       userId
     );
+
 
   } 
   catch (error) 
@@ -76,91 +71,69 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
 
 
 
-async function onGameMessage(this:WebSocket , message: any)
-{
-  
-    const dataString: string = Buffer.from(message).toString("utf8");
-    const dataJson = JSON.parse(dataString);
-
-    const id = (this as any).userId; 
-
-
-}
-
-
-
+// Handle incoming messages for chat and notification
 async function onChatNotificationMessage(this:WebSocket , message: any)
 {
     const data = JSON.parse(message.toString());
 
+    // Forward the message to RabbitMQ for further processing
     await sendDataToQueue(data , data.type);
-
-    // if (data.type == "chat")
-    //   await sendDataToQueue(data , 'chat');
-    // else if (data.type == "notification")
-    //   console.log("handler of notification")
-
-
 }
 
 
-
-async function onClientDisconnect(ws: any) 
+// Handle client disconnection
+async function onClientDisconnect(ws: MyWebSocket) 
 {
-  const userId: string = String(ws.userId);
+  const userId: string = ws.userId;
 
   try 
   {
-    const socketTypes = ['game', 'chat-notification'];
-    for (const type of socketTypes) 
-    {
-      const socketKey = `user:${userId}:sockets:${type}`;
-      await redis.del(socketKey);
-      onlineUsers.delete(socketKey);
 
-      if (ws.readyState === ws.OPEN)
-        ws.close();
-    }
+    const socketKey = `user:${userId}:sockets:chat-notification`;
+    await redis.del(socketKey);
+    onlineUsers.delete(socketKey);
 
-    // Notify user-service that user is offline
+    if (ws.readyState === ws.OPEN)
+      ws.close();
+
     sendSingleMultipartVoid( 'http://user:4001/api/user/me', "status", "OFFLINE", userId);
-
-    console.log(`Client ${userId} disconnected (ws.id: ${ws.id})`);
+    console.log(`WebSocket connection closed for user: ${userId}`);
   } 
   catch (error) 
   {
     console.error(`Error handling disconnect for user ${userId}:`, error);
   }
+
 }
 
 
 
-
-export function handleHttpUpgrade(req: any, socket: any, head: any) 
+// Handle HTTP upgrade requests to WebSocket
+export async function handleHttpUpgrade(req: FastifyRequest, socket: Socket, head: Buffer) 
 {
-  const includesURL = ['/game', '/chat-notification'];
+  const includesURL = ['/chat-notification'];
 
-    try 
+  try 
     {
-      if (!includesURL.includes(req.url))
-          throw new Error('No endpoint found');
 
-      const token = req.headers.cookie.split('=')[1]
-      if (!token) throw new Error('No accessToken found');
+    if (!includesURL.includes(req.url))
+      throw new Error('No endpoint found');
 
-      const payload: any = app.jwt.verify(token);
+    const userId = await getUserIdFromRequest(req, app);
+    
 
-      ws.handleUpgrade(req, socket, head, (client:any) => {
-        client.userId = payload.userId;
+    ws.handleUpgrade(req, socket, head, (client:MyWebSocket) => {
+        client.userId = userId;
         ws.emit('connection', client, req);
       });
 
     } 
     catch (err) 
     {
-      console.log("not loged yet  please login first")
+      console.error('WebSocket upgrade error:', err);
       socket.destroy();
     }
+
 }
 
 
@@ -168,12 +141,28 @@ export function handleHttpUpgrade(req: any, socket: any, head: any)
 
 
 
+async function verifyToken(req:FastifyRequest): Promise<{ userId: string }> 
+{
+  try 
+  {
+    const cookie = req.headers.cookie;
+    const token = cookie ? cookie.split('=')[1] : undefined;
+
+    if (!token) throw new Error('No accessToken found');
+
+    const payload = app.jwt.verify<{ userId: string }>(token);
+    return payload;
+  } 
+  catch (err) 
+  {
+    throw new Error('Invalid token');
+  }
+}
 
 
 
 
-
-
+// Send WebSocket message to specific users
 export function sendWsMessage(msg: any) 
 {
 

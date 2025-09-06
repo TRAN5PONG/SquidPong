@@ -6,22 +6,12 @@ import redis from "../integration/redisClient";
 import { ApiResponse } from "../utils/errorHandler";
 
 
-function generateToken(length = 10) 
+
+
+export async function setJwtTokens(res: FastifyReply, userId: string) 
 {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = '';
-  for (let i = 0; i < length; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
-}
-
-
-
-export async function setJwtTokens(res: FastifyReply, user: any | null) 
-{
-  const accessToken = await app.jwt.sign({ userId: user.id }, { expiresIn: "7d" });
-  const refreshToken = await app.jwt.sign({ userId: user.id }, { expiresIn: "7d" });
+  const accessToken = await app.jwt.sign({ userId }, { expiresIn: "7d" });
+  const refreshToken = await app.jwt.sign({ userId }, { expiresIn: "7d" });
 
   res.setCookie("accessToken", accessToken, { httpOnly: true, path: "/", sameSite: "lax", secure: false });
   res.setCookie("refreshToken", refreshToken, {
@@ -39,20 +29,18 @@ export async function setJwtTokens(res: FastifyReply, user: any | null)
 
 
 
-export async function isTwoFactorEnabled(res: FastifyReply, user: any | null , respond: ApiResponse ) : Promise<any>
+export async function isTwoFactorEnabled(res: FastifyReply, user: {is2FAEnabled : boolean , userId : string} , respond: ApiResponse ) : Promise<any>
 {
 
-  if(!user.is2FAEnabled)
+  const {userId , is2FAEnabled} = user;
+  if(!is2FAEnabled)
   {
     respond.data.is2FAEnabled = false;
-    await setJwtTokens(res , user);
+    await setJwtTokens(res , userId);
     return ;
   }
   
   respond.data.is2FAEnabled = true;
-  respond.data.token = generateToken();
-  await redis.set(respond.data.token, user.id, "EX", "260");
-
 }
 
 
