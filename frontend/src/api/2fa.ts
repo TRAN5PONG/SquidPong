@@ -8,6 +8,7 @@ export interface ApiResponse<T = undefined> {
 
 interface TwoFASetupData {
   QRCode?: string;
+  key?: string;
 }
 
 interface TwoFAVerifyData {

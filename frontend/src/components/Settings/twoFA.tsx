@@ -2,6 +2,8 @@ import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { CopyIcon, ScanIcon } from "../Svg/Svg";
 
+import { twofaSetupController , twofaVerifyController } from "@/api/2fa";
+
 const StyledTwoFAModal = styled("div")`
   width: 500px;
   height: 700px;
@@ -54,7 +56,7 @@ const StyledTwoFAModal = styled("div")`
         background-color: rgba(255, 255, 255, 1);
         border: 1px solid rgba(255, 255, 255, 1);
         border-radius: 10px;
-        background-image: url("https://codigosdebarrasbrasil.com.br/wp-content/uploads/2019/09/codigo_qr-300x300.png");
+        background-image: url(${(props: any) => props.qrImgUrl});
         background-size: cover;
         background-position: center;
         position: relative;
@@ -172,6 +174,8 @@ const StyledTwoFAModal = styled("div")`
   }
 `;
 
+const twoFaSetup = await twofaSetupController();
+
 const TwoFAModal = (props: { onClose: () => void }) => {
   const modalRef = Zeroact.useRef<HTMLDivElement>(null);
   const [isScanned, setIsScanned] = useState(false);
@@ -200,8 +204,9 @@ const TwoFAModal = (props: { onClose: () => void }) => {
     // setIsScanned(true);
   };
 
+  console.log("twoFaSetup", twoFaSetup.data?.QRCode);
   return (
-    <StyledTwoFAModal ref={modalRef}>
+    <StyledTwoFAModal ref={modalRef} qrImgUrl={twoFaSetup.data?.QRCode}>
       <div className="QRCodeHeader">
         <ScanIcon fill="rgba(255, 255, 255, 0.8)" size={40} />
         <h2>Turn on Two-Factor Authentication</h2>
@@ -226,7 +231,7 @@ const TwoFAModal = (props: { onClose: () => void }) => {
                 type="text"
                 placeholder="Enter your 2FA code"
                 className="QRCodeInput"
-                value="LKJH-1234-5678"
+                value={twoFaSetup.data?.key || ""}
               />
               <div className="CopyIcon">
                 <CopyIcon fill="rgba(255, 255, 255, 0.8)" size={25} />
@@ -238,6 +243,7 @@ const TwoFAModal = (props: { onClose: () => void }) => {
           </div>
         )}
       </div>
+
     </StyledTwoFAModal>
   );
 };
