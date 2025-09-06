@@ -9,16 +9,19 @@ import { ApiResponse, errorHandler } from '../utils/errorHandler';
 
 
 
+
 export async function setupAuthenticatorHandler(req: FastifyRequest, res: FastifyReply) 
 {
 
   const respond : ApiResponse<{QRCode : string , key : string} > = {success : true  , message : TwoFA.TWO_FA_SETUP_SUCCESS}
   const serviceName = "ft_trandandan";
+  const headers = req.headers as any;
+  const id = Number(headers['x-user-id'])
 
   try 
   {
 
-    const user = await prisma.user.findUnique({where : {id : Number(req.id)}})
+    const user = await prisma.user.findUnique({where : {id}})
     if(!user)
       throw new Error(UserProfileMessage.USER_NOT_FOUND)
 
@@ -34,7 +37,7 @@ export async function setupAuthenticatorHandler(req: FastifyRequest, res: Fastif
     const key = otpauth.split('=')[1].split('&')[0]
     const QRcodeUrl  = await QRCode.toDataURL(otpauth);
 
-    await prisma.user.update({ where: { id: user.id }, data : { twoFASecret: secret , twoFAKey : key , twoFAQRCode : QRcodeUrl },});
+    await prisma.user.update({ where: { id }, data : { twoFASecret: secret , twoFAKey : key , twoFAQRCode : QRcodeUrl },});
     
     respond.data = {QRCode : QRcodeUrl! , key : key!}
   }
@@ -53,16 +56,17 @@ export async function setupAuthenticatorHandler(req: FastifyRequest, res: Fastif
 
 
 
-
 export async function statusAuthenticatorHandler(req: FastifyRequest, res: FastifyReply) 
 {
 
   const respond : ApiResponse<null > = {success : true  , message : TwoFA.TWO_FA_ENABLED}
+  const headers = req.headers as any;
+  const id = Number(headers['x-user-id'])
 
   try 
   {
 
-    const user = await prisma.user.findUnique({where : {id : Number(req.id)}})
+    const user = await prisma.user.findUnique({where : {id}})
     if(!user)
       throw new Error(UserProfileMessage.USER_NOT_FOUND)
 
@@ -190,5 +194,7 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 
   return res.send(respond);
 }
+
+
 
 

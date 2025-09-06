@@ -47,6 +47,7 @@ export default async function registerProxy(app: FastifyInstance)
   
   app.register(fastifyHttpProxy, await buildProxyOptions('user' , 4001 , '/api/user'));
   app.register(fastifyHttpProxy, await buildProxyOptions('auth' , 4444 , '/api/auth'));
+  app.register(fastifyHttpProxy, await buildProxyOptions('auth' , 4444 , '/api/2fa'));
   app.register(fastifyHttpProxy, await buildProxyOptions('user' , 4001 , '/api/friend'));
   app.register(fastifyHttpProxy, await buildProxyOptions('user' , 4001 , '/api/blocked'));
   app.register(fastifyHttpProxy, await buildProxyOptions('game' , 3000 , '/api/game'));
