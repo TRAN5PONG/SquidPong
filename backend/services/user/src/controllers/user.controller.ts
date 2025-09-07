@@ -48,42 +48,66 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
 }
 
 
+export async function updateProfileWithMultipart(body: any, userId: number) 
+{
 
+  const profile = await prisma.profile.findUnique({ where: { userId }});
+  if (!profile) throw new Error("Profile not found");
+
+  const mergedBody = { ...body };
+  const jsonArrayFields: (keyof typeof profile)[] = ["playerCharacters", "playerPaddles"];
+
+
+  for (const field of jsonArrayFields) 
+  {
+  if (body[field]) 
+    {
+    const currentArray: any = profile[field] as any[] || [];
+    const newArray = Array.isArray(body[field]) ? body[field] : [body[field]];
+    mergedBody[field] = [...new Set([...currentArray, ...newArray])];
+    }
+  }
+
+
+  const updatedProfile =  await prisma.profile.update({
+  where: { userId },
+  data: {
+    ...Object.fromEntries( Object.entries(mergedBody).filter(([key]) => key !== "preferences")),
+    ...(mergedBody.preferences && { preferences: { update: { data: mergedBody.preferences, }}}),
+  },
+  });
+    
+  return updatedProfile;
+
+}
 
 export async function updateProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
 
   const respond: ApiResponse<any> = { success: true, message: 'User updated successfully' };
 
-  console.log("hello world")
+  try 
+  {
+    const body = await convertParsedMultipartToJson(req);
+    const headers = req.headers as any;
+    const userId = Number(headers['x-user-id']);
+    respond.data = updateProfileWithMultipart(body , userId);
 
-  // try 
-  // {
-  //   const body = await convertParsedMultipartToJson(req);
-  //   const headers = req.headers as any;
-  //   const userId = Number(headers['x-user-id']);
+  }
 
-  //   const updatedProfile =  await prisma.profile.update({
-  //       where: { userId },
-  //       data: body,
-  //     });
-
-  //     respond.data = updatedProfile;
-
-  // }
-
-  // catch (error) 
-  // {
-  //   respond.success = false;
-  //   if (error instanceof Error) 
-  //     {
-  //     respond.message = error.message;
-  //     return res.status(400).send(respond);
-  //     }
-  // }
+  catch (error) 
+  {
+    respond.success = false;
+    if (error instanceof Error) 
+      {
+      respond.message = error.message;
+      return res.status(400).send(respond);
+      }
+  }
 
   return res.send(respond);
 }
+
 
 
 

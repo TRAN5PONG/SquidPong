@@ -33,7 +33,7 @@ export async function twofaSetupController(): Promise<ApiResponse<TwoFASetupData
 
 export async function twofaVerifyController(code: string): Promise<ApiResponse<TwoFAVerifyData>> 
 {
-  const response = await fetch(`${API_BASE_URL}/2fa/verify`, {
+  const response = await fetch(`${API_BASE_URL}/2fa/enable`, {
     method: "POST",
     credentials: "include",
     headers: {

@@ -208,7 +208,7 @@ const TwoFAModal = (props: { onClose: () => void }) => {
 
   console.log("twoFaSetup", twoFaSetup.data?.QRCode);
   return (
-    <StyledTwoFAModal ref={modalRef} qrImgUrl={twoFaSetup.data?.QRCode}>
+    <StyledTwoFAModal ref={modalRef}  qrImgUrl={twoFaSetup.data?.QRCode || ""}>
       <div className="QRCodeHeader">
         <ScanIcon fill="rgba(255, 255, 255, 0.8)" size={40} />
         <h2>Turn on Two-Factor Authentication</h2>
@@ -217,8 +217,8 @@ const TwoFAModal = (props: { onClose: () => void }) => {
       <div className="Main">
         {isScanned ? (
           <div className="VerificationCode">
-            <input placeholder="put your verification code" onChange={(e: any) => set2fa(e.target.value)} />
-            <button className="ProgBtn" onClick={ async() => { await twofaVerifyController(code) }}>
+            <input placeholder="put your verification code" onChange={(e: any) => set2fa(e.target.value)}   />
+             <button className="ProgBtn" onClick={ async() => { await twofaVerifyController(code); props.onClose(); } }>
               Verify
             </button>
           </div>

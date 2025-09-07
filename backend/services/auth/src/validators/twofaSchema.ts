@@ -62,10 +62,6 @@ export const twofaVerifySchema = {
   body: {
     type: 'object',
     properties: {
-      token: {
-        type: 'string',
-        description: 'Temporary login token'
-      },
       code: {
         type: 'string',
         pattern: '^[0-9]{6}$',

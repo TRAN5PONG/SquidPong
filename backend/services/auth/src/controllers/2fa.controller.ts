@@ -125,6 +125,7 @@ export async function verifyTwofaHandler(req: FastifyRequest, res: FastifyReply)
       }
   }
 
+  console.log("2fa code verified successfully for user ID:", id);
   await setJwtTokens(res , String(id));
   return res.send(respond);
 }
@@ -172,6 +173,7 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
   const headers = req.headers as any;
   const id = Number(headers['x-user-id'])
 
+  console.log("Enable 2fa Handler called with code:", code, "for user ID:", id);
   try 
   {
     const user = await prisma.user.findUnique({ where: { id } });
@@ -197,6 +199,7 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
       }
   }
 
+  console.log("2fa enabled successfully for user ID:", id);
   return res.send(respond);
 }
 
