@@ -1,12 +1,12 @@
 import { PaddleIcon } from "@/components/Svg/Svg";
 import Zeroact from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { RankDivision } from "@/types/game";
+import { MatchPlayer, RankDivision } from "@/types/game";
 import { User } from "@/types/user";
 import { getRankMetaData } from "@/utils/game";
 
 const StyledScoreBoard = styled("div")`
-  width: 800px;
+  width: 80%;
   height: 50px;
   display: flex;
   align-items: center;
@@ -112,14 +112,18 @@ const StyledScoreBoard = styled("div")`
 `;
 
 interface ScoreBoardProps {
-  oponent1: User;
-  oponent2: User;
+  oponent1: MatchPlayer | null;
+  oponent2: MatchPlayer | null;
 }
 const ScoreBoard = (props: ScoreBoardProps) => {
+  console.log("props", props);
+  const hostPlayer = props.oponent1?.isHost ? props.oponent1 : props.oponent2;
+  const guestPlayer = !props.oponent1?.isHost ? props.oponent1 : props.oponent2;
+
   return (
     <StyledScoreBoard>
       <OponentCard
-        OponentAvatar={props.oponent1.avatar}
+        OponentAvatar={hostPlayer?.avatarUrl || "/assets/avatar.jpg"}
         className="OponentCard"
       >
         <div className="OponentScore">
@@ -127,7 +131,10 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         </div>
         <div className="OponentCardAvatar" />
         <div className="OponentCardInfo">
-          <h1 className="OponentCardUsername">{props.oponent1.username}</h1>
+          <h1 className="OponentCardUsername">
+            {hostPlayer?.username || "Player1"}
+            {hostPlayer?.isConnected ? "" : " (disconnected)"}
+          </h1>
         </div>
       </OponentCard>
 
@@ -142,7 +149,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       </div>
 
       <OponentCard
-        OponentAvatar={props.oponent2.avatar}
+        OponentAvatar={guestPlayer?.avatarUrl || "/assets/avatar.jpg"}
         className="OponentCard"
         isRightSide={true}
       >
@@ -151,7 +158,10 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         </div>
         <div className="OponentCardAvatar" />
         <div className="OponentCardInfo">
-          <h1 className="OponentCardUsername">{props.oponent2.username}</h1>
+          <h1 className="OponentCardUsername">
+            {guestPlayer?.username || "Player2"}
+            {guestPlayer?.isConnected ? "" : " (disconnected)"}
+          </h1>
           <PaddleIcon size={20} fill="white" />
         </div>
       </OponentCard>

@@ -26,6 +26,7 @@ export interface MatchPlayer {
   isHost: boolean; // Whether the player is the host of the match
   isResigned: boolean; // Whether the player has resigned from the match
   isWinner: boolean; // Whether the player won the match
+  isConnected: boolean;
 
   characterId: string; // ID of the character selected by the player
   paddleId: string;
