@@ -39,7 +39,6 @@ export function usePaddle(scene: Scene, side: PaddleSide = 1) {
         group = new TransformNode("PaddleGroup", scene);
 
         container.meshes.forEach((m) => {
-          console.log("Loaded mesh:", m.name);
           if (m.name !== "__root__") {
             m.parent = group!;
             if (m.name === "Paddle_primitive0") setMainMesh(m as AbstractMesh);
@@ -67,7 +66,6 @@ export function usePaddle(scene: Scene, side: PaddleSide = 1) {
 
   function posInit(): void {
     if (!meshGroup) return;
-    console.log("Setting up initial paddle position");
     const zPos = side === -1 ? -2.8 : 2.8;
     meshGroup.position.set(0, 1.8, zPos);
 

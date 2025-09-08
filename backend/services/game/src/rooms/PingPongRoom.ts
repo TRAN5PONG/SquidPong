@@ -1,23 +1,33 @@
 import { Room, Client, AuthContext } from "colyseus";
 import { Schema, type, MapSchema } from "@colyseus/schema";
+import { prisma } from "../lib/prisma";
 import jwt from "jsonwebtoken";
 
-// ====================
-// room state
-// ====================
+// Game State
 class Player extends Schema {
   @type("string") id!: string;
   @type("string") username!: string;
+  @type("string") avatarUrl!: string;
   @type("boolean") isReady = false;
+  @type("boolean") isHost = false;
+  @type("boolean") isWinner = false;
+  @type("boolean") isResigned = false;
+  @type("boolean") isConnected = true;
+
+  // Player metadata
+  @type("string") characterId!: string;
+  @type("string") paddleId!: string;
+  @type("string") rankDivision!: string;
+  @type("string") rankTier!: string;
+
+  // Game-specific properties
   @type("number") x = 0;
   @type("number") y = 0;
 }
-
 class Spectator extends Schema {
   @type("string") id!: string;
   @type("string") username!: string;
 }
-
 class MatchState extends Schema {
   @type({ map: Player }) players = new MapSchema<Player>();
   @type({ map: Spectator }) spectators = new MapSchema<Spectator>();
@@ -31,12 +41,19 @@ class MatchState extends Schema {
   @type("string") winnerId: string | null = null;
 }
 
+// Game Room
+interface MatchRoomOptions {
+  matchId: string;
+  players: string[]; // userIds of players
+  spectators: string[]; // userIds of spectators
+}
 export class MatchRoom extends Room<MatchState> {
   maxClients = 10; // 2 players + 8 spectators
   private countdownInterval?: NodeJS.Timeout;
 
-  onCreate(options: any) {
+  onCreate(options: MatchRoomOptions) {
     console.log("new Room created!", this.roomId);
+
     this.state = new MatchState();
     this.setMetadata({
       matchId: options.matchId,
@@ -46,15 +63,21 @@ export class MatchRoom extends Room<MatchState> {
 
     // Player messages
     this.onMessage("player:ready", (client, message) => {
-      const player = this.state.players.get(client.sessionId);
-
-      if (player) {
-        player.isReady = message.isReady;
-        console.log(`Player ${player.id} isReady: ${player.isReady}`);
-      }
-
-      if (this.allPlayersReady() && this.state.phase === "waiting") {
-        this.startCountdown();
+      // const player = this.state.players.get(client.sessionId);
+      // if (player) {
+      //   player.isReady = message.isReady;
+      //   console.log(`Player ${player.id} isReady: ${player.isReady}`);
+      // }
+      // if (this.allPlayersReady() && this.state.phase === "waiting") {
+      //   this.startCountdown();
+      // }
+    });
+    // on pause request
+    this.onMessage("game:pause", (client) => {
+      if (this.state.phase === "playing") {
+        this.state.phase = "paused";
+        console.log("Game paused");
+        this.broadcast("game:paused");
       }
     });
   }
@@ -62,8 +85,6 @@ export class MatchRoom extends Room<MatchState> {
   onAuth(client: Client, options: any) {
     const _client = client as any;
     const { players, spectators } = this.metadata;
-
-    console.log(players, options.userId);
 
     if (players.includes(options.userId)) {
       _client.meta = { role: "player", userId: options.userId };
@@ -78,15 +99,41 @@ export class MatchRoom extends Room<MatchState> {
     return false; // deny access
   }
 
-  onJoin(client: Client, options: any) {
+  onJoin = async (client: Client, options: any) => {
     const _client = client as any;
 
     if (_client.meta.role === "player") {
-      const player = new Player();
-      player.id = _client.sessionId;
-      player.username = options.username || "unknown";
-      this.state.players.set(client.sessionId, player);
-      console.log(`Player ${player.id} joined room ${this.roomId}`);
+      const matchPlayer = await prisma.matchPlayer.findFirst({
+        where: {
+          userId: options.userId,
+        },
+      });
+      if (!matchPlayer) {
+        console.error(`No match player found for userId ${options.userId}`);
+        client.leave();
+        return;
+      }
+
+      let player = this.state.players.get(matchPlayer.userId!);
+      if (!player) {
+        const player = new Player();
+        player.id = matchPlayer.id;
+        player.username = matchPlayer.username;
+        player.avatarUrl = matchPlayer.avatarUrl || "";
+        player.isHost = matchPlayer.isHost;
+        player.isResigned = matchPlayer.isResigned;
+        player.isWinner = matchPlayer.isWinner;
+        player.characterId = matchPlayer.characterId;
+        player.paddleId = matchPlayer.paddleId;
+        player.rankDivision = matchPlayer.rankDivision;
+        player.rankTier = matchPlayer.rankTier;
+
+        this.state.players.set(matchPlayer.userId!, player);
+        console.log(`Player ${player.id} joined room ${this.roomId}`);
+      } else {
+        player.isConnected = true;
+        console.log(`Player ${player.id} re-joined room ${this.roomId}`);
+      }
     } else {
       const spectator = new Spectator();
       spectator.id = _client.sessionId;
@@ -94,16 +141,14 @@ export class MatchRoom extends Room<MatchState> {
       this.state.spectators.set(client.sessionId, spectator);
       console.log(`Spectator ${spectator.id} joined room ${this.roomId}`);
     }
-  }
+  };
 
   onLeave(client: Client, consented: boolean) {
-    this.state.players.delete(client.sessionId);
-    this.state.spectators.delete(client.sessionId);
-
-    console.log(`Player ${client.sessionId} left room ${this.roomId}`);
-
-    if (this.state.phase === "countdown" || this.state.phase === "waiting")
-      this.resetGame();
+    const _client = client as any;
+    const player = this.state.players.get(_client.meta.userId);
+    if (player) {
+      player.isConnected = false;
+    }
   }
 
   onDispose() {

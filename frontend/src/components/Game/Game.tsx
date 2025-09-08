@@ -9,7 +9,7 @@ import { useSound } from "@/hooks/useSound";
 import { LoaderSpinner } from "../Loader/Loader";
 import { GiveUpIcon, PauseIcon } from "../Svg/Svg";
 import { MatchResultOverlay } from "./Elements/MatchResultOverlay";
-import { GamePowerUps, Match } from "@/types/game";
+import { GamePowerUps, Match, MatchPlayer } from "@/types/game";
 
 import { Client, Room } from "colyseus.js";
 import { useSounds } from "@/contexts/SoundProvider";
@@ -100,19 +100,12 @@ const StyledGame = styled("div")`
   }
 `;
 
-interface Player {
-  id: string;
-  username: string;
-  isReady: boolean;
-  x: number;
-  y: number;
-}
 interface Spectator {
   id: string;
   username: string;
 }
 interface MatchState {
-  players: Map<string, Player>;
+  players: Map<string, MatchPlayer>;
   spectators: Map<string, Spectator>;
   phase: "waiting" | "countdown" | "playing" | "paused" | "ended";
   countdown: number;
@@ -124,27 +117,23 @@ const Game = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { camera, arena } = useGameScene(canvasRef);
 
-  // Context
+  //   // Context
   const { ambianceSound } = useSounds();
   const { user } = useAppContext();
 
-  // GetMacth
+  //   // GetMacth
   const matchId = useRouteParam("/game/:id", "id");
   const [match, setMatch] = useState<Match | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [room, setRoom] = useState<Room<MatchState> | null>(null);
 
-  // Game States
+  //   // Game States
   const [matchPhase, setMatchPhase] = useState<
     "waiting" | "countdown" | "playing" | "paused" | "ended"
   >("waiting");
   const [countdownValue, setCountdownValue] = useState<number | null>(null);
-  const [players, setPlayers] = useState<Map<string, Player>>(new Map());
+  const [players, setPlayers] = useState<Map<string, MatchPlayer>>(new Map());
   const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-console.log(arena);
-  }, [arena])
 
   useEffect(() => {
     if (matchId) {
@@ -161,7 +150,7 @@ console.log(arena);
           }
         };
         getMatch();
-      }, 2000);
+      }, 500);
     }
   }, [matchId]);
 
@@ -173,18 +162,11 @@ console.log(arena);
       let room;
 
       try {
-        console.log(match);
         room = (await client.joinById(match.roomId, {
           userId: user?.id,
         })) as Room<MatchState>;
 
         setRoom(room);
-        console.log("✅ Joined room:", room);
-
-        // Room event listeners
-        // room.onStateChange((state) => {
-        //   console.log("Room state changed:", state);
-        // });
       } catch (err) {
         console.error("❌ Failed to join room:", err);
       }
@@ -204,11 +186,8 @@ console.log(arena);
     room.onStateChange((state) => {
       // track opponent's ready status
       if (state.players) {
+        console.log("Players in room:", state.players);
         setPlayers(new Map(state.players));
-        const opponent = Array.from(state.players.values()).find(
-          (p) => p.id !== room.sessionId
-        );
-        if (opponent) console.log("Opponent ready status:", opponent.isReady);
       }
 
       // console.log("Room state changed:", state);
@@ -218,9 +197,16 @@ console.log(arena);
       if (state.phase === "countdown") setCountdownValue(state.countdown);
       else setCountdownValue(null);
     });
+
+    room.onMessage("game:paused", () => {
+      onPause();
+      console.log("Game paused by opponent");
+    });
   }, [room]);
 
   const onPause = () => {
+    // broadcast to room
+    room?.send("game:pause");
     ambianceSound.play();
     camera.cameraRotate();
   };
@@ -228,11 +214,16 @@ console.log(arena);
   const onGameStart = () => {};
 
   if (notFound) return <NotFound />;
-  if (!match) return <LoaderSpinner />;
+  // if (!match) return <LoaderSpinner />;
 
   return (
     <StyledGame>
-      {/* <ScoreBoard oponent1={db.users[0]} oponent2={db.users[1]} /> */}
+      <canvas ref={canvasRef} className="game-canvas"></canvas>
+
+      <ScoreBoard
+        oponent1={Array.from(players.values())[0]}
+        oponent2={Array.from(players.values())[1]}
+      />
 
       <button
         onClick={() => room?.send("player:ready", { isReady: true })}
@@ -243,8 +234,8 @@ console.log(arena);
       <h1
         style={{
           position: "absolute",
-          top: 60,
-          left: 20,
+          top: "160px",
+          left: 60,
           zIndex: 10,
           color: "white",
         }}
@@ -271,12 +262,10 @@ console.log(arena);
         </div>
       </div>
 
-      <canvas ref={canvasRef} className="game-canvas"></canvas>
-
-
+      {/* 
       {matchPhase === "countdown" && countdownValue && (
         <CountDown value={countdownValue} onComplete={onGameStart} />
-      )}
+      )} */}
       {/* {userGameRes && (
         <MatchResultOverlay isWinner={false} opponentName={"Opponent"} />
       )} */}
