@@ -2,10 +2,7 @@ import { DisconnectedIcon, PaddleIcon, PauseIcon } from "@/components/Svg/Svg";
 import { useSounds } from "@/contexts/SoundProvider";
 import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { MatchPlayer, RankDivision } from "@/types/game";
-import { User } from "@/types/user";
-import { getRankMetaData } from "@/utils/game";
-import { ArcRotateCamera } from "@babylonjs/core";
+import { MatchPlayer } from "@/types/game";
 
 const StyledScoreBoard = styled("div")`
   width: 80%;
@@ -144,6 +141,8 @@ const ScoreBoard = (props: ScoreBoardProps) => {
 
     // Handle pause sound — only play once when pause starts
     if (props.isPaused && !lastPausedRef.current) {
+      if (ambianceSound.isMuffled)
+        ambianceSound.setMuffled(false)
       ambianceSound.play();
       props.cameraRotate();
       lastPausedRef.current = true;

@@ -226,7 +226,8 @@ const Game = () => {
 
   const onPause = () => {
     // broadcast to room
-    room?.send("game:pause");
+    // room?.send("game:pause");
+    camera.cameraRotate();
   };
   const onGiveUp = () => {};
   const onGameStart = () => {};
@@ -236,8 +237,7 @@ const Game = () => {
 
   return (
     <StyledGame>
-      <canvas ref={canvasRef} className="game-canvas"></canvas>
-
+      <button onClick={() => camera.resetCamera()}>RESET</button>
       <ScoreBoard
         oponent1={Array.from(players.values())[0] || null}
         oponent2={Array.from(players.values())[1] || null}
@@ -294,6 +294,8 @@ const Game = () => {
       {/* {userGameRes && (
         <MatchResultOverlay isWinner={false} opponentName={"Opponent"} />
       )} */}
+
+      <canvas ref={canvasRef} className="game-canvas"></canvas>
     </StyledGame>
   );
 };
