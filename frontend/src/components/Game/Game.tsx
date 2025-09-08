@@ -110,28 +110,31 @@ interface MatchState {
   phase: "waiting" | "countdown" | "playing" | "paused" | "ended";
   countdown: number;
   winnerId: string | null;
+  pauseBy: string | null;
 }
 
 const Game = () => {
   // Game Scene
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { camera, arena } = useGameScene(canvasRef);
+  const { camera } = useGameScene(canvasRef);
 
-  //   // Context
+  // Context
   const { ambianceSound } = useSounds();
-  const { user } = useAppContext();
+  const { user, toasts } = useAppContext();
 
-  //   // GetMacth
+  // GetMacth
   const matchId = useRouteParam("/game/:id", "id");
   const [match, setMatch] = useState<Match | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [room, setRoom] = useState<Room<MatchState> | null>(null);
 
-  //   // Game States
+  // Game States
   const [matchPhase, setMatchPhase] = useState<
     "waiting" | "countdown" | "playing" | "paused" | "ended"
   >("waiting");
   const [countdownValue, setCountdownValue] = useState<number | null>(null);
+  const [pauseCountdown, setPauseCountdown] = useState<number | null>(null);
+
   const [players, setPlayers] = useState<Map<string, MatchPlayer>>(new Map());
   const [isReady, setIsReady] = useState(false);
 
@@ -198,17 +201,32 @@ const Game = () => {
       else setCountdownValue(null);
     });
 
-    room.onMessage("game:paused", () => {
-      onPause();
-      console.log("Game paused by opponent");
+    room.onMessage("game:paused", (message) => {
+      setPauseCountdown(message.remainingPauseTime || null);
+    });
+    room.onMessage("game:resumed", (message) => {
+      console.log("Game resumed by opponent", message);
+    });
+    room.onMessage("game:pause-tick", (message) => {
+      setPauseCountdown(message.remainingPauseTime || null);
+    });
+    room.onMessage("game:resume-denied", (message) => {
+      toasts.addToastToQueue({
+        type: "error",
+        message: `Resume denied: ${message.reason}`,
+      });
+    });
+    room.onMessage("game:pause-denied", (message) => {
+      toasts.addToastToQueue({
+        type: "error",
+        message: `Pause denied: ${message.reason}`,
+      });
     });
   }, [room]);
 
   const onPause = () => {
     // broadcast to room
     room?.send("game:pause");
-    ambianceSound.play();
-    camera.cameraRotate();
   };
   const onGiveUp = () => {};
   const onGameStart = () => {};
@@ -221,8 +239,15 @@ const Game = () => {
       <canvas ref={canvasRef} className="game-canvas"></canvas>
 
       <ScoreBoard
-        oponent1={Array.from(players.values())[0]}
-        oponent2={Array.from(players.values())[1]}
+        oponent1={Array.from(players.values())[0] || null}
+        oponent2={Array.from(players.values())[1] || null}
+        isPaused={matchPhase === "paused"}
+        isCountingDown={matchPhase === "countdown"}
+        countdown={countdownValue || 0}
+        pauseCountdown={pauseCountdown || 0}
+        pauseBy={room?.state.pauseBy || null}
+        cameraRotate={camera.cameraRotate}
+        resetCamera={camera.resetCamera}
       />
 
       <button

@@ -5,7 +5,6 @@ import { Match, MatchPlayer, Prisma } from "../generated/prisma";
 import { User } from "../types/users";
 import { sendDataToQueue } from "../integration/rabbitmqClient";
 import { matchMaker } from "colyseus";
-import { spec } from "node:test/reporters";
 
 export async function createMatch(
   request: FastifyRequest,

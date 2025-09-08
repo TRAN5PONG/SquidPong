@@ -14,6 +14,8 @@ export type AppSounds = {
   readySound: SoundValue;
   popupSound: SoundValue;
   notificationSound: SoundValue;
+  countDownSound: SoundValue;
+  countDownEndSound: SoundValue;
 };
 
 const SoundContext = createContext<AppSounds | null>(null);
@@ -31,6 +33,8 @@ export function SoundProvider({ children }: { children: ZeroactNode[] }) {
   const readySound = useSound("/sounds/ready.mp3");
   const popupSound = useSound("/sounds/popup.mp3");
   const notificationSound = useSound("/sounds/update.mp3");
+  const countDownSound = useSound("/sounds/countdown.mp3");
+  const countDownEndSound = useSound("/sounds/countdown_done.mp3");
 
   const sounds: AppSounds = {
     ambianceSound,
@@ -44,6 +48,8 @@ export function SoundProvider({ children }: { children: ZeroactNode[] }) {
     readySound,
     popupSound,
     notificationSound,
+    countDownSound,
+    countDownEndSound,
   };
 
   return {
