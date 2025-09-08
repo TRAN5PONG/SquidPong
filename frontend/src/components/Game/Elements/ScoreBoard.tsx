@@ -1,9 +1,11 @@
-import { PaddleIcon } from "@/components/Svg/Svg";
-import Zeroact from "@/lib/Zeroact";
+import { DisconnectedIcon, PaddleIcon, PauseIcon } from "@/components/Svg/Svg";
+import { useSounds } from "@/contexts/SoundProvider";
+import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { MatchPlayer, RankDivision } from "@/types/game";
 import { User } from "@/types/user";
 import { getRankMetaData } from "@/utils/game";
+import { ArcRotateCamera } from "@babylonjs/core";
 
 const StyledScoreBoard = styled("div")`
   width: 80%;
@@ -114,11 +116,71 @@ const StyledScoreBoard = styled("div")`
 interface ScoreBoardProps {
   oponent1: MatchPlayer | null;
   oponent2: MatchPlayer | null;
+  isPaused: boolean;
+  isCountingDown: boolean;
+  countdown: number;
+  pauseCountdown: number;
+  pauseBy: string | null;
+  cameraRotate: () => void;
+  resetCamera: () => void;
 }
 const ScoreBoard = (props: ScoreBoardProps) => {
-  console.log("props", props);
   const hostPlayer = props.oponent1?.isHost ? props.oponent1 : props.oponent2;
   const guestPlayer = !props.oponent1?.isHost ? props.oponent1 : props.oponent2;
+
+  // Sounds
+  const { countDownSound, countDownEndSound, ambianceSound } = useSounds();
+
+  useEffect(() => {
+    const activeCountdown = props.isPaused
+      ? props.pauseCountdown
+      : props.isCountingDown
+      ? props.countdown
+      : null;
+
+    // We use refs to track last played value
+    const lastPlayedRef = useRef<number | null>(null);
+    const lastPausedRef = useRef<boolean>(false);
+
+    // Handle pause sound — only play once when pause starts
+    if (props.isPaused && !lastPausedRef.current) {
+      ambianceSound.play();
+      props.cameraRotate();
+      lastPausedRef.current = true;
+    } else if (!props.isPaused) {
+      ambianceSound.stop();
+      lastPausedRef.current = false;
+    }
+
+    if (activeCountdown === 5 && props.isPaused) {
+      ambianceSound.setMuffled(true);
+      props.resetCamera();
+    }
+
+    // If no countdown, reset tracking and exit
+    if (activeCountdown === null || activeCountdown === undefined) {
+      lastPlayedRef.current = null;
+      return;
+    }
+
+    // If countdown value hasn't changed, don't replay sounds
+    if (lastPlayedRef.current === activeCountdown) return;
+
+    // Play sounds based on countdown range
+    if (activeCountdown > 1 && activeCountdown <= 4) {
+      countDownSound.play();
+    } else if (activeCountdown === 1) {
+      countDownEndSound.play();
+    }
+
+    // Save last played value
+    lastPlayedRef.current = activeCountdown;
+  }, [
+    props.countdown,
+    props.pauseCountdown,
+    props.isPaused,
+    props.isCountingDown,
+  ]);
 
   return (
     <StyledScoreBoard>
@@ -133,18 +195,35 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
             {hostPlayer?.username || "Player1"}
-            {hostPlayer?.isConnected ? "" : " (disconnected)"}
+            {!hostPlayer?.isConnected && hostPlayer && (
+              <DisconnectedIcon fill="var(--red_color)" size={20} />
+            )}
+            {hostPlayer?.id === props.pauseBy && props.isPaused && (
+              <PauseIcon fill="var(--yellow_color)" size={20} />
+            )}
           </h1>
         </div>
       </OponentCard>
 
       <div className="CenterContent">
         <div className="Timer">
-          <span>00:15</span>
+          <span>
+            {props.isPaused
+              ? props.pauseCountdown
+              : props.isCountingDown
+              ? props.countdown
+              : "12:32"}
+          </span>
         </div>
 
         <div className="RoundNumber">
-          <span>Round 4</span>
+          <span>
+            {props.isCountingDown
+              ? "Get Ready!"
+              : props.isPaused
+              ? "Paused"
+              : "Round 1"}
+          </span>
         </div>
       </div>
 
@@ -160,7 +239,12 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
             {guestPlayer?.username || "Player2"}
-            {guestPlayer?.isConnected ? "" : " (disconnected)"}
+            {!guestPlayer?.isConnected && guestPlayer && (
+              <DisconnectedIcon fill="var(--red_color)" size={20} />
+            )}
+            {guestPlayer?.id === props.pauseBy && props.isPaused && (
+              <PauseIcon fill="var(--yellow_color)" size={20} />
+            )}
           </h1>
           <PaddleIcon size={20} fill="white" />
         </div>
@@ -202,6 +286,17 @@ const OponentCard = styled("div")`
       font-weight: 100;
       font-size: 1.3rem;
       color: #ffffff;
+      display: flex;
+      background: ${(props: any) =>
+        props.isRightSide
+          ? "linear-gradient(90deg, #e0bd2f, rgba(255, 217, 68, 0))"
+          : "linear-gradient(90deg, rgba(255, 217, 68, 0), #e0bd2f)"};
+      flex-direction: ${(props: any) =>
+        props.isRightSide ? "row" : "row-reverse"};
+      align-items: center;
+      padding: 0px 5px;
+      gap: 5px;
+      justify-content: center;
     }
   }
   .OponentScore {

@@ -115,18 +115,50 @@ export function useSound(
     };
   }, []);
 
-  const stop = useCallback(() => {
+  const stop = useCallback((fadeDuration = 3) => {
+    const context = audioContextRef.current;
+    const gainNode = gainNodeRef.current;
     const source = sourceRef.current;
-    if (source) {
-      try {
-        source.stop();
-        source.disconnect();
-      } catch (e) {
-        console.warn("Failed to stop source", e);
-      }
-      sourceRef.current = null;
+
+    if (!context || !gainNode || !source) {
+      setIsPlaying(false);
+      return;
     }
-    setIsPlaying(false);
+
+    try {
+      // Smooth fade out instead of abrupt stop
+      const currentTime = context.currentTime;
+      const currentGain = gainNode.gain.value;
+
+      // Cancel any scheduled automation first
+      gainNode.gain.cancelScheduledValues(currentTime);
+
+      // Start from current volume
+      gainNode.gain.setValueAtTime(currentGain, currentTime);
+
+      // Fade down to 0 over fadeDuration
+      gainNode.gain.linearRampToValueAtTime(0, currentTime + fadeDuration);
+
+      // Stop the sound after fade is complete
+      source.stop(currentTime + fadeDuration);
+
+      // Cleanup when fade ends
+      setTimeout(() => {
+        try {
+          source.disconnect();
+        } catch {}
+        if (sourceRef.current === source) {
+          sourceRef.current = null;
+        }
+        setIsPlaying(false);
+      }, fadeDuration * 1000);
+    } catch (e) {
+      console.warn("Failed to fade stop", e);
+      source.stop();
+      source.disconnect();
+      sourceRef.current = null;
+      setIsPlaying(false);
+    }
   }, []);
 
   const pause = useCallback(() => {
