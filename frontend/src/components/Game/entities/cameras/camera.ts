@@ -6,7 +6,6 @@ import gsap from "gsap";
 import { TransformNode } from "@babylonjs/core";
 import "@babylonjs/inspector";
 
-
 export type CameraModeName =
   | "pov Left" // Player's left-side view (first-person/close third-person)
   | "pov Right" // Player's right-side view
@@ -106,21 +105,21 @@ export function useCamera(
   function cameraRotate() {
     if (!cameraRef.current) return;
 
-    // Stop previous rotation if it exists
-    if (rotationTweenRef.current) {
-      rotationTweenRef.current.kill();
-    }
-
-    // Create pivot if not created yet
+    // Create pivot only once
     if (!pivotRef.current) {
       pivotRef.current = new TransformNode("cameraPivot", scene);
       cameraRef.current.parent = pivotRef.current;
     }
 
-    // Start infinite rotation
+    // Don't recreate tween if it's already running
+    if (rotationTweenRef.current && rotationTweenRef.current.isActive()) return;
+
+    // Use a fixed x tilt without accumulation
+    pivotRef.current.rotation.x = -Math.PI * 0.05;
+
+    // Infinite smooth rotation
     rotationTweenRef.current = gsap.to(pivotRef.current.rotation, {
       y: "+=" + Math.PI * 2,
-      x: "-=" + Math.PI * 0.05,
       duration: 45,
       ease: "linear",
       repeat: -1,
@@ -190,16 +189,16 @@ export function useCamera(
   };
 }
 
-const cameraData = {
-  /*
-CORNER BOTTOM VIEW===============================
-camera.ts:69 Camera Position: _Vector3 {_isDirty: true, _x: 8.591748965754892, _y: 2.0550811574121353, _z: -12.086692062518228}
-camera.ts:70 Camera Target: _Vector3 {_isDirty: true, _x: -0.27621617388027525, _y: -0.0031542773750111433, _z: -2.8291907051037772, _gsap: GSCache2}
-camera.ts:71 Camera Alpha: -0.8068859558963444
-camera.ts:72 Camera Beta: 1.4116011358873708
-camera.ts:73 Camera Radius: 12.983777193302743
-  */
-};
+// const cameraData = {
+//   /*
+// CORNER BOTTOM VIEW===============================
+// camera.ts:69 Camera Position: _Vector3 {_isDirty: true, _x: 8.591748965754892, _y: 2.0550811574121353, _z: -12.086692062518228}
+// camera.ts:70 Camera Target: _Vector3 {_isDirty: true, _x: -0.27621617388027525, _y: -0.0031542773750111433, _z: -2.8291907051037772, _gsap: GSCache2}
+// camera.ts:71 Camera Alpha: -0.8068859558963444
+// camera.ts:72 Camera Beta: 1.4116011358873708
+// camera.ts:73 Camera Radius: 12.983777193302743
+//   */
+// };
 
 // Camera Position: _Vector3 {_isDirty: true, _x: -0.015908417758693286, _y: 3.268071271524756, _z: 7.8094679851265045}
 // camera.ts:70 Camera Target: _Vector3 {_isDirty: true, _x: -0.015908417758693765, _y: 1.4941493654251101, _z: 0.008621808521058327, _gsap: GSCache2}
