@@ -4,7 +4,6 @@ import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { MatchPlayer } from "@/types/game";
 import { SocketPlayer } from "../Game";
-import { useAppContext } from "@/contexts/AppProviders";
 
 const StyledScoreBoard = styled("div")`
   width: 80%;
@@ -192,7 +191,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         <div className="OponentCardAvatar" />
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
-            {props.host?.username || "Player1"}
+            {props.host?.username || "Player 1"}
             {!props.host?.isConnected && props.host && (
               <DisconnectedIcon fill="var(--red_color)" size={20} />
             )}
@@ -206,9 +205,9 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       <div className="CenterContent">
         <div className="Timer">
           <span>
-            {props.isPaused
+            {props.isPaused && props.pauseCountdown > 0
               ? props.pauseCountdown
-              : props.isCountingDown
+              : props.isCountingDown && props.countdown > 0
               ? props.countdown
               : "12:32"}
           </span>
@@ -236,7 +235,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         <div className="OponentCardAvatar" />
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
-            {props.guest?.username || "Player2"}
+            {props.guest?.username || "Player 2"}
             {!props.guest?.isConnected && props.guest && (
               <DisconnectedIcon fill="var(--red_color)" size={20} />
             )}

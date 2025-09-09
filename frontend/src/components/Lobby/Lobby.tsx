@@ -16,12 +16,22 @@ import { useSounds } from "@/contexts/SoundProvider";
 const StyledLobby = styled("div")`
   width: 100%;
   height: 100%;
-  backgroundsound-size: cover;
-  background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 20px;
+  position: relative;
+
+  /* &:after {
+    width: 100%;
+    height: 100%;
+    content: "";
+    position: absolute;
+    background-image: url("https://i.pinimg.com/1200x/a0/b3/1d/a0b31ddb11ebf9854faf8201c393a5f6.jpg");
+    background-size: cover;
+    background-position: center;
+    mix-blend-mode: lighten;
+  } */
 
   .LobbyPlayer {
     flex: 1;
