@@ -104,8 +104,14 @@ interface Spectator {
   id: string;
   username: string;
 }
+export interface SocketPlayer {
+  id: string; // MatchPlayer.id
+  isConnected: boolean;
+  pauseRequests: number;
+  remainingPauseTime: number;
+}
 interface MatchState {
-  players: Map<string, MatchPlayer>;
+  players: Map<string, SocketPlayer>;
   spectators: Map<string, Spectator>;
   phase: "waiting" | "countdown" | "playing" | "paused" | "ended";
   countdown: number;
@@ -116,7 +122,8 @@ interface MatchState {
 const Game = () => {
   // Game Scene
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { camera } = useGameScene(canvasRef);
+  const { camera, cinematicCamera, resetGamePlayCamera } =
+    useGameScene(canvasRef);
 
   // Context
   const { ambianceSound } = useSounds();
@@ -135,8 +142,14 @@ const Game = () => {
   const [countdownValue, setCountdownValue] = useState<number | null>(null);
   const [pauseCountdown, setPauseCountdown] = useState<number | null>(null);
 
-  const [players, setPlayers] = useState<Map<string, MatchPlayer>>(new Map());
-  const [isReady, setIsReady] = useState(false);
+
+  // Players setup
+  const hostId = match?.opponent1.isHost ? match.opponent1.id : match?.opponent2.id;
+  const guestId = match?.opponent1.isHost ? match.opponent2.id : match?.opponent1.id;
+  const [socketPlayers, setSocketPlayers] = useState<SocketPlayer[]>([]);
+  const [players, setPlayers] = useState<
+    Record<string, MatchPlayer & SocketPlayer>
+  >({});
 
   useEffect(() => {
     if (matchId) {
@@ -184,17 +197,27 @@ const Game = () => {
   }, [match, user?.id]);
 
   useEffect(() => {
-    if (!room) return;
+    if (!room || !match) return;
+
+    const matchPlayers = {
+      [match.opponent1.id]: match.opponent1,
+      [match.opponent2.id]: match.opponent2,
+    };
 
     room.onStateChange((state) => {
-      // track opponent's ready status
-      if (state.players) {
-        console.log("Players in room:", state.players);
-        setPlayers(new Map(state.players));
-      }
-
       // console.log("Room state changed:", state);
       setMatchPhase(state.phase);
+
+      // Update players
+      const updated = {} as Record<string, MatchPlayer & SocketPlayer>;
+      for (const [id, live] of state.players.entries()) {
+        updated[id] = {
+          ...matchPlayers[id], // static info
+          ...live, // live state
+        };
+      }
+      setPlayers(updated);
+      setSocketPlayers(Array.from(state.players.values()));
 
       // Set countdown value
       if (state.phase === "countdown") setCountdownValue(state.countdown);
@@ -222,12 +245,10 @@ const Game = () => {
         message: `Pause denied: ${message.reason}`,
       });
     });
-  }, [room]);
+  }, [room, match]);
 
   const onPause = () => {
-    // broadcast to room
-    // room?.send("game:pause");
-    camera.cameraRotate();
+    room?.send("game:pause");
   };
   const onGiveUp = () => {};
   const onGameStart = () => {};
@@ -237,17 +258,16 @@ const Game = () => {
 
   return (
     <StyledGame>
-      <button onClick={() => camera.resetCamera()}>RESET</button>
       <ScoreBoard
-        oponent1={Array.from(players.values())[0] || null}
-        oponent2={Array.from(players.values())[1] || null}
+        host={hostId ? players[hostId] : null}
+        guest={guestId ? players[guestId] : null}
         isPaused={matchPhase === "paused"}
         isCountingDown={matchPhase === "countdown"}
         countdown={countdownValue || 0}
         pauseCountdown={pauseCountdown || 0}
         pauseBy={room?.state.pauseBy || null}
-        cameraRotate={camera.cameraRotate}
-        resetCamera={camera.resetCamera}
+        startCinematicCamera={cinematicCamera.playCinematic}
+        resetCamera={resetGamePlayCamera}
       />
 
       <button

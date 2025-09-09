@@ -5,22 +5,8 @@ import { prisma } from "../lib/prisma";
 // --- Game State ---
 class Player extends Schema {
   @type("string") id!: string; // MatchPlayer.id
-  @type("string") username!: string;
-  @type("string") avatarUrl!: string;
   @type("boolean") isReady = false;
-  @type("boolean") isHost = false;
-  @type("boolean") isWinner = false;
-  @type("boolean") isResigned = false;
   @type("boolean") isConnected = true;
-
-  @type("string") characterId!: string;
-  @type("string") paddleId!: string;
-  @type("string") rankDivision!: string;
-  @type("string") rankTier!: string;
-
-  @type("number") x = 0;
-  @type("number") y = 0;
-
   @type("number") pauseRequests = 0;
   @type("number") remainingPauseTime!: number;
   pauseStartTime: number | null = null;
@@ -130,15 +116,6 @@ export class MatchRoom extends Room<MatchState> {
       if (!player) {
         player = new Player();
         player.id = matchPlayer.id;
-        player.username = matchPlayer.username;
-        player.avatarUrl = matchPlayer.avatarUrl || "";
-        player.isHost = matchPlayer.isHost;
-        player.isResigned = matchPlayer.isResigned;
-        player.isWinner = matchPlayer.isWinner;
-        player.characterId = matchPlayer.characterId;
-        player.paddleId = matchPlayer.paddleId;
-        player.rankDivision = matchPlayer.rankDivision;
-        player.rankTier = matchPlayer.rankTier;
         player.remainingPauseTime = this.state.maxPauseTime;
 
         this.state.players.set(matchPlayer.id, player);
@@ -156,11 +133,18 @@ export class MatchRoom extends Room<MatchState> {
     }
   };
 
-  onLeave(client: Client) {
-    const _client = client as any;
-    const player = Array.from(this.state.players.values()).find(
-      (p) => p.id === _client.meta?.userId
-    );
+  onLeave = async (client: Client, options: any) => {
+    const matchPlayer = await prisma.matchPlayer.findFirst({
+      where: { userId: options.userId },
+    });
+
+    if (!matchPlayer) {
+      console.error(`No match player found for userId ${options.userId}`);
+      client.leave();
+      return;
+    }
+
+    let player = this.state.players.get(matchPlayer.id);
     if (player) {
       player.isConnected = false;
       if (player.pauseTimeout) {
@@ -168,7 +152,7 @@ export class MatchRoom extends Room<MatchState> {
         player.pauseTimeout = undefined;
       }
     }
-  }
+  };
 
   onDispose() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);

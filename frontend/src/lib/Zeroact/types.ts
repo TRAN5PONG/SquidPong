@@ -49,6 +49,7 @@ export interface EffectHook {
 }
 // UseRef Hook
 export interface RefObject<T> {
+  rotationTweenRef: gsap.core.Timeline;
   current: T | null;
 }
 

@@ -3,6 +3,8 @@ import { useSounds } from "@/contexts/SoundProvider";
 import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { MatchPlayer } from "@/types/game";
+import { SocketPlayer } from "../Game";
+import { useAppContext } from "@/contexts/AppProviders";
 
 const StyledScoreBoard = styled("div")`
   width: 80%;
@@ -111,20 +113,17 @@ const StyledScoreBoard = styled("div")`
 `;
 
 interface ScoreBoardProps {
-  oponent1: MatchPlayer | null;
-  oponent2: MatchPlayer | null;
+  host: (MatchPlayer & SocketPlayer) | null;
+  guest: (MatchPlayer & SocketPlayer) | null;
   isPaused: boolean;
   isCountingDown: boolean;
   countdown: number;
   pauseCountdown: number;
   pauseBy: string | null;
-  cameraRotate: () => void;
+  startCinematicCamera: () => void;
   resetCamera: () => void;
 }
 const ScoreBoard = (props: ScoreBoardProps) => {
-  const hostPlayer = props.oponent1?.isHost ? props.oponent1 : props.oponent2;
-  const guestPlayer = !props.oponent1?.isHost ? props.oponent1 : props.oponent2;
-
   // Sounds
   const { countDownSound, countDownEndSound, ambianceSound } = useSounds();
 
@@ -141,13 +140,13 @@ const ScoreBoard = (props: ScoreBoardProps) => {
 
     // Handle pause sound — only play once when pause starts
     if (props.isPaused && !lastPausedRef.current) {
-      if (ambianceSound.isMuffled)
-        ambianceSound.setMuffled(false)
+      if (ambianceSound.isMuffled) ambianceSound.setMuffled(false);
       ambianceSound.play();
-      props.cameraRotate();
+      props.startCinematicCamera();
       lastPausedRef.current = true;
     } else if (!props.isPaused) {
       ambianceSound.stop();
+      props.resetCamera();
       lastPausedRef.current = false;
     }
 
@@ -184,7 +183,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
   return (
     <StyledScoreBoard>
       <OponentCard
-        OponentAvatar={hostPlayer?.avatarUrl || "/assets/avatar.jpg"}
+        OponentAvatar={props.host?.avatarUrl || "/assets/avatar.jpg"}
         className="OponentCard"
       >
         <div className="OponentScore">
@@ -193,11 +192,11 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         <div className="OponentCardAvatar" />
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
-            {hostPlayer?.username || "Player1"}
-            {!hostPlayer?.isConnected && hostPlayer && (
+            {props.host?.username || "Player1"}
+            {!props.host?.isConnected && props.host && (
               <DisconnectedIcon fill="var(--red_color)" size={20} />
             )}
-            {hostPlayer?.id === props.pauseBy && props.isPaused && (
+            {props.host?.id === props.pauseBy && props.isPaused && (
               <PauseIcon fill="var(--yellow_color)" size={20} />
             )}
           </h1>
@@ -227,7 +226,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       </div>
 
       <OponentCard
-        OponentAvatar={guestPlayer?.avatarUrl || "/assets/avatar.jpg"}
+        OponentAvatar={props.guest?.avatarUrl || "/assets/avatar.jpg"}
         className="OponentCard"
         isRightSide={true}
       >
@@ -237,11 +236,11 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         <div className="OponentCardAvatar" />
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
-            {guestPlayer?.username || "Player2"}
-            {!guestPlayer?.isConnected && guestPlayer && (
+            {props.guest?.username || "Player2"}
+            {!props.guest?.isConnected && props.guest && (
               <DisconnectedIcon fill="var(--red_color)" size={20} />
             )}
-            {guestPlayer?.id === props.pauseBy && props.isPaused && (
+            {props.guest?.id === props.pauseBy && props.isPaused && (
               <PauseIcon fill="var(--yellow_color)" size={20} />
             )}
           </h1>
