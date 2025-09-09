@@ -11,8 +11,7 @@ import { useLight } from "../entities/light";
 import { useArena } from "../entities/Arena";
 import { usePhysics } from "../physics";
 import { usePaddle } from "../entities/paddle";
-
-
+import { useCinematicCamera } from "../entities/cameras/cinematicCamera";
 
 export function useGameScene(canvasRef: RefObject<HTMLCanvasElement>) {
   const engineRef = useRef<Engine | null>(null);
@@ -48,8 +47,15 @@ export function useGameScene(canvasRef: RefObject<HTMLCanvasElement>) {
   // Light
   useLight(sceneRef.current!);
   // Physics
-  usePhysics();
+  // usePhysics();
+
+  // Cameras
   const camera = useCamera(sceneRef.current!, -1, canvasRef.current!);
+  const cinematicCamera = useCinematicCamera(
+    sceneRef.current!,
+    canvasRef.current!
+  );
+
   // const ball = useBall(sceneRef.current!);
   // const paddle = usePaddle(
   //   sceneRef.current!,
@@ -58,8 +64,6 @@ export function useGameScene(canvasRef: RefObject<HTMLCanvasElement>) {
   // );
   const arena = useArena(sceneRef.current!);
 
-
-
   useEffect(() => {
     const engine = engineRef.current;
     const scene = sceneRef.current;
@@ -67,6 +71,8 @@ export function useGameScene(canvasRef: RefObject<HTMLCanvasElement>) {
 
     // scene?.clearColor.set(0, 0, 0, 1); // Set a dark background color
     if (!engine || !scene || !cameraAttached) return;
+
+    scene.activeCamera = camera.camera!;
 
     engine.runRenderLoop(() => {
       scene.render();
@@ -83,11 +89,19 @@ export function useGameScene(canvasRef: RefObject<HTMLCanvasElement>) {
     };
   }, [sceneReady, camera.camera]);
 
+  const resetGamePlayCamera = () => {
+    if (!sceneRef.current || !camera.camera) return;
+    cinematicCamera.stopCinematic();
+    sceneRef.current.activeCamera = camera.camera;
+  };
+
   // Return refs, entities, or any update methods needed
   return {
     engine: engineRef.current,
     scene: sceneRef.current,
     camera,
+    cinematicCamera,
+    resetGamePlayCamera,
     // ball,
     // paddle,
     arena,
