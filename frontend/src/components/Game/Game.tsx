@@ -11,7 +11,9 @@ import { GiveUpIcon, PauseIcon } from "../Svg/Svg";
 import { MatchResultOverlay } from "./Elements/MatchResultOverlay";
 import { GamePowerUps, Match, MatchPlayer } from "@/types/game";
 
-import { Client, Room } from "colyseus.js";
+import { Client, Room, getStateCallbacks } from "colyseus.js";
+import { Schema, MapSchema, type } from "@colyseus/schema";
+
 import { useSounds } from "@/contexts/SoundProvider";
 import { useRouteParam } from "@/hooks/useParam";
 import { getMatchById } from "@/api/match";
@@ -110,7 +112,7 @@ export interface SocketPlayer {
   pauseRequests: number;
   remainingPauseTime: number;
 }
-interface MatchState {
+interface MatchState extends Schema {
   players: Map<string, SocketPlayer>;
   spectators: Map<string, Spectator>;
   phase: "waiting" | "countdown" | "playing" | "paused" | "ended";
@@ -129,7 +131,7 @@ const Game = () => {
   const { ambianceSound } = useSounds();
   const { user, toasts } = useAppContext();
 
-  // GetMacth
+  // Get Match
   const matchId = useRouteParam("/game/:id", "id");
   const [match, setMatch] = useState<Match | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -142,44 +144,46 @@ const Game = () => {
   const [countdownValue, setCountdownValue] = useState<number | null>(null);
   const [pauseCountdown, setPauseCountdown] = useState<number | null>(null);
 
-
   // Players setup
-  const hostId = match?.opponent1.isHost ? match.opponent1.id : match?.opponent2.id;
-  const guestId = match?.opponent1.isHost ? match.opponent2.id : match?.opponent1.id;
-  const [socketPlayers, setSocketPlayers] = useState<SocketPlayer[]>([]);
+  const hostId = match?.opponent1.isHost
+    ? match.opponent1.id
+    : match?.opponent2.id;
+  const guestId = match?.opponent1.isHost
+    ? match.opponent2.id
+    : match?.opponent1.id;
   const [players, setPlayers] = useState<
     Record<string, MatchPlayer & SocketPlayer>
   >({});
 
+  // Fetch match data
   useEffect(() => {
-    if (matchId) {
-      setTimeout(() => {
-        const getMatch = async () => {
-          try {
-            const res = await getMatchById(matchId);
+    if (!matchId) return;
 
-            if (res) setMatch(res.data);
-            else setNotFound(true);
-          } catch (err) {
-            setNotFound(true);
-            console.error(err);
-          }
-        };
-        getMatch();
-      }, 500);
-    }
+    const getMatch = async () => {
+      try {
+        const res = await getMatchById(matchId);
+        if (res) setMatch(res.data);
+        else setNotFound(true);
+      } catch (err) {
+        setNotFound(true);
+        console.error(err);
+      }
+    };
+
+    // Remove unnecessary timeout
+    getMatch();
   }, [matchId]);
 
+  // Setup room connection
   useEffect(() => {
-    if (!match || !match.roomId) return;
+    if (!match?.roomId || !user?.id) return;
 
     const setupRoom = async () => {
       const client = new Client("ws://localhost:3000");
-      let room;
 
       try {
-        room = (await client.joinById(match.roomId, {
-          userId: user?.id,
+        const room = (await client.joinById(match.roomId, {
+          userId: user.id,
         })) as Room<MatchState>;
 
         setRoom(room);
@@ -190,12 +194,14 @@ const Game = () => {
 
     setupRoom();
 
+    // Cleanup on unmount or dependency change
     return () => {
       room?.leave();
       setRoom(null);
     };
-  }, [match, user?.id]);
+  }, [match?.roomId, user?.id]);
 
+  // Setup room listeners
   useEffect(() => {
     if (!room || !match) return;
 
@@ -204,47 +210,96 @@ const Game = () => {
       [match.opponent2.id]: match.opponent2,
     };
 
-    room.onStateChange((state) => {
-      // console.log("Room state changed:", state);
-      setMatchPhase(state.phase);
+    // Get state callbacks helper
+    const $ = getStateCallbacks(room as any);
 
-      // Update players
-      const updated = {} as Record<string, MatchPlayer & SocketPlayer>;
-      for (const [id, live] of state.players.entries()) {
-        updated[id] = {
-          ...matchPlayers[id], // static info
-          ...live, // live state
-        };
+    // players management
+    $(room.state as any).players.onAdd(
+      (player: SocketPlayer, playerId: string) => {
+        // Add player to state
+        setPlayers((prev) => ({
+          ...prev,
+          [playerId]: {
+            ...matchPlayers[playerId],
+            ...player,
+          },
+        }));
+
+        $(player as any).listen("isConnected", (isConnected: boolean) => {
+          setPlayers((prev) => ({
+            ...prev,
+            [playerId]: {
+              ...prev[playerId],
+              isConnected,
+            },
+          }));
+        });
       }
-      setPlayers(updated);
-      setSocketPlayers(Array.from(state.players.values()));
+    );
+    $(room.state as any).players.onRemove(
+      (player: SocketPlayer, playerId: string) => {
+        console.log("Player left:", player, playerId);
 
-      // Set countdown value
-      if (state.phase === "countdown") setCountdownValue(state.countdown);
-      else setCountdownValue(null);
+        setPlayers((prev) => {
+          const newPlayers = { ...prev };
+          delete newPlayers[playerId];
+          return newPlayers;
+        });
+      }
+    );
+
+    // Event listeners
+    $(room.state as any).listen("phase", (phase: string) => {
+      setMatchPhase(phase as any);
+    });
+    $(room.state as any).listen("countdown", (countdown: number) => {
+      if (room.state.phase === "countdown") {
+        setCountdownValue(countdown);
+      } else {
+        setCountdownValue(null);
+      }
     });
 
-    room.onMessage("game:paused", (message) => {
-      setPauseCountdown(message.remainingPauseTime || null);
+    // Setup message handlers
+    const messageHandlers = {
+      "game:paused": (message: any) => {
+        setPauseCountdown(message.remainingPauseTime || null);
+      },
+
+      "game:resumed": (message: any) => {
+        console.log("Game resumed by opponent", message);
+        setPauseCountdown(null);
+      },
+
+      "game:pause-tick": (message: any) => {
+        setPauseCountdown(message.remainingPauseTime || null);
+      },
+
+      "game:resume-denied": (message: any) => {
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Resume denied: ${message.reason}`,
+        });
+      },
+
+      "game:pause-denied": (message: any) => {
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Pause denied: ${message.reason}`,
+        });
+      },
+    };
+
+    // Register all message handlers
+    Object.entries(messageHandlers).forEach(([type, handler]) => {
+      room.onMessage(type, handler);
     });
-    room.onMessage("game:resumed", (message) => {
-      console.log("Game resumed by opponent", message);
-    });
-    room.onMessage("game:pause-tick", (message) => {
-      setPauseCountdown(message.remainingPauseTime || null);
-    });
-    room.onMessage("game:resume-denied", (message) => {
-      toasts.addToastToQueue({
-        type: "error",
-        message: `Resume denied: ${message.reason}`,
-      });
-    });
-    room.onMessage("game:pause-denied", (message) => {
-      toasts.addToastToQueue({
-        type: "error",
-        message: `Pause denied: ${message.reason}`,
-      });
-    });
+
+    // Cleanup function
+    return () => {
+      // Remove specific listeners if needed
+      // Note: Colyseus automatically cleans up when room disconnects
+    };
   }, [room, match]);
 
   const onPause = () => {
