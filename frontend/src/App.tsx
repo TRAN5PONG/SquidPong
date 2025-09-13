@@ -30,7 +30,6 @@ import CountDown from "./components/Game/Elements/CountDown";
 import Loader, { LoaderSpinner } from "./components/Loader/Loader";
 import ScoreBoard from "./components/Game/Elements/ScoreBoard";
 import { useSound } from "./hooks/useSound";
-import Game from "./components/Game/Game";
 import Lobby from "./components/Lobby/Lobby";
 import SelectPaddle from "./components/SelectPaddle/SelectPaddle";
 import Profile from "./components/Profile/Profile";
@@ -46,6 +45,7 @@ import Badges from "./components/Badges/Badges";
 import ConfirmationModal from "./components/ConfirmationModal/ConfirmationModal";
 import { getUserProfile } from "./api/user";
 import { socketManager } from "./utils/socket";
+import GameContiner from "./components/Game/GameContainer";
 
 const StyledApp = styled("div")`
   width: 100vw;
@@ -71,7 +71,7 @@ export const routes: Route[] = [
     exact: true,
     showLoader: true,
   },
-  { path: "/game", component: Game, exact: false, showLoader: true },
+  { path: "/game", component: GameContiner, exact: false, showLoader: true },
   {
     path: "/select-paddle",
     component: SelectPaddle,

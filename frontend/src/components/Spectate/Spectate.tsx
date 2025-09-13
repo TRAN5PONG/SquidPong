@@ -1,4 +1,4 @@
-import Zeroact, { useRef } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import {
   CameraIcon,
@@ -11,8 +11,8 @@ import { ChatMessage } from "@/types/chat";
 import { db } from "@/db";
 import { useNavigate } from "@/contexts/RouterProvider";
 import ScoreBoard from "../Game/Elements/ScoreBoard";
-import { useGameScene } from "../Game/scenes/GameScene";
-import { CameraModeName, cameraModes } from "../Game/entities/cameras/camera";
+import { Game } from "../Game/Scenes/GameScene";
+// import { CameraModeName, cameraModes } from "../Game/entities/cameras/camera";
 
 const StyledSpectate = styled("div")`
   width: 100%;
@@ -334,11 +334,16 @@ const Spectate = () => {
   };
   const navigate = useNavigate();
 
-  const { camera } = useGameScene(canvasRef);
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const game = new Game(canvasRef.current);
+    game.start(1)
+  }, [])
 
-  const onCameraModeChange = (mode: CameraModeName) => {
-    camera.setCurrentMode(mode);
-  };
+
+  // const onCameraModeChange = (mode: CameraModeName) => {
+  //   camera.setCurrentMode(mode);
+  // };
   return (
     <StyledSpectate
       oponent1avatar={db.users[0].avatar}
@@ -370,7 +375,7 @@ const Spectate = () => {
 
         {showCameraModes && (
           <div className="CameraModes">
-            {cameraModes.map((mode) => (
+            {/* {cameraModes.map((mode) => (
               <div
                 key={mode.mode_name}
                 className={`CameraModeOption ${
@@ -383,7 +388,7 @@ const Spectate = () => {
               >
                 {mode.mode_name}
               </div>
-            ))}
+            ))} */}
           </div>
         )}
       </div>

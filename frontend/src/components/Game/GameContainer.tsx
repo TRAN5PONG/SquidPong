@@ -115,7 +115,7 @@ interface MatchState extends Schema {
   pauseBy: string | null;
 }
 
-const Game = () => {
+const GameContiner = () => {
   // Context
   const { user, toasts } = useAppContext();
 
@@ -149,162 +149,162 @@ const Game = () => {
   >({});
   const [winnerId, setWinnerId] = useState<string | null>(null);
 
-  // Fetch match data
-  useEffect(() => {
-    if (!matchId) return;
+  // // Fetch match data
+  // useEffect(() => {
+  //   if (!matchId) return;
 
-    const getMatch = async () => {
-      try {
-        const res = await getMatchById(matchId);
-        if (res) setMatch(res.data);
-        else setNotFound(true);
-      } catch (err) {
-        setNotFound(true);
-        console.error(err);
-      }
-    };
+  //   const getMatch = async () => {
+  //     try {
+  //       const res = await getMatchById(matchId);
+  //       if (res) setMatch(res.data);
+  //       else setNotFound(true);
+  //     } catch (err) {
+  //       setNotFound(true);
+  //       console.error(err);
+  //     }
+  //   };
 
-    // Remove unnecessary timeout
-    getMatch();
-  }, [matchId]);
+  //   // Remove unnecessary timeout
+  //   getMatch();
+  // }, [matchId]);
 
-  // Setup room connection
-  useEffect(() => {
-    if (!match?.roomId || !user?.id) return;
+  // // Setup room connection
+  // useEffect(() => {
+  //   if (!match?.roomId || !user?.id) return;
 
-    const setupRoom = async () => {
-      const client = new Client("ws://10.13.2.6:3000");
+  //   const setupRoom = async () => {
+  //     const client = new Client("ws://10.13.2.6:3000");
 
-      try {
-        const room = (await client.joinById(match.roomId, {
-          userId: user.id,
-        })) as Room<MatchState>;
+  //     try {
+  //       const room = (await client.joinById(match.roomId, {
+  //         userId: user.id,
+  //       })) as Room<MatchState>;
 
-        setRoom(room);
-      } catch (err) {
-        console.error("❌ Failed to join room:", err);
-      }
-    };
+  //       setRoom(room);
+  //     } catch (err) {
+  //       console.error("❌ Failed to join room:", err);
+  //     }
+  //   };
 
-    setupRoom();
+  //   setupRoom();
 
-    // Cleanup on unmount or dependency change
-    return () => {
-      room?.leave();
-      setRoom(null);
-    };
-  }, [match?.roomId, user?.id]);
+  //   // Cleanup on unmount or dependency change
+  //   return () => {
+  //     room?.leave();
+  //     setRoom(null);
+  //   };
+  // }, [match?.roomId, user?.id]);
 
-  // Setup room listeners
-  useEffect(() => {
-    if (!room || !match) return;
+  // // Setup room listeners
+  // useEffect(() => {
+  //   if (!room || !match) return;
 
-    const matchPlayers = {
-      [match.opponent1.id]: match.opponent1,
-      [match.opponent2.id]: match.opponent2,
-    };
+  //   const matchPlayers = {
+  //     [match.opponent1.id]: match.opponent1,
+  //     [match.opponent2.id]: match.opponent2,
+  //   };
 
-    // Get state callbacks helper
-    const $ = getStateCallbacks(room as any);
+  //   // Get state callbacks helper
+  //   const $ = getStateCallbacks(room as any);
 
-    // players management
-    $(room.state as any).players.onAdd(
-      (player: SocketPlayer, playerId: string) => {
-        // Add player to state
-        setPlayers((prev) => ({
-          ...prev,
-          [playerId]: {
-            ...matchPlayers[playerId],
-            ...player,
-          },
-        }));
+  //   // players management
+  //   $(room.state as any).players.onAdd(
+  //     (player: SocketPlayer, playerId: string) => {
+  //       // Add player to state
+  //       setPlayers((prev) => ({
+  //         ...prev,
+  //         [playerId]: {
+  //           ...matchPlayers[playerId],
+  //           ...player,
+  //         },
+  //       }));
 
-        $(player as any).listen("isConnected", (isConnected: boolean) => {
-          setPlayers((prev) => ({
-            ...prev,
-            [playerId]: {
-              ...prev[playerId],
-              isConnected,
-            },
-          }));
-        });
-      }
-    );
-    $(room.state as any).players.onRemove(
-      (player: SocketPlayer, playerId: string) => {
-        console.log("Player left:", player, playerId);
+  //       $(player as any).listen("isConnected", (isConnected: boolean) => {
+  //         setPlayers((prev) => ({
+  //           ...prev,
+  //           [playerId]: {
+  //             ...prev[playerId],
+  //             isConnected,
+  //           },
+  //         }));
+  //       });
+  //     }
+  //   );
+  //   $(room.state as any).players.onRemove(
+  //     (player: SocketPlayer, playerId: string) => {
+  //       console.log("Player left:", player, playerId);
 
-        setPlayers((prev) => {
-          const newPlayers = { ...prev };
-          delete newPlayers[playerId];
-          return newPlayers;
-        });
-      }
-    );
+  //       setPlayers((prev) => {
+  //         const newPlayers = { ...prev };
+  //         delete newPlayers[playerId];
+  //         return newPlayers;
+  //       });
+  //     }
+  //   );
 
-    // Event listeners
-    $(room.state as any).listen("phase", (phase: string) => {
-      setMatchPhase(phase as any);
-    });
-    $(room.state as any).listen("winnerId", (newWinnerId: string | null) => {
-      setWinnerId(newWinnerId);
-    });
-    $(room.state as any).listen("countdown", (countdown: number) => {
-      if (room.state.phase === "countdown") {
-        setCountdownValue(countdown);
-      } else {
-        setCountdownValue(null);
-      }
-    });
+  //   // Event listeners
+  //   $(room.state as any).listen("phase", (phase: string) => {
+  //     setMatchPhase(phase as any);
+  //   });
+  //   $(room.state as any).listen("winnerId", (newWinnerId: string | null) => {
+  //     setWinnerId(newWinnerId);
+  //   });
+  //   $(room.state as any).listen("countdown", (countdown: number) => {
+  //     if (room.state.phase === "countdown") {
+  //       setCountdownValue(countdown);
+  //     } else {
+  //       setCountdownValue(null);
+  //     }
+  //   });
 
-    // Setup message handlers
-    const messageHandlers = {
-      "game:paused": (message: any) => {
-        setPauseCountdown(message.remainingPauseTime || null);
-      },
+  //   // Setup message handlers
+  //   const messageHandlers = {
+  //     "game:paused": (message: any) => {
+  //       setPauseCountdown(message.remainingPauseTime || null);
+  //     },
 
-      "game:resumed": (message: any) => {
-        console.log("Game resumed by opponent", message);
-        setPauseCountdown(null);
-      },
+  //     "game:resumed": (message: any) => {
+  //       console.log("Game resumed by opponent", message);
+  //       setPauseCountdown(null);
+  //     },
 
-      "game:pause-tick": (message: any) => {
-        setPauseCountdown(message.remainingPauseTime || null);
-      },
+  //     "game:pause-tick": (message: any) => {
+  //       setPauseCountdown(message.remainingPauseTime || null);
+  //     },
 
-      "game:resume-denied": (message: any) => {
-        toasts.addToastToQueue({
-          type: "error",
-          message: `Resume denied: ${message.reason}`,
-        });
-      },
+  //     "game:resume-denied": (message: any) => {
+  //       toasts.addToastToQueue({
+  //         type: "error",
+  //         message: `Resume denied: ${message.reason}`,
+  //       });
+  //     },
 
-      "game:pause-denied": (message: any) => {
-        toasts.addToastToQueue({
-          type: "error",
-          message: `Pause denied: ${message.reason}`,
-        });
-      },
+  //     "game:pause-denied": (message: any) => {
+  //       toasts.addToastToQueue({
+  //         type: "error",
+  //         message: `Pause denied: ${message.reason}`,
+  //       });
+  //     },
 
-      "game:give-up-denied": (message: any) => {
-        toasts.addToastToQueue({
-          type: "error",
-          message: `Give up denied: ${message.reason}`,
-        });
-      },
-    };
+  //     "game:give-up-denied": (message: any) => {
+  //       toasts.addToastToQueue({
+  //         type: "error",
+  //         message: `Give up denied: ${message.reason}`,
+  //       });
+  //     },
+  //   };
 
-    // Register all message handlers
-    Object.entries(messageHandlers).forEach(([type, handler]) => {
-      room.onMessage(type, handler);
-    });
+  //   // Register all message handlers
+  //   Object.entries(messageHandlers).forEach(([type, handler]) => {
+  //     room.onMessage(type, handler);
+  //   });
 
-    // Cleanup function
-    return () => {
-      // Remove specific listeners if needed
-      // Note: Colyseus automatically cleans up when room disconnects
-    };
-  }, [room, match]);
+  //   // Cleanup function
+  //   return () => {
+  //     // Remove specific listeners if needed
+  //     // Note: Colyseus automatically cleans up when room disconnects
+  //   };
+  // }, [room, match]);
 
   const onPause = () => {
     room?.send("game:pause");
@@ -313,11 +313,7 @@ const Game = () => {
     room?.send("player:give-up");
   };
 
-  useEffect(() => {
-    console.log(matchPhase, room?.state);
-  }, [matchPhase, room]);
-
-  if (notFound) return <NotFound />;
+  // if (notFound) return <NotFound />;
   // if (!match) return <LoaderSpinner />;
 
   return (
@@ -388,4 +384,4 @@ const Game = () => {
   );
 };
 
-export default Game;
+export default GameContiner;

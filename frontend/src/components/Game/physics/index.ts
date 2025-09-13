@@ -3,203 +3,320 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { constants } from "@/utils/constants";
 
-import { useBallPhysics } from "./Ball";
-import { usePaddlePhysics } from "./Paddle";
-import { useFloorPhysics } from "./Floor";
-import { useNetPhysics } from "./Net";
-import { useTablePhysics } from "./Table";
+import { Ball } from "./Ball";
+import { Paddle } from "./Paddle";
+import { Floor } from "./Floor";
+import { Net } from "./Net";
+import { Table } from "./Table";
 
-export function usePhysicsWorld() {
-  const worldRef = useRef<RAPIER.World | null>(null);
-  const eventQueueRef = useRef<RAPIER.EventQueue | null>(null);
+export class Physics {
+    private world!: RAPIER.World;
+    eventQueue: RAPIER.EventQueue = null!;
+    public ball!: Ball;
+    public paddle!: Paddle;
+    public floor!: Floor;
+    public net!: Net
 
-  const lastCollisionTime = useRef<number>(performance.now());
-  const ballSpin = useRef<Vector3>(new Vector3(0, 0, 0));
-  const applySpin = useRef(false);
-  const impulseRef = useRef<Vector3 | null>(null);
-  const timestep = 1 / 60;
+    private ballSpin: Vector3 = new Vector3(0, 0, 0); // Angular velocity in rad/s
+    private spinDecay: number = 0.98; // Spin decay factor per tick
+    private appySpin: boolean = false;
 
-  // Callbacks
-  const onBallPaddleCollision = useRef<
-    ((ball: RAPIER.RigidBody, paddle: RAPIER.RigidBody) => void) | undefined
-  >(undefined);
-  const onBallFloorCollision = useRef<
-    ((ball: RAPIER.RigidBody, floor: RAPIER.RigidBody) => void) | undefined
-  >(undefined);
-  const onBallNetCollision = useRef<
-    ((ball: RAPIER.RigidBody, net: RAPIER.RigidBody) => void) | undefined
-  >(undefined);
 
-  // Entity refs
-  const ballBody = useRef<RAPIER.RigidBody | null>(null);
-  const ballCollider = useRef<RAPIER.Collider | null>(null);
-  const paddleBody = useRef<RAPIER.RigidBody | null>(null);
-  const paddleCollider = useRef<RAPIER.Collider | null>(null);
-  const floorBody = useRef<RAPIER.RigidBody | null>(null);
-  const floorCollider = useRef<RAPIER.Collider | null>(null);
-  const netBody = useRef<RAPIER.RigidBody | null>(null);
-  const netCollider = useRef<RAPIER.Collider | null>(null);
-  const tableBody = useRef<RAPIER.RigidBody | null>(null);
-  const tableCollider = useRef<RAPIER.Collider | null>(null);
+    timestep = 1 / 60;
+    // callback
+    public onBallPaddleCollision?: (ball: RAPIER.RigidBody, paddle: RAPIER.RigidBody) => void;
+    public onBallFloorCollision?: (ball: RAPIER.RigidBody, floor: RAPIER.RigidBody) => void;
+    public onBallNetCollision?: (ball: RAPIER.RigidBody, net: RAPIER.RigidBody) => void;
 
-  // Target positions (refs for performance)
-  const TargetX = useRef(0);
-  const TargetZ = useRef(0);
+    // last collision detection time
+    private lastCollisioDetectionTime: number = 0;
 
-  useEffect(() => {
-    (async () => {
-      await RAPIER.init();
+    Impulse: RAPIER.Vector3 | null = null;
+    // debug
+    public TargetX: number = 0;
+    public TargetZ: number = 0;
 
-      // --- World setup ---
-      const world = new RAPIER.World(constants.Gravity);
-      world.timestep = timestep;
-      worldRef.current = world;
+    constructor() { }
 
-      const eventQueue = new RAPIER.EventQueue(false);
-      eventQueueRef.current = eventQueue;
+    async init() {
+        await RAPIER.init();
 
-      // --- Entities setup ---
-      const ball = useBallPhysics(world);
-      ballBody.current = ball.body.current;
-      ballCollider.current = ball.collider.current;
+        this.world = new RAPIER.World(constants.Gravity);
+        this.world.timestep = 1 / 60;
+        this.eventQueue = new RAPIER.EventQueue(false);
 
-      const paddle = usePaddlePhysics(world);
-      paddleBody.current = paddle.body.current;
-      paddleCollider.current = paddle.collider.current;
+        // Create entities
+        new Table(this.world);
+        this.floor = new Floor(this.world);
+        this.net = new Net(this.world);
 
-      const floor = useFloorPhysics(world);
-      floorBody.current = floor.body.current;
-      floorCollider.current = floor.collider.current;
-
-      const net = useNetPhysics(world);
-      netBody.current = net.body.current;
-      netCollider.current = net.collider.current;
-
-      const table = useTablePhysics(world);
-      tableBody.current = table.body.current;
-      tableCollider.current = table.collider.current;
-    })();
-
-    return () => {
-      if (!worldRef.current) return;
-      [
-        ballCollider.current,
-        paddleCollider.current,
-        floorCollider.current,
-        netCollider.current,
-        tableCollider.current,
-      ].forEach((c) => c && worldRef.current?.removeCollider(c, true));
-
-      [
-        ballBody.current,
-        paddleBody.current,
-        floorBody.current,
-        netBody.current,
-        tableBody.current,
-      ].forEach((b) => b && worldRef.current?.removeRigidBody(b));
-    };
-  }, []);
-
-  // --- Helpers ---
-  const updatePaddle = (currPos: Vector3) => {
-    if (!paddleBody.current) return;
-    paddleBody.current.setNextKinematicTranslation({
-      x: currPos.x,
-      y: currPos.y,
-      z: currPos.z,
-    });
-  };
-
-  const queueBallImpulse = (impulse: Vector3) => {
-    impulseRef.current = impulse;
-  };
-
-  const step = () => {
-    const world = worldRef.current;
-    const queue = eventQueueRef.current;
-    if (!world || !queue) return;
-
-    applyMagnusEffect();
-
-    world.step(queue);
-
-    queue.drainCollisionEvents((h1, h2, started) => {
-      if (!started) return;
-      handleCollision(h1, h2);
-    });
-  };
-
-  const handleCollision = (handle1: number, handle2: number) => {
-    const now = performance.now();
-    if (!ballCollider.current || !paddleCollider.current) return;
-
-    const bHandle = ballCollider.current.handle;
-    const pHandle = paddleCollider.current.handle;
-    const fHandle = floorCollider.current?.handle ?? -1;
-    const nHandle = netCollider.current?.handle ?? -1;
-
-    // Ball + Paddle
-    if (
-      (handle1 === bHandle && handle2 === pHandle) ||
-      (handle2 === bHandle && handle1 === pHandle)
-    ) {
-      if (now - lastCollisionTime.current! < 150) return;
-      lastCollisionTime.current = now;
-      onBallPaddleCollision.current?.(ballBody.current!, paddleBody.current!);
-      return;
+        this.ball = new Ball(this.world);
+        this.paddle = new Paddle(this.world);
     }
 
-    // Ball + Floor
-    if (
-      (handle1 === bHandle && handle2 === fHandle) ||
-      (handle2 === bHandle && handle1 === fHandle)
-    ) {
-      onBallFloorCollision.current?.(ballBody.current!, floorBody.current!);
-      return;
+
+
+    updatePaddle(currPos: Vector3) {
+        this.paddle.body.setNextKinematicTranslation({
+            x: currPos.x,
+            y: currPos.y,
+            z: currPos.z,
+        });
+    }
+    queueBallImpulse(impulse: Vector3) {
+        this.Impulse = impulse;
+    }
+    calculateTargetZYVelocity(ballPosition: RAPIER.Vector, paddlePos: RAPIER.Vector): Vector3 {
+        const halfLength = constants.TABLE.size.length / 2;
+        let opponentTableStart: number;
+        let opponentTableEnd: number;
+
+        if (paddlePos.z > 0) {
+            opponentTableStart = -halfLength;
+            opponentTableEnd = 0.3;
+        } else {
+            opponentTableStart = 0.3;
+            opponentTableEnd = halfLength;
+        }
+
+        const safeMargin = 0.4;
+        const targetZMin = opponentTableStart + safeMargin;
+        const targetZMax = opponentTableEnd - safeMargin;
+        const paddleSpeed = new Vector3(this.paddle.body.linvel().x, this.paddle.body.linvel().y, this.paddle.body.linvel().z);
+        const paddleVelocityZ = paddleSpeed.length() * 0.009;
+        const targetZ = this.calculateTargetZFromVelocity(paddleVelocityZ, targetZMin, targetZMax);
+        this.TargetZ = targetZ;
+
+        const tableSurfaceY = constants.TABLE.position.y + (constants.TABLE.size.height / 2);
+        const Gravity = constants.Gravity.y * -1;
+
+        const minArcHeight = tableSurfaceY + constants.NET.size.height + 0.2;
+        const currentBasedHeight = ballPosition.y + 0.2;
+        const arcHeight = Math.max(minArcHeight, currentBasedHeight);
+
+        const heightToGain = arcHeight - ballPosition.y;
+
+        const velocityY = Math.sqrt(2 * Gravity * Math.max(heightToGain, 0.3));
+
+        const timeUp = velocityY / Gravity;
+        const timeDown = Math.sqrt(2 * (arcHeight - tableSurfaceY) / Gravity);
+        const totalFlightTime = timeUp + timeDown;
+
+        const deltaZ = targetZ - ballPosition.z;
+        const requiredVelocityZ = deltaZ / totalFlightTime;
+
+        const halfWidth = constants.TABLE.size.width / 2;
+        const minX = -halfWidth + safeMargin;
+        const maxX = +halfWidth - safeMargin;
+
+        let targetX: number;
+        if (!this.appySpin)
+            targetX = paddlePos.x + (this.paddle.body.linvel().x * 0.05);
+        else
+            targetX = paddlePos.x;
+        targetX = Math.max(minX, Math.min(maxX, targetX));
+
+        const deltaX = targetX - ballPosition.x;
+        const velocityX = deltaX / totalFlightTime;
+
+        this.TargetX = targetX;
+
+        const newForce = new Vector3(velocityX, velocityY, requiredVelocityZ);
+        return newForce;
+    }
+    // Takes paddle velocity and maps it deterministically to a Z target
+    calculateTargetZFromVelocity(paddleVelocityZ: number, zMin: number, zMax: number): number {
+        const clamped = Math.max(-1, Math.min(1, paddleVelocityZ / 2)); // Normalize to [-1, 1]
+        const t = (clamped + 1) / 2; // Map to [0, 1]
+        return zMin + t * (zMax - zMin); // Map to [zMin, zMax]
     }
 
-    // Ball + Net
-    if (
-      (handle1 === bHandle && handle2 === nHandle) ||
-      (handle2 === bHandle && handle1 === nHandle)
-    ) {
-      onBallNetCollision.current?.(ballBody.current!, netBody.current!);
-      return;
+
+
+    Step() {
+        this.applyMagnusEffect();
+        this.world.step(this.eventQueue);
+
+        this.eventQueue.drainCollisionEvents((h1, h2, started) => {
+            if (!started) return;
+            this.handleCollision(h1, h2);
+        });
     }
-  };
 
-  const applyMagnusEffect = () => {
-    if (!applySpin.current || !ballBody.current) return;
+    private handleCollision(handle1: number, handle2: number) {
+        const now = performance.now();
+        const ballHandle = this.ball.collider.handle;
+        const paddleHandle = this.paddle.collider.handle;
+        const floorHandle = this.floor.collider.handle;
+        const netHandle = this.net.collider.handle;
 
-    const ballVel = ballBody.current.linvel();
-    ballBody.current.setLinvel(
-      {
-        x: ballVel.x + ballSpin.current!.x,
-        y: ballVel.y,
-        z: ballVel.z,
-      },
-      true
-    );
+        // Ball + Paddle
+        if ((handle1 === ballHandle && handle2 === paddleHandle) ||
+            (handle2 === ballHandle && handle1 === paddleHandle)) {
 
-    ballSpin.current!.scaleInPlace(0.98);
-  };
+            if (now - this.lastCollisioDetectionTime < 150) return;
+            this.lastCollisioDetectionTime = now;
 
-  return {
-    world: worldRef,
-    ballBody,
-    paddleBody,
-    floorBody,
-    netBody,
-    tableBody,
-    step,
-    updatePaddle,
-    queueBallImpulse,
-    TargetX,
-    TargetZ,
-    ballSpin,
-    applySpin,
-    onBallPaddleCollision,
-    onBallFloorCollision,
-    onBallNetCollision,
-  };
+            this.onBallPaddleCollision?.(this.ball.body, this.paddle.body);
+            return;
+        }
+
+        // Ball + Floor
+        if ((handle1 === ballHandle && handle2 === floorHandle) ||
+            (handle2 === ballHandle && handle1 === floorHandle)) {
+            this.onBallFloorCollision?.(this.ball.body, this.floor.body);
+            return;
+        }
+
+        // Ball + Net
+        if ((handle1 === ballHandle && handle2 === netHandle) ||
+            (handle2 === ballHandle && handle1 === netHandle)) {
+            this.onBallNetCollision?.(this.ball.body, this.net.body);
+            return;
+        }
+    }
+
+    updatePaddleRotationZ(angleDeg: number) {
+        // Convert degrees → radians
+        const angleRad = (angleDeg * Math.PI) / 180;
+
+        // Rotation only around Z
+        const quat = {
+            x: 0,
+            y: 0,
+            z: Math.sin(angleRad / 2),
+            w: Math.cos(angleRad / 2),
+        };
+
+        this.paddle.body.setNextKinematicRotation(quat);
+    }
+
+
+    private applyMagnusEffect(): void {
+        if (!this.getApplySpin()) return;
+
+        const ballVel = this.ball.body.linvel();
+
+        let magnusForceX = this.ballSpin.y;
+        console.log("Spin Y (around Y axis):", this.ballSpin.y);
+        this.ball.body.setLinvel({
+            x: ballVel.x + magnusForceX * this.timestep,
+            y: ballVel.y, // No Y change
+            z: ballVel.z  // No Z change
+        }, true);
+
+        // Decay spin
+        this.ballSpin.scaleInPlace(this.spinDecay);
+    }
+    //  setters
+    setBallVelocity(x: number, y: number, z: number) {
+        this.ball.body.setLinvel({ x, y, z }, true);
+    }
+    public setBallFrozen(frozen: boolean) {
+        if (frozen) { this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, true); this.ball.body.setGravityScale(0, true); }
+        else { this.ball.body.setGravityScale(1, true); }
+    }
+    setBallPosition(x: number, y: number, z: number) {
+        this.ball.body.setTranslation({ x, y, z }, true);
+    }
+    setBallDensity(density: number) {
+        const collider = this.ball.body.collider(0);
+        if (collider) {
+            collider.setDensity(density);
+        } else {
+            console.error("Collider not found for the ball body.");
+        }
+    }
+    public setPaddlePosition(x: number, y: number, z: number) {
+        if (!this.paddle.body) return;
+        this.paddle.body.setNextKinematicTranslation({ x, y, z });
+    }
+    public setPaddleZRotation(rotationZ: number) {
+        if (!this.paddle.body) return;
+
+        // Convert Z rotation to quaternion manually
+        const halfZ = rotationZ / 2;
+        const quat = { x: 0, y: 0, z: Math.sin(halfZ), w: Math.cos(halfZ) };
+        this.paddle.body.setNextKinematicRotation(quat);
+    }
+
+    public setPaddleTargetPosition(x: number, y: number, z: number) {
+        if (!this.paddle.body) return;
+
+        const curr = this.paddle.body.translation();
+        const targetX = x;
+        const targetY = y;
+        const targetZ = z;
+
+        // Use similar smoothing as mesh (0.4 * 60fps ≈ 24 for invDt)
+        const SMOOTH = 0.3; // Match your mesh interpolation
+        const sx = curr.x + (targetX - curr.x) * SMOOTH;
+        const sy = curr.y + (targetY - curr.y) * SMOOTH;
+        const sz = curr.z + (targetZ - curr.z) * SMOOTH;
+
+        const invDt = 100; // Lower value for smoother movement to match mesh
+        let vx = (sx - curr.x) * invDt;
+        let vy = (sy - curr.y) * invDt;
+        let vz = (sz - curr.z) * invDt;
+
+        this.paddle.body.setLinvel({ x: vx, y: vy, z: vz }, true);
+    }
+    public setBallSpin(x: number, y: number, z: number): void {
+        this.ballSpin.set(x, y, z);
+    }
+    public setApplySpin(apply: boolean) {
+        this.appySpin = apply;
+    }
+
+    // getters
+    public getBallVelocity(): Vector3 {
+        return new Vector3(
+            this.ball.body.linvel().x,
+            this.ball.body.linvel().y,
+            this.ball.body.linvel().z
+        );
+    }
+    public getBallPosition(): Vector3 {
+        return new Vector3(
+            this.ball.body.translation().x,
+            this.ball.body.translation().y,
+            this.ball.body.translation().z
+        );
+    }
+
+    public getballbody(): RAPIER.RigidBody {
+        return this.ball.body;
+    }
+
+    public getPaddlePosition(): Vector3 {
+        if (!this.paddle.body) return new Vector3(0, 0, 0);
+        const pos = this.paddle.body.translation();
+        return new Vector3(pos.x, pos.y, pos.z);
+    }
+
+    public getPaddleRotation(): Vector3 {
+        if (!this.paddle.body) return new Vector3(0, 0, 0);
+        const quat = this.paddle.body.rotation();
+        return new Vector3(quat.x, quat.y, quat.z);
+    }
+    public getPaddleZRotation(): number {
+        if (!this.paddle.body) return 0;
+
+        const quat = this.paddle.body.rotation();
+        const siny_cosp = 2 * (quat.w * quat.z + quat.x * quat.y);
+        const cosy_cosp = 1 - 2 * (quat.y * quat.y + quat.z * quat.z);
+        return Math.atan2(siny_cosp, cosy_cosp);
+    }
+    public getPaddleVelocity(): Vector3 {
+        if (!this.paddle.body) return new Vector3(0, 0, 0);
+        const vel = this.paddle.body.linvel();
+        return new Vector3(vel.x, vel.y, vel.z);
+    }
+    public getBallSpin(): Vector3 {
+        return this.ballSpin.clone();
+    }
+    public getApplySpin(): boolean {
+        return this.appySpin;
+    }
+
 }

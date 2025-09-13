@@ -1,5 +1,5 @@
 import { useCamera } from "@/components/Game/entities/cameras/camera";
-import { useLight } from "@/components/Game/entities/light";
+import { useLight } from "@/components/Game/entities/Light";
 import { RefObject, useEffect, useRef, useState } from "@/lib/Zeroact";
 import { Engine, Scene } from "@babylonjs/core";
 
