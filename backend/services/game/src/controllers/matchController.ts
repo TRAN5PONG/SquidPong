@@ -60,10 +60,11 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
     throw new Error("Invalid invitation data");
   }
 
-  return prisma.$transaction(async (tx) => {
+  // 1️⃣ Create match and matchSetting in a transaction
+  const { match, hostPlayer, guestPlayer } = await prisma.$transaction(async (tx) => {
     const hostPlayer = await createMatchPlayer(
       invitation.sender.userId, // remote int
-      invitation.sender.id, // local UUID
+      invitation.sender.id,      // local UUID
       true,
       false,
       tx
@@ -103,27 +104,26 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
       tx
     );
 
-    // assign to colyseus room
-    const room = await matchMaker.createRoom("ping-pong-game", {
-      matchId: match.id,
-      players: [hostPlayer.userId, guestPlayer.userId],
-      spectator: [],
-    });
-
-    // update match with roomId
-    const updatedMatch = await tx.match.update({
-      where: { id: match.id },
-      data: { roomId: room.roomId },
-      include: {
-        opponent1: true,
-        opponent2: true,
-        matchSetting: true,
-      },
-    });
-
-    return updatedMatch;
+    return { match, hostPlayer, guestPlayer };
   });
+
+  // 2️⃣ Create Colyseus room after transaction committed
+  const room = await matchMaker.createRoom("ping-pong-game", {
+    matchId: match.id,
+    players: [hostPlayer.userId, guestPlayer.userId],
+    spectator: [],
+  });
+
+  // 3️⃣ Update match with roomId
+  const updatedMatch = await prisma.match.update({
+    where: { id: match.id },
+    data: { roomId: room.roomId },
+    include: { opponent1: true, opponent2: true, matchSetting: true },
+  });
+
+  return updatedMatch;
 }
+
 export async function createMatchPlayer(
   remoteUserId: number, // from user-management service
   localUserId: string, // from game DB

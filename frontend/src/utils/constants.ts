@@ -13,16 +13,16 @@ export const constants = {
   AIR_DENSITY: 1.225, // kg/m^3
   BALL: {
     position: { x: 0, y: 4, z: 2 } as Vector3,
-    radius: 0.06669805388320339 / 2,
+    radius: 0.12 / 2,
 
-    diameter: 0.06669805388320339
+    diameter: 0.12
   },
   FLOOR: {
     position: { x: 0, y: 0.1, z: 0 } as Vector3,
     size: { width: 40, height: 0.1, length: 40 } as Size3D,
   },
   PADDLE: {
-    size: { width: 0.4, height: 0.44, length: 0.2 } as Size3D,
+    size: { width: 0.4, height: 0.35, length: 0.15 } as Size3D,
     position: {
       left: { x: 0, y: 2, z: 4 } as Vector3,
       right: { x: 0, y: 2, z: 4 } as Vector3,

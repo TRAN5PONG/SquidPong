@@ -1,4 +1,9 @@
-import { DisconnectedIcon, PaddleIcon, PauseIcon } from "@/components/Svg/Svg";
+import {
+  DisconnectedIcon,
+  PaddleIcon,
+  PauseIcon,
+  WinnerIcon,
+} from "@/components/Svg/Svg";
 import { useSounds } from "@/contexts/SoundProvider";
 import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
@@ -110,12 +115,13 @@ const StyledScoreBoard = styled("div")`
     }
   }
 `;
-
 interface ScoreBoardProps {
   host: (MatchPlayer & SocketPlayer) | null;
   guest: (MatchPlayer & SocketPlayer) | null;
   isPaused: boolean;
   isCountingDown: boolean;
+  isEnded: boolean;
+  winnerId: string | null;
   countdown: number;
   pauseCountdown: number;
   pauseBy: string | null;
@@ -133,7 +139,6 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       ? props.countdown
       : null;
 
-    // We use refs to track last played value
     const lastPlayedRef = useRef<number | null>(null);
     const lastPausedRef = useRef<boolean>(false);
 
@@ -144,7 +149,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       props.startCinematicCamera();
       lastPausedRef.current = true;
     } else if (!props.isPaused) {
-      ambianceSound.stop();
+      ambianceSound.stop(2);
       props.resetCamera();
       lastPausedRef.current = false;
     }
@@ -179,16 +184,26 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     props.isCountingDown,
   ]);
 
+  useEffect(() => {
+    if (props.isEnded) {
+      if (ambianceSound.isMuffled) ambianceSound.setMuffled(false);
+      setTimeout(() => {
+        ambianceSound.play();
+        props.startCinematicCamera();
+      }, 1000);
+    }
+  }, [props.isEnded]);
+
   return (
     <StyledScoreBoard>
-      <OponentCard
-        OponentAvatar={props.host?.avatarUrl || "/assets/avatar.jpg"}
-        className="OponentCard"
-      >
+      <OponentCard className="OponentCard">
         <div className="OponentScore">
           <span>10</span>
         </div>
-        <div className="OponentCardAvatar" />
+        <img
+          src={props.host?.avatarUrl || "/assets/avatar.jpg"}
+          className="OponentCardAvatar"
+        />
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
             {props.host?.username || "Player 1"}
@@ -197,6 +212,9 @@ const ScoreBoard = (props: ScoreBoardProps) => {
             )}
             {props.host?.id === props.pauseBy && props.isPaused && (
               <PauseIcon fill="var(--yellow_color)" size={20} />
+            )}
+            {props.isEnded && props.winnerId === props.host?.id && (
+              <WinnerIcon size={30} />
             )}
           </h1>
         </div>
@@ -224,15 +242,15 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         </div>
       </div>
 
-      <OponentCard
-        OponentAvatar={props.guest?.avatarUrl || "/assets/avatar.jpg"}
-        className="OponentCard"
-        isRightSide={true}
-      >
+      <OponentCard className="OponentCard" isRightSide={true}>
         <div className="OponentScore">
           <span>10</span>
         </div>
-        <div className="OponentCardAvatar" />
+        <img
+          src={props.guest?.avatarUrl || "/assets/avatar.jpg"}
+          onError={(e:any) => console.log(e)}
+          className="OponentCardAvatar"
+        />
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
             {props.guest?.username || "Player 2"}
@@ -241,6 +259,9 @@ const ScoreBoard = (props: ScoreBoardProps) => {
             )}
             {props.guest?.id === props.pauseBy && props.isPaused && (
               <PauseIcon fill="var(--yellow_color)" size={20} />
+            )}
+            {props.isEnded && props.winnerId === props.guest?.id && (
+              <WinnerIcon size={30} />
             )}
           </h1>
           <PaddleIcon size={20} fill="white" />
@@ -264,9 +285,6 @@ const OponentCard = styled("div")`
     width: 40px;
     height: 40px;
     border-radius: 5px;
-    background-image: url(${(props: any) => props.OponentAvatar});
-    background-size: cover;
-    background-position: center;
     z-index: 1;
   }
   .OponentCardInfo {

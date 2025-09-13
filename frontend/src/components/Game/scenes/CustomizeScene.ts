@@ -83,7 +83,7 @@ export function useCustomizeScene(canvasRef: RefObject<HTMLCanvasElement>) {
 
   useLight(sceneRef.current!);
 
-  const paddle = usePaddle(sceneRef.current!);
+  const paddle = usePaddle(sceneRef.current!, null, 1);
 
   useEffect(() => {
     const engine = engineRef.current;

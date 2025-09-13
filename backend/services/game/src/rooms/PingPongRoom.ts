@@ -76,6 +76,25 @@ export class MatchRoom extends Room<MatchState> {
       }
     });
 
+    // Player give up
+    this.onMessage("player:give-up", (client) => {
+      const _client = client as any;
+      const player = this.state.players.get(_client.meta.matchPlayerId);
+      if (!player) return;
+
+      if (this.state.phase !== "playing" && this.state.phase !== "paused") {
+        this.send(client, "game:give-up-denied", {
+          reason: "game not in playing or paused phase",
+        });
+        return;
+      }
+      
+      this.state.phase = "ended";
+      this.state.winnerId =
+        Array.from(this.state.players.values()).find((p) => p.id !== player.id)
+          ?.id || null;
+    });
+
     // Pause / Resume handling
     this.onMessage("game:pause", (client) => this.handlePause(client));
   };

@@ -1,7 +1,13 @@
-:4000 {
+http://10.13.2.6:4000 {
   reverse_proxy gateway:4000
 }
 
-:80 {
+
+http://10.13.2.6:3000 {
+  reverse_proxy game:3000
+}
+
+
+http://10.13.2.6:80 {
   reverse_proxy frontend:5173
 }

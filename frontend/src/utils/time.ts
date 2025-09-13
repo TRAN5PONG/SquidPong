@@ -29,7 +29,6 @@ export function timeAgo(date: Date | string | number): string {
   return given.toLocaleDateString(); // fallback
 }
 
-
 export function timeUntil(date: Date | string | number): string {
   const now = new Date();
   const target = new Date(date);

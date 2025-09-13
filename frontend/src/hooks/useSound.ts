@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "@/lib/Zeroact";
 
 export interface SoundValue {
   play: () => void;
-  stop: () => void;
+  stop: (fadeDuration?: number) => void;
   pause: () => void;
   resume: () => void;
   setMuffled: (value: boolean) => void;
@@ -84,7 +84,7 @@ export function useSound(
     loadSound();
   }, [soundUrl]);
 
-  const play = useCallback(() => {
+  const play = useCallback((fresh = false) => {
     const context = audioContextRef.current;
     const gainNode = gainNodeRef.current;
     const buffer = soundBufferRef.current;
@@ -94,28 +94,33 @@ export function useSound(
       return;
     }
 
-    stop(); // stop any existing source first
-
+    // Always create a new source
     const source = context.createBufferSource();
     source.buffer = buffer;
     source.connect(gainNode);
+    source.loop = isLooping;
+    gainNode.gain.setValueAtTime(volume, context.currentTime);
+
     source.start();
 
-    sourceRef.current = source;
-    gainNode.gain.setValueAtTime(volume, context.currentTime);
-    if (isLooping) {
-      source.loop = true;
-    }
-    setIsPlaying(true);
+    if (!fresh) {
+      // Store it as the main source so `stop()` works normally
+      stop();
+      sourceRef.current = source;
+      setIsPlaying(true);
 
-    source.onended = () => {
-      setIsPlaying(false);
-      source.disconnect();
-      if (sourceRef.current === source) sourceRef.current = null;
-    };
+      source.onended = () => {
+        setIsPlaying(false);
+        source.disconnect();
+        if (sourceRef.current === source) sourceRef.current = null;
+      };
+    } else {
+      // Fire-and-forget mode — for rapid hits
+      source.onended = () => source.disconnect();
+    }
   }, []);
 
-  const stop = useCallback((fadeDuration = 3) => {
+  const stop = useCallback((fadeDuration = 0.3) => {
     const context = audioContextRef.current;
     const gainNode = gainNodeRef.current;
     const source = sourceRef.current;
@@ -125,40 +130,23 @@ export function useSound(
       return;
     }
 
-    try {
-      // Smooth fade out instead of abrupt stop
-      const currentTime = context.currentTime;
-      const currentGain = gainNode.gain.value;
+    const currentTime = context.currentTime;
+    const currentGain = gainNode.gain.value;
 
-      // Cancel any scheduled automation first
-      gainNode.gain.cancelScheduledValues(currentTime);
+    gainNode.gain.cancelScheduledValues(currentTime);
+    gainNode.gain.setValueAtTime(currentGain, currentTime);
+    gainNode.gain.linearRampToValueAtTime(0, currentTime + fadeDuration);
 
-      // Start from current volume
-      gainNode.gain.setValueAtTime(currentGain, currentTime);
+    source.stop(currentTime + fadeDuration);
 
-      // Fade down to 0 over fadeDuration
-      gainNode.gain.linearRampToValueAtTime(0, currentTime + fadeDuration);
-
-      // Stop the sound after fade is complete
-      source.stop(currentTime + fadeDuration);
-
-      // Cleanup when fade ends
-      setTimeout(() => {
-        try {
-          source.disconnect();
-        } catch {}
-        if (sourceRef.current === source) {
-          sourceRef.current = null;
-        }
-        setIsPlaying(false);
-      }, fadeDuration * 1000);
-    } catch (e) {
-      console.warn("Failed to fade stop", e);
-      source.stop();
-      source.disconnect();
-      sourceRef.current = null;
+    setTimeout(() => {
+      try {
+        source.disconnect();
+      } catch {}
+      if (sourceRef.current === source) sourceRef.current = null;
+      gainNode.gain.setValueAtTime(volume, context.currentTime); // 👈 reset volume
       setIsPlaying(false);
-    }
+    }, fadeDuration * 1000);
   }, []);
 
   const pause = useCallback(() => {
