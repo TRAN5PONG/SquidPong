@@ -1,8 +1,8 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { PhysicsWorld } from "@/components/Game/physics";
+import { Physics } from "@/components/Game/physics";
 import { Ball } from "../entities/Ball";
 import { Vec3, BallHistory } from "@/types/network";
-import { ServeBall } from "./gameController";
+import { ServeBall } from "./GameController";
 
 export interface RollbackState {
   position: Vector3;
@@ -17,10 +17,10 @@ export class RollbackManager {
   private maxHistory: number = 60;
   private isRollbackInProgress: boolean = false;
 
-  private physics: PhysicsWorld;
+  private physics: Physics;
   private ball: Ball;
 
-  constructor(physics: PhysicsWorld, ball: Ball) {
+  constructor(physics: Physics, ball: Ball) {
     this.physics = physics;
     this.ball = ball;
   }

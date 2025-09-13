@@ -1,9 +1,9 @@
 import { Client, Room } from "colyseus.js";
 import { GameState } from "../network/GameState";
-import { GameController } from "../components/Game/controllers/gameController";
-import { Vec3, BallHitMessage } from "@/types/network";
+import { GameController } from "";
+import { Vec3, PaddleState, BallHitMessage } from "@/game/TypesGame/types";
 import { Vector3 } from "@babylonjs/core";
-import { ServeBall } from "../components/Game/controllers/gameController";
+import { ServeBall } from "../gameController/gameController";
 
 export enum BallSyncResult {
   ROLLBACK_NEEDED,
@@ -226,6 +226,7 @@ export class EntryPoint {
       console.warn("⚠️ Tried to send BallHit but room is not connected");
     }
   }
+
 
   // Connection management
   private getServerUrl(): string {

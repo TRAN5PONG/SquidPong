@@ -1,14 +1,15 @@
-import { Paddle } from "../entities/paddle"
+import { Paddle } from "../entities/Paddle"
 import { Ball } from "../entities/Ball";
 import { GameState, PlayerState } from "../../../network/GameState";
 import { EntryPoint } from "@/network/network";
-import { PhysicsWorld } from "../physics";
+import { Physics } from "../physics";
 import { playerSide, Vec3, BallHitMessage } from "@/types/network";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { RollbackManager } from "./RollbackManager";
 
 // debug paddle
 import { Scene } from "@babylonjs/core";
+import { DebugMeshManager } from "./debugMeshManager_TMP";
 
 export enum ServeBall {
     FOLLOWING_PADDLE,
@@ -42,7 +43,7 @@ export class GameController {
     private lastCollisionTick: number = -1;
 
     // Physics
-    physics: PhysicsWorld | null = null;
+    physics: Physics | null = null;
 
     // Interpolation
     private prevPhysicsPos: Vector3 = new Vector3(0, 0, 0);
@@ -59,11 +60,23 @@ export class GameController {
     private lastUpdatePaddleTime: number = 0;
     private lastFrameTime: number = 0;
 
+    // debug mesh
+    private scene: Scene;
+    private debugMeshes: DebugMeshManager;
+
     constructor(scene: Scene) {
         this.lastUpdatePaddleTime = performance.now();
         this.lastFrameTime = performance.now();
         this.lastPaddleSyncTime = performance.now();
         this.serveState = ServeBall.FOLLOWING_PADDLE;
+
+
+        // debug mesh
+        this.scene = scene;
+        this.debugMeshes = new DebugMeshManager(this.scene);
+        const sessionId = this.entryPoint?.room?.sessionId || "";
+        this.debugMeshes.setSessionId(sessionId);
+        this.debugMeshes.createDebugSpheres();
     }
 
     public setOpponentServePosition(position: Vec3): void {
@@ -186,13 +199,23 @@ export class GameController {
             const meshPos = this.paddle.getMeshPosition();
             this.physics.setPaddleTargetPosition(meshPos.x, meshPos.y, meshPos.z);
         }
+
+
+
+
+        // dubeg
+        const playerIds = this.entryPoint?.getPlayerIds();
+        this.debugMeshes.createMeshes(playerIds);
+        const sessionId = this.entryPoint?.room?.sessionId || "";
+        const rotationPaddle = new Vector3(0, 0, this.physics!.getPaddleZRotation());
+        this.debugMeshes.updatePaddle(sessionId, this.physics!.getPaddlePosition(), rotationPaddle)
     }
 
     setNetwork(network: EntryPoint) {
         this.entryPoint = network;
     }
 
-    setPhysics(physics: PhysicsWorld) {
+    setPhysics(physics: Physics) {
         this.physics = physics;
         this.setCallbacks();
     }

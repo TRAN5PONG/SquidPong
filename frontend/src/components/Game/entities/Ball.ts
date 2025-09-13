@@ -7,76 +7,59 @@ import { TrailMesh } from "@babylonjs/core/Meshes/trailMesh";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { GlowLayer } from "@babylonjs/core/Layers/glowLayer";
+import { Vec3 } from "@/types/network";
 
-export function useBall(scene: Scene | null) {
-  const [meshGroup, setMeshGroup] = useState<TransformNode | null>(null);
-  const [mesh, setMesh] = useState<AbstractMesh | null>(null);
+export class Ball {
+  private meshGroup: TransformNode | null = null;
+  private readonly scene: Scene;
+  mesh!: AbstractMesh;
+  private previousBallPos: Vec3 | null = null;
 
-  useEffect(() => {
-    if (!scene) return;
+  constructor(scene: Scene) {
+    this.scene = scene;
+  }
 
-    let mounted = true;
-    let group: TransformNode | null = null;
+  async Load(): Promise<void> {
+    try {
+      const container = await LoadAssetContainerAsync(
+        "/models/ball.glb",
+        this.scene,
+      );
+      container.addAllToScene();
 
-    async function load() {
-      try {
-        const container = await LoadAssetContainerAsync("/Models/ball.glb", scene!);
-        if (!mounted) return;
-
-        container.addAllToScene();
-
-        group = new TransformNode("BallGroup", scene);
-        let ballMesh: AbstractMesh | null = null;
-
-        container.meshes.forEach((m) => {
-          if (m.name !== "__root__") {
-            m.parent = group!;
-            ballMesh = m as AbstractMesh;
-          }
-        });
-
-        if (ballMesh) {
-          // ✅ Add trail
-          const trail = new TrailMesh("ballTrail", ballMesh, scene!, 0.03, 10, true);
-          const trailMat = new StandardMaterial("trailMat", scene!);
-          trailMat.emissiveColor = new Color3(1, 1, 1); // glowing white
-          trail.material = trailMat;
-
-          // ✅ Glow layer (optional, might stack if multiple balls exist)
-          const glow = new GlowLayer("glow", scene!);
-          glow.intensity = 0;
-
-          setMesh(ballMesh);
+      const group = new TransformNode("BallGroup", this.scene);
+      container.meshes.forEach((mesh) => {
+        if (mesh.name !== "__root__") {
+          mesh.parent = group;
+          this.mesh = mesh;
         }
+      });
+      
+      // ✅ Add Trail
+      const trail = new TrailMesh("ballTrail", this.mesh, this.scene, 0.03, 10, true);
+      const trailMat = new StandardMaterial("trailMat", this.scene);
+      trailMat.emissiveColor = new Color3(1, 1, 1); // white glow
+      trail.material = trailMat;
 
-        setMeshGroup(group);
-      } catch (err) {
-        console.error("Error loading ball model:", err);
-      }
+      const glow = new GlowLayer("glow", this.scene);
+      glow.intensity = 0;
+
+      this.meshGroup = group;
+    } catch (error) {
+      console.error("Error loading ball model:", error);
     }
+  }
 
-    load();
+  setMeshPosition(pos: Vector3): void {
+    if (this.mesh) this.mesh.position.copyFrom(pos);
+  }
 
-    return () => {
-      mounted = false;
-      group?.dispose();
-      mesh?.dispose();
-    };
-  }, [scene]);
+  getMeshPosition(): Vector3 {
+    if (!this.mesh) return Vector3.Zero();
+    return this.mesh.position.clone();
+  }
 
-  // === API like your class ===
-  const setMeshPosition = (pos: Vector3) => {
-    if (mesh) mesh.position.copyFrom(pos);
-  };
-
-  const getMeshPosition = () => {
-    if (!mesh) return Vector3.Zero();
-    return mesh.position.clone();
-  };
-
-  const reset = () => {
-    setMeshPosition(Vector3.Zero());
-  };
-
-  return { meshGroup, mesh, setMeshPosition, getMeshPosition, reset };
+  reset(): void {
+    this.setMeshPosition(Vector3.Zero());
+  }
 }

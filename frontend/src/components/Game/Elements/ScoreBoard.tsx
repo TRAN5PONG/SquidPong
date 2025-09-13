@@ -8,7 +8,7 @@ import { useSounds } from "@/contexts/SoundProvider";
 import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { MatchPlayer } from "@/types/game";
-import { SocketPlayer } from "../Game";
+import { SocketPlayer } from "../Scenes/GameScene";
 
 const StyledScoreBoard = styled("div")`
   width: 80%;

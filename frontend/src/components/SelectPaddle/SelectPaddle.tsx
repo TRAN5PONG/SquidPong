@@ -1,9 +1,7 @@
 import Zeroact, { useEffect } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { useCustomizeScene } from "@/components/Game/scenes/CustomizeScene";
-import { useGameScene } from "@/components/Game/scenes/GameScene";
-import { Color3 } from "@babylonjs/core";
 import { GamePaddle, paddles } from "@/types/game";
+import { CustomizeScene } from "../Game/Scenes/CustomizeScene";
 
 const StyledColor = styled("div")`
   width: 90px;
@@ -222,13 +220,17 @@ const StyledSelectPaddle = styled("div")`
     }
   }
 `;
+
 const SelectPaddle = () => {
+  const canvasRef = Zeroact.useRef<HTMLCanvasElement>(null);
   const [selectedColor, setSelectedColor] = Zeroact.useState<string>("#ffa500");
   const [selectedTexture, setSelectedTexture] =
     Zeroact.useState<GamePaddle | null>(null);
 
-  const canvasRef = Zeroact.useRef<HTMLCanvasElement>(null);
-  const { setPaddleColor, setPaddleTexture } = useCustomizeScene(canvasRef);
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const customizeScene = new CustomizeScene(canvasRef.current);
+  }, []);
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
@@ -238,7 +240,7 @@ const SelectPaddle = () => {
     const g = ((parseInt(hex) >> 8) & 0xff) / 255;
     const b = (parseInt(hex) & 0xff) / 255;
 
-    setPaddleColor(new Color3(r, g, b));
+    // setPaddleColor(new Color3(r, g, b));
   };
 
   const colors = [
@@ -265,8 +267,9 @@ const SelectPaddle = () => {
 
         <h1 className="HeaderTxt">Select texture :</h1>
         <div className="TextureContainer">
-          <div className={`defaultasNone ${!selectedTexture && "selected"}`}
-          onClick={() => {setSelectedTexture(null); setPaddleTexture(null)}}
+          <div
+            className={`defaultasNone ${!selectedTexture && "selected"}`}
+            // onClick={() => {setSelectedTexture(null); setPaddleTexture(null)}}
           >
             <span>None</span>
           </div>
@@ -276,7 +279,7 @@ const SelectPaddle = () => {
               className={`${selectedTexture === texture ? "selected" : ""}`}
               onClick={() => {
                 setSelectedTexture(texture);
-                setPaddleTexture(texture);
+                // setPaddleTexture(texture);
               }}
               key={index}
             >

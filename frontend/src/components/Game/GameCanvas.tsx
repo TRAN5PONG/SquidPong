@@ -1,5 +1,5 @@
-import Zeroact, { useRef } from "@/lib/Zeroact";
-import { useGameScene } from "./scenes/GameScene";
+import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
+import { Game } from "./Scenes/GameScene";
 import { Match } from "@/types/game";
 
 interface GameCanvasProps {
@@ -7,12 +7,14 @@ interface GameCanvasProps {
 }
 const GameCanvas = (props: GameCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { scene } = useGameScene(canvasRef, props.match);
 
+  useEffect(() => {
+    if (canvasRef.current) {
+      const game = new Game(canvasRef.current!);
+      game.start(1);
+    }
+  }, []);
 
-  if (!props.match || !scene) {
-	console.log("waiting for match or scene")
-  }
   return <canvas ref={canvasRef} className="game-canvas"></canvas>;
 };
 
