@@ -1,151 +1,205 @@
-import RAPIER from "@dimforge/rapier3d-compat";
-import { constants } from "@/utils/constants";
 import { useEffect, useRef } from "@/lib/Zeroact";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { constants } from "@/utils/constants";
 
-interface Vector3 {
-  x: number;
-  y: number;
-  z: number;
-}
+import { useBallPhysics } from "./Ball";
+import { usePaddlePhysics } from "./Paddle";
+import { useFloorPhysics } from "./Floor";
+import { useNetPhysics } from "./Net";
+import { useTablePhysics } from "./Table";
 
-export function usePhysics() {
+export function usePhysicsWorld() {
   const worldRef = useRef<RAPIER.World | null>(null);
-  const ballRef = useRef<RAPIER.RigidBody | null>(null);
-  const initialized = useRef(false);
+  const eventQueueRef = useRef<RAPIER.EventQueue | null>(null);
+
+  const lastCollisionTime = useRef<number>(performance.now());
+  const ballSpin = useRef<Vector3>(new Vector3(0, 0, 0));
+  const applySpin = useRef(false);
+  const impulseRef = useRef<Vector3 | null>(null);
+  const timestep = 1 / 60;
+
+  // Callbacks
+  const onBallPaddleCollision = useRef<
+    ((ball: RAPIER.RigidBody, paddle: RAPIER.RigidBody) => void) | undefined
+  >(undefined);
+  const onBallFloorCollision = useRef<
+    ((ball: RAPIER.RigidBody, floor: RAPIER.RigidBody) => void) | undefined
+  >(undefined);
+  const onBallNetCollision = useRef<
+    ((ball: RAPIER.RigidBody, net: RAPIER.RigidBody) => void) | undefined
+  >(undefined);
+
+  // Entity refs
+  const ballBody = useRef<RAPIER.RigidBody | null>(null);
+  const ballCollider = useRef<RAPIER.Collider | null>(null);
+  const paddleBody = useRef<RAPIER.RigidBody | null>(null);
+  const paddleCollider = useRef<RAPIER.Collider | null>(null);
+  const floorBody = useRef<RAPIER.RigidBody | null>(null);
+  const floorCollider = useRef<RAPIER.Collider | null>(null);
+  const netBody = useRef<RAPIER.RigidBody | null>(null);
+  const netCollider = useRef<RAPIER.Collider | null>(null);
+  const tableBody = useRef<RAPIER.RigidBody | null>(null);
+  const tableCollider = useRef<RAPIER.Collider | null>(null);
+
+  // Target positions (refs for performance)
+  const TargetX = useRef(0);
+  const TargetZ = useRef(0);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
+    (async () => {
+      await RAPIER.init();
 
-    RAPIER.init().then(() => {
+      // --- World setup ---
       const world = new RAPIER.World(constants.Gravity);
-      world.timestep = 1 / 60;
-
+      world.timestep = timestep;
       worldRef.current = world;
-      ballRef.current = createBall(world);
-      createTable(world);
-    });
+
+      const eventQueue = new RAPIER.EventQueue(false);
+      eventQueueRef.current = eventQueue;
+
+      // --- Entities setup ---
+      const ball = useBallPhysics(world);
+      ballBody.current = ball.body.current;
+      ballCollider.current = ball.collider.current;
+
+      const paddle = usePaddlePhysics(world);
+      paddleBody.current = paddle.body.current;
+      paddleCollider.current = paddle.collider.current;
+
+      const floor = useFloorPhysics(world);
+      floorBody.current = floor.body.current;
+      floorCollider.current = floor.collider.current;
+
+      const net = useNetPhysics(world);
+      netBody.current = net.body.current;
+      netCollider.current = net.collider.current;
+
+      const table = useTablePhysics(world);
+      tableBody.current = table.body.current;
+      tableCollider.current = table.collider.current;
+    })();
+
+    return () => {
+      if (!worldRef.current) return;
+      [
+        ballCollider.current,
+        paddleCollider.current,
+        floorCollider.current,
+        netCollider.current,
+        tableCollider.current,
+      ].forEach((c) => c && worldRef.current?.removeCollider(c, true));
+
+      [
+        ballBody.current,
+        paddleBody.current,
+        floorBody.current,
+        netBody.current,
+        tableBody.current,
+      ].forEach((b) => b && worldRef.current?.removeRigidBody(b));
+    };
   }, []);
 
-  // === Initialization ===
-  function createBall(world: RAPIER.World): RAPIER.RigidBody {
-    const { position, radius } = constants.BALL;
+  // --- Helpers ---
+  const updatePaddle = (currPos: Vector3) => {
+    if (!paddleBody.current) return;
+    paddleBody.current.setNextKinematicTranslation({
+      x: currPos.x,
+      y: currPos.y,
+      z: currPos.z,
+    });
+  };
 
-    const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-      .setTranslation(position.x, position.y, position.z)
-      .setLinearDamping(0.1)
-      .setAngularDamping(0);
+  const queueBallImpulse = (impulse: Vector3) => {
+    impulseRef.current = impulse;
+  };
 
-    const body = world.createRigidBody(bodyDesc);
+  const step = () => {
+    const world = worldRef.current;
+    const queue = eventQueueRef.current;
+    if (!world || !queue) return;
 
-    const colliderDesc = RAPIER.ColliderDesc.ball(radius)
-      .setRestitution(0.8)
-      .setFriction(0.8)
-      .setDensity(0.8);
+    applyMagnusEffect();
 
-    world.createCollider(colliderDesc, body);
-    return body;
-  }
-  function createTable(world: RAPIER.World) {
-    const { position, size } = constants.TABLE;
+    world.step(queue);
 
-    const bodyDesc = RAPIER.RigidBodyDesc.fixed().setTranslation(
-      position.x,
-      position.y,
-      position.z
-    );
+    queue.drainCollisionEvents((h1, h2, started) => {
+      if (!started) return;
+      handleCollision(h1, h2);
+    });
+  };
 
-    const body = world.createRigidBody(bodyDesc);
+  const handleCollision = (handle1: number, handle2: number) => {
+    const now = performance.now();
+    if (!ballCollider.current || !paddleCollider.current) return;
 
-    const colliderDesc = RAPIER.ColliderDesc.cuboid(
-      size.width / 2,
-      size.height / 2,
-      size.length / 2
-    )
-      .setRestitution(0.8)
-      .setFriction(0.0);
+    const bHandle = ballCollider.current.handle;
+    const pHandle = paddleCollider.current.handle;
+    const fHandle = floorCollider.current?.handle ?? -1;
+    const nHandle = netCollider.current?.handle ?? -1;
 
-    world.createCollider(colliderDesc, body);
-  }
-
-  // === Physics Update ===
-  function updateLocalPhysics() {
-    worldRef.current?.step();
-  }
-
-  // === Ball Control ===
-  function setBallVelocity(x: number, y: number, z: number) {
-    ballRef.current?.setLinvel({ x, y, z }, true);
-  }
-  function setBallDensity(density: number) {
-    const collider = ballRef.current?.collider(0);
-    if (!collider) {
-      console.warn("Ball collider not found.");
+    // Ball + Paddle
+    if (
+      (handle1 === bHandle && handle2 === pHandle) ||
+      (handle2 === bHandle && handle1 === pHandle)
+    ) {
+      if (now - lastCollisionTime.current! < 150) return;
+      lastCollisionTime.current = now;
+      onBallPaddleCollision.current?.(ballBody.current!, paddleBody.current!);
       return;
     }
-    collider.setDensity(density);
-  }
 
-  // === AI / Target Prediction ===
-  function calculateTargetZFromVelocity(
-    paddleVelocityZ: number,
-    zMin: number,
-    zMax: number
-  ): number {
-    const clamped = Math.max(-1, Math.min(1, paddleVelocityZ / 2));
-    const t = (clamped + 1) / 2; // normalize to [0, 1]
-    return zMin + t * (zMax - zMin);
-  }
+    // Ball + Floor
+    if (
+      (handle1 === bHandle && handle2 === fHandle) ||
+      (handle2 === bHandle && handle1 === fHandle)
+    ) {
+      onBallFloorCollision.current?.(ballBody.current!, floorBody.current!);
+      return;
+    }
 
-  function calculateTargetZYVelocity(
-    ballPos: Vector3,
-    paddlePos: Vector3,
-    paddleVel: Vector3
-  ): Vector3 {
-    const { TABLE, Gravity } = constants;
-    const safeMargin = 0.4;
-    const halfLength = TABLE.size.length / 2;
+    // Ball + Net
+    if (
+      (handle1 === bHandle && handle2 === nHandle) ||
+      (handle2 === bHandle && handle1 === nHandle)
+    ) {
+      onBallNetCollision.current?.(ballBody.current!, netBody.current!);
+      return;
+    }
+  };
 
-    const hittingFromLeft = paddlePos.z > 0;
-    const zRange = hittingFromLeft
-      ? { min: -halfLength + safeMargin, max: 0.3 - safeMargin }
-      : { min: 0.3 + safeMargin, max: halfLength - safeMargin };
+  const applyMagnusEffect = () => {
+    if (!applySpin.current || !ballBody.current) return;
 
-    const targetZ = calculateTargetZFromVelocity(paddleVel.z * 0.01, zRange.min, zRange.max);
-    const deltaZ = targetZ - ballPos.z;
+    const ballVel = ballBody.current.linvel();
+    ballBody.current.setLinvel(
+      {
+        x: ballVel.x + ballSpin.current!.x,
+        y: ballVel.y,
+        z: ballVel.z,
+      },
+      true
+    );
 
-    // Y-axis: compute arc jump over net
-    const surfaceY = TABLE.position.y + TABLE.size.height / 2;
-    const arcHeight = Math.max(surfaceY + 0.6, ballPos.y + 0.3);
-    const heightToGain = arcHeight - ballPos.y;
-    const gravity = -Gravity.y;
-
-    const velocityY = heightToGain > 0 ? Math.sqrt(2 * gravity * heightToGain) : 0;
-    const timeUp = velocityY / gravity;
-    const timeDown = Math.sqrt(2 * (arcHeight - surfaceY) / gravity);
-    const flightTime = timeUp + timeDown;
-
-    // X-axis
-    const halfWidth = TABLE.size.width / 2;
-    const xMin = -halfWidth + safeMargin;
-    const xMax = halfWidth - safeMargin;
-    const targetX = Math.max(xMin, Math.min(xMax, paddlePos.x + paddleVel.x * 0.1));
-    const deltaX = targetX - ballPos.x;
-
-    return {
-      x: deltaX / flightTime,
-      y: velocityY,
-      z: deltaZ / flightTime,
-    };
-  }
+    ballSpin.current!.scaleInPlace(0.98);
+  };
 
   return {
-    worldRef,
-    ballRef,
-    updateLocalPhysics,
-    setBallVelocity,
-    setBallDensity,
-    calculateTargetZFromVelocity,
-    calculateTargetZYVelocity,
+    world: worldRef,
+    ballBody,
+    paddleBody,
+    floorBody,
+    netBody,
+    tableBody,
+    step,
+    updatePaddle,
+    queueBallImpulse,
+    TargetX,
+    TargetZ,
+    ballSpin,
+    applySpin,
+    onBallPaddleCollision,
+    onBallFloorCollision,
+    onBallNetCollision,
   };
 }

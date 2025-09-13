@@ -1,24 +1,19 @@
-import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 
 import ScoreBoard from "./Elements/ScoreBoard";
-import { db } from "@/db";
-import CountDown from "./Elements/CountDown";
-import { useGameScene } from "./scenes/GameScene";
-import { useSound } from "@/hooks/useSound";
-import { LoaderSpinner } from "../Loader/Loader";
 import { GiveUpIcon, PauseIcon } from "../Svg/Svg";
 import { MatchResultOverlay } from "./Elements/MatchResultOverlay";
 import { GamePowerUps, Match, MatchPlayer } from "@/types/game";
 
 import { Client, Room, getStateCallbacks } from "colyseus.js";
-import { Schema, MapSchema, type } from "@colyseus/schema";
+import { Schema } from "@colyseus/schema";
 
-import { useSounds } from "@/contexts/SoundProvider";
 import { useRouteParam } from "@/hooks/useParam";
 import { getMatchById } from "@/api/match";
 import NotFound from "../NotFound/NotFound";
 import { useAppContext } from "@/contexts/AppProviders";
+import GameCanvas from "./GameCanvas";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -101,7 +96,6 @@ const StyledGame = styled("div")`
     outline: none;
   }
 `;
-
 interface Spectator {
   id: string;
   username: string;
@@ -122,13 +116,7 @@ interface MatchState extends Schema {
 }
 
 const Game = () => {
-  // Game Scene
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { camera, cinematicCamera, resetGamePlayCamera } =
-    useGameScene(canvasRef);
-
   // Context
-  const { ambianceSound } = useSounds();
   const { user, toasts } = useAppContext();
 
   // Get Match
@@ -151,9 +139,15 @@ const Game = () => {
   const guestId = match?.opponent1.isHost
     ? match.opponent2.id
     : match?.opponent1.id;
+  const userPlayerId =
+    match?.opponent1.userId === user?.id
+      ? match?.opponent1.id
+      : match?.opponent2.id;
+
   const [players, setPlayers] = useState<
     Record<string, MatchPlayer & SocketPlayer>
   >({});
+  const [winnerId, setWinnerId] = useState<string | null>(null);
 
   // Fetch match data
   useEffect(() => {
@@ -179,7 +173,7 @@ const Game = () => {
     if (!match?.roomId || !user?.id) return;
 
     const setupRoom = async () => {
-      const client = new Client("ws://localhost:3000");
+      const client = new Client("ws://10.13.2.6:3000");
 
       try {
         const room = (await client.joinById(match.roomId, {
@@ -252,6 +246,9 @@ const Game = () => {
     $(room.state as any).listen("phase", (phase: string) => {
       setMatchPhase(phase as any);
     });
+    $(room.state as any).listen("winnerId", (newWinnerId: string | null) => {
+      setWinnerId(newWinnerId);
+    });
     $(room.state as any).listen("countdown", (countdown: number) => {
       if (room.state.phase === "countdown") {
         setCountdownValue(countdown);
@@ -288,6 +285,13 @@ const Game = () => {
           message: `Pause denied: ${message.reason}`,
         });
       },
+
+      "game:give-up-denied": (message: any) => {
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Give up denied: ${message.reason}`,
+        });
+      },
     };
 
     // Register all message handlers
@@ -305,24 +309,35 @@ const Game = () => {
   const onPause = () => {
     room?.send("game:pause");
   };
-  const onGiveUp = () => {};
-  const onGameStart = () => {};
+  const onGiveUp = () => {
+    room?.send("player:give-up");
+  };
+
+  useEffect(() => {
+    console.log(matchPhase, room?.state);
+  }, [matchPhase, room]);
 
   if (notFound) return <NotFound />;
   // if (!match) return <LoaderSpinner />;
 
   return (
     <StyledGame>
+      <MatchResultOverlay
+        isWinner={winnerId ? winnerId === userPlayerId : null}
+      />
+
       <ScoreBoard
         host={hostId ? players[hostId] : null}
         guest={guestId ? players[guestId] : null}
         isPaused={matchPhase === "paused"}
         isCountingDown={matchPhase === "countdown"}
+        isEnded={matchPhase === "ended"}
+        winnerId={winnerId}
         countdown={countdownValue || 0}
         pauseCountdown={pauseCountdown || 0}
         pauseBy={room?.state.pauseBy || null}
-        startCinematicCamera={cinematicCamera.playCinematic}
-        resetCamera={resetGamePlayCamera}
+        startCinematicCamera={() => {}}
+        resetCamera={() => {}}
       />
 
       <button
@@ -344,10 +359,16 @@ const Game = () => {
       </h1>
 
       <div className="GameSettings">
-        <button className="GiveUpButton BtnSecondary" onClick={onGiveUp}>
-          <GiveUpIcon size={20} fill="var(--main_color)" />
-          Give up
-        </button>
+        {matchPhase === "playing" ||
+        matchPhase === "paused" ||
+        matchPhase === "waiting" ? (
+          <button className="GiveUpButton BtnSecondary" onClick={onGiveUp}>
+            <GiveUpIcon size={20} fill="var(--main_color)" />
+            Give up
+          </button>
+        ) : (
+          <button className="GiveUpButton BtnSecondary">Back to lobby</button>
+        )}
 
         <button className="PauseButton" onClick={onPause} title="Pause">
           <PauseIcon size={20} fill="rgba(255,255,255,0.5)" />
@@ -362,15 +383,7 @@ const Game = () => {
         </div>
       </div>
 
-      {/* 
-      {matchPhase === "countdown" && countdownValue && (
-        <CountDown value={countdownValue} onComplete={onGameStart} />
-      )} */}
-      {/* {userGameRes && (
-        <MatchResultOverlay isWinner={false} opponentName={"Opponent"} />
-      )} */}
-
-      <canvas ref={canvasRef} className="game-canvas"></canvas>
+      <GameCanvas match={match}/>
     </StyledGame>
   );
 };

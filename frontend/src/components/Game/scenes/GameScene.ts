@@ -1,26 +1,24 @@
 import { RefObject, useEffect, useRef, useState } from "@/lib/Zeroact";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
-import { Vector3 } from "@babylonjs/core";
 
 // Entities
 import { useCamera } from "../entities/cameras/camera";
 import { useLight } from "../entities/light";
-// import { useBall } from "../entities/Ball";
-// import { usePaddle } from "../entities/paddle";
 import { useArena } from "../entities/Arena";
-import { usePhysics } from "../physics";
 import { usePaddle } from "../entities/paddle";
 import { useCinematicCamera } from "../entities/cameras/cinematicCamera";
+import { Match } from "@/types/game";
+import { Camera } from "@babylonjs/core";
+import { usePhysicsWorld } from "../physics";
 
-export function useGameScene(canvasRef: RefObject<HTMLCanvasElement>) {
+export function useGameScene(
+  canvasRef: RefObject<HTMLCanvasElement>,
+  match: Match | null
+) {
   const engineRef = useRef<Engine | null>(null);
   const sceneRef = useRef<Scene | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
-
-  // paddles
-  const L_paddle = usePaddle(sceneRef.current!);
-  const R_paddle = usePaddle(sceneRef.current!, -1);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -46,22 +44,22 @@ export function useGameScene(canvasRef: RefObject<HTMLCanvasElement>) {
 
   // Light
   useLight(sceneRef.current!);
-  // Physics
-  // usePhysics();
 
   // Cameras
   const camera = useCamera(sceneRef.current!, -1, canvasRef.current!);
+
+  // Paddles
+  const U_Paddle = usePaddle(sceneRef.current!, camera.camera!, 1);
+
+  // Physics
+  const physics = usePhysicsWorld();
+
   const cinematicCamera = useCinematicCamera(
     sceneRef.current!,
     canvasRef.current!
   );
 
-  // const ball = useBall(sceneRef.current!);
-  // const paddle = usePaddle(
-  //   sceneRef.current!,
-  //   canvasRef.current!,
-  //   camera.camera!
-  // );
+  // Arena
   const arena = useArena(sceneRef.current!);
 
   useEffect(() => {
@@ -95,7 +93,6 @@ export function useGameScene(canvasRef: RefObject<HTMLCanvasElement>) {
     sceneRef.current.activeCamera = camera.camera;
   };
 
-  // Return refs, entities, or any update methods needed
   return {
     engine: engineRef.current,
     scene: sceneRef.current,

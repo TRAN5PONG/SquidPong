@@ -43,7 +43,7 @@ const FakeStats: PlayerStats = {
 };
 
 const User1: User = {
-  id: "0",
+  id: "1",
   username: "Zero",
   firstName: "Hassan",
   lastName: "Karrach",
@@ -151,7 +151,7 @@ const User3: User = {
   },
 };
 const User4: User = {
-  id: "1",
+  id: "4",
   username: "Paulo",
   firstName: "Bob",
   lastName: "Brown",

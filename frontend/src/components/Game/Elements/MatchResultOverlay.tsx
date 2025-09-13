@@ -107,23 +107,23 @@ const StyledMatchResultOverlay = styled("div")`
   }
 `;
 
-// rgba(255, 156, 45, 1) 100%
-
 interface MatchResultOverlayProps {
-  isWinner: boolean;
-  opponentName: string;
+  isWinner: boolean | null;
 }
 
 export const MatchResultOverlay = (props: MatchResultOverlayProps) => {
-  const {wonSound, lostSound} = useSounds();
+  const { wonSound, lostSound } = useSounds();
 
   useEffect(() => {
+    console.log(props.isWinner);
     if (props.isWinner) {
       wonSound.play();
     } else {
       lostSound.play();
     }
   }, [props.isWinner]);
+
+  if (props.isWinner === null || props.isWinner === undefined) return null;
 
   return (
     <StyledMatchResultOverlay isWinner={props.isWinner}>
@@ -134,9 +134,7 @@ export const MatchResultOverlay = (props: MatchResultOverlayProps) => {
           </h1>
         </div>
         <div className="match-result-text-bottom">
-          <span>
-            + {props.isWinner ? "50" : "10"} XP vs {props.opponentName}
-          </span>
+          <span></span>
         </div>
       </div>
     </StyledMatchResultOverlay>
