@@ -14,6 +14,7 @@ import { Ball } from "@/components/Game/entities/Ball.ts";
 
 export class Game {
   // Entities
+  localPaddle!: Paddle;
   hostPaddle: Paddle;
   guestPaddle: Paddle;
   ball: Ball;
@@ -22,17 +23,13 @@ export class Game {
   light: Light;
   debug: Debug;
   canvas: HTMLCanvasElement;
-
   // Physics
   physics: Physics;
-
   // Controllers
   controller: GameController;
-
   // Babylon
   engine: Engine;
   scene: Scene;
-
   // State flags
   isInitialized: boolean = false;
   isRunning: boolean = false;
@@ -48,20 +45,28 @@ export class Game {
   }
 
   /**
-   * Initialize all core systems (physics, arena, paddles, ball, lighting, camera, debug).
+   * Init
    */
   private async initializeGameWorld(playerSide: number) {
     // Physics
     this.physics = new Physics();
 
     // Camera
-    this.camera = new GameCamera(this.scene);
+    this.camera = new GameCamera(this.scene, playerSide);
     this.camera.attach(this.canvas);
 
     // Entities
     this.arena = new Arena(this.scene);
-    this.hostPaddle = new Paddle(this.scene, this.camera.getCamera(), true);
-    this.guestPaddle = new Paddle(this.scene, this.camera.getCamera(), false);
+    this.hostPaddle = new Paddle(
+      this.scene,
+      "LEFT",
+      true, 
+      // {
+      //   color: { r: 0.173, g: 0.949, b: 0.173 },
+      //   textureUrl: "/paddle/Survivor.png"
+      // }
+    );
+    this.guestPaddle = new Paddle(this.scene, "RIGHT");
     this.ball = new Ball(this.scene);
     this.light = new Light(this.scene);
 
@@ -88,6 +93,7 @@ export class Game {
     let lastTime = performance.now();
 
     this.engine.runRenderLoop(() => {
+      // 9.411266355568738, _y: 6.251347882791112, _z: 0.10065132038983378}
       if (!this.isInitialized) return;
 
       const now = performance.now();

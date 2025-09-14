@@ -1,15 +1,9 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
-import {
-  Color3,
-  Color4,
-  StandardMaterial,
-  Texture,
-} from "@babylonjs/core";
+import { Color4 } from "@babylonjs/core";
 
 import { Light } from "../entities/Light";
 import { AnimateAutoRotate, AnimateRotation } from "@/utils/gsap";
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { CustomizePaddle } from "../entities/Paddle/CustomizePaddle";
 import { PaddleCamera } from "../entities/Camera/PaddleCamera";
 
@@ -25,7 +19,6 @@ export class CustomizeScene {
   camera: PaddleCamera;
 
   // State
-  private textureOverlay: AbstractMesh | null = null;
   private autoRotateController: any;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -51,8 +44,10 @@ export class CustomizeScene {
     // scene defaults
     this.scene.clearColor = new Color4(0, 0, 0, 0);
 
-    // setup interactions + render loop
-    this.registerInputHandlers();
+    // Start
+    this.paddle.ready.then(() => {
+      this.registerInputHandlers();
+    });
     this.startRenderLoop();
   }
 
@@ -71,7 +66,6 @@ export class CustomizeScene {
       isDragging = true;
       lastX = event.clientX;
     };
-
     const onPointerMove = (event: PointerEvent) => {
       if (!isDragging) return;
       const deltaX = event.clientX - lastX;
@@ -79,7 +73,6 @@ export class CustomizeScene {
       targetRotationY -= deltaX * 0.01;
       AnimateRotation(mesh, targetRotationY);
     };
-
     const onPointerUp = () => {
       if (isDragging) {
         isDragging = false;
@@ -94,56 +87,10 @@ export class CustomizeScene {
 
     window.addEventListener("resize", () => this.engine.resize());
   }
-
   private startRenderLoop() {
     this.engine.runRenderLoop(() => {
       this.scene.render();
     });
-  }
-
-  /**
-   * Change paddle base color
-   */
-  setPaddleColor(color: Color3) {
-    const mesh = this.paddle.getMesh();
-    if (!mesh) return;
-
-    let mat = mesh.material as StandardMaterial;
-    if (!mat || !(mat instanceof StandardMaterial)) {
-      mat = new StandardMaterial("paddleBaseMat", this.scene);
-      mesh.material = mat;
-    }
-    mat.diffuseColor = color.clone();
-  }
-
-  /**
-   * Apply texture overlay effect
-   */
-  setPaddleTexture(textureUrl?: string) {
-    const mesh = this.paddle.getMesh();
-    if (!mesh) return;
-
-    // dispose old
-    this.textureOverlay?.dispose();
-    this.textureOverlay = null;
-
-    if (!textureUrl) return;
-
-    const textureMat = new StandardMaterial("textureMat", this.scene);
-    const texture = new Texture(textureUrl, this.scene);
-
-    texture.hasAlpha = true;
-    texture.vScale = -1; // flip vertically
-
-    textureMat.diffuseTexture = texture;
-    textureMat.useAlphaFromDiffuseTexture = true;
-
-    const cloned = mesh.clone("paddleTextureLayer", null, false);
-    if (cloned) {
-      cloned.position.z += 0.001;
-      cloned.material = textureMat;
-      this.textureOverlay = cloned;
-    }
   }
 
   /**
@@ -152,7 +99,6 @@ export class CustomizeScene {
   dispose() {
     this.scene.dispose();
     this.engine.dispose();
-    this.textureOverlay?.dispose();
     this.autoRotateController?.stop();
   }
 }

@@ -1,7 +1,8 @@
-import Zeroact, { useEffect } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { GamePaddle, paddles } from "@/types/game";
 import { CustomizeScene } from "../Game/Scenes/CustomizeScene";
+import { Color3 } from "@babylonjs/core";
 
 const StyledColor = styled("div")`
   width: 90px;
@@ -227,20 +228,28 @@ const SelectPaddle = () => {
   const [selectedTexture, setSelectedTexture] =
     Zeroact.useState<GamePaddle | null>(null);
 
+  // Refs
+  const sceneRef = useRef<CustomizeScene | null>(null);
+
   useEffect(() => {
     if (!canvasRef.current) return;
+
     const customizeScene = new CustomizeScene(canvasRef.current);
+    sceneRef.current = customizeScene;
+
+    return () => {
+      customizeScene.dispose();
+      sceneRef.current = null;
+    };
   }, []);
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
-    // convert to Color3
     const hex = color.replace("#", "0x");
     const r = ((parseInt(hex) >> 16) & 0xff) / 255;
     const g = ((parseInt(hex) >> 8) & 0xff) / 255;
     const b = (parseInt(hex) & 0xff) / 255;
-
-    // setPaddleColor(new Color3(r, g, b));
+    sceneRef.current?.paddle.setColor(new Color3(r, g, b));
   };
 
   const colors = [
@@ -261,6 +270,7 @@ const SelectPaddle = () => {
               color={color}
               isSelected={color === selectedColor}
               onClick={() => handleColorChange(color)}
+              key={index}
             />
           ))}
         </div>
@@ -269,7 +279,10 @@ const SelectPaddle = () => {
         <div className="TextureContainer">
           <div
             className={`defaultasNone ${!selectedTexture && "selected"}`}
-            // onClick={() => {setSelectedTexture(null); setPaddleTexture(null)}}
+            onClick={() => {
+              setSelectedTexture(null);
+              sceneRef.current?.paddle.setTexture(null);
+            }}
           >
             <span>None</span>
           </div>
@@ -279,7 +292,7 @@ const SelectPaddle = () => {
               className={`${selectedTexture === texture ? "selected" : ""}`}
               onClick={() => {
                 setSelectedTexture(texture);
-                // setPaddleTexture(texture);
+                sceneRef.current?.paddle.setTexture(texture.image);
               }}
               key={index}
             >
