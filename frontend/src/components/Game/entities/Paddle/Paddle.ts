@@ -2,6 +2,8 @@ import {
   Scene,
   TransformNode,
   AbstractMesh,
+  StandardMaterial,
+  Color3,
 } from "@babylonjs/core";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 
@@ -25,17 +27,23 @@ export class BasePaddle {
       }
 
       container.addAllToScene();
-
       const group = new TransformNode("PaddleGroup", this.scene);
 
       container.meshes.forEach((mesh) => {
         if (!mesh || mesh.name === "__root__") return;
         mesh.parent = group;
-        if (mesh.name === "Paddle_primitive0") {
+        if (mesh.name === "raquette.001_Cover.002_0") {
           this.mainMesh = mesh as AbstractMesh;
         }
         mesh.isPickable = true;
       });
+
+      // Set default material (red)
+      if (this.mainMesh) {
+        const defaultMat = new StandardMaterial("defaultPaddleMat", this.scene);
+        defaultMat.diffuseColor = new Color3(0.949, 0.173, 0.173);
+        this.mainMesh.material = defaultMat;
+      }
 
       this.mesh = group;
     } catch (err) {

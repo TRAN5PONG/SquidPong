@@ -133,6 +133,7 @@ export function AnimateAutoRotate(
     isPaused = false;
   }
 
+
   start();
 
   return {
