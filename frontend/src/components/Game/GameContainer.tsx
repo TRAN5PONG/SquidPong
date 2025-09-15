@@ -14,6 +14,8 @@ import { getMatchById } from "@/api/match";
 import NotFound from "../NotFound/NotFound";
 import { useAppContext } from "@/contexts/AppProviders";
 import GameCanvas from "./GameCanvas";
+import { MatchPhase, MatchState } from "./network/GameState";
+import { Network } from "./network/network";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -96,24 +98,6 @@ const StyledGame = styled("div")`
     outline: none;
   }
 `;
-interface Spectator {
-  id: string;
-  username: string;
-}
-export interface SocketPlayer {
-  id: string; // MatchPlayer.id
-  isConnected: boolean;
-  pauseRequests: number;
-  remainingPauseTime: number;
-}
-interface MatchState extends Schema {
-  players: Map<string, SocketPlayer>;
-  spectators: Map<string, Spectator>;
-  phase: "waiting" | "countdown" | "playing" | "paused" | "ended";
-  countdown: number;
-  winnerId: string | null;
-  pauseBy: string | null;
-}
 
 const GameContiner = () => {
   // Context
@@ -126,9 +110,7 @@ const GameContiner = () => {
   const [room, setRoom] = useState<Room<MatchState> | null>(null);
 
   // Game States
-  const [matchPhase, setMatchPhase] = useState<
-    "waiting" | "countdown" | "playing" | "paused" | "ended"
-  >("waiting");
+  const [matchPhase, setMatchPhase] = useState<MatchPhase>("waiting");
   const [countdownValue, setCountdownValue] = useState<number | null>(null);
   const [pauseCountdown, setPauseCountdown] = useState<number | null>(null);
 
@@ -144,167 +126,83 @@ const GameContiner = () => {
       ? match?.opponent1.id
       : match?.opponent2.id;
 
-  const [players, setPlayers] = useState<
-    Record<string, MatchPlayer & SocketPlayer>
-  >({});
+  const [players, setPlayers] = useState<Record<string, MatchPlayer>>({});
   const [winnerId, setWinnerId] = useState<string | null>(null);
 
-  // // Fetch match data
-  // useEffect(() => {
-  //   if (!matchId) return;
+  // Fetch match data
+  useEffect(() => {
+    if (!matchId) return;
 
-  //   const getMatch = async () => {
-  //     try {
-  //       const res = await getMatchById(matchId);
-  //       if (res) setMatch(res.data);
-  //       else setNotFound(true);
-  //     } catch (err) {
-  //       setNotFound(true);
-  //       console.error(err);
-  //     }
-  //   };
+    const getMatch = async () => {
+      try {
+        const res = await getMatchById(matchId);
+        if (res) {
+          setMatch(res.data);
+          setPlayers({
+            [res.data.opponent1.id]: res.data.opponent1,
+            [res.data.opponent2.id]: res.data.opponent2,
+          });
+        } else setNotFound(true);
+      } catch (err) {
+        setNotFound(true);
+        console.error(err);
+      }
+    };
 
-  //   // Remove unnecessary timeout
-  //   getMatch();
-  // }, [matchId]);
+    getMatch();
+  }, [matchId]);
 
-  // // Setup room connection
-  // useEffect(() => {
-  //   if (!match?.roomId || !user?.id) return;
+  // Setup room connection
+  useEffect(() => {
+    if (!match?.roomId || !user?.id) return;
 
-  //   const setupRoom = async () => {
-  //     const client = new Client("ws://10.13.2.6:3000");
+    const net = new Network("ws://10.13.2.6:3000", match);
+    net.join(match.roomId, user.id).then((room) => {
+      setRoom(room);
 
-  //     try {
-  //       const room = (await client.joinById(match.roomId, {
-  //         userId: user.id,
-  //       })) as Room<MatchState>;
+      // state listeners
+      net.on("players", (data: any) => {
+        setPlayers(data);
+        console.log("Players updated:", data);
+      });
+      net.on("phase", setMatchPhase);
+      net.on("countdown", setCountdownValue);
+      net.on("winner", setWinnerId);
+    });
 
-  //       setRoom(room);
-  //     } catch (err) {
-  //       console.error("❌ Failed to join room:", err);
-  //     }
-  //   };
-
-  //   setupRoom();
-
-  //   // Cleanup on unmount or dependency change
-  //   return () => {
-  //     room?.leave();
-  //     setRoom(null);
-  //   };
-  // }, [match?.roomId, user?.id]);
-
-  // // Setup room listeners
-  // useEffect(() => {
-  //   if (!room || !match) return;
-
-  //   const matchPlayers = {
-  //     [match.opponent1.id]: match.opponent1,
-  //     [match.opponent2.id]: match.opponent2,
-  //   };
-
-  //   // Get state callbacks helper
-  //   const $ = getStateCallbacks(room as any);
-
-  //   // players management
-  //   $(room.state as any).players.onAdd(
-  //     (player: SocketPlayer, playerId: string) => {
-  //       // Add player to state
-  //       setPlayers((prev) => ({
-  //         ...prev,
-  //         [playerId]: {
-  //           ...matchPlayers[playerId],
-  //           ...player,
-  //         },
-  //       }));
-
-  //       $(player as any).listen("isConnected", (isConnected: boolean) => {
-  //         setPlayers((prev) => ({
-  //           ...prev,
-  //           [playerId]: {
-  //             ...prev[playerId],
-  //             isConnected,
-  //           },
-  //         }));
-  //       });
-  //     }
-  //   );
-  //   $(room.state as any).players.onRemove(
-  //     (player: SocketPlayer, playerId: string) => {
-  //       console.log("Player left:", player, playerId);
-
-  //       setPlayers((prev) => {
-  //         const newPlayers = { ...prev };
-  //         delete newPlayers[playerId];
-  //         return newPlayers;
-  //       });
-  //     }
-  //   );
-
-  //   // Event listeners
-  //   $(room.state as any).listen("phase", (phase: string) => {
-  //     setMatchPhase(phase as any);
-  //   });
-  //   $(room.state as any).listen("winnerId", (newWinnerId: string | null) => {
-  //     setWinnerId(newWinnerId);
-  //   });
-  //   $(room.state as any).listen("countdown", (countdown: number) => {
-  //     if (room.state.phase === "countdown") {
-  //       setCountdownValue(countdown);
-  //     } else {
-  //       setCountdownValue(null);
-  //     }
-  //   });
-
-  //   // Setup message handlers
-  //   const messageHandlers = {
-  //     "game:paused": (message: any) => {
-  //       setPauseCountdown(message.remainingPauseTime || null);
-  //     },
-
-  //     "game:resumed": (message: any) => {
-  //       console.log("Game resumed by opponent", message);
-  //       setPauseCountdown(null);
-  //     },
-
-  //     "game:pause-tick": (message: any) => {
-  //       setPauseCountdown(message.remainingPauseTime || null);
-  //     },
-
-  //     "game:resume-denied": (message: any) => {
-  //       toasts.addToastToQueue({
-  //         type: "error",
-  //         message: `Resume denied: ${message.reason}`,
-  //       });
-  //     },
-
-  //     "game:pause-denied": (message: any) => {
-  //       toasts.addToastToQueue({
-  //         type: "error",
-  //         message: `Pause denied: ${message.reason}`,
-  //       });
-  //     },
-
-  //     "game:give-up-denied": (message: any) => {
-  //       toasts.addToastToQueue({
-  //         type: "error",
-  //         message: `Give up denied: ${message.reason}`,
-  //       });
-  //     },
-  //   };
-
-  //   // Register all message handlers
-  //   Object.entries(messageHandlers).forEach(([type, handler]) => {
-  //     room.onMessage(type, handler);
-  //   });
-
-  //   // Cleanup function
-  //   return () => {
-  //     // Remove specific listeners if needed
-  //     // Note: Colyseus automatically cleans up when room disconnects
-  //   };
-  // }, [room, match]);
+    // register handlers
+    net.registerMessageHandlers({
+      "game:paused": (message: any) => {
+        setPauseCountdown(message.remainingPauseTime || null);
+      },
+      "game:resumed": (message: any) => {
+        console.log("Game resumed by opponent", message);
+        setPauseCountdown(null);
+      },
+      "game:pause-tick": (message: any) => {
+        setPauseCountdown(message.remainingPauseTime || null);
+      },
+      "game:resume-denied": (message: any) => {
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Resume denied: ${message.reason}`,
+        });
+      },
+      "game:pause-denied": (message: any) => {
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Pause denied: ${message.reason}`,
+        });
+      },
+      "game:give-up-denied": (message: any) => {
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Give up denied: ${message.reason}`,
+        });
+      },
+    });
+    return () => net.leave();
+  }, [match?.roomId, user?.id]);
 
   const onPause = () => {
     room?.send("game:pause");
@@ -379,7 +277,7 @@ const GameContiner = () => {
         </div>
       </div>
 
-      <GameCanvas match={match}/>
+      {/* <GameCanvas match={match} /> */}
     </StyledGame>
   );
 };

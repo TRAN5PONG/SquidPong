@@ -1,14 +1,7 @@
-import {
-  AbstractMesh,
-  Color3,
-  Scene,
-  StandardMaterial,
-  Texture,
-} from "@babylonjs/core";
+import { Color3, Scene, StandardMaterial, Texture } from "@babylonjs/core";
 import { BasePaddle } from "./Paddle";
 
 export class CustomizePaddle extends BasePaddle {
-  private textureOverlay: AbstractMesh | null = null;
   ready: Promise<void>;
   meshGroup: any;
 
@@ -18,19 +11,22 @@ export class CustomizePaddle extends BasePaddle {
       this.meshGroup = this.mesh;
       if (this.meshGroup) {
         this.meshGroup.position.y = -0.2;
-        this.meshGroup.rotation.x = -Math.PI / 2;
-        this.meshGroup.scaling.scaleInPlace(1.1);
+        this.meshGroup.scaling.scaleInPlace(0.8);
+
+        // Ensure paddle has a StandardMaterial from start
+        let mat = this.mainMesh?.material as StandardMaterial;
+        if (!mat || !(mat instanceof StandardMaterial)) {
+          mat = new StandardMaterial("paddleMat", this.scene);
+          this.mainMesh!.material = mat;
+        }
       }
-    })
-    // Set initial position/rotation
+    });
   }
 
   setColor(color: Color3) {
     if (!this.mainMesh) return;
-    console.log("reaches");
 
     let mat = this.mainMesh.material as StandardMaterial;
-
     if (!mat || !(mat instanceof StandardMaterial)) {
       mat = new StandardMaterial("paddleMat", this.scene);
       this.mainMesh.material = mat;
@@ -38,38 +34,47 @@ export class CustomizePaddle extends BasePaddle {
 
     mat.diffuseColor = color.clone();
   }
-  setTexture(url: string | null) {
+
+  setTexture(url: string | null, color?: Color3) {
     if (!this.mainMesh) return;
 
-    // Clean up existing overlay
-    this.textureOverlay?.dispose();
-    this.textureOverlay = null;
+    // Reuse existing material if possible
+    let mat = this.mainMesh.material as StandardMaterial;
 
-    if (!url) return;
+    if (!mat || !(mat instanceof StandardMaterial)) {
+      mat = new StandardMaterial("paddleMat", this.scene);
+      this.mainMesh.material = mat;
+    }
+
+    // Reset texture if null
+    if (!url) {
+      mat.diffuseTexture = null;
+      if (color) {
+        mat.diffuseColor = color.clone();
+      }
+      return;
+    }
 
     try {
-      const mat = new StandardMaterial("paddleTexMat", this.scene);
       const tex = new Texture(url, this.scene);
 
       tex.hasAlpha = true;
+      tex.uAng = 0; // texture rotation if needed
+      tex.vAng = 0;
+
+      // Apply both color + texture
       mat.diffuseTexture = tex;
       mat.useAlphaFromDiffuseTexture = true;
-      mat.backFaceCulling = true; // Show texture on both sides
+      mat.opacityTexture = null; // don’t make paddle transparent
+      mat.diffuseTexture.level = 1; // texture intensity
 
-      const clone = this.mainMesh.clone("paddleOverlay", this.mainMesh.parent);
-      if (clone) {
-        clone.position = this.mainMesh.position.clone();
-        // clone.position.z += 0.001;
-        clone.rotation = this.mainMesh.rotation.clone();
-        clone.scaling = this.mainMesh.scaling.clone();
-
-        clone.material = mat;
-        this.textureOverlay = clone;
-
-        console.log("Texture overlay created successfully");
+      if (color) {
+        mat.diffuseColor = color.clone(); // tint under texture
       } else {
-        console.error("Failed to clone mesh for texture overlay");
+        mat.diffuseColor = new Color3(1, 1, 1); // white base if no color provided
       }
+
+      console.log("Texture and color applied successfully");
     } catch (error) {
       console.error("Error applying texture:", error);
     }

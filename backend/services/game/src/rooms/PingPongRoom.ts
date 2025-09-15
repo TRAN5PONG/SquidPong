@@ -88,7 +88,7 @@ export class MatchRoom extends Room<MatchState> {
         });
         return;
       }
-      
+
       this.state.phase = "ended";
       this.state.winnerId =
         Array.from(this.state.players.values()).find((p) => p.id !== player.id)
@@ -121,7 +121,17 @@ export class MatchRoom extends Room<MatchState> {
 
     if (_client.meta.role === "player") {
       const matchPlayer = await prisma.matchPlayer.findFirst({
-        where: { userId: options.userId },
+        where: {
+          userId: options.userId,
+          OR: [
+            {
+              matchAsOpponent1: { status: { in: ["WAITING", "IN_PROGRESS"] } },
+            },
+            {
+              matchAsOpponent2: { status: { in: ["WAITING", "IN_PROGRESS"] } },
+            },
+          ],
+        },
       });
 
       if (!matchPlayer) {
@@ -172,7 +182,7 @@ export class MatchRoom extends Room<MatchState> {
       }
     }
   };
-
+  
   onDispose() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);
     console.log("Room disposed", this.roomId);
