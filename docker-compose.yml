@@ -23,18 +23,15 @@ services:
     volumes:
       - ./frontend:/frontend
       - /frontend/node_modules
-
     networks:
       - web
+
   redis:
-    image: redis:7
+    image: redis/redis-stack-server:latest
     container_name: redis
     restart: always
     networks:
       - web
-    # volumes:
-    #   - ./data/redis:/data
-    # command: ["redis-server", "--appendonly", "yes", "--dir", "/data", "--appendfilename", "appendonly.aof"]
 
   rabbitmq:
     image: rabbitmq
@@ -85,7 +82,7 @@ services:
       - "5001:5555"
     volumes:
       - ./backend/services/auth/src:/auth/src
-      - ./backend/services/auth/prisma:/auth/prisma  # mounted DB folder
+      - ./backend/services/auth/prisma:/auth/prisma
     networks:
       - web
 
@@ -107,7 +104,7 @@ services:
     volumes:
       - ./frontend/src/uploads:/tmp/
       - ./backend/services/user/src:/user/src
-      - ./backend/services/user/prisma:/user/prisma  # mounted DB folder
+      - ./backend/services/user/prisma:/user/prisma
     networks:
       - web
 
@@ -128,52 +125,52 @@ services:
       - "5003:5555"
     volumes:
       - ./backend/services/notify/src:/notify/src
-      - ./backend/services/notify/prisma:/notify/prisma  # mounted DB folder
+      - ./backend/services/notify/prisma:/notify/prisma
     networks: 
       - web
 
-  chat:
-    build: ./backend/services/chat
-    image: chat-image
-    container_name: chat
-    restart: always
-    command: >
-      sh -c "
-      sleep 6 &&
-      npx prisma migrate dev --name init &&
-      npm run dev
-      "
-    env_file:
-      - ./backend/services/chat/.env
-    ports:
-      - "5004:5555"
-    volumes:
-      - ./backend/services/chat/src:/chat/src
-      - ./backend/services/chat/prisma:/chat/prisma  # mounted DB folder
-    networks: 
-      - web
+  # chat:
+  #   build: ./backend/services/chat
+  #   image: chat-image
+  #   container_name: chat
+  #   restart: always
+  #   command: >
+  #     sh -c "
+  #     sleep 6 &&
+  #     npx prisma migrate dev --name init &&
+  #     npm run dev
+  #     "
+  #   env_file:
+  #     - ./backend/services/chat/.env
+  #   ports:
+  #     - "5004:5555"
+  #   volumes:
+  #     - ./backend/services/chat/src:/chat/src
+  #     - ./backend/services/chat/prisma:/chat/prisma
+  #   networks: 
+  #     - web
 
-  game:
-    build: ./backend/services/game
-    image: game-image
-    container_name: game
-    restart: always
-    command: >
-      sh -c "
-      sleep 6 &&
-      npx prisma migrate dev --name init &&
-      npm run dev
-      "
-    env_file:
-      - ./backend/services/game/.env
-    ports:
-      - "3000:3000"
-      - "5005:5555"
-    volumes:
-      - ./backend/services/game/src:/game/src
-      - ./backend/services/game/prisma:/game/prisma  # mounted DB folder
-    networks: 
-      - web
+  # game:
+  #   build: ./backend/services/game
+  #   image: game-image
+  #   container_name: game
+  #   restart: always
+  #   command: >
+  #     sh -c "
+  #     sleep 6 &&
+  #     npx prisma migrate dev --name init &&
+  #     npm run dev
+  #     "
+  #   env_file:
+  #     - ./backend/services/game/.env
+  #   ports:
+  #     - "3000:3000"
+  #     - "5005:5555"
+  #   volumes:
+  #     - ./backend/services/game/src:/game/src
+  #     - ./backend/services/game/prisma:/game/prisma
+  #   networks: 
+  #     - web
 
 networks:
   web:

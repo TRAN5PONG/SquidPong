@@ -17,3 +17,18 @@ export type ApiResponse<T = any> = {
   message: string;
   data?: T | any;
 };
+
+
+
+export function sendError(res: FastifyReply, error: unknown, statusCode = 400) 
+{
+  const message = error instanceof Error ? error.message : String(error);
+
+  const response: ApiResponse<null> = {
+    success: false,
+    message,
+    data: null,
+  };
+
+  return res.status(statusCode).send(response);
+}

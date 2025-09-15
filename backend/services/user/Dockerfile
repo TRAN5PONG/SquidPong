@@ -8,6 +8,10 @@ COPY ./*.json .
 
 RUN npm install
 
+RUN npm install ioredis-json
+
+RUN npm install @types/ioredis --save-dev
+
 RUN npm i --save-dev @types/amqplib
 
 COPY ./src ./src

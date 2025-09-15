@@ -3,7 +3,6 @@ import * as userController from '../controllers/user.controller';
 import * as friendController from '../controllers/friend.controller';
 import * as blockController from '../controllers/block.controller';
 import { createProfileSchema , updateProfileSchema , deleteProfileSchema , getCurrentUserSchema  , getUserByIdSchema , getAllUserSchema} from '../validators/ProfileSchema';
-// import { sendFriendRequestSchema, acceptFriendRequestSchema, rejectFriendRequestSchema, getFriendsListSchema, removeFriendSchema, getPendingRequestsSchema,blockUserSchema,unblockUserSchema,getBlockedUsersSchema } from '../validators/FriendSchema';
 
 
 
@@ -17,6 +16,7 @@ type Route = {
 
 const userRoutes: Route[] = [
   { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler },
+  { method: 'POST', url: '/update-xylar99', handler: userController.updateProfileHandler99 },
   { method: 'PUT', url: '/api/user/me', handler: userController.updateProfileHandler },
   { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler },
   { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler },
@@ -36,13 +36,9 @@ const friendRoutes: Route[] = [
 
   { method: 'GET', url: '/api/friend/verify', handler: friendController.verifyFriendshipHandler },
 
-
-  { method: 'GET', url: '/api/friend/search', handler: friendController.searchFriendsByUsernameHandler },
-
   { method: 'POST', url: '/api/blocked/:blockId', handler: blockController.blockUserHandler },
   { method: 'DELETE', url: '/api/blocked/:blockId', handler: blockController.unblockUserHandler },
 
-  { method: 'GET', url: '/api/blocked/search', handler: blockController.searchBlockedUsersByUsernameHandler },
 ];
 
 
