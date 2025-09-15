@@ -43,7 +43,16 @@ export class Paddle extends BasePaddle {
     this.setupInitialPosition();
 
     if (this.options) {
-      this.applyStyle(this.options);
+      this.setTexture(
+        this.options.textureUrl || null,
+        this.options.color
+          ? new Color3(
+              this.options.color.r,
+              this.options.color.g,
+              this.options.color.b
+            )
+          : undefined
+      );
     }
 
     if (this.isLocal) {
@@ -118,60 +127,48 @@ export class Paddle extends BasePaddle {
     };
   }
 
-  private applyStyle(options: PaddleOptions) {
+  setTexture(url: string | null, color?: Color3) {
     if (!this.mainMesh) return;
 
-    // Apply color (like setColor)
-    if (options.color) {
-      let mat = this.mainMesh.material as StandardMaterial;
+    // Reuse existing material if possible
+    let mat = this.mainMesh.material as StandardMaterial;
 
-      if (!mat || !(mat instanceof StandardMaterial)) {
-        mat = new StandardMaterial("paddleMat", this.scene);
-        this.mainMesh.material = mat;
-      }
-
-      mat.diffuseColor = new Color3(
-        options.color.r,
-        options.color.g,
-        options.color.b
-      );
+    if (!mat || !(mat instanceof StandardMaterial)) {
+      mat = new StandardMaterial("paddleMat", this.scene);
+      this.mainMesh.material = mat;
     }
 
-    // Apply texture (like setTexture)
-    if (options.textureUrl) {
-      // Clean up existing overlay
-      this.textureOverlay?.dispose();
-      this.textureOverlay = null;
-
-      try {
-        const mat = new StandardMaterial("paddleTexMat", this.scene);
-        const tex = new Texture(options.textureUrl, this.scene);
-
-        tex.hasAlpha = true;
-        mat.diffuseTexture = tex;
-        mat.useAlphaFromDiffuseTexture = true;
-        mat.backFaceCulling = false; // <- texture on both sides
-
-        // Overlay trick to preserve base color + add texture
-        const clone = this.mainMesh.clone(
-          "paddleOverlay",
-          this.mainMesh.parent
-        );
-        if (clone) {
-          clone.position = this.mainMesh.position.clone();
-          clone.rotation = this.mainMesh.rotation.clone();
-          clone.scaling = this.mainMesh.scaling.clone();
-
-          clone.material = mat;
-          this.textureOverlay = clone;
-
-          console.log("Texture overlay created successfully");
-        } else {
-          console.error("Failed to clone mesh for texture overlay");
-        }
-      } catch (error) {
-        console.error("Error applying texture:", error);
+    // Reset texture if null
+    if (!url) {
+      mat.diffuseTexture = null;
+      if (color) {
+        mat.diffuseColor = color.clone();
       }
+      return;
+    }
+
+    try {
+      const tex = new Texture(url, this.scene);
+
+      tex.hasAlpha = true;
+      tex.uAng = 0; // texture rotation if needed
+      tex.vAng = 0;
+
+      // Apply both color + texture
+      mat.diffuseTexture = tex;
+      mat.useAlphaFromDiffuseTexture = true;
+      mat.opacityTexture = null; // don’t make paddle transparent
+      mat.diffuseTexture.level = 1; // texture intensity
+
+      if (color) {
+        mat.diffuseColor = color.clone(); // tint under texture
+      } else {
+        mat.diffuseColor = new Color3(1, 1, 1); // white base if no color provided
+      }
+
+      console.log("Texture and color applied successfully");
+    } catch (error) {
+      console.error("Error applying texture:", error);
     }
   }
 }

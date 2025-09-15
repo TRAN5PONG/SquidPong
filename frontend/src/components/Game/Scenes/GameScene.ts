@@ -61,10 +61,9 @@ export class Game {
       this.scene,
       "LEFT",
       true, 
-      // {
-      //   color: { r: 0.173, g: 0.949, b: 0.173 },
-      //   textureUrl: "/paddle/Survivor.png"
-      // }
+      {
+        textureUrl: "/paddle/Survivor.png"
+      }
     );
     this.guestPaddle = new Paddle(this.scene, "RIGHT");
     this.ball = new Ball(this.scene);

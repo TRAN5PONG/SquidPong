@@ -292,7 +292,7 @@ const SelectPaddle = () => {
               className={`${selectedTexture === texture ? "selected" : ""}`}
               onClick={() => {
                 setSelectedTexture(texture);
-                sceneRef.current?.paddle.setTexture(texture.image);
+                sceneRef.current?.paddle.setTexture(texture.image, new Color3(1, 1, 1));
               }}
               key={index}
             >

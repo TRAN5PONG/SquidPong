@@ -1,7 +1,7 @@
 import { Paddle } from "../entities/Paddle"
 import { Ball } from "../entities/Ball";
-import { GameState, PlayerState } from "../../../network/GameState";
-import { EntryPoint } from "@/network/network";
+import { GameState, PlayerState } from "../network/GameState";
+import { EntryPoint } from "@/components/Game/network/network";
 import { Physics } from "../physics";
 import { playerSide, Vec3, BallHitMessage } from "@/types/network";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";

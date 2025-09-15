@@ -27,6 +27,8 @@ export interface MatchPlayer {
   isResigned: boolean; // Whether the player has resigned from the match
   isWinner: boolean; // Whether the player won the match
   isConnected: boolean;
+  pauseRequests: number;
+  remainingPauseTime: number;
 
   characterId: string; // ID of the character selected by the player
   paddleId: string;
@@ -509,25 +511,33 @@ export const RANKS: Rank[] = [
   },
 ];
 
-export const GamePowerUps: { type: powerUps; image: string; description: string }[] = [
+export const GamePowerUps: {
+  type: powerUps;
+  image: string;
+  description: string;
+}[] = [
   {
     type: "fireBall",
     image: "/assets/powerUps/fireBall.png",
-    description: "Ignite the ball to increase its speed and make it harder to return.",
+    description:
+      "Ignite the ball to increase its speed and make it harder to return.",
   },
   {
     type: "freezeBall",
     image: "/assets/powerUps/freezeBall.png",
-    description: "Freeze the ball to decrease its speed and make it easier to return.",
+    description:
+      "Freeze the ball to decrease its speed and make it easier to return.",
   },
   {
     type: "shield",
     image: "/assets/powerUps/shield.png",
-    description: "Activate a shield that protects your paddle from one opponent's power-up.",
+    description:
+      "Activate a shield that protects your paddle from one opponent's power-up.",
   },
   {
     type: "Confusion",
     image: "/assets/powerUps/confusion.png",
-    description: "Confuse your opponent by reversing their paddle controls for a short duration.",
-  }
-]
+    description:
+      "Confuse your opponent by reversing their paddle controls for a short duration.",
+  },
+];
