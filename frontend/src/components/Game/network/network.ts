@@ -46,9 +46,12 @@ export class Network {
   }
 
   // Join
-  async join(roomId: string, userId: string) {
+  async join(userId: string) {
+    if (!this.match) throw new Error("Match data is required to join");
     try {
-      this.room = await this.client.joinById<MatchState>(roomId, { userId });
+      this.room = await this.client.joinById<MatchState>(this.match?.id, {
+        userId,
+      });
       this.setupMatchListeners();
       return this.room;
     } catch (err) {
@@ -65,52 +68,60 @@ export class Network {
     // Players
     $(this.room.state as any).players.onAdd(
       (player: MatchPlayer, playerId: string) => {
-        const existingPlayer = this.players[playerId];
-        if (!existingPlayer) return;
+        console.log("ON ADD", player);
+        // Always set local state
+
         this.players[playerId] = {
-          ...existingPlayer,
+          ...this.players[playerId], // merge if exists
           isConnected: player.isConnected,
           pauseRequests: player.pauseRequests,
           remainingPauseTime: player.remainingPauseTime,
         };
-        this.emit('players', this.players);
 
+        // Listen for isConnected changes
         $(player as any).listen("isConnected", (isConnected: boolean) => {
           if (this.players[playerId]) {
             this.players[playerId].isConnected = isConnected;
-            console.log(`Player ${playerId} connection status:`, isConnected);
-            this.emit('players', this.players);
+            this.emit("players", this.players);
           }
         });
+
+        this.emit("players", this.players);
       }
     );
-    $(this.room.state as any).players.onRemove(
-      (_: MatchPlayer, playerId: string) => {
-        if (this.players[playerId]) {
-          this.players[playerId].isConnected = false;
-          this.players[playerId].remainingPauseTime = 0;
-          this.players[playerId].pauseRequests = 0;
-          this.emit('players', this.players);
-        }
-      }
-    );
+
+    // $(this.room.state as any).players.onChange(
+    //   (_: MatchPlayer, playerId: string) => {
+    //     console.log("ON CHANGE", _);
+    //     if (this.players[playerId]) {
+    //       this.players[playerId].isConnected = false;
+    //       this.players[playerId].remainingPauseTime = 0;
+    //       this.players[playerId].pauseRequests = 0;
+    //       this.emit("players", this.players);
+    //     }
+    //   }
+    // );
 
     // Phase
     $(this.room.state as any).listen("phase", (phase: MatchPhase) => {
       this.phase = phase;
-      this.emit('phase', phase);
+      this.emit("phase", phase);
     });
 
     // Winner
-    $(this.room.state as any).listen("winnerId", (newWinnerId: string | null) => {
-      this.winnerId = newWinnerId;
-      this.emit('winner', newWinnerId);
-    });
+    $(this.room.state as any).listen(
+      "winnerId",
+      (newWinnerId: string | null) => {
+        this.winnerId = newWinnerId;
+        this.emit("winner", newWinnerId);
+      }
+    );
 
     // Countdown
     $(this.room.state as any).listen("countdown", (countdown: number) => {
-      this.countdown = this.room?.state.phase === "countdown" ? countdown : null;
-      this.emit('countdown', this.countdown);
+      this.countdown =
+        this.room?.state.phase === "countdown" ? countdown : null;
+      this.emit("countdown", this.countdown);
     });
   }
 
@@ -125,7 +136,7 @@ export class Network {
   // Send message to server
   sendMessage(type: string, data?: any) {
     if (!this.room) {
-      console.warn('Cannot send message: not connected to room');
+      console.warn("Cannot send message: not connected to room");
       return;
     }
     this.room.send(type, data);
@@ -173,10 +184,7 @@ export class Network {
     }
   }
 
-  private emit<K extends keyof ListenerTypes>(
-    key: K,
-    data: ListenerTypes[K]
-  ) {
+  private emit<K extends keyof ListenerTypes>(key: K, data: ListenerTypes[K]) {
     this.listeners[key].forEach((callback) => callback(data));
   }
 

@@ -13,6 +13,11 @@ class Player extends Schema {
   pauseTimeout?: NodeJS.Timeout;
 }
 
+class Paddle extends Schema {
+  @type("number") x = 0;
+  @type("number") y = 0;
+}
+
 class Spectator extends Schema {
   @type("string") id!: string;
   @type("string") username!: string;
@@ -36,17 +41,22 @@ class MatchState extends Schema {
 // --- Room ---
 interface MatchRoomOptions {
   matchId: string;
+  roomId: string;
   players: string[]; // userIds
   spectators: string[];
 }
 
 export class MatchRoom extends Room<MatchState> {
   maxClients = 10;
+  autoDispose = false; //TODO: i need to handle disposal myself
   // Intervals
   private countdownInterval?: NodeJS.Timeout;
   private pauseInterval?: NodeJS.Timeout;
 
   onCreate = async (options: MatchRoomOptions) => {
+    // Get/create consistent roomId
+    this.roomId = options.roomId;
+
     const match = await prisma.match.findUnique({
       where: { id: options.matchId },
       include: { matchSetting: true },
@@ -120,6 +130,7 @@ export class MatchRoom extends Room<MatchState> {
     const _client = client as any;
 
     if (_client.meta.role === "player") {
+      // check if player already in room
       const matchPlayer = await prisma.matchPlayer.findFirst({
         where: {
           userId: options.userId,
@@ -140,18 +151,18 @@ export class MatchRoom extends Room<MatchState> {
         return;
       }
 
+      _client.matchPlayerId = matchPlayer.id;
       let player = this.state.players.get(matchPlayer.id);
-      _client.meta.matchPlayerId = matchPlayer.id;
-      if (!player) {
+
+      if (player) {
+        player.isConnected = true;
+      } else {
         player = new Player();
         player.id = matchPlayer.id;
+        player.isConnected = true;
         player.remainingPauseTime = this.state.maxPauseTime;
 
         this.state.players.set(matchPlayer.id, player);
-        console.log(`Player ${player.id} joined room ${this.roomId}`);
-      } else {
-        player.isConnected = true;
-        console.log(`Player ${player.id} re-joined room ${this.roomId}`);
       }
     } else {
       const spectator = new Spectator();
@@ -162,27 +173,27 @@ export class MatchRoom extends Room<MatchState> {
     }
   };
 
-  onLeave = async (client: Client, options: any) => {
-    const matchPlayer = await prisma.matchPlayer.findFirst({
-      where: { userId: options.userId },
-    });
+  onLeave = async (client: Client, consented: boolean) => {
+    const _client = client as any;
 
-    if (!matchPlayer) {
-      console.error(`No match player found for userId ${options.userId}`);
-      client.leave();
-      return;
-    }
+    console.log("🚪 Player leaving:", _client.userId);
 
-    let player = this.state.players.get(matchPlayer.id);
-    if (player) {
-      player.isConnected = false;
-      if (player.pauseTimeout) {
-        clearTimeout(player.pauseTimeout);
-        player.pauseTimeout = undefined;
+    if (_client.matchPlayerId) {
+      const player = this.state.players.get(_client.matchPlayerId);
+
+      if (player) {
+        console.log(
+          "🔄 Setting player as disconnected:",
+          _client.matchPlayerId
+        );
+        if (player.pauseTimeout) {
+          clearTimeout(player.pauseTimeout);
+        }
+        player.isConnected = false;
       }
     }
   };
-  
+
   onDispose() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);
     console.log("Room disposed", this.roomId);
@@ -193,7 +204,6 @@ export class MatchRoom extends Room<MatchState> {
     if (this.state.players.size < 2) return false;
     return Array.from(this.state.players.values()).every((p) => p.isReady);
   }
-
   private startCountdown() {
     this.state.phase = "countdown";
     this.state.countdown = 6;
@@ -234,7 +244,6 @@ export class MatchRoom extends Room<MatchState> {
       this.pauseInterval = undefined;
     }
   }
-
   private startGame() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);
 
@@ -242,7 +251,6 @@ export class MatchRoom extends Room<MatchState> {
     console.log("Game started!");
     this.broadcast("game:started");
   }
-
   private handlePause(client: Client) {
     const _client = client as any;
 
@@ -319,7 +327,6 @@ export class MatchRoom extends Room<MatchState> {
       });
     }
   }
-
   private forceResume(player: Player) {
     if (this.state.phase === "paused" && player.pauseStartTime) {
       player.remainingPauseTime = 0;

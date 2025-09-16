@@ -157,13 +157,15 @@ const GameContiner = () => {
     if (!match?.roomId || !user?.id) return;
 
     const net = new Network("ws://10.13.2.6:3000", match);
-    net.join(match.roomId, user.id).then((room) => {
+    net.join(user.id).then((room) => {
       setRoom(room);
 
       // state listeners
-      net.on("players", (data: any) => {
-        setPlayers(data);
-        console.log("Players updated:", data);
+      net.on("players", (data) => {
+        setPlayers((prev) => ({
+          ...prev,
+          ...data,
+        }));
       });
       net.on("phase", setMatchPhase);
       net.on("countdown", setCountdownValue);

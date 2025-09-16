@@ -43,13 +43,9 @@ async function recreateActiveRooms() {
       try {
         const room = await matchMaker.createRoom("ping-pong-game", {
           matchId: match.id,
+          roomId: match.roomId, // Reuse the same roomId
           players: [match.opponent1.userId, match.opponent2?.userId],
           spectators: [],
-        });
-
-        await prisma.match.update({
-          where: { id: match.id },
-          data: { roomId: room.roomId },
         });
 
         console.log(`✅ Recreated room for match ${match.id}: ${room.roomId}`);
@@ -94,6 +90,22 @@ const start = async () => {
     } else {
       console.log("⚠️ Skipping room recreation in production mode");
     }
+
+    // Debug rooms
+    // setInterval(async () => {
+    //   const rooms = await matchMaker.query({});
+    //   console.log(
+    //     "📊 Active Rooms:",
+    //     rooms.map((r) => ({
+    //       id: r.roomId,
+    //       name: r.name,
+    //       clients: r.clients,
+    //       locked: r.locked,
+    //       metadata: r.metadata,
+    //     }))
+    //   );
+ 
+    // }, 10000); // every 10s
 
     // Start Fastify + Colyseus
     await fastify.listen({ port, host });
