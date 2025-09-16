@@ -140,17 +140,6 @@ export const forgotPasswordSchema = {
   tags: ['Authentication'],
   summary: 'Forgot password',
   description: 'Send password reset email to user',
-  body: {
-    type: 'object',
-    properties: {
-      email: {
-        type: 'string',
-        format: 'email',
-        description: 'User email address'
-      }
-    },
-    required: ['email']
-  },
   response: {
     200: {
       type: 'object',

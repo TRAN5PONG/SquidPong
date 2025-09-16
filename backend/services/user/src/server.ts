@@ -12,11 +12,11 @@ async function fastifyserver()
 
     try 
     {
-        app.listen({port : port , host : host} , () => {console.log(`server listen on http://${host}:${port} ...`)})
+        app.listen({port : port , host : host} , () => {console.log(`user service running at http://user:${port} ...`)})
     } 
     catch (error) 
     {
-        console.log("error in server")
+        console.log("Error starting server:", error);
         process.exit(1);
     }
 }
@@ -27,7 +27,7 @@ async function start()
     
     fastifyserver();
     await initRabbitMQ();
-    await receiveFromQueue("friend");
+    await receiveFromQueue("friends");
 }
 
 start();

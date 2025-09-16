@@ -40,16 +40,16 @@ services:
     networks:
       - web
 
-  swagger-ui:
-    image: swaggerapi/swagger-ui:latest
-    container_name: swagger
-    restart: always
-    ports:
-      - "9090:8080"
-    environment:
-      - URLS=[{"url":"http://localhost:4000/api/auth/docs/json","name":"Auth Service"},{"url":"http://localhost:4000/api/user/docs/json","name":"User Service"}]
-    networks:
-      - web
+  # swagger-ui:
+  #   image: swaggerapi/swagger-ui:latest
+  #   container_name: swagger
+  #   restart: always
+  #   ports:
+  #     - "9090:8080"
+  #   environment:
+  #     - URLS=[{"url":"http://localhost:4000/api/auth/docs/json","name":"Auth Service"},{"url":"http://localhost:4000/api/user/docs/json","name":"User Service"}]
+  #   networks:
+  #     - web
 
   gateway:
     build: ./backend/gateway
@@ -108,26 +108,26 @@ services:
     networks:
       - web
 
-  notify:
-    build: ./backend/services/notify
-    image: notify-image
-    container_name: notify
-    restart: always
-    command: >
-      sh -c "
-      sleep 6 &&
-      npx prisma migrate dev --name init &&
-      npm run dev
-      "
-    env_file:
-      - ./backend/services/notify/.env
-    ports:
-      - "5003:5555"
-    volumes:
-      - ./backend/services/notify/src:/notify/src
-      - ./backend/services/notify/prisma:/notify/prisma
-    networks: 
-      - web
+  # notify:
+  #   build: ./backend/services/notify
+  #   image: notify-image
+  #   container_name: notify
+  #   restart: always
+  #   command: >
+  #     sh -c "
+  #     sleep 6 &&
+  #     npx prisma migrate dev --name init &&
+  #     npm run dev
+  #     "
+  #   env_file:
+  #     - ./backend/services/notify/.env
+  #   ports:
+  #     - "5003:5555"
+  #   volumes:
+  #     - ./backend/services/notify/src:/notify/src
+  #     - ./backend/services/notify/prisma:/notify/prisma
+  #   networks: 
+  #     - web
 
   # chat:
   #   build: ./backend/services/chat

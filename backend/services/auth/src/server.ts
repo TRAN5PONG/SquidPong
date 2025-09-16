@@ -14,11 +14,11 @@ async function start()
 {
 	try 
 	{
-		app.listen({port: port, host: host}, () => { console.log(`server listen on http://${host}:${port} ...`) })
+		app.listen({port: port, host: host}, () => { console.log(`Auth service running at http://auth:${port}`) })
 	} 
 	catch (error) 
 	{
-		console.log('error in server')
+		console.log("Error starting server:", error)
 		process.exit(1)
 	}
 

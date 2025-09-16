@@ -16,7 +16,7 @@ async function start()
 {
 	try 
 	{
-		app.listen({port: port, host: host}, () => { console.log(`server listen on http://${host}:${port} ...`) })
+		app.listen({port: port, host: host}, () => { console.log(`gateway service running at http://gateway:${port}`) })
 	} 
 	catch (error) 
 	{
