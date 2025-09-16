@@ -56,8 +56,9 @@ export enum AuthMessage {
   }
   
   export enum TwoFA {
+    TWO_FA_VERIFY_SUCCESS = '2FA verified successfully.',
     TWO_FA_SETUP_SUCCESS = '2FA setup completed successfully.',
-    TWO_FA_ALREADY_ENABLED = '2FA is already enabled.',
+    TWO_FA_ALREADY_ENABLED = '2fa via Authenticator App is already enabled.',
     TWO_FA_ENABLED = '2FA is  enabled.',
     TWO_FA_DESABLED = '2FA is  desabled.',
     INVALID_2FA_CODE = 'Invalid 2FA code.',
@@ -67,8 +68,31 @@ export enum AuthMessage {
     TWO_FA_DISABLE_SUCCESS = '2FA has been disabled successfully.',
     TWO_FA_ENABLE_SUCCESS = '2FA has been enabled successfully.',
 
+
+
   }
   
+
+  export enum TwoFaEmaiL {
+    TWO_FA_EMAIL_EXPIRED = '2FA code has expired.',
+    TWO_FA_EMAIL_SENT = '2FA code sent to email.',
+    TWO_FA_EMAIL_FAILED = 'Failed to send 2FA code email.',
+    TWO_FA_ALREADY_ENABLED = '2FA via email is already enabled.',
+    TWO_FA_NOT_ENABLED = '2FA via email is not enabled.',
+    INVALID_2FA_CODE = 'Invalid 2FA code.',
+    VALID_2FA_CODE = 'Valid 2FA code.',
+    TWO_FA_EMAIL_SETUP_SUCCESS = 'Email 2FA setup completed successfully.',
+    TWO_FA_EMAIL_VERIFY_SUCCESS = 'Email 2FA verified successfully.',
+    TWO_FA_EMAIL_DISABLED = 'Email 2FA has been disabled successfully.',
+    TWO_FA_EMAIL_ENABLED = 'Email 2FA has been enabled successfully.',
+    TWO_FA_EMAIL_INVALID = 'Invalid email for 2FA.',
+    TWO_FA_EMAIL_REQUIRED = 'Email is required for 2FA.',
+    TWO_FA_EMAIL_NOT_CONFIGURED = 'Email service is not configured for 2FA.',
+    TWO_FA_EMAIL_RATE_LIMIT = 'Too many requests. Please try again later.',
+
+
+  }
+
   export enum PasswordMessage {
     PASSWORD_RESET_EMAIL_SENT = 'Password reset email sent.',
     PASSWORD_RESET_SUCCESS = 'Password reset successful.',

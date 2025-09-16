@@ -13,7 +13,7 @@ import prisma from '../db/database';
 import app from '../app';
 import { PasswordMessage ,EmailMessage , AuthError, UserProfileMessage } from '../utils/messages';
 import { fetchIntraToken , fetchGoogleUser , fetchIntraUser , sendResponseToFrontend } from '../utils/oauthHelpers';
-import { simpleErrorHandler } from '../utils/errorHandler';
+import { sendError } from '../utils/errorHandler';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -43,8 +43,7 @@ export async function postSignupHandler(req:FastifyRequest , res:FastifyReply)
     }
     catch (error) 
     {
-      simpleErrorHandler(error , respond);
-      return res.status(400).send(respond);
+      sendError(res, error);
     }
     
   return res.send(respond)
@@ -68,8 +67,7 @@ export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
     }
     catch (error) 
     {
-      simpleErrorHandler(error , respond);
-      return res.status(400).send(respond);
+      sendError(res, error);
     }
     
   return res.send(respond)
@@ -94,8 +92,7 @@ export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
     }
     catch (error) 
     {
-      simpleErrorHandler(error , respond);
-      return res.status(400).send(respond);
+      sendError(res, error);
     }
     
   return res.send(respond)
@@ -119,8 +116,7 @@ export async function postLogoutHandler(req:FastifyRequest , res:FastifyReply)
   } 
   catch (error) 
   {
-    simpleErrorHandler(error , respond);
-    return res.status(400).send(respond);
+    sendError(res, error);
   }
 
   return res.send(respond)
@@ -161,8 +157,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
   } 
   catch (error) 
   {
-    simpleErrorHandler(error , respond);
-    return res.status(400).send(respond);
+    sendError(res, error);
   }
 
   return res.send(respond);
@@ -185,8 +180,7 @@ export async function getGooglCallbackehandler(req: FastifyRequest, res: Fastify
   } 
   catch (error) 
   {
-    simpleErrorHandler(error , respond);
-    return res.status(400).send(respond);
+    sendError(res, error);
   }
 
   sendResponseToFrontend(res, respond);
@@ -224,8 +218,7 @@ export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyR
   }
   catch (error) 
   {
-    simpleErrorHandler(error , respond);
-    return res.status(400).send(respond);
+    sendError(res, error);
   }
 
   sendResponseToFrontend(res, respond);
@@ -260,16 +253,10 @@ export async function postRefreshTokenHandler(req: FastifyRequest, res: FastifyR
 
   await redis.set(newAccessToken, "valid", "EX", 60 * 15);
 
-
   } 
   catch (error) 
   {
-    respond.success = false;
-    if (error instanceof Error)
-      {
-        respond.message = error.message;
-        return res.status(400).send(respond)
-      }
+    sendError(res, error);
   }
 
   return res.send(respond);
@@ -293,12 +280,7 @@ export async function postForgotPasswordHandler(req: FastifyRequest, res: Fastif
   } 
   catch (error) 
   {
-    respond.success = false;
-    if (error instanceof Error)
-      {
-        respond.message = error.message;
-        return res.status(400).send(respond)
-      }
+    sendError(res, error);
   }
 
   return res.send(respond);
@@ -329,12 +311,7 @@ export async function postChangePasswordHandler(req: FastifyRequest, res: Fastif
   } 
   catch (error) 
   {
-    respond.success = false;
-    if (error instanceof Error)
-      {
-        respond.message = error.message;
-        return res.status(400).send(respond)
-      }
+    sendError(res, error);
   }
 
   return res.send(respond);
@@ -362,12 +339,7 @@ export async function postResetPasswordHandler(req: FastifyRequest, res: Fastify
   } 
   catch (error) 
   {
-    respond.success = false;
-    if (error instanceof Error)
-      {
-        respond.message = error.message;
-        return res.status(400).send(respond)
-      }
+    sendError(res, error);
   }
   
   return res.send(respond);

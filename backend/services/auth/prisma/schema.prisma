@@ -9,17 +9,35 @@ datasource db {
 }
 
 
+
+
+
+enum TwoFAMethod {
+  NONE
+  AUTHENTICATOR
+  EMAIL
+}
+
+
+
 model User {
-  id              Int     @id @default(autoincrement())
-  username        String  @unique
-  email           String  @unique
-  password        String? 
+  id          Int      @id @default(autoincrement())
+  username    String   @unique
+  email       String   @unique
+  password    String?
 
-  is2FAEnabled      Boolean   @default(false)
-  twoFASecret       String?
-  twoFAQRCode  String?
-  twoFAKey     String?
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  twoFAMethod TwoFAMethod     @default(NONE)
+
+  // app
+  twoFASecret String?
+  twoFAQRCode String?
+  twoFAKey    String?
+
+  // email
+  twoFAEmailCode   String?
+  twoFAEmailExpiry DateTime?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
