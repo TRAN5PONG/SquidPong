@@ -4,10 +4,12 @@ CREATE TABLE "User" (
     "username" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT,
-    "is2FAEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "twoFAMethod" TEXT NOT NULL DEFAULT 'NONE',
     "twoFASecret" TEXT,
     "twoFAQRCode" TEXT,
     "twoFAKey" TEXT,
+    "twoFAEmailCode" TEXT,
+    "twoFAEmailExpiry" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );

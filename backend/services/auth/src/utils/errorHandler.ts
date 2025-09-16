@@ -26,22 +26,16 @@ export type ApiResponse<T = any> = {
 
 
 
-export function simpleErrorHandler(error: any, respond: any) {
-  respond.success = false;
 
-  if (error instanceof Prisma.PrismaClientKnownRequestError)
-  {
-    if (error.code === "P2002")
-    {
-      const fields = error.meta?.target as string[] || [];
-      respond.message = `${fields.join(", ")} is already taken.`;
-    }
-    else
-      respond.message = error.message;
-  } 
-  else if (error instanceof Error)
-    respond.message = error.message;
-  else
-    respond.message = "An unexpected error occurred";
+export function sendError(res: FastifyReply, error: unknown, statusCode = 400) 
+{
+  const message = error instanceof Error ? error.message : String(error);
 
+  const response: ApiResponse<null> = {
+    success: false,
+    message,
+    data: null,
+  };
+
+  return res.status(statusCode).send(response);
 }

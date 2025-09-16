@@ -96,39 +96,45 @@ const authRoutes: Route[] = [
 ];
 
 
+
 const twofaRoutes: Route[] = [
-  // 2fa
+
   {
     method: "GET",
-    url: "/api/2fa/setup",
+    url: "/api/2fa/:method/setup",
     schema: twofaSetupSchema,
-    handler: twofaController.setupAuthenticatorHandler,
+    handler: twofaController.setupTwoFAHandler,
   },
-  {
-    method: "GET",
-    url: "/api/2fa/status",
-    schema: twofaStatusSchema,
-    handler: twofaController.statusAuthenticatorHandler,
-  },
+
   {
     method: "POST",
-    url: "/api/2fa/verify",
+    url: "/api/2fa/:method/verify",
     schema: twofaVerifySchema,
-    handler: twofaController.verifyTwofaHandler,
+    handler: twofaController.verifyTwoFAHandler,
   },
+
   {
     method: "POST",
-    url: "/api/2fa/disable",
-    schema: twofaDisableSchema,
-    handler: twofaController.disable2FAHandler,
-  },
-  {
-    method: "POST",
-    url: "/api/2fa/enable",
+    url: "/api/2fa/:method/enable",
     schema: twofaEnableSchema,
     handler: twofaController.enableTwoFAHandler,
   },
+
+  {
+    method: "POST",
+    url: "/api/2fa/:method/disable",
+    schema: twofaDisableSchema,
+    handler: twofaController.disableTwoFAHandler,
+  },
+
+  {
+    method: "GET",
+    url: "/api/2fa/:method/status",
+    schema: twofaStatusSchema,
+    handler: twofaController.statusTwoFAHandler,
+  },
 ];
+
 
 
 export {authRoutes , twofaRoutes}
