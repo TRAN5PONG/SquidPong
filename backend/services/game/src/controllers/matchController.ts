@@ -61,55 +61,58 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
   }
 
   // 1️⃣ Create match and matchSetting in a transaction
-  const { match, hostPlayer, guestPlayer } = await prisma.$transaction(async (tx) => {
-    const hostPlayer = await createMatchPlayer(
-      invitation.sender.userId, // remote int
-      invitation.sender.id,      // local UUID
-      true,
-      false,
-      tx
-    );
+  const { match, hostPlayer, guestPlayer } = await prisma.$transaction(
+    async (tx) => {
+      const hostPlayer = await createMatchPlayer(
+        invitation.sender.userId, // remote int
+        invitation.sender.id, // local UUID
+        true,
+        false,
+        tx
+      );
 
-    const guestPlayer = await createMatchPlayer(
-      invitation.receiver.userId,
-      invitation.receiver.id,
-      false,
-      false,
-      tx
-    );
+      const guestPlayer = await createMatchPlayer(
+        invitation.receiver.userId,
+        invitation.receiver.id,
+        false,
+        false,
+        tx
+      );
 
-    const match = await tx.match.create({
-      data: {
-        mode: "ONE_VS_ONE",
-        status: "WAITING",
-        opponent1Id: hostPlayer.id,
-        opponent2Id: guestPlayer.id,
-        duration: 0,
-      },
-      include: {
-        opponent1: true,
-        opponent2: true,
-      },
-    });
+      const match = await tx.match.create({
+        data: {
+          mode: "ONE_VS_ONE",
+          status: "WAITING",
+          opponent1Id: hostPlayer.id,
+          opponent2Id: guestPlayer.id,
+          duration: 0,
+        },
+        include: {
+          opponent1: true,
+          opponent2: true,
+        },
+      });
 
-    await createMatchSetting(
-      match.id,
-      "ONE_VS_ONE",
-      {
-        pauseTime: pauseTime ?? 60,
-        scoreLimit: scoreLimit ?? 10,
-        allowPowerUps: allowPowerUps ?? true,
-        requiredCurrency: requiredCurrency ?? 0,
-      },
-      tx
-    );
+      await createMatchSetting(
+        match.id,
+        "ONE_VS_ONE",
+        {
+          pauseTime: pauseTime ?? 60,
+          scoreLimit: scoreLimit ?? 10,
+          allowPowerUps: allowPowerUps ?? true,
+          requiredCurrency: requiredCurrency ?? 0,
+        },
+        tx
+      );
 
-    return { match, hostPlayer, guestPlayer };
-  });
+      return { match, hostPlayer, guestPlayer };
+    }
+  );
 
   // 2️⃣ Create Colyseus room after transaction committed
   const room = await matchMaker.createRoom("ping-pong-game", {
     matchId: match.id,
+    roomId: match.id,
     players: [hostPlayer.userId, guestPlayer.userId],
     spectator: [],
   });
@@ -117,7 +120,7 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
   // 3️⃣ Update match with roomId
   const updatedMatch = await prisma.match.update({
     where: { id: match.id },
-    data: { roomId: room.roomId },
+    data: { roomId: match.id },
     include: { opponent1: true, opponent2: true, matchSetting: true },
   });
 

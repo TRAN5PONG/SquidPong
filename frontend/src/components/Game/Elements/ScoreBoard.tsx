@@ -8,7 +8,6 @@ import { useSounds } from "@/contexts/SoundProvider";
 import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { MatchPlayer } from "@/types/game";
-import { SocketPlayer } from "../Scenes/GameScene";
 
 const StyledScoreBoard = styled("div")`
   width: 80%;
@@ -116,8 +115,8 @@ const StyledScoreBoard = styled("div")`
   }
 `;
 interface ScoreBoardProps {
-  host: (MatchPlayer & SocketPlayer) | null;
-  guest: (MatchPlayer & SocketPlayer) | null;
+  host: MatchPlayer | null;
+  guest: MatchPlayer | null;
   isPaused: boolean;
   isCountingDown: boolean;
   isEnded: boolean;
@@ -194,6 +193,10 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     }
   }, [props.isEnded]);
 
+  useEffect(() => {
+    console.log("====Guest :", props.guest);
+  }, [props]);
+
   return (
     <StyledScoreBoard>
       <OponentCard className="OponentCard">
@@ -248,7 +251,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         </div>
         <img
           src={props.guest?.avatarUrl || "/assets/avatar.jpg"}
-          onError={(e:any) => console.log(e)}
+          onError={(e: any) => console.log(e)}
           className="OponentCardAvatar"
         />
         <div className="OponentCardInfo">
