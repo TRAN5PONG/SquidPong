@@ -70,6 +70,13 @@ export async function updateProfileRedis(body: any, userId: number)
 }
 
 
+
+
+
+
+
+
+
 export async function syncRedisProfileToDbAppendArrays(userId: number) 
 {
   const redisKey = `profile:${userId}`;
@@ -79,24 +86,50 @@ export async function syncRedisProfileToDbAppendArrays(userId: number)
 
   const dbProfile = await prisma.profile.findUnique({ where: { userId } });
 
-  const playerCharacters = [...new Set((dbProfile?.playerCharacters as unknown[] ?? []).concat(redisProfile?.playerCharacters as unknown[] ?? []))];
-  const playerPaddles = [...new Set((dbProfile?.playerPaddles as unknown[] ?? []).concat(  redisProfile?.playerPaddles as unknown[] ?? []))];
+  console.log('DB Profile:', dbProfile?.status);
 
-  await prisma.profile.update({
+  const dbPlayerCharacters = Array.isArray(dbProfile?.playerCharacters) 
+    ? dbProfile.playerCharacters 
+    : (dbProfile?.playerCharacters ? JSON.parse(dbProfile.playerCharacters as string) : []);
+  
+  const dbPlayerPaddles = Array.isArray(dbProfile?.playerPaddles)
+    ? dbProfile.playerPaddles
+    : (dbProfile?.playerPaddles ? JSON.parse(dbProfile.playerPaddles as string) : []);
+
+  const mergedPlayerCharacters = [...new Set([
+    ...dbPlayerCharacters,
+    ...(redisProfile?.playerCharacters ?? []),
+  ])];
+
+  const mergedPlayerPaddles = [...new Set([
+    ...dbPlayerPaddles,
+    ...(redisProfile?.playerPaddles ?? []),
+  ])];
+
+
+
+  const { id, createdAt, updatedAt, preferences, ...cleanRedisProfile } = redisProfile;
+
+  const profile = await prisma.profile.update({
     where: { userId },
     data: {
-      ...redisProfile,
-      playerCharacters,
-      playerPaddles,
-      preferences: { ...redisProfile.preferences },
-    },
+      ...cleanRedisProfile,
+      // Update preferences as a nested update
+      preferences: {
+        update: {
+          soundEnabled: preferences?.soundEnabled,
+          musicEnabled: preferences?.musicEnabled,
+          twoFactorEnabled: preferences?.twoFactorEnabled,
+        }
+      }
+    }
   });
 
-  return redisProfile;
+  console.log('Updated DB Profile:', profile);
+  
+  await redis.del(redisKey);
+  return profile;
 }
-
-
-
 
 export async function getProfile(userId: number)
 {

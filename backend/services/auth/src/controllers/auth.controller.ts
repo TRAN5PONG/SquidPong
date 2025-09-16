@@ -15,6 +15,8 @@ import { PasswordMessage ,EmailMessage , AuthError, UserProfileMessage } from '.
 import { fetchIntraToken , fetchGoogleUser , fetchIntraUser , sendResponseToFrontend } from '../utils/oauthHelpers';
 import { sendError } from '../utils/errorHandler';
 
+
+
 declare module 'fastify' {
   interface FastifyInstance {
     googleOAuth2: OAuth2Namespace;
@@ -78,8 +80,8 @@ export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
 export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
 {
     const body = req.body as any;
-    const respond : ApiResponse<{is2FAEnabled : boolean , token : string} > = {success : true  , message : 'login success'}
-    respond.data = {is2FAEnabled : false , token : ''}
+    const respond : ApiResponse<{is2FAEnabled : boolean} > = {success : true  , message : UserProfileMessage.LOGIN_SUCCESSFUL}
+    respond.data = {is2FAEnabled : false}
 
     try 
     {
@@ -102,7 +104,7 @@ export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
 
 export async function postLogoutHandler(req:FastifyRequest , res:FastifyReply)
 {
-  const respond : ApiResponse<null > = {success : true  , message : 'logout success'}
+  const respond : ApiResponse<null > = {success : true  , message : UserProfileMessage.LOGOUT_SUCCESSFUL}
   
   try
   {
@@ -126,7 +128,7 @@ export async function postLogoutHandler(req:FastifyRequest , res:FastifyReply)
 
 export async function deleteAccountHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<null> = { success: false, message: "Account deletion failed" };
+  const respond: ApiResponse<null> = { success: false, message: UserProfileMessage.DELETE_ACCOUNT_SUCCESS };
   const headers = req.headers as any;
   const id:number = Number(headers['x-user-id']);
 
@@ -134,7 +136,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
   {
 
     const user = await prisma.user.findUnique({ where: {id} });
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(UserProfileMessage.USER_NOT_FOUND);
 
     await prisma.user.delete({ where: { id } });
 
@@ -152,7 +154,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
     })
 
     respond.success = true;
-    respond.message = "Account deleted successfully";
+    respond.message = `Account with id ${id} deleted successfully`;
     
   } 
   catch (error) 
@@ -168,8 +170,8 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
 export async function getGooglCallbackehandler(req: FastifyRequest, res: FastifyReply)
 {
 
-  const respond: ApiResponse<{ is2FAEnabled: boolean; token: string }> = { success: true, message: 'login success', };
-  respond.data = { is2FAEnabled: false, token: '' };
+  const respond: ApiResponse<{ is2FAEnabled: boolean }> = { success: true, message:  'login success' };
+  respond.data = { is2FAEnabled: false};
 
   try 
   {
@@ -202,9 +204,9 @@ export async function getIntrahandler(req:FastifyRequest , res:FastifyReply)
 
 export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyReply)
 {
-  const respond: ApiResponse<{ is2FAEnabled: boolean; token: string }> = { success: true, message: 'login success', };
+  const respond: ApiResponse<{ is2FAEnabled: boolean }> = { success: true, message: 'login success', };
 
-  respond.data = { is2FAEnabled: false, token: '' };
+  respond.data = { is2FAEnabled: false };
   const { code } = req.query as any;
 
   try
@@ -230,19 +232,19 @@ export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyR
 
 export async function postRefreshTokenHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<null> = { success: true, message: "Access token refreshed" };
+  const respond: ApiResponse<null> = { success: true, message: AuthError.TOKEN_EXPIRED };
 
   try 
   {
 
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken)
-      throw new Error("No refresh token provided")
+      throw new Error(AuthError.UNAUTHORIZED);
 
     const payload: any = await app.jwt.verify(refreshToken);
     const userId: string = payload.userId;
 
-    const newAccessToken = await app.jwt.sign({ userId }, { expiresIn: "1h" });
+    const newAccessToken = await app.jwt.sign({ userId }, { expiresIn: "1d" });
 
     res.setCookie("accessToken", newAccessToken, {
       httpOnly: true,
@@ -251,8 +253,7 @@ export async function postRefreshTokenHandler(req: FastifyRequest, res: FastifyR
       secure: false,
     });
 
-  await redis.set(newAccessToken, "valid", "EX", 60 * 15);
-
+  await redis.set(newAccessToken, "valid", "EX", 60 * 24 * 7 * 60);
   } 
   catch (error) 
   {
@@ -267,46 +268,24 @@ export async function postRefreshTokenHandler(req: FastifyRequest, res: FastifyR
 
 export async function postForgotPasswordHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond : ApiResponse<null > = {success : true  , message : 'login success'}
-  const {email} = req.body as any;
-
-  try 
-  {
-    const user = await prisma.user.findFirst({ where: { email: email , password : {not : null} }})
-    if(!user)
-      throw new Error("user not found")
-    await sendDataToQueue({email}, "emailhub");
-
-  } 
-  catch (error) 
-  {
-    sendError(res, error);
-  }
-
-  return res.send(respond);
-}
-
-
-
-
-export async function postChangePasswordHandler(req: FastifyRequest, res: FastifyReply) 
-{
-  const respond : ApiResponse<null > = {success : true  , message : 'login success'}
+  const respond : ApiResponse<null > = {success : true  , message : PasswordMessage.PASSWORD_RESET_EMAIL_SENT}
   const headers = req.headers as any;
+  const id = Number(headers['x-user-id'])
   
-  const userId = Number(headers['x-user-id'])
-  const {oldPassword , newPassword} = req.body as any;
-
   try 
   {
-    const user = await prisma.user.findFirst({ where: { id : userId , password : {not : null} }})
-    
+    const user = await prisma.user.findFirst({ where: { id , password : {not : null} }})
     if(!user)
-      throw new Error(UserProfileMessage.USER_NOT_FOUND)
-    if(await VerifyPassword(oldPassword , user.password) == false)
-      throw new Error(PasswordMessage.PASSWORD_SAME_AS_OLD)
+      throw new Error(  UserProfileMessage.USER_NOT_FOUND)
+    const email = user.email;
 
-    await prisma.user.update({ where: { id : userId}  , data : {password : await hashPassword(newPassword)} })
+    // TODO: changed later  to function in utils
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const key = `resetpassword:${email}`;
+    await redis.set(key, resetCode, "EX", 600); // Code valid for 10 minutes
+    await sendDataToQueue({email , resetCode}, "emailhub");
+  
+    // End TODO
 
   } 
   catch (error) 
@@ -316,25 +295,25 @@ export async function postChangePasswordHandler(req: FastifyRequest, res: Fastif
 
   return res.send(respond);
 }
-
-
 
 
 
 export async function postResetPasswordHandler(req: FastifyRequest, res: FastifyReply) 
 {
 
-  const respond : ApiResponse<null > = {success : true  , message : 'login success'}
-  const {confirmPassword , newPassword , code , email} = req.body as any;
+  const respond : ApiResponse<null > = {success : true  , message : PasswordMessage.PASSWORD_RESET_SUCCESS}
+  const {confirmPassword , newPassword , code } = req.body as any;
 
+  const headers = req.headers as any;
+  const id = Number(headers['x-user-id'])
   try 
   {
-    const user = await prisma.user.findFirst({ where: { email , password : {not : null} }})
+    const user = await prisma.user.findFirst({ where: { id , password : {not : null} }})
     if(!user)
       throw new Error(UserProfileMessage.USER_NOT_FOUND)
 
     isResetCodeValid(code , confirmPassword , newPassword , user);
-    await prisma.user.update({ where: { email}  , data : {password : await hashPassword(newPassword)} })
+    await prisma.user.update({ where: { id}  , data : {password : await hashPassword(newPassword)} })
 
   } 
   catch (error) 
@@ -344,3 +323,36 @@ export async function postResetPasswordHandler(req: FastifyRequest, res: Fastify
   
   return res.send(respond);
 }
+
+
+export async function postChangePasswordHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond : ApiResponse<null > = {success : true  , message : PasswordMessage.PASSWORD_RESET_SUCCESS}
+  const headers = req.headers as any;
+  const id = Number(headers['x-user-id'])
+  
+  const {oldPassword , newPassword} = req.body as any;
+
+  try 
+  {
+    const user = await prisma.user.findFirst({ where: { id , password : {not : null} }})
+    
+    if(!user)
+      throw new Error(UserProfileMessage.USER_NOT_FOUND)
+    if(await VerifyPassword(oldPassword , user.password) == false)
+      throw new Error(PasswordMessage.PASSWORD_SAME_AS_OLD)
+
+    await prisma.user.update({ where: { id}  , data : {password : await hashPassword(newPassword)} })
+
+  } 
+  catch (error) 
+  {
+    sendError(res, error);
+  }
+
+  return res.send(respond);
+}
+
+
+
+

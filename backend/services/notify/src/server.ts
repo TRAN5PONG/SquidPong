@@ -1,33 +1,32 @@
 import dotenv from 'dotenv';
-import path from 'path'
-// import app from './app'
+import app from './app'
 import { initRabbitMQ , receiveFromQueue } from './integration/rabbitmqClient';
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
 
-// const port = Number(process.env.PORT);
-// const host = process.env.HOST;
+const port = Number(process.env.PORT);
+const host = process.env.HOST;
 
 
-// async function StartServer()
-// {
-//     try 
-//     {
-//         app.listen({port : port , host : host} , () => {console.log(`server listen on http://${host}:${port} ...`)})
-//     } 
-//     catch (error) 
-//     {
-//         console.log("error in server")
-//         process.exit(1);
-//     }
-// }
+async function StartServer()
+{
+    try 
+    {
+        app.listen({port : port , host : host} , () => { console.log(`Notify service running at http://notify:${port}`) })
+    } 
+    catch (error) 
+    {
+      console.log("Error starting server:", error);
+      process.exit(1);
+    }
+}
 
 
 
 async function start() 
 {
   await  initRabbitMQ();
-  await receiveFromQueue("emailhub") 
-  await receiveFromQueue("friends") 
+  await receiveFromQueue("emailhub")
+  await receiveFromQueue("friends")
 }
 start();

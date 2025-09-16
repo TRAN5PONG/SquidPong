@@ -56,6 +56,8 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
   return res.send(respond);
 }
 
+
+
 // ----------------- UNBLOCK USER -----------------
 export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -95,7 +97,8 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
 
 
 
-// ----------------- GET BLOCKED USERS -----------------
+
+
 export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<Profile[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
@@ -118,7 +121,7 @@ export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyRe
 
     const onlineUserIds: string[] = await redis.getOnlineUsers();
     const onlineFriends: Profile[] = [];
-    // ----------------- FETCH ONLINE FRIENDS FROM REDIS -----------------
+  
     for (const friendId of friendIds) 
     {
       if (onlineUserIds.includes(friendId)  ) 
@@ -129,7 +132,6 @@ export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyRe
       }
     }
 
-    // ----------------- FETCH OFFLINE FRIENDS FROM DATABASE -----------------
 
     const offlineFriends = await prisma.profile.findMany({
       where: { status: "OFFLINE" }

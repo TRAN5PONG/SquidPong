@@ -50,14 +50,18 @@ export async function updateProfileHandler99(req: FastifyRequest, res: FastifyRe
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
   
-  console.log(" hiiiiiiiiiiiiii UserID : ", userId);
+  const {status} = req.body as {status : string};
+  console.log("------------------------------status : ", status);
+  console.log("updateProfileHandler99 called for userId:", userId);
+
   try 
   {
 
-   await syncRedisProfileToDbAppendArrays(userId);
-   redis.del(`profile:${userId}`);
+  if(status == "ONLINE")
+    await prisma.profile.update({ where: { userId }, data: { status : "ONLINE" } });
+  else
+    await syncRedisProfileToDbAppendArrays(userId);
 
-   console.log(" Synced Successfully ! ");
   }
   catch (error) {
     return sendError(res, error);

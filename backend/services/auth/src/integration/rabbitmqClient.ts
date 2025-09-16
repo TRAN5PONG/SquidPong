@@ -8,13 +8,8 @@ export async function initRabbitMQ()
 {
   connection = await amqp.connect("amqp://rabbitmq:5672");
   channel = await connection.createChannel();
-  
-  await channel.assertQueue("friend");
-  await channel.assertQueue("chat");
-  await channel.assertQueue("emailhub");
-  await channel.assertQueue("chatservice");
 
-  console.log("Connected to RabbitMQ");
+  console.log("RabbitMQ connected");
 }
 
 

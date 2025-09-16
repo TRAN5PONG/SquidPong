@@ -21,6 +21,7 @@ const authRoutes: Route[] = [
     url: "/",
     handler: authController.getRootHandler,
   },
+  // user registration and login
   {
     method: "POST",
     url: "/api/auth/signup",
@@ -38,14 +39,14 @@ const authRoutes: Route[] = [
     url: "/api/auth/logout",
     handler: authController.postLogoutHandler,
   },
-  // verify email
+  // email verification
   {
     method: "POST",
     url: "/api/auth/verify-email",
     handler: authController.verifyEmailHandler,
     schema: verifyEmailSchema,
   },
-  // password
+  // password management
   {
     method: "POST",
     url: "/api/auth/forgot-password",
@@ -64,7 +65,7 @@ const authRoutes: Route[] = [
     handler: authController.postChangePasswordHandler,
     schema: changePasswordSchema
   },
-  // oauth2
+  // OAuth routes
   {
     method: "GET",
     url: "/api/auth/google/callback",
@@ -81,7 +82,7 @@ const authRoutes: Route[] = [
     handler: authController.getIntracallbackhandler,
   },
 
-  // refresh token
+  // token refresh and account deletion
   {
     method: "POST",
     url: "/api/auth/refresh",

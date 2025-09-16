@@ -28,6 +28,29 @@ async function sendSingleMultipartVoid(url: string, fieldName: string, value: st
 
 
 
+async function updatestatus(userId: number )
+{
+  await fetch(`http://user:4001/api/user/me`, { headers: { "x-user-id": `userId` }});
+
+
+  await sendSingleMultipartVoid(
+    'http://user:4001/api/user/me',
+    "status",
+    "ONLINE",
+    userId.toString()
+    );
+
+  await fetch(`http://user:4001/update-xylar99`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-user-id": userId.toString(),
+    },
+    body: JSON.stringify({status : "ONLINE"}),
+    });
+    
+}
+
 export async function handleWsConnect(ws: any, req: FastifyRequest) 
 {
   try 
@@ -44,18 +67,10 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
     
     
     console.log(`Client connected: ${userId} `);
-    
+    await updatestatus(userId);
     
     // Notify user-service that user is online
-    await fetch(`http://user:4001/api/user/me`, { headers: { "x-user-id": userId }});
     
-    await sendSingleMultipartVoid(
-      'http://user:4001/api/user/me',
-      "status",
-      "ONLINE",
-      userId
-    );
-
   }
   catch (error) 
   {
@@ -98,13 +113,20 @@ async function onClientDisconnect(ws: any)
     onlineUsers.delete(`socket:${userId}`);
     await redis.srem('online_users', userId);
 
-    // await removeOnlineUser(userId);
-
+    console.log(`Client disconnected: ${userId}`);
+    
     // Notify user-service that user is offline
     await sendSingleMultipartVoid('http://user:4001/api/user/me', "status", "OFFLINE", userId);
 
-    await fetch(`http://user:4001/update-xylar99`, { method: "POST", headers: { "x-user-id": userId }});
-    console.log(`Client disconnected: ${userId}`);
+    await fetch(`http://user:4001/update-xylar99`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-user-id": userId.toString(),
+    },
+    body: JSON.stringify({status : "OFFLINE"}),
+    });
+
 
   }
   catch (error) 

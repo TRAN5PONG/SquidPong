@@ -27,6 +27,5 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 async function start() 
 {
   await  initRabbitMQ();
-  await receiveFromQueue("emailhub") 
 }
 start();

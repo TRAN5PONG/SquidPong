@@ -15,6 +15,7 @@ export enum AuthMessage {
   }
   
   export enum AuthError {
+    TOKEN_EXPIRED = 'Session expired. Please login again.',
     UNKNOWN_ERROR = 'An unknown error occurred.',
     INTERNAL_SERVER_ERROR = 'Internal server error.',
     BAD_REQUEST = 'Bad request.',
@@ -94,6 +95,9 @@ export enum AuthMessage {
   }
 
   export enum PasswordMessage {
+    RESET_TOKEN_EXPIRED = 'Reset code has expired.',
+    INVALID_RESET_TOKEN = 'Invalid reset code.',
+    PASSWORDS_DO_NOT_MATCH = 'Passwords do not match.',
     PASSWORD_RESET_EMAIL_SENT = 'Password reset email sent.',
     PASSWORD_RESET_SUCCESS = 'Password reset successful.',
     PASSWORD_RESET_INVALID = 'Invalid reset token.',
@@ -113,6 +117,9 @@ export enum AuthMessage {
   
   export enum UserProfileMessage
   {
+    DELETE_ACCOUNT_SUCCESS = 'Account deleted successfully.', // ✅ NEW
+    LOGIN_SUCCESSFUL = 'Login successful.', // ✅ NEW
+    LOGOUT_SUCCESSFUL = 'Logout successful.', // ✅ NEW
     EMAIL_ALREADY_USED = 'Email is already registered.',
     USERNAME_ALREADY_USED = 'Username is already taken.',
     WEAK_PASSWORD = 'Password is too weak.',

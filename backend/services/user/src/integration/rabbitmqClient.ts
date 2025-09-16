@@ -10,9 +10,9 @@ export async function initRabbitMQ()
   connection = await amqp.connect("amqp://rabbitmq:5672");
   channel = await connection.createChannel();
   
-  await channel.assertQueue("friend");
+  await channel.assertQueue("friends");
 
-  console.log("Connected to RabbitMQ");
+  console.log("RabbitMQ connected");
 }
 
 
@@ -35,22 +35,20 @@ export async function receiveFromQueue(queue: string)
 {
   try 
   {
-      channel.consume(queue, async (msg:any) =>{
+    channel.consume(queue, async (msg:any) =>{
 
-      if (msg !== null) 
-        {
-          const data = JSON.parse(msg.content.toString());
-          channel.ack(msg);
-          
-         
-        }
+    if (msg !== null) 
+    {
+      const data = JSON.parse(msg.content.toString());
+      console.log("user-service ==> Received message from queue:", data);
+      channel.ack(msg);
+    }
 
-    });
-
+  });
   }
   catch (err:any) 
   {
-    console.error('RabbitMQ error:', err.message);
+    console.log("Error in rabbit connection:", err.message);
   }
 }
 
