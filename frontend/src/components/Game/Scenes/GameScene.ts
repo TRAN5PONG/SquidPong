@@ -11,8 +11,16 @@ import { Light } from "@/components/Game/entities/Light";
 import { Paddle } from "@/components/Game/entities/Paddle/GamePaddle";
 import { Arena } from "@/components/Game/entities/Arena.ts";
 import { Ball } from "@/components/Game/entities/Ball.ts";
+import { Match } from "@/types/game";
+
+// Net
+import { Network } from "@/components/Game/network/network";
+import { MatchState } from "../network/GameState";
+import { Room } from "colyseus.js";
 
 export class Game {
+  // Game data
+  match!: Match;
   // Entities
   localPaddle!: Paddle;
   hostPaddle: Paddle;
@@ -27,18 +35,41 @@ export class Game {
   physics: Physics;
   // Controllers
   controller: GameController;
+  // Network
+  net: Network;
+  room: Room<MatchState>;
   // Babylon
   engine: Engine;
   scene: Scene;
+
   // State flags
-  isInitialized: boolean = false;
+  isGameReady: boolean = false;
   isRunning: boolean = false;
 
-  constructor(canvas: HTMLCanvasElement) {
+  // Players
+  hostId: string;
+  guestId: string;
+  userId: string;
+  userPlayerId: string;
+
+  constructor(canvas: HTMLCanvasElement, match: Match, userId: string) {
     if (!canvas) {
       throw new Error("Canvas not found before initializing Game!");
     }
     this.canvas = canvas;
+    this.match = match;
+
+    this.userId = userId;
+    this.hostId = match?.opponent1.isHost
+      ? match.opponent1.id
+      : match?.opponent2.id;
+    this.guestId = match?.opponent1.isHost
+      ? match.opponent2.id
+      : match?.opponent1.id;
+    this.userPlayerId =
+      match?.opponent1.userId === userId
+        ? match?.opponent1.id
+        : match?.opponent2.id;
 
     this.engine = new Engine(canvas, true, { adaptToDeviceRatio: true });
     this.scene = new Scene(this.engine);
@@ -47,66 +78,55 @@ export class Game {
   /**
    * Init
    */
-  private async initializeGameWorld(playerSide: number) {
-    // Physics
-    this.physics = new Physics();
+  private async Init() {
+    try {
+      // Physics
+      this.physics = new Physics();
 
-    // Camera
-    this.camera = new GameCamera(this.scene, playerSide);
-    this.camera.attach(this.canvas);
+      // Camera
+      this.camera = new GameCamera(
+        this.scene,
+        this.userId === this.hostId ? 1 : -1
+      );
+      this.camera.attach(this.canvas);
 
-    // Entities
-    this.arena = new Arena(this.scene);
-    this.hostPaddle = new Paddle(
-      this.scene,
-      "LEFT",
-      true, 
-      {
-        textureUrl: "/paddle/Survivor.png"
-      }
-    );
-    this.guestPaddle = new Paddle(this.scene, "RIGHT");
-    this.ball = new Ball(this.scene);
-    this.light = new Light(this.scene);
+      // Network
+      this.net = new Network("ws://10.13.2.6:3000", this.match);
+      this.room = await this.net.join(this.userId);
 
-    // Debugging tools
-    this.debug = new Debug(this.scene, this.engine);
-    this.debug.ShowAxisLines();
-    this.debug.ShowGroundGrid();
+      // Entities
+      this.arena = new Arena(this.scene);
+      this.hostPaddle = new Paddle(this.scene, "LEFT", true, {
+        textureUrl: "/paddle/Survivor.png",
+      });
+      this.guestPaddle = new Paddle(this.scene, "RIGHT");
+      this.ball = new Ball(this.scene);
+      this.light = new Light(this.scene);
 
-    // Load assets in parallel
-    await Promise.all([
-      this.arena.Load(),
-      this.hostPaddle.Load(),
-      this.guestPaddle.Load(),
-      this.ball.Load(),
-    ]);
+      // Debugging tools
+      this.debug = new Debug(this.scene, this.engine);
+      this.debug.ShowAxisLines();
+      this.debug.ShowGroundGrid();
+
+      // Load assets
+      await Promise.all([
+        this.arena.Load(),
+        this.hostPaddle.Load(),
+        this.guestPaddle.Load(),
+        this.ball.Load(),
+      ]);
+    } catch (error) {
+      console.error("Error during game initialization:", error);
+      throw error;
+    }
   }
 
   /**
    * Start the render/update loop.
    */
   private startRenderLoop() {
-    const FIXED_DT = 1 / 60;
-    let accumulator = 0;
-    let lastTime = performance.now();
-
     this.engine.runRenderLoop(() => {
-      // 9.411266355568738, _y: 6.251347882791112, _z: 0.10065132038983378}
-      if (!this.isInitialized) return;
-
-      const now = performance.now();
-      accumulator += (now - lastTime) / 1000;
-      lastTime = now;
-
-      while (accumulator >= FIXED_DT) {
-        // this.controller.fixedUpdate(FIXED_DT);
-        accumulator -= FIXED_DT;
-      }
-
-      const alpha = accumulator / FIXED_DT;
-      // this.controller.updateVisuals(alpha);
-
+      if (!this.isGameReady) return;
       this.scene.render();
     });
   }
@@ -114,22 +134,15 @@ export class Game {
   /**
    * Public entry point for starting the game.
    */
-  async start(playerSide: number) {
-    await this.initializeGameWorld(playerSide);
-    this.registerEventListeners();
+  async start() {
+    await this.Init();
 
-    this.isInitialized = true;
+    this.isGameReady = true;
     this.startRenderLoop();
   }
 
-  /**
-   * Attach DOM events like mouse/keyboard input.
-   */
-  private registerEventListeners() {
-    this.canvas.addEventListener("click", (e: MouseEvent) => {
-      e.preventDefault();
-      if (!this.isInitialized) return;
-      // this.controller.triggerServe();
-    });
+  dispose() {
+    this.scene.dispose();
+    this.engine.dispose();
   }
 }

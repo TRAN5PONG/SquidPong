@@ -2,19 +2,23 @@ import { Client, getStateCallbacks, Room } from "colyseus.js";
 import { MatchPhase, MatchState } from "./GameState";
 import { Match, MatchPlayer } from "@/types/game";
 
-type Listener<T> = (data: T) => void;
-
-// Define specific listener types for better type safety
-type ListenerTypes = {
-  players: Record<string, MatchPlayer>;
-  phase: MatchPhase;
-  countdown: number | null;
-  winner: string | null;
-};
+interface NetworkEvents {
+  "player:connected": (playerId: string, player: MatchPlayer) => void;
+  "player:disconnected": (playerId: string) => void;
+  "phase:changed": (phase: MatchPhase) => void;
+  "winner:declared": (winnerId: string | null) => void;
+  "countdown:updated": (countdown: number | null) => void;
+  "game:paused": (data: { by: string; remainingPauseTime: number }) => void;
+  "game:resumed": () => void;
+  "game:pause-denied": (data: { reason: string }) => void;
+  "game:pause-tick": (data: { by: string; remainingPauseTime: number }) => void;
+  "game:elapsed": ({ elapsed }: { elapsed: number }) => void;
+}
 
 export class Network {
   private client: Client;
   private room: Room<MatchState> | null = null;
+  private roomIsReady: boolean = false;
   private match: Match | null = null;
   private readonly serverUrl: string;
 
@@ -24,16 +28,8 @@ export class Network {
   private winnerId: string | null = null;
   private phase: MatchPhase = "waiting";
   private countdown: number | null = null;
-
-  // Subscriptions
-  private listeners: {
-    [K in keyof ListenerTypes]: Listener<ListenerTypes[K]>[];
-  } = {
-    players: [],
-    phase: [],
-    countdown: [],
-    winner: [],
-  };
+  // Events
+  private eventListeners: Map<keyof NetworkEvents, Function[]> = new Map();
 
   constructor(serverUrl: string, match: Match) {
     this.serverUrl = serverUrl;
@@ -53,6 +49,7 @@ export class Network {
         userId,
       });
       this.setupMatchListeners();
+      this.roomIsReady = true;
       return this.room;
     } catch (err) {
       console.error("Join error:", err);
@@ -68,69 +65,77 @@ export class Network {
     // Players
     $(this.room.state as any).players.onAdd(
       (player: MatchPlayer, playerId: string) => {
-        console.log("ON ADD", player);
-        // Always set local state
-
         this.players[playerId] = {
-          ...this.players[playerId], // merge if exists
+          ...this.players[playerId],
           isConnected: player.isConnected,
           pauseRequests: player.pauseRequests,
           remainingPauseTime: player.remainingPauseTime,
         };
+        this.emit("player:connected", playerId, this.players[playerId]);
 
         // Listen for isConnected changes
         $(player as any).listen("isConnected", (isConnected: boolean) => {
           if (this.players[playerId]) {
             this.players[playerId].isConnected = isConnected;
-            this.emit("players", this.players);
+            if (isConnected)
+              this.emit("player:connected", playerId, this.players[playerId]);
+            else this.emit("player:disconnected", playerId);
           }
         });
-
-        this.emit("players", this.players);
       }
     );
-
-    // $(this.room.state as any).players.onChange(
-    //   (_: MatchPlayer, playerId: string) => {
-    //     console.log("ON CHANGE", _);
-    //     if (this.players[playerId]) {
-    //       this.players[playerId].isConnected = false;
-    //       this.players[playerId].remainingPauseTime = 0;
-    //       this.players[playerId].pauseRequests = 0;
-    //       this.emit("players", this.players);
-    //     }
-    //   }
-    // );
-
+    $(this.room.state as any).players.onChange(
+      (_: MatchPlayer, playerId: string) => {
+        if (this.players[playerId]) {
+          // todo : wtf am i doing
+          this.players[playerId].isConnected = false;
+          this.players[playerId].remainingPauseTime = 0;
+          this.players[playerId].pauseRequests = 0;
+          this.emit("player:disconnected", playerId);
+        }
+      }
+    );
     // Phase
     $(this.room.state as any).listen("phase", (phase: MatchPhase) => {
       this.phase = phase;
-      this.emit("phase", phase);
+      this.emit("phase:changed", phase);
     });
-
     // Winner
     $(this.room.state as any).listen(
       "winnerId",
       (newWinnerId: string | null) => {
         this.winnerId = newWinnerId;
-        this.emit("winner", newWinnerId);
+        this.emit("winner:declared", newWinnerId);
       }
     );
-
     // Countdown
     $(this.room.state as any).listen("countdown", (countdown: number) => {
       this.countdown =
         this.room?.state.phase === "countdown" ? countdown : null;
-      this.emit("countdown", this.countdown);
+      this.emit("countdown:updated", this.countdown);
     });
-  }
 
-  // Message handlers
-  registerMessageHandlers(handlers: Record<string, (msg: any) => void>) {
-    if (!this.room) return;
-    for (const [message, handler] of Object.entries(handlers)) {
-      this.room.onMessage(message, handler);
-    }
+    this.room.onMessage("game:paused", (data) => {
+      this.emit("game:paused", data);
+    });
+    this.room.onMessage("game:pause-denied", (reason) => {
+      this.emit("game:pause-denied", reason);
+    });
+    this.room.onMessage("game:resumed", () => {
+      this.emit("game:resumed");
+    });
+    this.room.onMessage("game:resume-denied", (reason) => {
+      this.emit("game:pause-denied", reason);
+    });
+    this.room.onMessage("game:pause-tick", (value) => {
+      this.emit("game:pause-tick", value);
+    });
+    this.room.onMessage("game:give-up-denied", (reason) => {
+      this.emit("game:pause-denied", reason);
+    });
+    this.room.onMessage("game:elapsed", (elapsed) => {
+      this.emit("game:elapsed", elapsed);
+    });
   }
 
   // Send message to server
@@ -142,7 +147,7 @@ export class Network {
     this.room.send(type, data);
   }
 
-  // Getters
+  // Getters // TODO If i didnt used those states, would be deleted altogether
   getRoom() {
     return this.room;
   }
@@ -164,28 +169,8 @@ export class Network {
   isConnected() {
     return this.room !== null;
   }
-
-  // Subscriptions
-  on<K extends keyof ListenerTypes>(
-    key: K,
-    callback: Listener<ListenerTypes[K]>
-  ) {
-    this.listeners[key].push(callback);
-  }
-
-  // Remove listener
-  off<K extends keyof ListenerTypes>(
-    key: K,
-    callback: Listener<ListenerTypes[K]>
-  ) {
-    const index = this.listeners[key].indexOf(callback);
-    if (index > -1) {
-      this.listeners[key].splice(index, 1);
-    }
-  }
-
-  private emit<K extends keyof ListenerTypes>(key: K, data: ListenerTypes[K]) {
-    this.listeners[key].forEach((callback) => callback(data));
+  isRoomReady() {
+    return this.roomIsReady;
   }
 
   // Leave
@@ -201,12 +186,32 @@ export class Network {
     }
   }
 
+  // Event listeners
+  on<K extends keyof NetworkEvents>(event: K, callback: NetworkEvents[K]) {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, []);
+    }
+    this.eventListeners.get(event)!.push(callback);
+  }
+  off<K extends keyof NetworkEvents>(event: K, callback: NetworkEvents[K]) {
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      const index = listeners.indexOf(callback);
+      if (index > -1) {
+        listeners.splice(index, 1);
+      }
+    }
+  }
+  private emit<K extends keyof NetworkEvents>(event: K, ...args: any[]) {
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      listeners.forEach((callback) => callback(...args));
+    }
+  }
+
   // Cleanup all listeners
   dispose() {
     this.leave();
-    this.listeners.players = [];
-    this.listeners.phase = [];
-    this.listeners.countdown = [];
-    this.listeners.winner = [];
+    this.eventListeners.clear();
   }
 }
