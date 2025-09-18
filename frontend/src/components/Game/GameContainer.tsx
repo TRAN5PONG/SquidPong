@@ -1,4 +1,4 @@
-import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 
 import ScoreBoard from "./Elements/ScoreBoard";
@@ -6,16 +6,13 @@ import { GiveUpIcon, PauseIcon } from "../Svg/Svg";
 import { MatchResultOverlay } from "./Elements/MatchResultOverlay";
 import { GamePowerUps, Match, MatchPlayer } from "@/types/game";
 
-import { Client, Room, getStateCallbacks } from "colyseus.js";
-import { Schema } from "@colyseus/schema";
-
 import { useRouteParam } from "@/hooks/useParam";
 import { getMatchById } from "@/api/match";
 import NotFound from "../NotFound/NotFound";
 import { useAppContext } from "@/contexts/AppProviders";
-import GameCanvas from "./GameCanvas";
 import { MatchPhase, MatchState } from "./network/GameState";
 import { Network } from "./network/network";
+import { Game } from "./Scenes/GameScene";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -101,35 +98,21 @@ const StyledGame = styled("div")`
 
 const GameContiner = () => {
   // Context
-  const { user, toasts } = useAppContext();
+  const { user } = useAppContext();
 
   // Get Match
   const matchId = useRouteParam("/game/:id", "id");
   const [match, setMatch] = useState<Match | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [room, setRoom] = useState<Room<MatchState> | null>(null);
-
+  // Refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const gameRef = useRef<Game | null>(null);
+  const netRef = useRef<Network | null>(null);
   // Game States
   const [matchPhase, setMatchPhase] = useState<MatchPhase>("waiting");
-  const [countdownValue, setCountdownValue] = useState<number | null>(null);
-  const [pauseCountdown, setPauseCountdown] = useState<number | null>(null);
-
-  // Players setup
-  const hostId = match?.opponent1.isHost
-    ? match.opponent1.id
-    : match?.opponent2.id;
-  const guestId = match?.opponent1.isHost
-    ? match.opponent2.id
-    : match?.opponent1.id;
-  const userPlayerId =
-    match?.opponent1.userId === user?.id
-      ? match?.opponent1.id
-      : match?.opponent2.id;
-
-  const [players, setPlayers] = useState<Record<string, MatchPlayer>>({});
   const [winnerId, setWinnerId] = useState<string | null>(null);
 
-  // Fetch match data
+  // == Get Match
   useEffect(() => {
     if (!matchId) return;
 
@@ -138,10 +121,6 @@ const GameContiner = () => {
         const res = await getMatchById(matchId);
         if (res) {
           setMatch(res.data);
-          setPlayers({
-            [res.data.opponent1.id]: res.data.opponent1,
-            [res.data.opponent2.id]: res.data.opponent2,
-          });
         } else setNotFound(true);
       } catch (err) {
         setNotFound(true);
@@ -152,65 +131,41 @@ const GameContiner = () => {
     getMatch();
   }, [matchId]);
 
-  // Setup room connection
+  // == Init Game
   useEffect(() => {
-    if (!match?.roomId || !user?.id) return;
+    if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
 
-    const net = new Network("ws://10.13.2.6:3000", match);
-    net.join(user.id).then((room) => {
-      setRoom(room);
+    // Init Game
+    gameRef.current = new Game(canvasRef.current, match, user.id);
+    gameRef.current.start();
+    netRef.current = gameRef.current.net;
 
-      // state listeners
-      net.on("players", (data) => {
-        setPlayers((prev) => ({
-          ...prev,
-          ...data,
-        }));
-      });
-      net.on("phase", setMatchPhase);
-      net.on("countdown", setCountdownValue);
-      net.on("winner", setWinnerId);
-    });
+    return () => {
+      gameRef.current?.dispose();
+      netRef.current = null;
+    };
+  }, [match, user?.id, canvasRef.current]);
 
-    // register handlers
-    net.registerMessageHandlers({
-      "game:paused": (message: any) => {
-        setPauseCountdown(message.remainingPauseTime || null);
-      },
-      "game:resumed": (message: any) => {
-        console.log("Game resumed by opponent", message);
-        setPauseCountdown(null);
-      },
-      "game:pause-tick": (message: any) => {
-        setPauseCountdown(message.remainingPauseTime || null);
-      },
-      "game:resume-denied": (message: any) => {
-        toasts.addToastToQueue({
-          type: "error",
-          message: `Resume denied: ${message.reason}`,
-        });
-      },
-      "game:pause-denied": (message: any) => {
-        toasts.addToastToQueue({
-          type: "error",
-          message: `Pause denied: ${message.reason}`,
-        });
-      },
-      "game:give-up-denied": (message: any) => {
-        toasts.addToastToQueue({
-          type: "error",
-          message: `Give up denied: ${message.reason}`,
-        });
-      },
-    });
-    return () => net.leave();
-  }, [match?.roomId, user?.id]);
+  // == Network Listeners
+  useEffect(() => {
+    if (!netRef.current) return;
+    netRef.current.on("phase:changed", setMatchPhase);
+    netRef.current.on("winner:declared", setWinnerId);
+  }, [gameRef.current]);
 
   const onPause = () => {
-    room?.send("game:pause");
+    if (!netRef.current) return;
+
+    netRef.current.sendMessage("game:pause");
   };
   const onGiveUp = () => {
-    room?.send("player:give-up");
+    if (!netRef.current) return;
+    netRef.current.sendMessage("game:give-up");
+  };
+  const onReady = () => {
+    if (!netRef.current) return;
+
+    netRef.current.sendMessage("player:ready");
   };
 
   // if (notFound) return <NotFound />;
@@ -218,26 +173,17 @@ const GameContiner = () => {
 
   return (
     <StyledGame>
-      <MatchResultOverlay
+      {/* <MatchResultOverlay
         isWinner={winnerId ? winnerId === userPlayerId : null}
-      />
-
+      /> */}
       <ScoreBoard
-        host={hostId ? players[hostId] : null}
-        guest={guestId ? players[guestId] : null}
-        isPaused={matchPhase === "paused"}
-        isCountingDown={matchPhase === "countdown"}
-        isEnded={matchPhase === "ended"}
-        winnerId={winnerId}
-        countdown={countdownValue || 0}
-        pauseCountdown={pauseCountdown || 0}
-        pauseBy={room?.state.pauseBy || null}
+        net={netRef.current}
+        match={match}
         startCinematicCamera={() => {}}
         resetCamera={() => {}}
       />
-
       <button
-        onClick={() => room?.send("player:ready", { isReady: true })}
+        onClick={onReady}
         style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}
       >
         Ready
@@ -253,7 +199,6 @@ const GameContiner = () => {
       >
         GAME STATUS :{matchPhase}
       </h1>
-
       <div className="GameSettings">
         {matchPhase === "playing" ||
         matchPhase === "paused" ||
@@ -278,8 +223,7 @@ const GameContiner = () => {
           ))}
         </div>
       </div>
-
-      {/* <GameCanvas match={match} /> */}
+      <canvas ref={canvasRef} className="game-canvas"></canvas>;
     </StyledGame>
   );
 };

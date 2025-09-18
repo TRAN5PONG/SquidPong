@@ -1,15 +1,13 @@
 import { Scene, Vector3 } from "@babylonjs/core";
 import { Camera } from "./Camera";
 
-
-
 export class GameCamera extends Camera {
   private playerSide: number;
 
   constructor(scene: Scene, playerSide: number) {
     super(scene);
     this.playerSide = playerSide;
-	this.setupPosition();
+    this.setupPosition();
   }
 
   protected setupPosition(): void {

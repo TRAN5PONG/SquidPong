@@ -5,9 +5,14 @@ import {
   WinnerIcon,
 } from "@/components/Svg/Svg";
 import { useSounds } from "@/contexts/SoundProvider";
-import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { MatchPlayer } from "@/types/game";
+import { Match, MatchPlayer } from "@/types/game";
+import { MatchPhase, MatchState } from "../network/GameState";
+import { Room } from "colyseus.js";
+import { Network } from "../network/network";
+import { useAppContext } from "@/contexts/AppProviders";
+import { formatTime } from "@/utils/time";
 
 const StyledScoreBoard = styled("div")`
   width: 80%;
@@ -115,45 +120,123 @@ const StyledScoreBoard = styled("div")`
   }
 `;
 interface ScoreBoardProps {
-  host: MatchPlayer | null;
-  guest: MatchPlayer | null;
-  isPaused: boolean;
-  isCountingDown: boolean;
-  isEnded: boolean;
-  winnerId: string | null;
-  countdown: number;
-  pauseCountdown: number;
-  pauseBy: string | null;
+  net: Network | null;
+  match: Match | null;
   startCinematicCamera: () => void;
   resetCamera: () => void;
 }
 const ScoreBoard = (props: ScoreBoardProps) => {
+  const { toasts } = useAppContext();
   // Sounds
   const { countDownSound, countDownEndSound, ambianceSound } = useSounds();
 
+  // Players
+  const [host, setHost] = useState<MatchPlayer | null>(null);
+  const [guest, setGuest] = useState<MatchPlayer | null>(null);
+
+  // State
+  const [winnerId, setWinnerId] = useState<string | null>(null);
+  const [countdownValue, setCountdownValue] = useState<number | null>(null);
+  const [pauseBy, setPauseBy] = useState<string | null>(null);
+  const [pauseCountdown, setPauseCountdown] = useState<number | null>(null);
+  const [matchPhase, setMatchPhase] = useState<MatchPhase>("waiting");
+
+  // Time
+  const [elapsed, setElapsed] = useState<number>(0);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+
   useEffect(() => {
-    const activeCountdown = props.isPaused
-      ? props.pauseCountdown
-      : props.isCountingDown
-      ? props.countdown
-      : null;
+    if (!props.match) return;
+    setHost(
+      props.match.opponent1.isHost
+        ? props.match.opponent1
+        : props.match.opponent2
+    );
+    setGuest(
+      props.match.opponent1.isHost
+        ? props.match.opponent2
+        : props.match.opponent1
+    );
+  }, [props.match]);
+
+  useEffect(() => {
+    if (!props.net) return;
+    props.net.on("phase:changed", setMatchPhase);
+    props.net.on("countdown:updated", setCountdownValue);
+    props.net.on("winner:declared", setWinnerId);
+    props.net.on(
+      "player:connected",
+      (playerId: string, player: MatchPlayer) => {
+        console.log("reachs");
+        if (playerId === host?.id)
+          setHost({
+            ...host,
+            isConnected: player.isConnected,
+            pauseRequests: player.pauseRequests,
+            remainingPauseTime: player.remainingPauseTime,
+          });
+        if (playerId === guest?.id)
+          setGuest({
+            ...guest,
+            isConnected: player.isConnected,
+            pauseRequests: player.pauseRequests,
+            remainingPauseTime: player.remainingPauseTime,
+          });
+      }
+    );
+    props.net.on("player:disconnected", (playerId: string) => {
+      if (playerId === host?.id && host)
+        setHost({ ...host, isConnected: false, remainingPauseTime: 0 });
+      if (playerId === guest?.id && guest)
+        setGuest({ ...guest, isConnected: false, remainingPauseTime: 0 });
+    });
+    props.net.on("game:paused", (data) => {
+      setPauseBy(data.by);
+      console.log("Game paused", data.by);
+    });
+    props.net.on("game:pause-denied", (data) => {
+      toasts?.addToastToQueue({
+        type: "error",
+        message: `Pause denied: ${data.reason}`,
+        duration: 4000,
+      });
+    });
+    props.net.on("game:pause-tick", (data) => {
+      setPauseCountdown(data.remainingPauseTime);
+    });
+    // Time
+    props.net.on("game:elapsed", ({elapsed}) => {
+      console.log("Elapsed time sync:", elapsed);
+      setElapsed(elapsed);
+      setLastSyncTime(Date.now());
+    });
+  }, [props.net]);
+
+  useEffect(() => {
+    // todo : should be refactored
+    const activeCountdown =
+      matchPhase === "paused"
+        ? pauseCountdown
+        : matchPhase === "countdown"
+        ? countdownValue
+        : null;
 
     const lastPlayedRef = useRef<number | null>(null);
     const lastPausedRef = useRef<boolean>(false);
 
     // Handle pause sound — only play once when pause starts
-    if (props.isPaused && !lastPausedRef.current) {
+    if (matchPhase === "paused" && !lastPausedRef.current) {
       if (ambianceSound.isMuffled) ambianceSound.setMuffled(false);
       ambianceSound.play();
       props.startCinematicCamera();
       lastPausedRef.current = true;
-    } else if (!props.isPaused) {
+    } else if (matchPhase !== "paused") {
       ambianceSound.stop(2);
       props.resetCamera();
       lastPausedRef.current = false;
     }
 
-    if (activeCountdown === 5 && props.isPaused) {
+    if (activeCountdown === 5 && matchPhase !== "paused") {
       ambianceSound.setMuffled(true);
       props.resetCamera();
     }
@@ -176,26 +259,19 @@ const ScoreBoard = (props: ScoreBoardProps) => {
 
     // Save last played value
     lastPlayedRef.current = activeCountdown;
-  }, [
-    props.countdown,
-    props.pauseCountdown,
-    props.isPaused,
-    props.isCountingDown,
-  ]);
+  }, [countdownValue, pauseCountdown, matchPhase]);
 
+  // Elapsed timer effect
   useEffect(() => {
-    if (props.isEnded) {
-      if (ambianceSound.isMuffled) ambianceSound.setMuffled(false);
-      setTimeout(() => {
-        ambianceSound.play();
-        props.startCinematicCamera();
-      }, 1000);
-    }
-  }, [props.isEnded]);
-
-  useEffect(() => {
-    console.log("====Guest :", props.guest);
-  }, [props]);
+    const interval = setInterval(() => {
+      if (lastSyncTime !== null) {
+        const drift = Date.now() - lastSyncTime;
+        setElapsed((prev) => prev + drift);
+        setLastSyncTime(Date.now());
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lastSyncTime]);
 
   return (
     <StyledScoreBoard>
@@ -204,19 +280,19 @@ const ScoreBoard = (props: ScoreBoardProps) => {
           <span>10</span>
         </div>
         <img
-          src={props.host?.avatarUrl || "/assets/avatar.jpg"}
+          src={host?.avatarUrl || "/assets/avatar.jpg"}
           className="OponentCardAvatar"
         />
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
-            {props.host?.username || "Player 1"}
-            {!props.host?.isConnected && props.host && (
+            {host?.username || "Player 1"}
+            {!host?.isConnected && host && (
               <DisconnectedIcon fill="var(--red_color)" size={20} />
             )}
-            {props.host?.id === props.pauseBy && props.isPaused && (
+            {host?.id === pauseBy && matchPhase === "paused" && (
               <PauseIcon fill="var(--yellow_color)" size={20} />
             )}
-            {props.isEnded && props.winnerId === props.host?.id && (
+            {matchPhase === "ended" && winnerId === host?.id && (
               <WinnerIcon size={30} />
             )}
           </h1>
@@ -226,19 +302,21 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       <div className="CenterContent">
         <div className="Timer">
           <span>
-            {props.isPaused && props.pauseCountdown > 0
-              ? props.pauseCountdown
-              : props.isCountingDown && props.countdown > 0
-              ? props.countdown
-              : "12:32"}
+            {matchPhase === "playing"
+              ? formatTime(elapsed)
+              : matchPhase === "paused"
+              ? pauseCountdown
+              : matchPhase === "countdown"
+              ? countdownValue
+              : formatTime(elapsed)}
           </span>
         </div>
 
         <div className="RoundNumber">
           <span>
-            {props.isCountingDown
+            {matchPhase === "countdown"
               ? "Get Ready!"
-              : props.isPaused
+              : matchPhase === "paused"
               ? "Paused"
               : "Round 1"}
           </span>
@@ -250,20 +328,20 @@ const ScoreBoard = (props: ScoreBoardProps) => {
           <span>10</span>
         </div>
         <img
-          src={props.guest?.avatarUrl || "/assets/avatar.jpg"}
+          src={guest?.avatarUrl || "/assets/avatar.jpg"}
           onError={(e: any) => console.log(e)}
           className="OponentCardAvatar"
         />
         <div className="OponentCardInfo">
           <h1 className="OponentCardUsername">
-            {props.guest?.username || "Player 2"}
-            {!props.guest?.isConnected && props.guest && (
+            {guest?.username || "Player 2"}
+            {!guest?.isConnected && guest && (
               <DisconnectedIcon fill="var(--red_color)" size={20} />
             )}
-            {props.guest?.id === props.pauseBy && props.isPaused && (
+            {guest?.id === pauseBy && matchPhase === "paused" && (
               <PauseIcon fill="var(--yellow_color)" size={20} />
             )}
-            {props.isEnded && props.winnerId === props.guest?.id && (
+            {matchPhase === "ended" && winnerId === guest?.id && (
               <WinnerIcon size={30} />
             )}
           </h1>
