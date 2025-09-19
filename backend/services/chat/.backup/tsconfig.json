@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",                // Modern JS target
+    "module": "NodeNext",              // Use Node ESM resolution
+    "moduleResolution": "NodeNext",    // Resolve modules like Node ESM
+    "outDir": "./dist",                // Compiled JS output
+    "rootDir": "./src",                // Source TS folder
+    "strict": true,                     // Enable strict checks
+    "esModuleInterop": true,           // Allow import/export interop
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,         // Import JSON as modules
+    "sourceMap": true,                 // Generate source maps
+    "experimentalDecorators": true,    // Optional: if using decorators
+    "useDefineForClassFields": true    // Recommended for modern classes
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

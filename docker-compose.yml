@@ -129,26 +129,26 @@ services:
   #   networks: 
   #     - web
 
-  # chat:
-  #   build: ./backend/services/chat
-  #   image: chat-image
-  #   container_name: chat
-  #   restart: always
-  #   command: >
-  #     sh -c "
-  #     sleep 6 &&
-  #     npx prisma migrate dev --name init &&
-  #     npm run dev
-  #     "
-  #   env_file:
-  #     - ./backend/services/chat/.env
-  #   ports:
-  #     - "5004:5555"
-  #   volumes:
-  #     - ./backend/services/chat/src:/chat/src
-  #     - ./backend/services/chat/prisma:/chat/prisma
-  #   networks: 
-  #     - web
+  chat:
+    build: ./backend/services/chat
+    image: chat-image
+    container_name: chat
+    restart: always
+    command: >
+      sh -c "
+      sleep 6 &&
+      npx prisma migrate dev --name init &&
+      npm run dev
+      "
+    env_file:
+      - ./backend/services/chat/.env
+    ports:
+      - "5004:5555"
+    volumes:
+      - ./backend/services/chat/src:/chat/src
+      - ./backend/services/chat/prisma:/chat/prisma
+    networks: 
+      - web
 
   # game:
   #   build: ./backend/services/game

@@ -8,23 +8,84 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Message {
-  id        Int        @id @default(autoincrement())
-  senderId      String
-  receiverId     String
-  message   String
+// model Message {
+//   id        Int        @id @default(autoincrement())
+//   senderId      String
+//   receiverId     String
+//   message   String
 
-  timestamp DateTime   @default(now())
-  reactions Reaction[]
+//   timestamp DateTime   @default(now())
+//   reactions Reaction[]
+// }
+
+// model Reaction {
+//   id        Int      @id @default(autoincrement())
+//   messageId Int
+//   emoji    String
+//   user     String
+//   timestamp DateTime @default(now())
+//   message   Message  @relation(fields: [messageId], references: [id])
+
+//   @@index([messageId])
+// }
+
+
+model Message {
+  id         Int        @id @default(autoincrement())
+
+  senderId   String
+  receiverId String
+  message    String
+
+  reactions  Reaction[]
+
+  timestamp  DateTime   @default(now())
 }
+
+
 
 model Reaction {
   id        Int      @id @default(autoincrement())
+
+  userId    String
   messageId Int
-  emoji    String
-  user     String
+  emoji     String
+  
   timestamp DateTime @default(now())
   message   Message  @relation(fields: [messageId], references: [id])
-
-  @@index([messageId])
 }
+
+
+
+
+
+// model Poll {
+//   id        Int           @id @default(autoincrement())
+
+//   userId String
+//   question  String
+//   options   PollOption[]
+//   createdAt DateTime      @default(now())
+// }
+
+
+// model PollOption {
+//   id      Int        @id @default(autoincrement())
+//   pollId  Int
+//   text    String
+//   votes   PollVote[]
+
+//   poll    Poll       @relation(fields: [pollId], references: [id])
+// }
+
+
+// model PollVote {
+//   id        Int        @id @default(autoincrement())
+//   optionId  Int
+//   userId    String
+//   votedAt   DateTime   @default(now())
+
+//   option    PollOption @relation(fields: [optionId], references: [id])
+
+//   @@unique([optionId, userId])
+// }
