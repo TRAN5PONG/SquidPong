@@ -10,6 +10,8 @@ export const onlineUsers = new Map<string, WebSocket>();
 
 
 
+// helper function to send a single field in multipart/form-data format
+
 async function sendSingleMultipartVoid(url: string, fieldName: string, value: string | File | Blob , userId : string )
 {
   const formData = new FormData();
@@ -51,13 +53,20 @@ async function updatestatus(userId: number )
     
 }
 
+
+
+
+// end helper function
+
+
+
+
 export async function handleWsConnect(ws: any, req: FastifyRequest) 
 {
   try 
   {
     const userId = ws.userId;
     const socketKey = `socket:${userId}`;
-    
     onlineUsers.set(socketKey , ws)
     await redis.sadd('online_users', userId);
 
@@ -66,10 +75,8 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
     ws.on("close", () => onClientDisconnect(ws));
     
     
-    console.log(`Client connected: ${userId} `);
+    console.log(`Client connected: ${userId}`);
     await updatestatus(userId);
-    
-    // Notify user-service that user is online
     
   }
   catch (error) 
@@ -81,22 +88,32 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
 
 
 
-
-
-
-async function onChatNotificationMessage(this:WebSocket , message: any)
+async function onChatNotificationMessage(this:any , message: any)
 {
-    const data = JSON.parse(message.toString());
+  try
+  {
+    const senderId = this.userId;
+    const allowedTypes = ['chat', 'notification'  , 'game'];
 
-    await sendDataToQueue(data , data.type);
+    const incomingSocketData = JSON.parse(message.toString());
+    if (!incomingSocketData.type) throw new Error('Message type is required');
 
-    // if (data.type == "chat")
-    //   await sendDataToQueue(data , 'chat');
-    // else if (data.type == "notification")
-    //   console.log("handler of notification")
+    if (!allowedTypes.includes(incomingSocketData.type))
+      throw new Error(`Invalid message type. Allowed types: ${allowedTypes.join(', ')}`);
 
+    await sendDataToQueue({...incomingSocketData.data , senderId} , incomingSocketData.type);
+  
+  }
+  catch (error)
+  {
+
+    console.error("Error processing chat-notification message:", error);
+  }
 
 }
+
+
+
 
 
 
@@ -115,7 +132,9 @@ async function onClientDisconnect(ws: any)
 
     console.log(`Client disconnected: ${userId}`);
     
-    // Notify user-service that user is offline
+
+
+
     await sendSingleMultipartVoid('http://user:4001/api/user/me', "status", "OFFLINE", userId);
 
     await fetch(`http://user:4001/update-xylar99`, {
@@ -140,13 +159,14 @@ async function onClientDisconnect(ws: any)
 
 export function handleHttpUpgrade(req: any, socket: any, head: any) 
 {
-  const includesURL = ['/chat-notification'];
+  const includesURL = ['/chat'];
 
-    try 
+  try 
     {
-      if (!includesURL.includes(req.url))
-          throw new Error('No endpoint found');
+    if (!includesURL.includes(req.url))
+        throw new Error('No endpoint found');
 
+      
       const token = req.headers.cookie.split('=')[1]
       if (!token) throw new Error('No accessToken found');
 

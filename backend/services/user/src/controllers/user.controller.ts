@@ -83,7 +83,7 @@ export async function updateProfileHandler(req: FastifyRequest, res: FastifyRepl
     const body = await convertParsedMultipartToJson(req);
 
     console.log("Body Update : ", body);
-    respond.data = updateProfileRedis(body , userId);
+    respond.data = await updateProfileRedis(body , userId);
 
   }
   catch (error) {

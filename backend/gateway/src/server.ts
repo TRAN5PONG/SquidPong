@@ -25,7 +25,7 @@ async function start()
 	}
 
 	await initRabbitMQ()
-	await receiveFromQueue('test')
+	await receiveFromQueue()
 }
 
 
