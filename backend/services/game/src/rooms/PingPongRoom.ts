@@ -3,19 +3,25 @@ import { Schema, type, MapSchema } from "@colyseus/schema";
 import { prisma } from "../lib/prisma";
 
 // --- Game State ---
+class Paddle extends Schema {
+  @type("number") x = 0;
+  @type("number") y = 0;
+  @type("number") z = 0;
+  @type("number") velX = 0;
+  @type("number") velY = 0;
+  @type("number") velZ = 0;
+  @type("number") rotationZ = 0;
+}
+
 class Player extends Schema {
   @type("string") id!: string; // MatchPlayer.id
   @type("boolean") isReady = false;
   @type("boolean") isConnected = true;
   @type("number") pauseRequests = 0;
   @type("number") remainingPauseTime!: number;
+  @type(Paddle) paddle = new Paddle();
   pauseStartTime: number | null = null;
   pauseTimeout?: NodeJS.Timeout;
-}
-
-class Paddle extends Schema {
-  @type("number") x = 0;
-  @type("number") y = 0;
 }
 
 class Spectator extends Schema {
@@ -34,12 +40,11 @@ class MatchState extends Schema {
     | "ended" = "waiting";
   @type("number") countdown = 6;
   @type("string") winnerId: string | null = null;
-  @type("number") gameStartAt: number = 0;
+  // Game start time
+  @type("number") gameStartAt = 0;
   // Pause logic
   @type("number") maxPauseTime!: number;
   @type("string") pauseBy: string | null = null;
-  @type("number") pauseOffset: number = 0; // total paused duration
-  @type("number") lastPauseStart: number = 0;
 }
 
 // --- Room ---
@@ -74,13 +79,6 @@ export class MatchRoom extends Room<MatchState> {
       players: options.players,
       spectators: options.spectators,
     });
-    this.state.gameStartAt = Date.now();
-
-    // Sync match duration
-    this.clock.setInterval(() => {
-      const elapsed = this.getElapsed();
-      this.broadcast("game:elapsed", { elapsed });
-    }, 5000);
 
     // Player ready
     this.onMessage("player:ready", (client) => {
@@ -96,6 +94,22 @@ export class MatchRoom extends Room<MatchState> {
       }
     });
 
+    // Player's paddle update
+    this.onMessage("player:paddle", (client, message) => {
+      const _client = client as any;
+      const player = this.state.players.get(_client.matchPlayerId);
+      if (!player) return;
+
+      if (player && this.state.phase === "playing") {
+        player.paddle.x = message.position.x;
+        player.paddle.y = message.position.y;
+        player.paddle.z = message.position.z;
+        player.paddle.velX = message.velocity.x;
+        player.paddle.velY = message.velocity.y;
+        player.paddle.velZ = message.velocity.z;
+        player.paddle.rotationZ = message.rotation.z;
+      }
+    });
     // Player give up
     this.onMessage("player:give-up", (client) => {
       const _client = client as any;
@@ -109,14 +123,45 @@ export class MatchRoom extends Room<MatchState> {
         return;
       }
 
+      // Clear intervals and timeouts
+      if (this.countdownInterval) clearInterval(this.countdownInterval);
+      if (this.pauseInterval) clearInterval(this.pauseInterval);
+      if (this.clock) this.clock.clear();
+
       this.state.phase = "ended";
       this.state.winnerId =
         Array.from(this.state.players.values()).find((p) => p.id !== player.id)
           ?.id || null;
-    });
 
+      this.broadcast("game:ended", { winnerId: this.state.winnerId });
+    });
     // Pause / Resume handling
     this.onMessage("game:pause", (client) => this.handlePause(client));
+    // Game reset
+    this.onMessage("game:reset", (client) => {
+      if (this.state.phase !== "ended") return;
+
+      // Reset state
+      this.state.phase = "waiting";
+      this.state.winnerId = null;
+      this.state.countdown = 6;
+      this.state.gameStartAt = 0;
+      this.state.pauseBy = null;
+
+      // Reset players
+      this.state.players.forEach((player) => {
+        player.isReady = false;
+        player.pauseRequests = 0;
+        player.remainingPauseTime = this.state.maxPauseTime;
+        player.pauseStartTime = null;
+        if (player.pauseTimeout) {
+          clearTimeout(player.pauseTimeout);
+          player.pauseTimeout = undefined;
+        }
+      });
+
+      this.broadcast("game:reset");
+    });
   };
 
   onAuth(client: Client, options: any) {
@@ -181,7 +226,7 @@ export class MatchRoom extends Room<MatchState> {
       this.state.spectators.set(client.sessionId, spectator);
       console.log(`Spectator ${spectator.id} joined room ${this.roomId}`);
     }
-  }
+  };
 
   onLeave = async (client: Client, consented: boolean) => {
     const _client = client as any;
@@ -196,7 +241,7 @@ export class MatchRoom extends Room<MatchState> {
         player.isConnected = false;
       }
     }
-  }
+  };
 
   onDispose() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);
@@ -250,9 +295,9 @@ export class MatchRoom extends Room<MatchState> {
   private startGame() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);
 
+    this.state.gameStartAt = Date.now();
     this.state.phase = "playing";
-    console.log("Game started!");
-    this.broadcast("game:started");
+    this.broadcast("game:started", { startTime: this.state.gameStartAt });
   }
   private handlePause(client: Client) {
     const _client = client as any;
@@ -280,7 +325,6 @@ export class MatchRoom extends Room<MatchState> {
       }
 
       this.state.phase = "paused";
-      this.state.lastPauseStart = Date.now();
       this.state.pauseBy = player.id;
       player.pauseRequests += 1;
       player.pauseStartTime = Date.now();
@@ -322,11 +366,6 @@ export class MatchRoom extends Room<MatchState> {
         player.pauseTimeout = undefined;
       }
 
-      if (this.state.lastPauseStart > 0) {
-        this.state.pauseOffset += Date.now() - this.state.lastPauseStart;
-        this.state.lastPauseStart = 0;
-      }
-
       this.stopPauseInterval();
       this.state.phase = "playing";
       this.state.pauseBy = null;
@@ -335,15 +374,6 @@ export class MatchRoom extends Room<MatchState> {
         remainingPauseTime: player.remainingPauseTime,
       });
     }
-  }
-  private getElapsed(): number {
-    if (this.state.lastPauseStart > 0)
-      return (
-        this.state.lastPauseStart -
-        this.state.gameStartAt -
-        this.state.pauseOffset
-      );
-    return Date.now() - this.state.gameStartAt - this.state.pauseOffset;
   }
   private forceResume(player: Player) {
     if (this.state.phase === "paused" && player.pauseStartTime) {

@@ -23,6 +23,7 @@ export class Game {
   match!: Match;
   // Entities
   localPaddle!: Paddle;
+  opponentPaddle!: Paddle;
   hostPaddle: Paddle;
   guestPaddle: Paddle;
   ball: Ball;
@@ -75,7 +76,7 @@ export class Game {
     this.scene = new Scene(this.engine);
   }
 
-  /**
+  /****
    * Init
    */
   private async Init() {
@@ -86,7 +87,7 @@ export class Game {
       // Camera
       this.camera = new GameCamera(
         this.scene,
-        this.userId === this.hostId ? 1 : -1
+        this.userId === this.hostId ? -1 : 1
       );
       this.camera.attach(this.canvas);
 
@@ -96,12 +97,16 @@ export class Game {
 
       // Entities
       this.arena = new Arena(this.scene);
-      this.hostPaddle = new Paddle(this.scene, "LEFT", true, {
-        textureUrl: "/paddle/Survivor.png",
-      });
-      this.guestPaddle = new Paddle(this.scene, "RIGHT");
       this.ball = new Ball(this.scene);
       this.light = new Light(this.scene);
+
+      // Paddles setup
+      this.hostPaddle = new Paddle(this.scene, "RIGHT", true);
+      this.guestPaddle = new Paddle(this.scene, "LEFT");
+      this.localPaddle =
+        this.userId === this.hostId ? this.hostPaddle : this.guestPaddle;
+      this.opponentPaddle =
+        this.userId === this.hostId ? this.guestPaddle : this.hostPaddle;
 
       // Debugging tools
       this.debug = new Debug(this.scene, this.engine);
@@ -121,17 +126,36 @@ export class Game {
     }
   }
 
-  /**
+  /*****
    * Start the render/update loop.
    */
   private startRenderLoop() {
+    const FIXED_DT = 1 / 60; // Physics timestep: 60Hz
+    let accumulator = 0;
+    let lastTime = performance.now();
+
     this.engine.runRenderLoop(() => {
-      if (!this.isGameReady) return;
+      const now = performance.now();
+      const frameTime = (now - lastTime) / 1000; // convert ms → seconds
+      lastTime = now;
+
+      accumulator += frameTime;
+
+      // --- Fixed-step physics loop ---
+      while (accumulator >= FIXED_DT) {
+        // this.controller.fixedUpdate(FIXED_DT);
+        accumulator -= FIXED_DT;
+      }
+      // --- Compute interpolation factor for visuals ---
+      const alpha = accumulator / FIXED_DT;
+      // Update visuals using interpolation
+      // this.controller.updateVisuals(alpha);
+
       this.scene.render();
     });
   }
 
-  /**
+  /*****
    * Public entry point for starting the game.
    */
   async start() {
@@ -141,6 +165,16 @@ export class Game {
     this.startRenderLoop();
   }
 
+  /*****
+   * Getters
+   */
+  getUserPlayerId() {
+    return this.userPlayerId;
+  }
+
+  /*****
+   * Cleanup
+   */
   dispose() {
     this.scene.dispose();
     this.engine.dispose();
