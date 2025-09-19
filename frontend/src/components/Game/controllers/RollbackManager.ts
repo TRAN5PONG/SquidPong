@@ -20,6 +20,9 @@ export class RollbackManager {
   private physics: Physics;
   private ball: Ball;
 
+  private currentTick: number = 0;
+  private serveState: ServeBall = ServeBall.FOLLOWING_PADDLE;
+
   constructor(physics: Physics, ball: Ball) {
     this.physics = physics;
     this.ball = ball;
@@ -29,13 +32,13 @@ export class RollbackManager {
     return this.isRollbackInProgress;
   }
 
-  public recordState(currentTick: number, serveState: ServeBall): void {
-    if (serveState === ServeBall.IN_PLAY) {
+  public recordState(): void {
+    if (this.serveState === ServeBall.IN_PLAY) {
       const state: BallHistory = {
         position: this.physics.getBallPosition().clone(),
         velocity: this.physics.getBallVelocity().clone(),
         spin: this.physics.getBallSpin().clone(),
-        tick: currentTick,
+        tick: this.currentTick,
       };
       this.ballHistory.push(state);
 
@@ -51,7 +54,6 @@ export class RollbackManager {
     position: Vec3,
     velocity: Vec3,
     spin?: Vec3,
-    serveState?: ServeBall
   ): void {
     console.log(`Rolling back from tick ${currentTick} to ${receivedTick}`);
     this.isRollbackInProgress = true;
@@ -72,7 +74,7 @@ export class RollbackManager {
     this.clearHistoryAfterTick(receivedTick);
 
     // Re-simulate from rollback point to current
-    this.resimulate(receivedTick, currentTick, serveState);
+    this.resimulate(receivedTick, currentTick);
 
     this.updateVisuals();
 
@@ -104,7 +106,6 @@ export class RollbackManager {
   private resimulate(
     fromTick: number,
     toTick: number,
-    serveState?: ServeBall
   ): void {
     const ticksToResimulate = toTick - fromTick;
 
@@ -112,7 +113,7 @@ export class RollbackManager {
       this.physics.Step();
 
       // Record the re-simulated state
-      if (serveState === ServeBall.IN_PLAY) {
+      if (this.serveState === ServeBall.IN_PLAY) {
         this.ballHistory.push({
           position: this.physics.getBallPosition().clone(),
           velocity: this.physics.getBallVelocity().clone(),
@@ -163,5 +164,9 @@ export class RollbackManager {
     while (this.ballHistory.length > this.maxHistory) {
       this.ballHistory.shift();
     }
+  }
+
+  incCurrentTick() {
+    this.currentTick++;
   }
 }

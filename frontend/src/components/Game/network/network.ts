@@ -12,7 +12,9 @@ interface NetworkEvents {
   "game:resumed": () => void;
   "game:pause-denied": (data: { reason: string }) => void;
   "game:pause-tick": (data: { by: string; remainingPauseTime: number }) => void;
-  "game:elapsed": ({ elapsed }: { elapsed: number }) => void;
+  "game:ended": (data: { winnerId: string }) => void;
+  "game:started": (data: { startTime: number }) => void;
+  "gameStartAt": (startAt: number) => void;
 }
 
 export class Network {
@@ -28,6 +30,7 @@ export class Network {
   private winnerId: string | null = null;
   private phase: MatchPhase = "waiting";
   private countdown: number | null = null;
+
   // Events
   private eventListeners: Map<keyof NetworkEvents, Function[]> = new Map();
 
@@ -95,12 +98,12 @@ export class Network {
         }
       }
     );
-    // Phase
+    // P
+    // Match States
     $(this.room.state as any).listen("phase", (phase: MatchPhase) => {
       this.phase = phase;
       this.emit("phase:changed", phase);
     });
-    // Winner
     $(this.room.state as any).listen(
       "winnerId",
       (newWinnerId: string | null) => {
@@ -108,11 +111,13 @@ export class Network {
         this.emit("winner:declared", newWinnerId);
       }
     );
-    // Countdown
     $(this.room.state as any).listen("countdown", (countdown: number) => {
       this.countdown =
         this.room?.state.phase === "countdown" ? countdown : null;
       this.emit("countdown:updated", this.countdown);
+    });
+    $(this.room.state as any).listen("gameStartAt", (startAt: number) => {
+      this.emit("gameStartAt", startAt);
     });
 
     this.room.onMessage("game:paused", (data) => {
@@ -133,8 +138,11 @@ export class Network {
     this.room.onMessage("game:give-up-denied", (reason) => {
       this.emit("game:pause-denied", reason);
     });
-    this.room.onMessage("game:elapsed", (elapsed) => {
-      this.emit("game:elapsed", elapsed);
+    // this.room.onMessage("game:ended", (data) => {
+    //   this.emit("game:ended", data);
+    // }); // todo : it seems that its working without adding this
+    this.room.onMessage("game:started", (data) => {
+      this.emit("game:started", data);
     });
   }
 

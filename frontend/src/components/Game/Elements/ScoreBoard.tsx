@@ -135,6 +135,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
   const [guest, setGuest] = useState<MatchPlayer | null>(null);
 
   // State
+  const [gmaeStarteAt, setGameStartedAt] = useState<number | null>(null);
   const [winnerId, setWinnerId] = useState<string | null>(null);
   const [countdownValue, setCountdownValue] = useState<number | null>(null);
   const [pauseBy, setPauseBy] = useState<string | null>(null);
@@ -143,7 +144,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
 
   // Time
   const [elapsed, setElapsed] = useState<number>(0);
-  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+
 
   useEffect(() => {
     if (!props.match) return;
@@ -164,6 +165,8 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     props.net.on("phase:changed", setMatchPhase);
     props.net.on("countdown:updated", setCountdownValue);
     props.net.on("winner:declared", setWinnerId);
+    props.net.on("gameStartAt", setGameStartedAt);
+
     props.net.on(
       "player:connected",
       (playerId: string, player: MatchPlayer) => {
@@ -204,12 +207,9 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     props.net.on("game:pause-tick", (data) => {
       setPauseCountdown(data.remainingPauseTime);
     });
+
     // Time
-    props.net.on("game:elapsed", ({elapsed}) => {
-      console.log("Elapsed time sync:", elapsed);
-      setElapsed(elapsed);
-      setLastSyncTime(Date.now());
-    });
+
   }, [props.net]);
 
   useEffect(() => {
@@ -264,14 +264,12 @@ const ScoreBoard = (props: ScoreBoardProps) => {
   // Elapsed timer effect
   useEffect(() => {
     const interval = setInterval(() => {
-      if (lastSyncTime !== null) {
-        const drift = Date.now() - lastSyncTime;
-        setElapsed((prev) => prev + drift);
-        setLastSyncTime(Date.now());
+      if (matchPhase === "playing" && gmaeStarteAt) {
+        setElapsed(Date.now() - gmaeStarteAt);
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [lastSyncTime]);
+  }, [gmaeStarteAt]);
 
   return (
     <StyledScoreBoard>

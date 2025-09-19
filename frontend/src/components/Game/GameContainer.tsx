@@ -135,7 +135,6 @@ const GameContiner = () => {
   useEffect(() => {
     if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
 
-    // Init Game
     gameRef.current = new Game(canvasRef.current, match, user.id);
     gameRef.current.start();
     netRef.current = gameRef.current.net;
@@ -151,6 +150,7 @@ const GameContiner = () => {
     if (!netRef.current) return;
     netRef.current.on("phase:changed", setMatchPhase);
     netRef.current.on("winner:declared", setWinnerId);
+    netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
   }, [gameRef.current]);
 
   const onPause = () => {
@@ -160,12 +160,17 @@ const GameContiner = () => {
   };
   const onGiveUp = () => {
     if (!netRef.current) return;
-    netRef.current.sendMessage("game:give-up");
+    netRef.current.sendMessage("player:give-up");
   };
   const onReady = () => {
     if (!netRef.current) return;
 
     netRef.current.sendMessage("player:ready");
+  };
+  const onReset = () => {
+    if (!netRef.current) return;
+
+    netRef.current.sendMessage("game:reset");
   };
 
   // if (notFound) return <NotFound />;
@@ -173,21 +178,21 @@ const GameContiner = () => {
 
   return (
     <StyledGame>
-      {/* <MatchResultOverlay
-        isWinner={winnerId ? winnerId === userPlayerId : null}
-      /> */}
+      <MatchResultOverlay
+        isWinner={
+          winnerId ? winnerId === gameRef.current?.getUserPlayerId() : null
+        }
+      />
       <ScoreBoard
         net={netRef.current}
         match={match}
         startCinematicCamera={() => {}}
         resetCamera={() => {}}
       />
-      <button
-        onClick={onReady}
-        style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}
-      >
-        Ready
-      </button>
+      <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
+        <button onClick={onReady}>Ready</button>
+        <button onClick={onReset}>Reset</button>
+      </div>
       <h1
         style={{
           position: "absolute",

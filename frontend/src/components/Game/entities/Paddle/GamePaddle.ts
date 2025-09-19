@@ -22,9 +22,20 @@ export class Paddle extends BasePaddle {
   public isLocal: boolean = false;
 
   // Cursor tracking
-  private previousPos: Vec3 | null = null;
   private clampedX = 0;
   private clampedZ = 0;
+
+  // prev and current Positions
+  private prev_pos: Vector3 = Vector3.Zero();
+  private current_pos: Vector3 = Vector3.Zero();
+
+  // prev and current Rotations
+  private prev_rot: Vector3 = Vector3.Zero();
+  private current_rot: Vector3 = Vector3.Zero();
+
+  // Targets
+  private targetPos: Vector3;
+  private targetRot: Vector3;
 
   constructor(
     scene: Scene,
@@ -43,16 +54,7 @@ export class Paddle extends BasePaddle {
     this.setupInitialPosition();
 
     if (this.options) {
-      this.setTexture(
-        this.options.textureUrl || null,
-        this.options.color
-          ? new Color3(
-              this.options.color.r,
-              this.options.color.g,
-              this.options.color.b
-            )
-          : undefined
-      );
+      this.applyStyle(this.options);
     }
 
     if (this.isLocal) {
@@ -62,34 +64,39 @@ export class Paddle extends BasePaddle {
 
   private setupInitialPosition() {
     if (!this.mesh) return;
-    // Example starting positions per side
-    this.mesh.position.set(this.side === "LEFT" ? 4.4 : -4.4, 2.5, 0);
+    const zPos = this.side === "LEFT" ? -2.8 : 2.8;
+    this.mesh.position.set(0, 2.6, zPos);
+    this.mesh.rotation.set(0, 0, 0);
   }
 
   private enableMouseTracking() {
-    const canvas = this.scene.getEngine().getRenderingCanvas();
-    if (!canvas) return;
-
-    this.scene.onBeforeRenderObservable.add(() => {
+    this.scene.onPointerMove = (evt) => {
       if (!this.isLocal || !this.mesh) return;
+      const camera = this.scene.activeCamera;
+      if (!camera) return;
 
-      const bounds = this.getBoundaries();
-
-      // Convert pointer coordinates to normalized device coordinates (-1 to 1)
-      const ndcY = 1 - (this.scene.pointerY / canvas.height) * 2;
-
-      // Map NDC Y to world Z (forward/back)
-      this.clampedZ =
-        bounds.z.min + ((ndcY + 1) / 2) * (bounds.z.max - bounds.z.min);
-
-      // Keep X fixed at initial side position
-      this.clampedX = this.side === "LEFT" ? 4.4 : -4.4;
-
-      this.updatePosition();
-    });
+      const boundaries = this.getBoundaries();
+      const ray = this.scene.createPickingRay(
+        evt.offsetX,
+        evt.offsetY,
+        null,
+        camera
+      );
+      const paddleY = 2.6;
+      if (Math.abs(ray.direction.y) > 0.0001) {
+        const t = (paddleY - ray.origin.y) / ray.direction.y;
+        const worldX = ray.origin.x + t * ray.direction.x;
+        const worldZ = ray.origin.z + t * ray.direction.z;
+        this.clampedX = worldX;
+        this.clampedZ = this.clampedZ = Math.max(
+          boundaries.z.min,
+          Math.min(boundaries.z.max, worldZ)
+        );
+      }
+    };
   }
 
-  private updatePosition() {
+  public updatePosition() {
     if (!this.mesh) return;
 
     const targetPos = new Vector3(
@@ -97,78 +104,147 @@ export class Paddle extends BasePaddle {
       this.mesh.position.y,
       this.clampedZ
     );
-    const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.5);
+    const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.6);
     this.mesh.position.copyFrom(interpolated);
+    this.setupMouseRotation();
   }
 
-  getVelocity(): Vector3 {
-    if (!this.mesh) return Vector3.Zero();
+  setupMouseRotation(): void {
+    if (!this.mesh) return;
 
-    const pos = this.mesh.position.clone();
-    if (!this.previousPos) {
-      this.previousPos = { x: pos.x, y: pos.y, z: pos.z };
-      return Vector3.Zero();
-    }
+    const boundaries = this.getBoundaries();
+    const maxRotation = Math.PI / 2;
 
-    const vel = new Vector3(
-      pos.x - this.previousPos.x,
-      pos.y - this.previousPos.y,
-      pos.z - this.previousPos.z
-    );
+    const x = this.mesh.position.x;
 
-    this.previousPos = { x: pos.x, y: pos.y, z: pos.z };
-    return vel;
+    const clampedX = Math.max(boundaries.x.min, Math.min(boundaries.x.max, x));
+
+    // Convert X to a percentage between -1 (left) and +1 (right)
+    const pct =
+      (clampedX - boundaries.x.min) / (boundaries.x.max - boundaries.x.min); // 0..1
+    const centered = pct * 2 - 1; // -1..+1
+
+    this.mesh.rotation.z = centered * -maxRotation;
   }
 
   private getBoundaries() {
     return {
-      x: { min: -5, max: 5 }, // still used if needed for other logic
-      z: { min: -2, max: 2 }, // forward/back limits
+      x: { min: -3, max: 3 },
+      z: this.side === "LEFT" ? { min: -5, max: -1.5 } : { min: 1.5, max: 5 },
     };
   }
 
-  setTexture(url: string | null, color?: Color3) {
+  getMeshPosition() {
+    if (!this.mesh) return Vector3.Zero();
+    return this.mesh.position.clone();
+  }
+  setMeshPosition() {
+    if (!this.mesh) return;
+
+    // Smooth interpolation
+    const interpolated = Vector3.Lerp(
+      this.mesh.position,
+      new Vector3(this.clampedX, this.mesh.position.y, this.clampedZ),
+      0.5
+    );
+    this.mesh.position.copyFromFloats(
+      interpolated.x,
+      interpolated.y,
+      interpolated.z
+    );
+  }
+  getMeshRotation() {
+    if (!this.mesh) return Vector3.Zero();
+    return this.mesh.rotation.clone();
+  }
+
+  private applyStyle(options: PaddleOptions) {
     if (!this.mainMesh) return;
 
-    // Reuse existing material if possible
-    let mat = this.mainMesh.material as StandardMaterial;
+    // Apply color (like setColor)
+    if (options.color) {
+      let mat = this.mainMesh.material as StandardMaterial;
 
-    if (!mat || !(mat instanceof StandardMaterial)) {
-      mat = new StandardMaterial("paddleMat", this.scene);
-      this.mainMesh.material = mat;
-    }
-
-    // Reset texture if null
-    if (!url) {
-      mat.diffuseTexture = null;
-      if (color) {
-        mat.diffuseColor = color.clone();
-      }
-      return;
-    }
-
-    try {
-      const tex = new Texture(url, this.scene);
-
-      tex.hasAlpha = true;
-      tex.uAng = 0; // texture rotation if needed
-      tex.vAng = 0;
-
-      // Apply both color + texture
-      mat.diffuseTexture = tex;
-      mat.useAlphaFromDiffuseTexture = true;
-      mat.opacityTexture = null; // don’t make paddle transparent
-      mat.diffuseTexture.level = 1; // texture intensity
-
-      if (color) {
-        mat.diffuseColor = color.clone(); // tint under texture
-      } else {
-        mat.diffuseColor = new Color3(1, 1, 1); // white base if no color provided
+      if (!mat || !(mat instanceof StandardMaterial)) {
+        mat = new StandardMaterial("paddleMat", this.scene);
+        this.mainMesh.material = mat;
       }
 
-      console.log("Texture and color applied successfully");
-    } catch (error) {
-      console.error("Error applying texture:", error);
+      mat.diffuseColor = new Color3(
+        options.color.r,
+        options.color.g,
+        options.color.b
+      );
     }
+
+    // Apply texture (like setTexture)
+    if (options.textureUrl) {
+      // Clean up existing overlay
+      this.textureOverlay?.dispose();
+      this.textureOverlay = null;
+
+      try {
+        const mat = new StandardMaterial("paddleTexMat", this.scene);
+        const tex = new Texture(options.textureUrl, this.scene);
+
+        tex.hasAlpha = true;
+        mat.diffuseTexture = tex;
+        mat.useAlphaFromDiffuseTexture = true;
+        mat.backFaceCulling = false; // <- texture on both sides
+
+        // Overlay trick to preserve base color + add texture
+        const clone = this.mainMesh.clone(
+          "paddleOverlay",
+          this.mainMesh.parent
+        );
+        if (clone) {
+          clone.position = this.mainMesh.position.clone();
+          clone.rotation = this.mainMesh.rotation.clone();
+          clone.scaling = this.mainMesh.scaling.clone();
+
+          clone.material = mat;
+          this.textureOverlay = clone;
+
+          console.log("Texture overlay created successfully");
+        } else {
+          console.error("Failed to clone mesh for texture overlay");
+        }
+      } catch (error) {
+        console.error("Error applying texture:", error);
+      }
+    }
+  }
+
+  // For position interpolation
+  getPrevPosition(): Vector3 {
+    return this.prev_pos;
+  }
+  getCurrentPosition(): Vector3 {
+    return this.current_pos;
+  }
+  setPosition(type: "PREV" | "CURR"): void {
+    if (type === "PREV") this.prev_pos = this.mesh.position.clone();
+    else this.current_pos = this.mesh.position.clone();
+  }
+
+  // For Rotation interpolation
+  getPrevRotation(): Vector3 {
+    return this.prev_rot;
+  }
+  getCurrentRotation(): Vector3 {
+    return this.current_rot;
+  }
+  setRotation(type: "PREV" | "CURR"): void {
+    if (type === "PREV") this.prev_rot = this.mesh.rotation.clone();
+    else this.current_rot = this.mesh.rotation.clone();
+  }
+
+  // set ana get Target position and rotation
+  setTarget(pos: Vec3, rotZ: number): void {
+    this.targetPos = new Vector3(pos.x, pos.y, pos.z);
+    this.targetRot = new Vector3(0, 0, rotZ);
+  }
+  getTarget(): { pos: Vector3; rot: Vector3 } {
+    return { pos: this.targetPos, rot: this.targetRot };
   }
 }
