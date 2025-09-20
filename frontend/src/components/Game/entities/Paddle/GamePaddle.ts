@@ -1,6 +1,5 @@
 import { BasePaddle } from "./Paddle";
 import {
-  Vector3,
   Scene,
   StandardMaterial,
   Color3,
@@ -8,6 +7,7 @@ import {
   AbstractMesh,
 } from "@babylonjs/core";
 import { Vec3 } from "@/types/network";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 type PaddleSide = "LEFT" | "RIGHT";
 
@@ -25,17 +25,15 @@ export class Paddle extends BasePaddle {
   private clampedX = 0;
   private clampedZ = 0;
 
-  // prev and current Positions
+  // prev Positions
   private prev_pos: Vector3 = Vector3.Zero();
-  private current_pos: Vector3 = Vector3.Zero();
 
   // prev and current Rotations
   private prev_rot: Vector3 = Vector3.Zero();
-  private current_rot: Vector3 = Vector3.Zero();
 
   // Targets
-  private targetPos: Vector3;
-  private targetRot: Vector3;
+  private targetPos: Vector3 = Vector3.Zero();
+  private targetRot: Vector3 = Vector3.Zero();
 
   constructor(
     scene: Scene,
@@ -57,6 +55,10 @@ export class Paddle extends BasePaddle {
       this.applyStyle(this.options);
     }
 
+    // Initialize clamped values to paddle's starting position
+    this.clampedX = this.mesh?.position.x || 0;
+    this.clampedZ = this.mesh?.position.z || (this.side === "LEFT" ? -2.8 : 2.8);
+
     if (this.isLocal) {
       this.enableMouseTracking();
     }
@@ -70,30 +72,25 @@ export class Paddle extends BasePaddle {
   }
 
   private enableMouseTracking() {
-    this.scene.onPointerMove = (evt) => {
-      if (!this.isLocal || !this.mesh) return;
+    this.scene.onPointerObservable.add((pointerInfo) => {
+      if (!this.mesh) return;
+      const evt = pointerInfo.event;
       const camera = this.scene.activeCamera;
       if (!camera) return;
 
       const boundaries = this.getBoundaries();
-      const ray = this.scene.createPickingRay(
-        evt.offsetX,
-        evt.offsetY,
-        null,
-        camera
-      );
+      const ray = this.scene.createPickingRay(evt.offsetX, evt.offsetY, null, camera);
       const paddleY = 2.6;
+
       if (Math.abs(ray.direction.y) > 0.0001) {
         const t = (paddleY - ray.origin.y) / ray.direction.y;
         const worldX = ray.origin.x + t * ray.direction.x;
         const worldZ = ray.origin.z + t * ray.direction.z;
+
         this.clampedX = worldX;
-        this.clampedZ = this.clampedZ = Math.max(
-          boundaries.z.min,
-          Math.min(boundaries.z.max, worldZ)
-        );
+        this.clampedZ = Math.max(boundaries.z.min, Math.min(boundaries.z.max, worldZ));
       }
-    };
+    });
   }
 
   public update() {
@@ -219,27 +216,19 @@ export class Paddle extends BasePaddle {
   getPrevPosition(): Vector3 {
     return this.prev_pos;
   }
-  getCurrentPosition(): Vector3 {
-    return this.current_pos;
-  }
-  setPosition(type: "PREV" | "CURR"): void {
-    if (type === "PREV") this.prev_pos = this.mesh.position.clone();
-    else this.current_pos = this.mesh.position.clone();
+  setPrevPosition(): void {
+    this.prev_pos = this.mesh.position.clone();
   }
 
   // For Rotation interpolation
   getPrevRotation(): Vector3 {
     return this.prev_rot;
   }
-  getCurrentRotation(): Vector3 {
-    return this.current_rot;
-  }
-  setRotation(type: "PREV" | "CURR"): void {
-    if (type === "PREV") this.prev_rot = this.mesh.rotation.clone();
-    else this.current_rot = this.mesh.rotation.clone();
+  setPrevRotation(): void {
+    this.prev_rot = this.mesh.rotation.clone();
   }
 
-  // set ana get Target position and rotation
+  // set and   get Target position and rotation
   setTarget(pos: Vec3, rotZ: number): void {
     this.targetPos = new Vector3(pos.x, pos.y, pos.z);
     this.targetRot = new Vector3(0, 0, rotZ);

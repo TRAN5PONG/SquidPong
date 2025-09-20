@@ -61,16 +61,9 @@ export class Game {
     this.match = match;
 
     this.userId = userId;
-    this.hostId = match?.opponent1.isHost
-      ? match.opponent1.id
-      : match?.opponent2.id;
-    this.guestId = match?.opponent1.isHost
-      ? match.opponent2.id
-      : match?.opponent1.id;
-    this.userPlayerId =
-      match?.opponent1.userId === userId
-        ? match?.opponent1.id
-        : match?.opponent2.id;
+    this.hostId = match?.opponent1.isHost ? match.opponent1.userId : match?.opponent2.userId;
+    this.guestId = match?.opponent1.isHost ? match.opponent2.userId : match?.opponent1.userId;
+    this.userPlayerId = match?.opponent1.userId === userId ? match?.opponent1.id : match?.opponent2.id;
 
     this.engine = new Engine(canvas, true, { adaptToDeviceRatio: true });
     this.scene = new Scene(this.engine);
@@ -88,12 +81,13 @@ export class Game {
       // Camera
       this.camera = new GameCamera(
         this.scene,
-        this.userId === this.hostId ? -1 : 1
+        this.userId === this.hostId ? 1 : -1
       );
+      console.log(this.userId, this.hostId, this.guestId);
       this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network("ws://10.11.11.1:3000", this.match);
+      this.net = new Network("ws://10.13.3.3:3000", this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
@@ -102,8 +96,9 @@ export class Game {
       this.light = new Light(this.scene);
 
       // Paddles setup
-      this.hostPaddle = new Paddle(this.scene, "RIGHT", true);
-      this.guestPaddle = new Paddle(this.scene, "LEFT");
+      this.hostPaddle = new Paddle(this.scene, "RIGHT", this.userId === this.hostId);
+      this.guestPaddle = new Paddle(this.scene, "LEFT", this.userId === this.guestId);
+
       this.localPaddle =
         this.userId === this.hostId ? this.hostPaddle : this.guestPaddle;
       this.opponentPaddle =
@@ -159,7 +154,7 @@ export class Game {
       // --- Compute interpolation factor for visuals ---
       const alpha = accumulator / FIXED_DT;
       // Update visuals using interpolation
-      // this.controller.updateVisuals(alpha);
+      this.controller.updateVisuals(alpha);
 
       this.scene.render();
     });
