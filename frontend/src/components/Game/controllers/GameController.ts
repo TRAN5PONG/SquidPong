@@ -1,5 +1,6 @@
 // debug paddle
-import { Scene, Vector3 } from "@babylonjs/core";
+import { Scene} from "@babylonjs/core";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Network } from "../network/network";
 import { Paddle } from "../entities/Paddle/GamePaddle";
 import { Ball } from "../entities/Ball";
@@ -34,13 +35,17 @@ export class GameController {
     this.physics = physics;
     this.net = net;
     this.rollbackManager = new RollbackManager(physics, ball);
+
+    this.net.on("opponent:paddle", (data) => {
+      this.onOpponentPaddleState(data);
+    });
   }
 
   private updateLocalPaddle(): void {
     if (!this.localPaddle) return;
-    
+
     this.localPaddle.update();
-    console.log("Paddle Pos:", this.localPaddle.getMeshPosition());
+    // console.log("Paddle Pos:", this.localPaddle.getMeshPosition());
     // if (this.physics) {
     //   const meshPos = this.localPaddle.getMeshPosition();
     //   this.physics.setPaddleTargetPosition(meshPos.x, meshPos.y, meshPos.z);
@@ -57,7 +62,7 @@ export class GameController {
       const rot = this.localPaddle.getMeshRotation();
       const vel = this.physics.paddle.getVelocity();
 
-      this.net.sendMessage("PaddleState", {
+      this.net.sendMessage("player:paddle", {
         position: { x: pos.x, y: pos.y, z: pos.z },
         rotation: { x: rot.x, y: rot.y, z: rot.z },
         velocity: { x: vel.x, y: vel.y, z: vel.z },
@@ -79,16 +84,16 @@ export class GameController {
 
   public updateVisualsOpponentPaddle(alpha: number): void {
     if (!this.opponentPaddle) return;
-
+    
     const interpolatedPos = Vector3.Lerp(
       this.opponentPaddle.getPrevPosition(),
-      this.opponentPaddle.getCurrentPosition(),
+      this.opponentPaddle.getTarget().pos,
       alpha
     );
 
     const interpolatedRot = Vector3.Lerp(
       this.opponentPaddle.getPrevRotation(),
-      this.opponentPaddle.getCurrentRotation(),
+      this.opponentPaddle.getTarget().rot,
       alpha
     );
 
@@ -96,9 +101,19 @@ export class GameController {
     this.opponentPaddle.mesh.rotation.copyFrom(interpolatedRot);
   }
 
-  private onOpponentPaddleState(): void {
-    // TODO: Get oppenent paddle from network
-    // this.opponentPaddle.setTarget(Pos, Rot);
+  private onOpponentPaddleState(data: {
+    position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+    velocity: { x: number; y: number; z: number };
+  }): void {
+    if (!this.opponentPaddle) return;
+    this.opponentPaddle.setPrevPosition();
+    this.opponentPaddle.setPrevRotation();
+
+    this.opponentPaddle.setTarget(
+      { x: data.position.x, y: data.position.y, z: data.position.z },
+      data.rotation.z
+    );
   }
 
   // === Game logic
@@ -114,6 +129,6 @@ export class GameController {
     // this.physics.ball.setPosition("CURR");
     // this.rollbackManager?.recordState();
     // this.rollbackManager.incCurrentTick();
-    // this.startPaddleSync();
+    this.startPaddleSync();
   }
 }

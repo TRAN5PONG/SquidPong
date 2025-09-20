@@ -103,9 +103,9 @@ export class MatchRoom extends Room<MatchState> {
       // Send send just the opponent paddle to each player
       for (const [id, other] of this.state.players) {
         if (id !== player.id) {
-          const otherClient = this.clients.find(c => (c as any).matchPlayerId === id);
-          if (otherClient) {
-            this.send(otherClient, "opponent:paddle", {
+          const otherPlayer = this.clients.find(c => (c as any).matchPlayerId === id);
+          if (otherPlayer) {
+            this.send(otherPlayer, "opponent:paddle", {
               position: message.position,
               velocity: message.velocity,
               rotation: message.rotation,

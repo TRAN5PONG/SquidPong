@@ -15,6 +15,7 @@ interface NetworkEvents {
   "game:ended": (data: { winnerId: string }) => void;
   "game:started": (data: { startTime: number }) => void;
   "gameStartAt": (startAt: number) => void;
+  "opponent:paddle": (data: any) => void;
 }
 
 export class Network {
@@ -143,6 +144,11 @@ export class Network {
     // }); // todo : it seems that its working without adding this
     this.room.onMessage("game:started", (data) => {
       this.emit("game:started", data);
+    });
+    this.room.onMessage("opponent:paddle", (data) => {
+      // TODO: call handler to update opponent paddle state
+      this.emit("opponent:paddle", data);
+      // console.log("Opponent Paddle Data:", data);
     });
   }
 
