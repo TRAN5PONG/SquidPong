@@ -166,7 +166,7 @@ const App = () => {
         console.log("No valid session found");
       }
     };
-    socketManager.connect("ws://10.13.2.6:4000/chat-notification");
+    socketManager.connect("ws://10.13.3.3:4000/chat-notification");
 
     initializeAuth();
   }, []);
