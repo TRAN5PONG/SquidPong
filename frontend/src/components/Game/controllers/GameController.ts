@@ -38,12 +38,13 @@ export class GameController {
 
   private updateLocalPaddle(): void {
     if (!this.localPaddle) return;
-
-    this.localPaddle.setMeshPosition();
-    if (this.physics) {
-      const meshPos = this.localPaddle.getMeshPosition();
-      this.physics.setPaddleTargetPosition(meshPos.x, meshPos.y, meshPos.z);
-    }
+    
+    this.localPaddle.update();
+    console.log("Paddle Pos:", this.localPaddle.getMeshPosition());
+    // if (this.physics) {
+    //   const meshPos = this.localPaddle.getMeshPosition();
+    //   this.physics.setPaddleTargetPosition(meshPos.x, meshPos.y, meshPos.z);
+    // }
   }
 
   private startPaddleSync(): void {
@@ -113,6 +114,6 @@ export class GameController {
     // this.physics.ball.setPosition("CURR");
     // this.rollbackManager?.recordState();
     // this.rollbackManager.incCurrentTick();
-    this.startPaddleSync();
+    // this.startPaddleSync();
   }
 }

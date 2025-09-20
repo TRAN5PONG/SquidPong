@@ -100,14 +100,18 @@ export class MatchRoom extends Room<MatchState> {
       const player = this.state.players.get(_client.matchPlayerId);
       if (!player) return;
 
-      if (player && this.state.phase === "playing") {
-        player.paddle.x = message.position.x;
-        player.paddle.y = message.position.y;
-        player.paddle.z = message.position.z;
-        player.paddle.velX = message.velocity.x;
-        player.paddle.velY = message.velocity.y;
-        player.paddle.velZ = message.velocity.z;
-        player.paddle.rotationZ = message.rotation.z;
+      // Send send just the opponent paddle to each player
+      for (const [id, other] of this.state.players) {
+        if (id !== player.id) {
+          const otherClient = this.clients.find(c => (c as any).matchPlayerId === id);
+          if (otherClient) {
+            this.send(otherClient, "opponent:paddle", {
+              position: message.position,
+              velocity: message.velocity,
+              rotation: message.rotation,
+            });
+          }
+        }
       }
     });
     // Player give up

@@ -83,6 +83,7 @@ export class Game {
     try {
       // Physics
       this.physics = new Physics();
+      this.physics.init();
 
       // Camera
       this.camera = new GameCamera(
@@ -92,7 +93,7 @@ export class Game {
       this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network("ws://10.13.2.6:3000", this.match);
+      this.net = new Network("ws://10.11.11.1:3000", this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
@@ -107,6 +108,15 @@ export class Game {
         this.userId === this.hostId ? this.hostPaddle : this.guestPaddle;
       this.opponentPaddle =
         this.userId === this.hostId ? this.guestPaddle : this.hostPaddle;
+
+      // Controller
+      this.controller = new GameController(
+        this.localPaddle,
+        this.opponentPaddle,
+        this.ball,
+        this.physics,
+        this.net
+      );
 
       // Debugging tools
       this.debug = new Debug(this.scene, this.engine);
@@ -143,7 +153,7 @@ export class Game {
 
       // --- Fixed-step physics loop ---
       while (accumulator >= FIXED_DT) {
-        // this.controller.fixedUpdate(FIXED_DT);
+        this.controller.fixedUpdate(FIXED_DT);
         accumulator -= FIXED_DT;
       }
       // --- Compute interpolation factor for visuals ---

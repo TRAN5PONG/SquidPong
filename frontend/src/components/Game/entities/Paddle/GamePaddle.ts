@@ -96,7 +96,7 @@ export class Paddle extends BasePaddle {
     };
   }
 
-  public updatePosition() {
+  public update() {
     if (!this.mesh) return;
 
     const targetPos = new Vector3(

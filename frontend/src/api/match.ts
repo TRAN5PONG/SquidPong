@@ -1,6 +1,6 @@
 export async function getUserCurrentMatch(userId: string) {
   const response = await fetch(
-    `http://10.13.2.6:4000/api/game/match/current/${userId}`,
+    `http://10.11.11.1:4000/api/game/match/current/${userId}`,
     {
       method: "GET",
       credentials: "include",
@@ -20,7 +20,7 @@ export async function getUserCurrentMatch(userId: string) {
 
 export async function getMatchById(matchId: string) {
   const response = await fetch(
-    `http://10.13.2.6:4000/api/game/match/${matchId}`,
+    `http://10.11.11.1:4000/api/game/match/${matchId}`,
     {
       method: "GET",
       credentials: "include",
