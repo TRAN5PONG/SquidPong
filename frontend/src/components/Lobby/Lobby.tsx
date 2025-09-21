@@ -1,10 +1,6 @@
 import Zeroact, { useEffect } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import {
-  characters,
-  GameCharacter,
-  GameMode as GameModeType,
-} from "@/types/game";
+import { GameMode as GameModeType } from "@/types/game/game";
 
 import { useSound } from "@/hooks/useSound";
 import { useNavigate } from "@/contexts/RouterProvider";
@@ -12,6 +8,7 @@ import GameSettings from "./GameSettings";
 import { useAppContext } from "@/contexts/AppProviders";
 import { socketManager } from "@/utils/socket";
 import { useSounds } from "@/contexts/SoundProvider";
+import { characters, GameCharacter } from "@/types/game/character";
 
 const StyledLobby = styled("div")`
   width: 100%;

@@ -105,7 +105,7 @@ export class MatchRoom extends Room<MatchState> {
         if (id !== player.id) {
           const otherPlayer = this.clients.find(c => (c as any).matchPlayerId === id);
           if (otherPlayer) {
-            this.send(otherPlayer, "opponent:paddle", {
+            otherPlayer.send("opponent:paddle", {
               position: message.position,
               velocity: message.velocity,
               rotation: message.rotation,
@@ -121,7 +121,7 @@ export class MatchRoom extends Room<MatchState> {
       if (!player) return;
 
       if (this.state.phase !== "playing" && this.state.phase !== "paused") {
-        this.send(client, "game:give-up-denied", {
+        player.send("game:give-up-denied", {
           reason: "game not in playing or paused phase",
         });
         return;

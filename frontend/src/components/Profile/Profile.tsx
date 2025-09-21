@@ -17,7 +17,7 @@ import { useRouteParam } from "@/hooks/useParam";
 import NotFound from "../NotFound/NotFound";
 import Tournament from "../Tournament/Tournament";
 import GameHistoryItem from "./GameHistoryItem";
-import { Match, Rank, RANKS } from "@/types/game";
+import { Match, Rank, RANKS } from "@/types/game/game";
 import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 import { useAppContext } from "@/contexts/AppProviders";
 import Toast from "../Toast/Toast";

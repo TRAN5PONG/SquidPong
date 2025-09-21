@@ -1,9 +1,9 @@
 import Zeroact, { useEffect } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { PasswordIcon } from "../Svg/Svg";
-import { characters, GameCharacter } from "@/types/game";
 import { db } from "@/db";
 import { useSound } from "@/hooks/useSound";
+import { characters, GameCharacter } from "@/types/game/character";
 
 const SelectCharacter = () => {
   const [selectedChar, setselectedChar] =

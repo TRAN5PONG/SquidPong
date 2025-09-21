@@ -1,4 +1,4 @@
-import { GameModes, GameSettings } from "./game";
+import { GameModes, GameSettings } from "./game/game";
 import { TournamentStatus, TournamentType } from "./tournament";
 
 export type InvitationType = 'game' | 'tournament';

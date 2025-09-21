@@ -7,7 +7,7 @@ import {
 import { useSounds } from "@/contexts/SoundProvider";
 import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { Match, MatchPlayer } from "@/types/game";
+import { Match, MatchPlayer } from "@/types/game/game";
 import { MatchPhase, MatchState } from "../network/GameState";
 import { Room } from "colyseus.js";
 import { Network } from "../network/network";

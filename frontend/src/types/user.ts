@@ -1,4 +1,4 @@
-import { GameCharacter, rank_tier, RankDivision } from "./game";
+import { GameCharacter, rank_tier, RankDivision } from "./game/game";
 
 export type UserStatus = "online" | "offline" | "idle" | "doNotDisturb";
 

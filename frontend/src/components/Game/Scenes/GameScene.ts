@@ -11,12 +11,13 @@ import { Light } from "@/components/Game/entities/Light";
 import { Paddle } from "@/components/Game/entities/Paddle/GamePaddle";
 import { Arena } from "@/components/Game/entities/Arena.ts";
 import { Ball } from "@/components/Game/entities/Ball.ts";
-import { Match } from "@/types/game";
+import { Match } from "@/types/game/game";
 
 // Net
 import { Network } from "@/components/Game/network/network";
 import { MatchState } from "../network/GameState";
 import { Room } from "colyseus.js";
+import { paddleColors, paddleTextures } from "@/types/game/paddle";
 
 export class Game {
   // Game data
@@ -61,9 +62,16 @@ export class Game {
     this.match = match;
 
     this.userId = userId;
-    this.hostId = match?.opponent1.isHost ? match.opponent1.userId : match?.opponent2.userId;
-    this.guestId = match?.opponent1.isHost ? match.opponent2.userId : match?.opponent1.userId;
-    this.userPlayerId = match?.opponent1.userId === userId ? match?.opponent1.id : match?.opponent2.id;
+    this.hostId = match?.opponent1.isHost
+      ? match.opponent1.userId
+      : match?.opponent2.userId;
+    this.guestId = match?.opponent1.isHost
+      ? match.opponent2.userId
+      : match?.opponent1.userId;
+    this.userPlayerId =
+      match?.opponent1.userId === userId
+        ? match?.opponent1.id
+        : match?.opponent2.id;
 
     this.engine = new Engine(canvas, true, { adaptToDeviceRatio: true });
     this.scene = new Scene(this.engine);
@@ -87,7 +95,7 @@ export class Game {
       this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network("ws://10.13.3.3:3000", this.match);
+      this.net = new Network("ws://10.13.2.5:3000", this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
@@ -96,8 +104,23 @@ export class Game {
       this.light = new Light(this.scene);
 
       // Paddles setup
-      this.hostPaddle = new Paddle(this.scene, "RIGHT", this.userId === this.hostId);
-      this.guestPaddle = new Paddle(this.scene, "LEFT", this.userId === this.guestId);
+      this.hostPaddle = new Paddle(
+        this.scene,
+        "RIGHT",
+        this.userId === this.hostId,
+        {
+          color: paddleColors[0],
+          texture: paddleTextures[1],
+        }
+      );
+      this.guestPaddle = new Paddle(
+        this.scene,
+        "LEFT",
+        this.userId === this.guestId,
+        {
+          color: paddleColors[1],
+        }
+      );
 
       this.localPaddle =
         this.userId === this.hostId ? this.hostPaddle : this.guestPaddle;

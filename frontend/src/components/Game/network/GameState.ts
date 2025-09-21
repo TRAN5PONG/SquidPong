@@ -1,4 +1,4 @@
-import { MatchPlayer } from "@/types/game";
+import { MatchPlayer } from "@/types/game/game";
 import { Schema} from "@colyseus/schema";
 
 interface Spectator {

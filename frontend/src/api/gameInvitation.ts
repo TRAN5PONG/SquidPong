@@ -1,11 +1,11 @@
-import { GameInvitation, GameSettings } from "@/types/game";
+import { GameInvitation, GameSettings } from "@/types/game/game";
 
 // Get Invite
 export async function getUserGameInvitations(
   userId: string
 ): Promise<GameInvitation[]> {
   const response = await fetch(
-    `http://10.13.3.3:4000/api/game/invitations/user/${userId}`,
+    `http://10.13.2.5:4000/api/game/invitations/user/${userId}`,
     {
       method: "GET",
       credentials: "include",
@@ -24,7 +24,7 @@ export async function getInvitationByCode(
   code: string
 ): Promise<GameInvitation> {
   const response = await fetch(
-    `http://10.13.3.3:4000/api/game/invitations/code/${code}`,
+    `http://10.13.2.5:4000/api/game/invitations/code/${code}`,
     {
       method: "GET",
       credentials: "include",
@@ -49,7 +49,7 @@ export async function createInvite(
   expiresAt: Date | null,
   message?: string
 ) {
-  const response = await fetch(`http://10.13.3.3:4000/api/game/invitations`, {
+  const response = await fetch(`http://10.13.2.5:4000/api/game/invitations`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -76,7 +76,7 @@ export async function createInvite(
 }
 export async function cancelInvite(inviteId: string) {
   const response = await fetch(
-    `http://10.13.3.3:4000/api/game/invitations/${inviteId}/cancel`,
+    `http://10.13.2.5:4000/api/game/invitations/${inviteId}/cancel`,
     {
       method: "POST",
       credentials: "include",
@@ -95,7 +95,7 @@ export async function cancelInvite(inviteId: string) {
 }
 export async function AcceptInvite(inviteId: string) {
   const response = await fetch(
-    `http://10.13.3.3:4000/api/game/invitations/${inviteId}/accept`,
+    `http://10.13.2.5:4000/api/game/invitations/${inviteId}/accept`,
     {
       method: "POST",
       credentials: "include",
@@ -115,7 +115,7 @@ export async function AcceptInvite(inviteId: string) {
 export async function AcceptPrivateInvite(code: string) {
   console.log("Accepting private invite with code:", code);
   const response = await fetch(
-    `http://10.13.3.3:4000/api/game/invitations/code/${code}/accept`,
+    `http://10.13.2.5:4000/api/game/invitations/code/${code}/accept`,
     {
       method: "POST",
       credentials: "include",
@@ -134,7 +134,7 @@ export async function AcceptPrivateInvite(code: string) {
 }
 export async function DeclineInvite(inviteId: string) {
   const response = await fetch(
-    `http://10.13.3.3:4000/api/game/invitations/${inviteId}/decline`,
+    `http://10.13.2.5:4000/api/game/invitations/${inviteId}/decline`,
     {
       method: "POST",
       credentials: "include",

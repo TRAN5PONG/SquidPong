@@ -1,6 +1,6 @@
 import Zeroact from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { GameInvitation as GameInvitationType } from "@/types/game";
+import { GameInvitation as GameInvitationType } from "@/types/game/game";
 import {
   BackIcon,
   CheckIcon,

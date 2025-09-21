@@ -11,7 +11,7 @@ import { getNumberOfRounds, getPlayersInRound } from "@/utils/Tournament";
 import { useRouteParam } from "@/hooks/useParam";
 import NotFound from "../NotFound/NotFound";
 import { getRankMetaData } from "@/utils/game";
-import { RankDivision } from "@/types/game";
+import { RankDivision } from "@/types/game/game";
 import { timeAgo, timeUntil } from "@/utils/time";
 
 const StyledTournament = styled("div")`
@@ -261,7 +261,7 @@ const Tournament = () => {
       const getTournamentData = async () => {
         try {
           const tournamentData = await fetch(
-            "http://10.13.3.3:3000/tournaments/cmelfxhu40000sprrzs1rqif0",
+            "http://10.13.2.5:3000/tournaments/cmelfxhu40000sprrzs1rqif0",
             {
               method: "GET",
               headers: {

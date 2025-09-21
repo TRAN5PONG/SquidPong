@@ -2,7 +2,7 @@ import { PlayerStats, User, UserPreferences } from "./types/user";
 import { Conversation, ChatMessage, ConversationDetails } from "./types/chat";
 import { NotificationEl } from "./types/notification";
 import { Tournament, TournamentPlayer } from "./types/tournament";
-import { Match, MatchPlayer } from "./types/game";
+import { Match, MatchPlayer } from "./types/game/game";
 
 const FakeStats: PlayerStats = {
   matchHistory: [],
