@@ -1,6 +1,7 @@
 import Zeroact from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { characters, Match } from "@/types/game";
+import { characters } from "@/types/game/character";
+import { Match } from "@/types/game/game";
 import { timeAgo } from "@/utils/time";
 
 const StyledGameHistoryItem = styled("div")`

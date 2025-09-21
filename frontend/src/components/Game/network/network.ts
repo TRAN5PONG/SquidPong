@@ -1,6 +1,6 @@
 import { Client, getStateCallbacks, Room } from "colyseus.js";
 import { MatchPhase, MatchState } from "./GameState";
-import { Match, MatchPlayer } from "@/types/game";
+import { Match, MatchPlayer } from "@/types/game/game";
 
 interface NetworkEvents {
   "player:connected": (playerId: string, player: MatchPlayer) => void;

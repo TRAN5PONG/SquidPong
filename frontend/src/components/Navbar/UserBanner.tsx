@@ -1,7 +1,7 @@
 import { useNavigate } from "@/contexts/RouterProvider";
 import Zeroact from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { Rank, RANKS } from "@/types/game";
+import { Rank, RANKS } from "@/types/game/rank";
 import { User } from "@/types/user";
 
 const StyledUserBanner = styled("div")`

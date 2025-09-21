@@ -1,6 +1,6 @@
 import Zeroact from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { Rank, RANKS } from "@/types/game";
+import { Rank, RANKS } from "@/types/game/rank";
 
 const StyledBadges = styled("div")`
   height: 100%;

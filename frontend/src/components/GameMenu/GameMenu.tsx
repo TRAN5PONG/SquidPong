@@ -12,7 +12,7 @@ import {
 } from "../Svg/Svg";
 import { useAppContext } from "@/contexts/AppProviders";
 import { socketManager } from "@/utils/socket";
-import { Match } from "@/types/game";
+import { Match } from "@/types/game/game";
 import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledGameMenu = styled("div")`

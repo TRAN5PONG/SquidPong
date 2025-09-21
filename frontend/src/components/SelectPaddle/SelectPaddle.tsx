@@ -1,8 +1,13 @@
 import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { GamePaddle, paddles } from "@/types/game";
 import { CustomizeScene } from "../Game/Scenes/CustomizeScene";
 import { Color3 } from "@babylonjs/core";
+import {
+  PaddleColor,
+  paddleColors,
+  PaddleTexture,
+  paddleTextures,
+} from "@/types/game/paddle";
 
 const StyledColor = styled("div")`
   width: 90px;
@@ -223,13 +228,16 @@ const StyledSelectPaddle = styled("div")`
 `;
 
 const SelectPaddle = () => {
-  const canvasRef = Zeroact.useRef<HTMLCanvasElement>(null);
-  const [selectedColor, setSelectedColor] = Zeroact.useState<string>("#ffa500");
-  const [selectedTexture, setSelectedTexture] =
-    Zeroact.useState<GamePaddle | null>(null);
-
   // Refs
+  const canvasRef = Zeroact.useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<CustomizeScene | null>(null);
+
+  // States
+  const [selectedColor, setSelectedColor] = Zeroact.useState<PaddleColor>(
+    paddleColors[0]
+  );
+  const [selectedTexture, setSelectedTexture] =
+    Zeroact.useState<PaddleTexture | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -243,33 +251,16 @@ const SelectPaddle = () => {
     };
   }, []);
 
-  const handleColorChange = (color: string) => {
-    setSelectedColor(color);
-    const hex = color.replace("#", "0x");
-    const r = ((parseInt(hex) >> 16) & 0xff) / 255;
-    const g = ((parseInt(hex) >> 8) & 0xff) / 255;
-    const b = (parseInt(hex) & 0xff) / 255;
-    sceneRef.current?.paddle.setColor(new Color3(r, g, b));
-  };
-
-  const colors = [
-    "#ffa500", // Yellow
-    "#f22c2c", // Green
-    "#FF5733", // Red
-    "#3498DB", // Blue
-    "#9B59B6", // Purple
-  ];
-
   return (
-    <StyledSelectPaddle paddleColor={selectedColor}>
+    <StyledSelectPaddle paddleColor={selectedColor.color}>
       <div className="CustomizationsContainer">
         <h1 className="HeaderTxt">Select color :</h1>
         <div className="ColorContainer">
-          {colors.map((color, index) => (
+          {paddleColors.map((color, index) => (
             <StyledColor
-              color={color}
+              color={color.color}
               isSelected={color === selectedColor}
-              onClick={() => handleColorChange(color)}
+              onClick={() => sceneRef.current?.paddle.setColor(color.color)}
               key={index}
             />
           ))}
@@ -286,13 +277,13 @@ const SelectPaddle = () => {
           >
             <span>None</span>
           </div>
-          {paddles.map((texture, index) => (
+          {paddleTextures.map((texture, index) => (
             <StyledTexture
               path={texture.image}
               className={`${selectedTexture === texture ? "selected" : ""}`}
               onClick={() => {
                 setSelectedTexture(texture);
-                sceneRef.current?.paddle.setTexture(texture.image, new Color3(1, 1, 1));
+                sceneRef.current?.paddle.setTexture(texture.image);
               }}
               key={index}
             >

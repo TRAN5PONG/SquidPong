@@ -8,12 +8,13 @@ import {
 } from "@babylonjs/core";
 import { Vec3 } from "@/types/network";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { PaddleColor, PaddleTexture } from "@/types/game/paddle";
 
 type PaddleSide = "LEFT" | "RIGHT";
 
 interface PaddleOptions {
-  color?: { r: number; g: number; b: number }; // diffuseColor
-  textureUrl?: string;
+  color?: PaddleColor;
+  texture?: PaddleTexture;
 }
 export class Paddle extends BasePaddle {
   public side: PaddleSide;
@@ -52,12 +53,18 @@ export class Paddle extends BasePaddle {
     this.setupInitialPosition();
 
     if (this.options) {
-      this.applyStyle(this.options);
+      if (this.options.color) {
+        this.setColor(this.options.color.color);
+      }
+      if (this.options.texture) {
+        this.setTexture(this.options.texture.image);
+      }
     }
 
     // Initialize clamped values to paddle's starting position
     this.clampedX = this.mesh?.position.x || 0;
-    this.clampedZ = this.mesh?.position.z || (this.side === "LEFT" ? -2.8 : 2.8);
+    this.clampedZ =
+      this.mesh?.position.z || (this.side === "LEFT" ? -2.8 : 2.8);
 
     if (this.isLocal) {
       this.enableMouseTracking();
@@ -79,7 +86,12 @@ export class Paddle extends BasePaddle {
       if (!camera) return;
 
       const boundaries = this.getBoundaries();
-      const ray = this.scene.createPickingRay(evt.offsetX, evt.offsetY, null, camera);
+      const ray = this.scene.createPickingRay(
+        evt.offsetX,
+        evt.offsetY,
+        null,
+        camera
+      );
       const paddleY = 2.6;
 
       if (Math.abs(ray.direction.y) > 0.0001) {
@@ -88,7 +100,10 @@ export class Paddle extends BasePaddle {
         const worldZ = ray.origin.z + t * ray.direction.z;
 
         this.clampedX = worldX;
-        this.clampedZ = Math.max(boundaries.z.min, Math.min(boundaries.z.max, worldZ));
+        this.clampedZ = Math.max(
+          boundaries.z.min,
+          Math.min(boundaries.z.max, worldZ)
+        );
       }
     });
   }
@@ -153,63 +168,6 @@ export class Paddle extends BasePaddle {
   getMeshRotation() {
     if (!this.mesh) return Vector3.Zero();
     return this.mesh.rotation.clone();
-  }
-
-  private applyStyle(options: PaddleOptions) {
-    if (!this.mainMesh) return;
-
-    // Apply color (like setColor)
-    if (options.color) {
-      let mat = this.mainMesh.material as StandardMaterial;
-
-      if (!mat || !(mat instanceof StandardMaterial)) {
-        mat = new StandardMaterial("paddleMat", this.scene);
-        this.mainMesh.material = mat;
-      }
-
-      mat.diffuseColor = new Color3(
-        options.color.r,
-        options.color.g,
-        options.color.b
-      );
-    }
-
-    // Apply texture (like setTexture)
-    if (options.textureUrl) {
-      // Clean up existing overlay
-      this.textureOverlay?.dispose();
-      this.textureOverlay = null;
-
-      try {
-        const mat = new StandardMaterial("paddleTexMat", this.scene);
-        const tex = new Texture(options.textureUrl, this.scene);
-
-        tex.hasAlpha = true;
-        mat.diffuseTexture = tex;
-        mat.useAlphaFromDiffuseTexture = true;
-        mat.backFaceCulling = false; // <- texture on both sides
-
-        // Overlay trick to preserve base color + add texture
-        const clone = this.mainMesh.clone(
-          "paddleOverlay",
-          this.mainMesh.parent
-        );
-        if (clone) {
-          clone.position = this.mainMesh.position.clone();
-          clone.rotation = this.mainMesh.rotation.clone();
-          clone.scaling = this.mainMesh.scaling.clone();
-
-          clone.material = mat;
-          this.textureOverlay = clone;
-
-          console.log("Texture overlay created successfully");
-        } else {
-          console.error("Failed to clone mesh for texture overlay");
-        }
-      } catch (error) {
-        console.error("Error applying texture:", error);
-      }
-    }
   }
 
   // For position interpolation

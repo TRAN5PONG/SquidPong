@@ -4,7 +4,7 @@ import { styled } from "@/lib/Zerostyle";
 import ScoreBoard from "./Elements/ScoreBoard";
 import { GiveUpIcon, PauseIcon } from "../Svg/Svg";
 import { MatchResultOverlay } from "./Elements/MatchResultOverlay";
-import { GamePowerUps, Match, MatchPlayer } from "@/types/game";
+import { GamePowerUps, Match, MatchPlayer } from "@/types/game/game";
 
 import { useRouteParam } from "@/hooks/useParam";
 import { getMatchById } from "@/api/match";

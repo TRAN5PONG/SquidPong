@@ -1,4 +1,4 @@
-import { GameStatus } from "./game";
+import { GameStatus } from "./game/game";
 import { User } from "./user";
 
 export type TournamentRound =

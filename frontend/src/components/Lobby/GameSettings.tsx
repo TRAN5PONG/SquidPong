@@ -21,7 +21,7 @@ import {
   GameSettings as GameSettingsType,
   Match,
   MatchPlayer,
-} from "@/types/game";
+} from "@/types/game/game";
 import { useSound } from "@/hooks/useSound";
 import { LoaderSpinner } from "../Loader/Loader";
 import { useAppContext } from "@/contexts/AppProviders";
@@ -33,7 +33,7 @@ import {
   getUserGameInvitations,
 } from "@/api/gameInvitation";
 import { timeUntil } from "@/utils/time";
-import { GameInvitation } from "@/types/game";
+import { GameInvitation } from "@/types/game/game";
 import GameInvitationCard from "./GameInvitation";
 import Toast from "../Toast/Toast";
 import { getRankMetaData } from "@/utils/game";

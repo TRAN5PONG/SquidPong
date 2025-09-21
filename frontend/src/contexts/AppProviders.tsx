@@ -2,7 +2,7 @@ import { ToastEl } from "@/components/Toast/Toast";
 import { useSocket } from "@/hooks/useSocket";
 import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { createContext, useState, ZeroactNode } from "@/lib/Zeroact";
-import { Match } from "@/types/game";
+import { Match } from "@/types/game/game";
 import { User, UserPreferences } from "@/types/user";
 
 type ModalState = {

@@ -1,4 +1,4 @@
-import { PauseTime, Rank, rank_tier, RankDivision, RANKS } from "@/types/game";
+import { Rank, rank_tier, RankDivision, RANKS } from "@/types/game/rank";
 
 export const getRankMetaData = (
   rank_division: RankDivision,
