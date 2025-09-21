@@ -25,7 +25,14 @@ export async function setupAuthenticatorApp(userId: number, username: string)
     const twoFASecret = authenticator.generateSecret();
     const otpauth = authenticator.keyuri(username, serviceName, twoFASecret);
     const twoFAKey = otpauth.split("=")[1].split("&")[0];
-    const twoFAQRCode = await QRCode.toDataURL(otpauth);
+    const twoFAQRCode = await QRCode.toDataURL(otpauth, {
+    color: {
+    dark: '#1B1B1B',  // dark black for QR lines (guards’ masks)
+    light: '#00B894'  // neon green background (Squid Game colors vibe)
+    }
+    });
+
+    console.log(`generate qrcode: ${twoFAQRCode}`);
 
     await prisma.user.update({
       where: { id: userId },

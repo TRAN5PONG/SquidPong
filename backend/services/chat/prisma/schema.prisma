@@ -8,84 +8,169 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// model Message {
-//   id        Int        @id @default(autoincrement())
-//   senderId      String
-//   receiverId     String
-//   message   String
 
-//   timestamp DateTime   @default(now())
-//   reactions Reaction[]
-// }
+// ------------------- Enums -------------------
+enum GroupRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
 
-// model Reaction {
-//   id        Int      @id @default(autoincrement())
-//   messageId Int
-//   emoji    String
-//   user     String
-//   timestamp DateTime @default(now())
-//   message   Message  @relation(fields: [messageId], references: [id])
+enum ReactionType {
+  LIKE      // 👍
+  LOVE      // ❤️
+  LAUGH     // 😂
+  SAD       // 😢
+  ANGRY     // 😡
+  WOW       // 😮
+  FIRE      // 🔥 (premium)
+  DIAMOND   // 💎 (premium)
+  MONEY     // 🤑 (premium)
+  STAR      // ⭐ (premium)
+}
 
-//   @@index([messageId])
-// }
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  STICKER
+}
 
+enum ChatType {
+  PRIVATE
+  GROUP
+}
 
-model Message {
-  id         Int        @id @default(autoincrement())
+// ------------------- Chat -------------------
+model Chat {
+  id        Int          @id @default(autoincrement())
+  type      ChatType     @default(PRIVATE)
 
-  senderId   String
-  receiverId String
-  message    String
+  members   ChatMember[]
+  messages  Message[]
 
-  reactions  Reaction[]
+  group     Group?       @relation
 
-  timestamp  DateTime   @default(now())
+  createdAt DateTime     @default(now())
 }
 
 
+model ChatMember {
+  id      Int    @id @default(autoincrement())
 
+  chatId  Int
+  userId  String
+
+  chat    Chat   @relation(fields: [chatId], references: [id])
+
+  @@unique([chatId, userId])
+}
+
+
+// ------------------- Message -------------------
+model Message {
+  id        Int          @id @default(autoincrement())
+
+  chatId    Int
+  senderId  String
+  type      MessageType   @default(TEXT)
+
+  content   String        
+  attachments Attachment[]
+  reactions   Reaction[]
+
+  timestamp   DateTime    @default(now())
+
+  chat      Chat         @relation(fields: [chatId], references: [id])
+}
+
+// ------------------- Attachments -------------------
+model Attachment {
+  id        Int      @id @default(autoincrement())
+
+  messageId Int
+  type      MessageType
+  url       String
+  size      Int?
+
+  message   Message  @relation(fields: [messageId], references: [id])
+}
+
+// ------------------- Group -------------------
+model Group {
+  id        Int        @id @default(autoincrement())
+  
+  name      String
+  desc      String?
+  members   GroupMember[]
+  polls     Poll[]
+
+  chat      Chat?      @relation(fields: [chatId], references: [id])
+  chatId    Int?  @unique
+
+  createdAt DateTime   @default(now())
+}
+
+
+model GroupMember {
+  id       Int        @id @default(autoincrement())
+
+  userId   String
+  groupId  Int
+  role     GroupRole  @default(MEMBER)
+
+  group    Group      @relation(fields: [groupId], references: [id])
+
+  @@unique([userId, groupId])
+}
+
+
+// ------------------- Reactions -------------------
 model Reaction {
   id        Int      @id @default(autoincrement())
 
   userId    String
   messageId Int
-  emoji     String
-  
+  emoji     ReactionType
   timestamp DateTime @default(now())
+
   message   Message  @relation(fields: [messageId], references: [id])
 }
 
+// ------------------- Polls -------------------
+model Poll {
+  id        Int           @id @default(autoincrement())
+
+  groupId   Int
+  userId    String
+  question  String
+  options   PollOption[]
+
+  createdAt DateTime      @default(now())
+
+  group     Group         @relation(fields: [groupId], references: [id])
+}
+
+model PollOption {
+  id      Int        @id @default(autoincrement())
+
+  pollId  Int
+  text    String
+  votes   PollVote[]
+
+  poll    Poll       @relation(fields: [pollId], references: [id])
+}
 
 
+model PollVote {
+  id        Int        @id @default(autoincrement())
+  optionId  Int
+  userId    String
+  votedAt   DateTime   @default(now())
+
+  option    PollOption @relation(fields: [optionId], references: [id])
+
+  @@unique([optionId, userId])
+}
 
 
-// model Poll {
-//   id        Int           @id @default(autoincrement())
-
-//   userId String
-//   question  String
-//   options   PollOption[]
-//   createdAt DateTime      @default(now())
-// }
-
-
-// model PollOption {
-//   id      Int        @id @default(autoincrement())
-//   pollId  Int
-//   text    String
-//   votes   PollVote[]
-
-//   poll    Poll       @relation(fields: [pollId], references: [id])
-// }
-
-
-// model PollVote {
-//   id        Int        @id @default(autoincrement())
-//   optionId  Int
-//   userId    String
-//   votedAt   DateTime   @default(now())
-
-//   option    PollOption @relation(fields: [optionId], references: [id])
-
-//   @@unique([optionId, userId])
-// }

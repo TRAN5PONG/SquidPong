@@ -20,6 +20,8 @@ export enum ProfileMessages {
   CACHE_HIT = 'Profile loaded from cache.',
   CACHE_MISS = 'Profile not found in cache, loading from DB.',
 }
+
+
 export enum PreferenceMessages {
   FETCH_SUCCESS = 'Preferences fetched successfully.',
   FETCH_NOT_FOUND = 'Preferences not found in the database.',
