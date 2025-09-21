@@ -1,5 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { constants } from "@/utils/constants";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 export class Ball {
   private prev_pos: RAPIER.Vector3;
@@ -30,11 +31,19 @@ export class Ball {
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
   }
 
-  getPrevPosition(): RAPIER.Vector3 {
-    return this.prev_pos;
+  getPrevPosition(): Vector3 {
+    return new Vector3(
+      this.prev_pos.x,
+      this.prev_pos.y,
+      this.prev_pos.z
+    );
   }
-  getCurrentPosition(): RAPIER.Vector3 {
-    return this.current_pos;
+  getCurrentPosition(): Vector3 {
+    return new Vector3(
+      this.current_pos.x,
+      this.current_pos.y,
+      this.current_pos.z
+    );
   }
   setPosition(type: "PREV" | "CURR"): void {
     if (type === "PREV") this.prev_pos = this.body.translation();

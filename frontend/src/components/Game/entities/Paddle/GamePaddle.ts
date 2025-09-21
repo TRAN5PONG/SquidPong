@@ -9,7 +9,7 @@ import {
 import { Vec3 } from "@/types/network";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { PaddleColor, PaddleTexture } from "@/types/game/paddle";
-import { Paddle } from "@/components/Game/physics/Paddle";
+import { Paddle as PaddlePhy } from "@/components/Game/physics/Paddle";
 
 
 type PaddleSide = "LEFT" | "RIGHT";
@@ -38,17 +38,21 @@ export class Paddle extends BasePaddle {
   private targetPos: Vector3 = Vector3.Zero();
   private targetRot: Vector3 = Vector3.Zero();
 
+  // Paddle Physics
+  public paddle_physics!: PaddlePhy | null;
+
   constructor(
     scene: Scene,
     side: PaddleSide,
-    paddle_physics: Paddle,
     isLocal: boolean = false,
-    options?: PaddleOptions
+    paddle_physics: PaddlePhy | null = null,
+    options?: PaddleOptions,
   ) {
     super(scene);
     this.side = side;
     this.isLocal = isLocal;
     this.options = options;
+    this.paddle_physics = paddle_physics;
   }
 
   async Load(): Promise<void> {
@@ -121,6 +125,13 @@ export class Paddle extends BasePaddle {
     );
     const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.6);
     this.mesh.position.copyFrom(interpolated);
+
+    if (this.paddle_physics)
+      this.paddle_physics.setPaddleTargetPosition(
+        interpolated.x,
+        interpolated.y,
+        interpolated.z
+      );
     this.setupMouseRotation();
   }
 

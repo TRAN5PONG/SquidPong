@@ -8,22 +8,25 @@ import { Physics } from "../physics";
 import { RollbackManager } from "./RollbackManager";
 import { BallHitMessage } from "@/types/network";
 
-export enum ServeBall {
-  FOLLOWING_PADDLE,
-  IN_PLAY,
+export enum GameState {
+  WAITING_FOR_SERVE,
+  IN_PLAY
 }
 
 export class GameController {
   private net: Network;
-  private localPaddle: Paddle | null = null;
-  private opponentPaddle: Paddle | null = null;
-  private ball: Ball | null = null;
+  private localPaddle!: Paddle;
+  private opponentPaddle!: Paddle;
+  private ball!: Ball;
   private physics!: Physics;
   private rollbackManager!: RollbackManager;
   // Sync
   private paddleSyncTimer: ReturnType<typeof setInterval> | null = null;
   private currentTick: number = 0;
   private lastCollisionTick: number = 0;
+
+  // GameState
+  public gameState: GameState = GameState.WAITING_FOR_SERVE;
 
   constructor(
     localPaddle: Paddle,
@@ -51,6 +54,88 @@ export class GameController {
     this.localPaddle.update();
   }
 
+  // ================= Visual interpolation =================
+  public updateVisuals(alpha: number): void {
+    this.updateVisualsOpponentPaddle(alpha);
+    this.updateVisualsBall(alpha);
+  }
+  /*
+  * if serveState is FOLLOWING_PADDLE, position the ball in front of the local paddle
+  * else, interpolate the ball position between previous and current physics positions
+  */
+  private updateVisualsBall(alpha: number): void {
+    if (!this.ball || !this.physics) return;
+
+    if (this.gameState === GameState.WAITING_FOR_SERVE) {
+      this.attachBallToPaddle();
+      return;
+    }
+
+    const justHadCollision = this.lastCollisionTick === this.currentTick;
+    if (justHadCollision) {
+      const currentPos = this.physics.getBallPosition();
+      this.ball.setMeshPosition(currentPos);
+    } else {
+      const renderPos = Vector3.Lerp(this.physics.ball.getPrevPosition(), this.physics.ball.getCurrentPosition(), alpha);
+      this.ball.setMeshPosition(renderPos);
+    }
+  }
+
+  public updateVisualsOpponentPaddle(alpha: number): void {
+    if (!this.opponentPaddle) return;
+
+    const interpolatedPos = Vector3.Lerp(
+      this.opponentPaddle.getPrevPosition(),
+      this.opponentPaddle.getTarget().pos,
+      alpha
+    );
+
+    const interpolatedRot = Vector3.Lerp(
+      this.opponentPaddle.getPrevRotation(),
+      this.opponentPaddle.getTarget().rot,
+      alpha
+    );
+
+    this.opponentPaddle.mesh.position.copyFrom(interpolatedPos);
+    this.opponentPaddle.mesh.rotation.copyFrom(interpolatedRot);
+  }
+
+  private attachBallToPaddle(): void {
+    const paddlePos = this.localPaddle.getMeshPosition();
+    const zOffset = this.localPaddle.isLocal === true ? 0.3 : -0.3;
+    const newBallPos = paddlePos.add(new Vector3(0, 0, zOffset));
+
+    this.ball.setMeshPosition(newBallPos);
+
+    // TODO: not ideal to set physics position every frame
+    // just when serving would be better
+    // this.physics.setBallPosition(newBallPos.x, newBallPos.y, newBallPos.z);
+  }
+
+
+  // ================= Network =================
+  /*
+  * Handle incoming opponent paddle state that was received over the network
+  */
+  private onOpponentPaddleState(data: {
+    position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+    velocity: { x: number; y: number; z: number };
+  }): void {
+    if (!this.opponentPaddle) return;
+    this.opponentPaddle.setPrevPosition();
+    this.opponentPaddle.setPrevRotation();
+
+    this.opponentPaddle.setTarget(
+      { x: data.position.x, y: data.position.y, z: data.position.z },
+      data.rotation.z
+    );
+  }
+
+  /*
+  * Start sending of local paddle state to the opponent over the network
+  * at a fixed interval (30 times per second)
+  */
   private startPaddleSync(): void {
     if (this.paddleSyncTimer) return; // avoid multiple intervals
 
@@ -76,71 +161,13 @@ export class GameController {
     }
   }
 
-  public updateVisuals(alpha: number): void {
-    this.updateVisualsOpponentPaddle(alpha);
-    // this.updateVisualsBall(alpha);
-  }
+  /*
+  * Send the ball position to the opponent if local player is serving
+  */
 
-  public updateVisualsOpponentPaddle(alpha: number): void {
-    if (!this.opponentPaddle) return;
 
-    const interpolatedPos = Vector3.Lerp(
-      this.opponentPaddle.getPrevPosition(),
-      this.opponentPaddle.getTarget().pos,
-      alpha
-    );
 
-    const interpolatedRot = Vector3.Lerp(
-      this.opponentPaddle.getPrevRotation(),
-      this.opponentPaddle.getTarget().rot,
-      alpha
-    );
-
-    this.opponentPaddle.mesh.position.copyFrom(interpolatedPos);
-    this.opponentPaddle.mesh.rotation.copyFrom(interpolatedRot);
-  }
-
-  private onOpponentPaddleState(data: {
-    position: { x: number; y: number; z: number };
-    rotation: { x: number; y: number; z: number };
-    velocity: { x: number; y: number; z: number };
-  }): void {
-    if (!this.opponentPaddle) return;
-    this.opponentPaddle.setPrevPosition();
-    this.opponentPaddle.setPrevRotation();
-
-    this.opponentPaddle.setTarget(
-      { x: data.position.x, y: data.position.y, z: data.position.z },
-      data.rotation.z
-    );
-  }
-
-  private calculateMagnusSpin(
-    paddleSpeed: number,
-    paddleVelocityX: number,
-    paddleSide: number
-  ): { spinY: number; applySpin: boolean } {
-    let spinY = 0;
-    let applySpin = false;
-
-    if (paddleSpeed >= 26) {
-      const clampedPaddleVelX = Math.max(-29, Math.min(29, paddleVelocityX));
-
-      if (Math.abs(clampedPaddleVelX) > 26) {
-        if (clampedPaddleVelX > 26) {
-          spinY = ((clampedPaddleVelX - 26) / (29 - 26)) * 6;
-        } else if (clampedPaddleVelX < -26) {
-          spinY = ((clampedPaddleVelX + 26) / (-29 + 26)) * -6;
-        }
-
-        spinY *= paddleSide;
-        applySpin = true;
-      }
-    }
-
-    return { spinY, applySpin };
-  }
-
+  // ================= collision callbacks =================
   setCallbacks() {
     if (!this.physics) return;
 
@@ -209,10 +236,53 @@ export class GameController {
     };
   }
 
-  // === Game logic
+  private calculateMagnusSpin(
+    paddleSpeed: number,
+    paddleVelocityX: number,
+    paddleSide: number
+  ): { spinY: number; applySpin: boolean } {
+    let spinY = 0;
+    let applySpin = false;
+
+    if (paddleSpeed >= 26) {
+      const clampedPaddleVelX = Math.max(-29, Math.min(29, paddleVelocityX));
+
+      if (Math.abs(clampedPaddleVelX) > 26) {
+        if (clampedPaddleVelX > 26) {
+          spinY = ((clampedPaddleVelX - 26) / (29 - 26)) * 6;
+        } else if (clampedPaddleVelX < -26) {
+          spinY = ((clampedPaddleVelX + 26) / (-29 + 26)) * -6;
+        }
+
+        spinY *= paddleSide;
+        applySpin = true;
+      }
+    }
+
+    return { spinY, applySpin };
+  }
+
+
+  // ==================== Game loop methods =================
+  public incrementTick(): void {
+    this.currentTick++;
+  }
+
+
+  // ==================== Game state methods =================
   public pauseGame(): void {
     this.stopPaddleSync();
   }
+
+  public resumeGame(): void {
+    this.startPaddleSync();
+  }
+
+  public resetGame(): void {
+  }
+
+
+  // ==================== Game loop methods =================
   public fixedUpdate(dt: number): void {
     if (!this.ball || !this.physics) return;
 
@@ -221,7 +291,7 @@ export class GameController {
     // this.physics.Step();
     // this.physics.ball.setPosition("CURR");
     // this.rollbackManager?.recordState();
-    // this.rollbackManager.incCurrentTick();
+    this.incrementTick();
     this.startPaddleSync();
   }
 }
