@@ -26,5 +26,4 @@ export interface BallHitMessage {
     spin?: Vec3; // Add spin data
     applySpin?: boolean; // Whether to apply spin
     tick: number;                      // tick when the hit happened
-    hitterId: string;                  // session id of hitter
 };

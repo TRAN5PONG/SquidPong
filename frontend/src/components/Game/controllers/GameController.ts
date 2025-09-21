@@ -1,11 +1,12 @@
 // debug paddle
-import { Scene} from "@babylonjs/core";
+import { Scene } from "@babylonjs/core";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Network } from "../network/network";
 import { Paddle } from "../entities/Paddle/GamePaddle";
 import { Ball } from "../entities/Ball";
 import { Physics } from "../physics";
 import { RollbackManager } from "./RollbackManager";
+import { BallHitMessage } from "@/types/network";
 
 export enum ServeBall {
   FOLLOWING_PADDLE,
@@ -21,6 +22,8 @@ export class GameController {
   private rollbackManager!: RollbackManager;
   // Sync
   private paddleSyncTimer: ReturnType<typeof setInterval> | null = null;
+  private currentTick: number = 0;
+  private lastCollisionTick: number = 0;
 
   constructor(
     localPaddle: Paddle,
@@ -35,6 +38,7 @@ export class GameController {
     this.physics = physics;
     this.net = net;
     this.rollbackManager = new RollbackManager(physics, ball);
+    this.setCallbacks();
 
     this.net.on("opponent:paddle", (data) => {
       this.onOpponentPaddleState(data);
@@ -45,11 +49,6 @@ export class GameController {
     if (!this.localPaddle) return;
 
     this.localPaddle.update();
-    // console.log("Paddle Pos:", this.localPaddle.getMeshPosition());
-    // if (this.physics) {
-    //   const meshPos = this.localPaddle.getMeshPosition();
-    //   this.physics.setPaddleTargetPosition(meshPos.x, meshPos.y, meshPos.z);
-    // }
   }
 
   private startPaddleSync(): void {
@@ -84,7 +83,7 @@ export class GameController {
 
   public updateVisualsOpponentPaddle(alpha: number): void {
     if (!this.opponentPaddle) return;
-    
+
     const interpolatedPos = Vector3.Lerp(
       this.opponentPaddle.getPrevPosition(),
       this.opponentPaddle.getTarget().pos,
@@ -114,6 +113,100 @@ export class GameController {
       { x: data.position.x, y: data.position.y, z: data.position.z },
       data.rotation.z
     );
+  }
+
+  private calculateMagnusSpin(
+    paddleSpeed: number,
+    paddleVelocityX: number,
+    paddleSide: number
+  ): { spinY: number; applySpin: boolean } {
+    let spinY = 0;
+    let applySpin = false;
+
+    if (paddleSpeed >= 26) {
+      const clampedPaddleVelX = Math.max(-29, Math.min(29, paddleVelocityX));
+
+      if (Math.abs(clampedPaddleVelX) > 26) {
+        if (clampedPaddleVelX > 26) {
+          spinY = ((clampedPaddleVelX - 26) / (29 - 26)) * 6;
+        } else if (clampedPaddleVelX < -26) {
+          spinY = ((clampedPaddleVelX + 26) / (-29 + 26)) * -6;
+        }
+
+        spinY *= paddleSide;
+        applySpin = true;
+      }
+    }
+
+    return { spinY, applySpin };
+  }
+
+  setCallbacks() {
+    if (!this.physics) return;
+
+    this.physics.onBallPaddleCollision = (ball, paddle) => {
+      const paddleVelocity = new Vector3(
+        paddle.linvel().x,
+        paddle.linvel().y,
+        paddle.linvel().z
+      );
+      const paddleSpeed = paddleVelocity.length();
+
+      if (
+        this.rollbackManager?.isInProgress() ||
+        this.lastCollisionTick === this.currentTick
+      ) {
+        return;
+      }
+
+      this.lastCollisionTick = this.currentTick;
+      // const spinCalc = this.calculateMagnusSpin(
+      //   paddleSpeed,
+      //   paddleVelocity.x,
+      //   this.paddle.side
+      // );
+      // const spinY = spinCalc.spinY;
+      // this.physics!.setBallSpin(0, spinY, 0);
+      // this.physics!.setApplySpin(spinCalc.applySpin);
+
+      const targetVel = this.physics!.calculateTargetZYVelocity(
+        ball.translation(),
+        paddle.translation()
+      );
+
+      const currentVel = ball.linvel();
+      const mass = ball.mass();
+      const impulse = new Vector3(
+        (targetVel.x - currentVel.x) * mass,
+        (targetVel.y - currentVel.y) * mass,
+        (targetVel.z - currentVel.z) * mass
+      );
+      this.physics!.ball.body.applyImpulse(impulse, true);
+
+      const actualVel = ball.linvel();
+      const hitMsg: BallHitMessage = {
+        position: {
+          x: ball.translation().x,
+          y: ball.translation().y,
+          z: ball.translation().z,
+        },
+        velocity: { x: actualVel.x, y: actualVel.y, z: actualVel.z },
+        spin: {
+          x: this.physics!.getBallSpin().x,
+          y: this.physics!.getBallSpin().y,
+          z: this.physics!.getBallSpin().z,
+        },
+        applySpin: this.physics!.getApplySpin(),
+        tick: this.currentTick,
+      };
+      this.net.sendMessage("ball_hit", hitMsg);
+    };
+    this.physics.onBallFloorCollision = (ball, floor) => {
+      // this.resetGame();
+    };
+    this.physics.onBallNetCollision = (ball, net) => {
+      // this.resetGame();
+    };
   }
 
   // === Game logic

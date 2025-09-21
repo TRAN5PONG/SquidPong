@@ -240,27 +240,7 @@ export class Physics {
         this.paddle.body.setNextKinematicRotation(quat);
     }
 
-    public setPaddleTargetPosition(x: number, y: number, z: number) {
-        if (!this.paddle.body) return;
 
-        const curr = this.paddle.body.translation();
-        const targetX = x;
-        const targetY = y;
-        const targetZ = z;
-
-        // Use similar smoothing as mesh (0.4 * 60fps ≈ 24 for invDt)
-        const SMOOTH = 0.3; // Match your mesh interpolation
-        const sx = curr.x + (targetX - curr.x) * SMOOTH;
-        const sy = curr.y + (targetY - curr.y) * SMOOTH;
-        const sz = curr.z + (targetZ - curr.z) * SMOOTH;
-
-        const invDt = 100; // Lower value for smoother movement to match mesh
-        let vx = (sx - curr.x) * invDt;
-        let vy = (sy - curr.y) * invDt;
-        let vz = (sz - curr.z) * invDt;
-
-        this.paddle.body.setLinvel({ x: vx, y: vy, z: vz }, true);
-    }
     public setBallSpin(x: number, y: number, z: number): void {
         this.ballSpin.set(x, y, z);
     }

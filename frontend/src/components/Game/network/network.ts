@@ -1,6 +1,7 @@
 import { Client, getStateCallbacks, Room } from "colyseus.js";
 import { MatchPhase, MatchState } from "./GameState";
 import { Match, MatchPlayer } from "@/types/game/game";
+import { BallHitMessage, Vec3 } from "@/types/network";
 
 interface NetworkEvents {
   "player:connected": (playerId: string, player: MatchPlayer) => void;
@@ -16,6 +17,7 @@ interface NetworkEvents {
   "game:started": (data: { startTime: number }) => void;
   "gameStartAt": (startAt: number) => void;
   "opponent:paddle": (data: any) => void;
+  "ball_hit": (data: BallHitMessage) => void;
 }
 
 export class Network {
@@ -150,6 +152,9 @@ export class Network {
       this.emit("opponent:paddle", data);
       // console.log("Opponent Paddle Data:", data);
     });
+    this.room.onMessage("BallHitMessage", (data: BallHitMessage) => {
+      this.emit("ball_hit", data);
+    })
   }
 
   // Send message to server

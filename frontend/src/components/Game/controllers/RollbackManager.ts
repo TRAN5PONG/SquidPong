@@ -20,7 +20,6 @@ export class RollbackManager {
   private physics: Physics;
   private ball: Ball;
 
-  private currentTick: number = 0;
   private serveState: ServeBall = ServeBall.FOLLOWING_PADDLE;
 
   constructor(physics: Physics, ball: Ball) {
@@ -32,13 +31,13 @@ export class RollbackManager {
     return this.isRollbackInProgress;
   }
 
-  public recordState(): void {
+  public recordState(currentTick: number): void {
     if (this.serveState === ServeBall.IN_PLAY) {
       const state: BallHistory = {
         position: this.physics.getBallPosition().clone(),
         velocity: this.physics.getBallVelocity().clone(),
         spin: this.physics.getBallSpin().clone(),
-        tick: this.currentTick,
+        tick: currentTick,
       };
       this.ballHistory.push(state);
 
@@ -164,9 +163,5 @@ export class RollbackManager {
     while (this.ballHistory.length > this.maxHistory) {
       this.ballHistory.shift();
     }
-  }
-
-  incCurrentTick() {
-    this.currentTick++;
   }
 }
