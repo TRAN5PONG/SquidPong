@@ -101,7 +101,7 @@ async function onChatNotificationMessage(this:any , message: any)
     if (!allowedTypes.includes(incomingSocketData.type))
       throw new Error(`Invalid message type. Allowed types: ${allowedTypes.join(', ')}`);
 
-    await sendDataToQueue({...incomingSocketData.data , senderId} , incomingSocketData.type);
+    await sendDataToQueue({...incomingSocketData.data , senderId : `${senderId}`} , incomingSocketData.type);
   
   }
   catch (error)

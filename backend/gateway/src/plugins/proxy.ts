@@ -58,6 +58,20 @@ app.register(fastifyHttpProxy, {
 );
 
 
+app.register(fastifyHttpProxy, {
+
+  upstream: 'http://auth:4444',
+  prefix: '/api/2fa',
+  rewritePrefix: '/api/2fa',
+  http2: false,
+
+  preHandler: async (req:any, reply:any) => {
+    req.headers['x-user-id'] = req.id;
+  },
+
+}
+);
+
 
 
 app.register(fastifyHttpProxy, {
@@ -120,6 +134,7 @@ app.register(fastifyHttpProxy, {
 })
 
 
+
 app.register(fastifyHttpProxy, {
 
   upstream: 'http://chat:4003',
@@ -133,6 +148,19 @@ app.register(fastifyHttpProxy, {
 
 })
 
+
+app.register(fastifyHttpProxy, {
+
+  upstream: 'http://chat:4003',
+  prefix: '/api/group',
+  rewritePrefix: '/api/group',
+  http2: false,
+
+  preHandler: async (req:any, reply:any) => {
+    req.headers['x-user-id'] = req.id;
+  },
+
+})
 
 
 

@@ -248,34 +248,42 @@ export async function cancelFriendRequestHandler(req: FastifyRequest, res: Fasti
 }
 
 
+
 // ----------------- VERIFY FRIENDSHIP -----------------
 export async function verifyFriendshipHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<{ areFriends: boolean }> = { success: true,  message: FriendMessages.FRIENDSHIP_VERIFY_SUCCESS, data: { areFriends: true } };
-  const headers = req.headers as any;
-  const userId = headers['x-user-id'];
-  
+  const respond: ApiResponse<{ areFriends: boolean }> = { success: true, message: FriendMessages.FRIENDSHIP_VERIFY_SUCCESS, data: { areFriends: false }};
+
+  console.log("Received verify friendship request with query:", req.query);
   try 
   {
-    const { friendId } = req.query as { friendId: string };
+    const { senderId, receiverId } = req.query as { senderId: string; receiverId: string };
 
-    await getProfile(Number(friendId));
+    // if (!senderId || !receiverId) 
+    // {
+    //   return res.status(400).send({
+    //     success: false,
+    //     message: 'Both senderId and receiverId must be provided.',
+    //   });
+    // }
+
+    await getProfile(Number(senderId));
+    await getProfile(Number(receiverId));
 
     const friendship = await prisma.friendship.findFirst({
       where: {
         OR: [
-          { senderId: userId, receiverId: friendId, status: ACCEPTED },
-          { senderId: friendId, receiverId: userId, status: ACCEPTED },
-        ]
-      }
+          { senderId, receiverId, status: ACCEPTED },
+          { senderId: receiverId, receiverId: senderId, status: ACCEPTED },
+        ],
+      },
     });
 
     respond.data.areFriends = Boolean(friendship);
   } 
   catch (error) {
-    sendError(res, error);
+    return sendError(res, error);
   }
 
   return res.send(respond);
 }
-

@@ -18,6 +18,7 @@ export async function setupTwoFAHandler(req: FastifyRequest, res: FastifyReply)
   const respond: ApiResponse<{ twoFAQRCode: string; twoFAKey: string } | null> = { success: true, message: TwoFA.TWO_FA_SETUP_SUCCESS};
   const { method } = req.params as any;
 
+  console.log("2FA Method: ", method);
   const id = Number((req.headers as any)["x-user-id"]);
 
   try 
@@ -177,7 +178,7 @@ export async function statusTwoFAHandler(req: FastifyRequest, res: FastifyReply)
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) throw new Error(UserProfileMessage.USER_NOT_FOUND);
 
-    if (user.twoFAMethod == "NONE") throw new Error(TwoFA.TWO_FA_DESABLED);
+    if (user.twoFAMethod == NONE) throw new Error(TwoFA.TWO_FA_DESABLED);
     respond.data = { twoFAMethod : user.twoFAMethod };
   } 
   catch (error) {

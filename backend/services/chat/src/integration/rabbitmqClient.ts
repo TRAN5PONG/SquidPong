@@ -1,5 +1,5 @@
 import amqp from "amqplib";
-import { processChatMessageFromRabbitMQ } from "../controllers/chat.controller";
+import { processChatMessageFromRabbitMQ } from "../controllers/chat.rabbit.controller";
 let connection: any;
 export let channel: any;
 

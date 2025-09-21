@@ -1,6 +1,6 @@
 // twofa.schema.ts
-export const TwoFAMethods = ["authenticator", "email"] as const;
-export const TwoFAMethodsEnum = { AUTHENTICATOR: "authenticator", EMAIL: "email" };
+export const TwoFAMethods = ["AUTHENTICATOR", "EMAIL"] as const;
+export const TwoFAMethodsEnum = { AUTHENTICATOR: "AUTHENTICATOR", EMAIL: "EMAIL" };
 
 
 export const twofaSetupSchema = {
