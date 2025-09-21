@@ -27,7 +27,32 @@ export class Paddle {
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
   }
 
+  public setPaddleTargetPosition(x: number, y: number, z: number) {
+    if (!this.body) return;
+
+    const curr = this.body.translation();
+    const targetX = x;
+    const targetY = y;
+    const targetZ = z;
+
+    // Use similar smoothing as mesh (0.4 * 60fps ≈ 24 for invDt)
+    const SMOOTH = 0.3; // Match your mesh interpolation
+    const sx = curr.x + (targetX - curr.x) * SMOOTH;
+    const sy = curr.y + (targetY - curr.y) * SMOOTH;
+    const sz = curr.z + (targetZ - curr.z) * SMOOTH;
+
+    const invDt = 100; // Lower value for smoother movement to match mesh
+    let vx = (sx - curr.x) * invDt;
+    let vy = (sy - curr.y) * invDt;
+    let vz = (sz - curr.z) * invDt;
+
+    this.body.setLinvel({ x: vx, y: vy, z: vz }, true);
+  }
+
   getVelocity(): RAPIER.Vector3 {
     return this.body.linvel();
+  }
+  getBody(): RAPIER.RigidBody {
+    return this.body;
   }
 }

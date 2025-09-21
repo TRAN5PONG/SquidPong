@@ -121,7 +121,7 @@ export class MatchRoom extends Room<MatchState> {
       if (!player) return;
 
       if (this.state.phase !== "playing" && this.state.phase !== "paused") {
-        player.send("game:give-up-denied", {
+        this.send(client, "game:give-up-denied", {
           reason: "game not in playing or paused phase",
         });
         return;

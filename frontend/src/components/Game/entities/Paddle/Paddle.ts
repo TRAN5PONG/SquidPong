@@ -34,7 +34,7 @@ export class BasePaddle {
       container.meshes.forEach((mesh) => {
         if (!mesh || mesh.name === "__root__") return;
         mesh.parent = group;
-        if (mesh.name === "Paddle-faces") {
+        if (mesh.name === "Paddle_faces") {
           this.mainMesh = mesh as AbstractMesh;
         }
         mesh.isPickable = true;
@@ -92,7 +92,7 @@ export class BasePaddle {
     // Also add transparency mode
     textureMat.transparencyMode = StandardMaterial.MATERIAL_ALPHABLEND;
 
-    const cloned = this.mainMesh.clone("Paddle-faces", null, false);
+    const cloned = this.mainMesh.clone("Paddle_faces", null, false);
     if (cloned) {
       cloned.position.z += 0.001;
       cloned.material = textureMat;
