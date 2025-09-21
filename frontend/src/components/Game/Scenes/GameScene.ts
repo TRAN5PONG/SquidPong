@@ -108,6 +108,7 @@ export class Game {
         this.scene,
         "RIGHT",
         this.userId === this.hostId,
+        this.userId === this.hostId ? this.physics.paddle : null,
         {
           color: paddleColors[0],
           texture: paddleTextures[1],
@@ -117,6 +118,7 @@ export class Game {
         this.scene,
         "LEFT",
         this.userId === this.guestId,
+        this.userId === this.hostId ? this.physics.paddle : null,
         {
           color: paddleColors[1],
         }
