@@ -122,8 +122,6 @@ export class Paddle extends BasePaddle {
     const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.6);
     this.mesh.position.copyFrom(interpolated);
     this.setupMouseRotation();
-
-    setPaddleTargetPosition.
   }
 
   setupMouseRotation(): void {
