@@ -134,7 +134,7 @@ export class Physics {
 
 
     Step() {
-        this.applyMagnusEffect();
+        // this.applyMagnusEffect();
         this.world.step(this.eventQueue);
 
         this.eventQueue.drainCollisionEvents((h1, h2, started) => {
@@ -213,7 +213,10 @@ export class Physics {
         this.ball.body.setLinvel({ x, y, z }, true);
     }
     public setBallFrozen(frozen: boolean) {
-        if (frozen) { this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, true); this.ball.body.setGravityScale(0, true); }
+        if (frozen) {
+            this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+            this.ball.body.setGravityScale(0, true);
+        }
         else { this.ball.body.setGravityScale(1, true); }
     }
     setBallPosition(x: number, y: number, z: number) {
