@@ -1,9 +1,9 @@
 import { RouteHandlerMethod , FastifySchema  } from 'fastify';
 
-import { createChat , removeChat , getChatById  , addChatMember , removeChatMember } from '../controllers/chat.controller';
-import { createPoll , getGroupPolls , getPollById , addPollOption , votePollOption , removePoll } from '../controllers/poll.controller';
-import { sendMessageWithAttachment , getChatMessages , removeAttachment } from '../controllers/attach.file.controller';
+import { createChat , removeChat   , getChatById } from '../controllers/chat.controller';
+// import { createPoll , getGroupPolls , getPollById , addPollOption , votePollOption , removePoll } from '../controllers/poll.controller';
 import { createGroup , removeGroup , getGroupById , addGroupMember , removeGroupMember , listGroupMembers , getGroupMessages , updateMemberRole , updateGroupInfo } from '../controllers/group.controller';
+import { addGroupMemberSchema } from '../schemas/group.schema';
 
 
 type Route = {
@@ -14,38 +14,22 @@ type Route = {
 };
 
 
-
 // ------------------- Chat Endpoints -------------------
-
-// ------------------- Chat Endpoints -------------------
-export const chatRoutes = [
-  { method: 'POST',   url: '/api/chat/new',                handler: createChat },          // create new chat
-  { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat },          // remove chat
-
-  { method: 'POST',   url: '/api/chat/:chatId/member/add', handler: addChatMember },       // add member to chat
-  { method: 'DELETE', url: '/api/chat/:chatId/member/remove/:userId', handler: removeChatMember }, // remove member from chat
-
-  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatMessages },    // get all messages in a chat
-];
-
-
-// // ------------------- Attachment Endpoints -------------------
-export const attachmentRoutes = [
-
-  { method: 'POST',     url: '/api/chats/:chatId/messages/:type', handler: sendMessageWithAttachment,},
-  { method: 'GET',      url: '/api/chats/:chatId/messages', handler: getChatMessages,},
-  { method: 'DELETE',   url: '/api/attachments/:attachmentId', handler: removeAttachment},
-
+export const chatRoutes : Route[] = [
+  { method: 'POST',   url: '/api/chat/new',                handler: createChat },          
+  { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat },          
+  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById },    
 ];
 
 
 
 // ------------------- Group Endpoints -------------------
-export const groupRoutes = [
+export const groupRoutes : Route[] = [
   { method: 'POST',   url: '/api/group/new',                        handler: createGroup },
   { method: 'DELETE', url: '/api/group/remove/:groupId',            handler: removeGroup },
   { method: 'GET',    url: '/api/group/show/:groupId',              handler: getGroupById },
-  { method: 'POST',   url: '/api/group/:groupId/member/add',        handler: addGroupMember },
+  
+  { method: 'POST',   url: '/api/group/:groupId/member/add',        handler: addGroupMember , schema : addGroupMemberSchema },
   { method: 'DELETE', url: '/api/group/:groupId/member/remove/:id', handler: removeGroupMember },
   { method: 'PATCH',  url: '/api/group/:groupId/member/:memberId/role', handler: updateMemberRole },
   { method: 'PATCH',  url: '/api/group/:groupId' , handler: updateGroupInfo },
@@ -55,17 +39,19 @@ export const groupRoutes = [
 ];
 
 
-
 // ------------------- Poll REST Endpoints -------------------
-export const pollRoutes = [
-  { method: 'POST', url: '/api/groups/:groupId/polls', handler: createPoll },
-  { method: 'GET', url: '/api/groups/:groupId/polls', handler: getGroupPolls },
-  { method: 'GET', url: '/api/polls/:pollId', handler: getPollById },
-  { method: 'POST', url: '/api/polls/:pollId/options', handler: addPollOption },
-  { method: 'POST', url: '/api/polls/:pollId/vote', handler: votePollOption },
-  { method: 'DELETE', url: '/api/polls/:pollId', handler: removePoll },
+export const pollRoutes: Route[] = [
+  // { method: 'POST', url: '/api/group/:groupId/polls', handler: createPoll },
+
+  // { method: 'GET', url: '/api/group/:groupId/polls', handler: getGroupPolls },
+
+  // { method: 'GET', url: '/api/polls/:pollId', handler: getPollById },
+
+  // { method: 'POST', url: '/api/polls/:pollId/options', handler: addPollOption },
+
+  // { method: 'POST', url: '/api/polls/:pollId/votes', handler: votePollOption },
+
+  // { method: 'DELETE', url: '/api/polls/:pollId', handler: removePoll },
 ];
-
-
 
 

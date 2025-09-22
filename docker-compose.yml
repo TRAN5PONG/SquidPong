@@ -102,7 +102,7 @@ services:
     ports:
       - "5002:5555"
     volumes:
-      - ./frontend/src/uploads:/tmp/
+      - ./uploads/user/:/tmp/
       - ./backend/services/user/src:/user/src
       - ./backend/services/user/prisma:/user/prisma
     networks:

@@ -17,6 +17,23 @@ export enum MessageResponses {
 }
 
 
+export enum PollMessages {
+  POLL_CREATED_SUCCESS = 'Poll created successfully.',
+  POLL_CREATED_FAILED = 'Failed to create poll.',
+  POLL_FETCHED_SUCCESS = 'Poll fetched successfully.',
+  POLL_FETCHED_FAILED = 'Failed to fetch poll.',
+  POLLS_FETCHED_SUCCESS = 'Polls fetched successfully.',
+  POLLS_FETCHED_FAILED = 'Failed to fetch polls.',
+  POLL_DELETED_SUCCESS = 'Poll deleted successfully.',
+  POLL_DELETED_FAILED = 'Failed to delete poll.',
+  OPTION_ADDED_SUCCESS = 'Option added to poll successfully.',
+  OPTION_ADDED_FAILED = 'Failed to add option to poll.',
+  VOTE_SUBMITTED_SUCCESS = 'Vote submitted successfully.',
+  VOTE_SUBMITTED_FAILED = 'Failed to submit vote.',
+
+  INVALID_REQUEST = 'Invalid request for polls.',
+  SERVER_ERROR = 'Internal server error while handling polls.',
+}
 
 export enum GroupMessages {
     // Group CRUD
@@ -38,6 +55,9 @@ export enum GroupMessages {
     MEMBERS_LISTED_FAILED = 'Failed to list group members.',
     MEMBER_ADDED_SUCCESS = 'Member added successfully.',
     MEMBER_ADDED_FAILED = 'Failed to add member.',
+    MEMBER_ALREADY_EXISTS = 'Member already exists in the group.',
+    NOT_HAVE_PERMISSION = 'You do not have permission to perform this action.',
+    SELF_ADD_ERROR = 'Cannot add yourself as a member.',
     MEMBER_REMOVED_SUCCESS = 'Member removed successfully.',
     MEMBER_REMOVED_FAILED = 'Failed to remove member.',
 
@@ -73,4 +93,25 @@ export enum GroupMessages {
     SERVER_ERROR = 'Internal server error.',
     UNAUTHORIZED = 'Unauthorized action.',
     FORBIDDEN = 'Forbidden action.',
+}
+
+
+export enum chatMessages {
+  MEMBER_ALREADY_EXISTS = 'Member already exists in the chat.',
+  SELF_CHAT_ERROR = 'Cannot create chat with yourself.',
+    CREATED_SUCCESS = 'Chat created successfully.',
+    CREATE_FAILED = 'Failed to create chat.',
+    FETCH_SUCCESS = 'Chat fetched successfully.',
+    FETCH_NOT_FOUND = 'Chat not found in the database.',
+    DELETE_SUCCESS = 'Chat deleted successfully.',
+    DELETE_FAILED = 'Failed to delete chat.',
+    DELETE_NOT_FOUND = 'Chat to delete not found.',
+
+    MEMBER_ADDED_SUCCESS = 'Member added to chat successfully.',
+    MEMBER_ADDED_FAILED = 'Failed to add member to chat.',
+    MEMBER_REMOVED_SUCCESS = 'Member removed from chat successfully.',
+    MEMBER_REMOVED_FAILED = 'Failed to remove member from chat.',
+
+    INVALID_REQUEST = 'Invalid request for chat.',
+    SERVER_ERROR = 'Internal server error while handling chat.',
 }
