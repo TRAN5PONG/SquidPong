@@ -2,8 +2,9 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../db/database';
 import { ApiResponse  , sendError , verifyFriendship  } from '../utils/helper';
 import { Message } from '../utils/types';
-
+import { verifyUserId } from '../utils/helper';
 import { GroupMessages } from '../utils/RespondMessage';
+import { checkUserAndFetchGroup } from '../utils/group.check';
 
 
 enum GroupRole {
@@ -15,37 +16,62 @@ enum GroupRole {
 const { ADMIN , MEMBER , OWNER } = GroupRole ;
 
 
+enum typeofChat {
+   PRIVATE = 'PRIVATE',
+   GROUP = 'GROUP',
+}
+
+const { PRIVATE , GROUP } = typeofChat ;
+
+
 
 
 export async function  createGroup(req: FastifyRequest, res: FastifyReply)
 {
-   const respond: ApiResponse<{groupId : string}> = { success: true, message: GroupMessages.CREATED_SUCCESS };
+   const respond: ApiResponse<any> = { success: true, message: GroupMessages.CREATED_SUCCESS };
 
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
    const { name  , desc  } = req.body as { name: string; desc: string };
 
-   try 
+   try
    {
-
-      // Create group
       const newGroup = await prisma.group.create({
-         data: {
-            name,
-            desc,
-            members: {
-               create: {
-                  userId: userId,
-                  role: OWNER,
-                  },
-               },
+      data: {
+       name,
+       desc,
+       members: {
+         create: [
+           {
+             userId,
+             role: OWNER,
            },
-       });
+         ],
+       },
+       chat: {
+         create: {
+           type: "GROUP",
+           members: {
+             create: [
+               {
+                 userId,
+               },
+             ],
+           },
+         },
+       },
+      },
+      include: {
+        chat: true,
+      },
+      });
 
-      respond.data = { groupId: newGroup.id };
-
-   } 
+      if (!newGroup)
+        throw new Error(GroupMessages.CREATED_FAILED);
+   respond.data = newGroup;
+   
+   }
    catch (error) {
       sendError(res ,error);
    }
@@ -65,19 +91,13 @@ export async function  removeGroup(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await prisma.group.findUnique({
-         where: { id: groupId },
-         include: { members: true },
-      });
-
-      if (!group) 
-         throw new Error(GroupMessages.FETCH_NOT_FOUND);
+      const group = await checkUserAndFetchGroup(Number(groupId));
 
       const member = group.members.find((m:any) => m.userId === userId);
       if (!member || member.role !== OWNER)
          throw new Error(GroupMessages.DELETED_FAILED); 
 
-      await prisma.group.delete({ where: { id: groupId }});
+      await prisma.chat.delete({ where: { id: group.chatId } });
 
    } 
    catch (error) 
@@ -101,18 +121,13 @@ export async function  getGroupById(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await prisma.group.findUnique({
-         where: { id: groupId },
-         include: { members: true },
-      });
+      const group = await checkUserAndFetchGroup(Number(groupId));
       
-      if (!group) 
-         throw new Error(GroupMessages.FETCH_NOT_FOUND);
       const isMember = group.members.some((m:any) => m.userId === userId);
-      if (!isMember) 
+      if (!isMember)
          throw new Error(GroupMessages.FETCH_NOT_FOUND);
 
-      respond.data = { id: group.id, name: group.name, desc: group.desc, members: group.members.length };
+      respond.data = { id: String(group.id), name: group.name, desc: group.desc ?? '', members: group.members.length };
 
    } 
    catch (error) 
@@ -129,49 +144,51 @@ export async function  getGroupById(req: FastifyRequest, res: FastifyReply)
 
 export async function  addGroupMember(req: FastifyRequest, res: FastifyReply) 
 {
+
    const respond: ApiResponse<null> = { success: true, message: GroupMessages.MEMBER_ADDED_SUCCESS };
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
-   const { groupId } = req.params as { groupId: string };
-   const { newMemberId , role } = req.body as { newMemberId: string , role : 'ADMIN' | 'MEMBER' };
+   const { groupId } = req.params as { groupId: number };
+   const { newMemberId  } = req.body as { newMemberId: number  };
 
    try 
    {
-      if (userId === newMemberId) 
-         throw new Error(GroupMessages.MEMBER_ADDED_FAILED);
-      
-      const group = await prisma.group.findUnique({
-         where: { id: groupId },
-         include: { members: true },
-      });
-      if (!group) 
-         throw new Error(GroupMessages.FETCH_NOT_FOUND);
-      
-      const requester = group.members.find((m:any) => m.userId === userId);
-      if (!requester || requester.role !== ADMIN || requester.role !== OWNER) 
-         throw new Error(GroupMessages.MEMBER_ADDED_FAILED); 
+      const group = await checkUserAndFetchGroup(Number(userId), Number(newMemberId), Number(groupId) , true);
 
-      const alreadyMember = group.members.some((m:any) => m.userId === newMemberId);
-      if (alreadyMember)
-         throw new Error(GroupMessages.MEMBER_ADDED_FAILED); 
+      const requester = group.members.find((m:any) => m.userId === userId);
+      if (!requester || requester.role === MEMBER) 
+         throw new Error(GroupMessages.NOT_HAVE_PERMISSION); 
       
+      const alreadyMember = group.members.some((m:any) => m.userId === String(newMemberId));
+      console.log("Is already member:", alreadyMember);
+      if (alreadyMember)
+         throw new Error(GroupMessages.MEMBER_ALREADY_EXISTS); 
+      
+      console.log("Group fetched:", group);
       await prisma.groupMember.create({
          data: {
-            groupId,
-            userId: newMemberId,
-            role: role,
+            groupId : Number(groupId),
+            userId: String(newMemberId),
+            role: MEMBER,
          },
       });
-      
+      await prisma.chatMember.create({
+         data: {
+            chatId : Number(group.chatId),
+            userId: String(newMemberId),
+         },
+      });
    } 
    catch (error) 
    {
-      sendError(res ,error);
+      return sendError(res ,error);
    }
    
    return res.send(respond);
 }
+
+
 
 
 export async function  removeGroupMember(req: FastifyRequest, res: FastifyReply)
@@ -184,20 +201,11 @@ export async function  removeGroupMember(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      if (userId === memberId) 
-         throw new Error(GroupMessages.MEMBER_REMOVED_FAILED);
-      
-      const group = await prisma.group.findUnique({
-         where: { id: groupId },
-         include: { members: true },
-      });
-      if (!group) 
-         throw new Error(GroupMessages.FETCH_NOT_FOUND);
-      
+      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId), Number(memberId));
 
       const requester = group.members.find((m:any) => m.userId === userId);
-      if (!requester || requester.role !== ADMIN || requester.role !== OWNER) 
-         throw new Error(GroupMessages.MEMBER_REMOVED_FAILED); 
+      if (!requester || requester.role === MEMBER)
+         throw new Error(GroupMessages.MEMBER_REMOVED_FAILED);
 
       const member = group.members.find((m:any) => m.userId === memberId);
       if (!member) 
@@ -221,6 +229,8 @@ export async function  removeGroupMember(req: FastifyRequest, res: FastifyReply)
 
 
 
+
+
 export async function  updateMemberRole(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<null> = { success: true, message: GroupMessages.ROLE_UPDATED_SUCCESS };
@@ -232,14 +242,7 @@ export async function  updateMemberRole(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      if (userId === memberId) 
-         throw new Error(GroupMessages.ROLE_UPDATED_FAILED);
-      const group = await prisma.group.findUnique({
-         where: { id: groupId },
-         include: { members: true },
-      });
-      if (!group)
-         throw new Error(GroupMessages.FETCH_NOT_FOUND);
+      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId), Number(memberId));
    
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role !== OWNER) 
@@ -279,25 +282,19 @@ export async function  updateGroupInfo(req: FastifyRequest, res: FastifyReply)
   
    try 
    {
-      const group = await prisma.group.findUnique({
-         where: { id: groupId },
-         include: { members: true },
-      });
-      if (!group) 
-         throw new Error(GroupMessages.FETCH_NOT_FOUND);
+      const group = await checkUserAndFetchGroup(Number(groupId));
       
       const requester = group.members.find((m:any) => m.userId === userId);
-      if (!requester || (requester.role !== ADMIN && requester.role !== OWNER)) 
+      if (!requester || requester.role === MEMBER) 
          throw new Error(GroupMessages.UPDATED_FAILED); 
 
       await prisma.group.update({
-         where: { id: groupId },
+         where: { id: Number(groupId) },
          data: {
             name: name || group.name,
             desc: desc || group.desc,
          },
       });
-
    } 
    catch (error) 
    {
@@ -320,19 +317,13 @@ export async function  listGroupMembers(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await prisma.group.findUnique({
-         where: { id: groupId },
-         include: { members: true },
-      });
-      if (!group) 
-         throw new Error(GroupMessages.FETCH_NOT_FOUND);
+      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId));
       
       const isMember = group.members.some((m:any) => m.userId === userId);
       if (!isMember) 
          throw new Error(GroupMessages.MEMBERS_LISTED_FAILED); 
 
       respond.data = { members: group.members.map((m:any) => ({ userId: m.userId, role: m.role })) };
-  
    } 
    catch (error) 
    {
@@ -346,7 +337,8 @@ export async function  listGroupMembers(req: FastifyRequest, res: FastifyReply)
 
 export async function  getGroupMessages(req: FastifyRequest, res: FastifyReply) 
 {
-   const respond: ApiResponse<{ messages: Message[] }> = { success: true, message: GroupMessages.FETCH_SUCCESS, data: { messages: [] } };
+
+   const respond: ApiResponse<null> = { success: true, message: GroupMessages.FETCH_SUCCESS };
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
@@ -354,32 +346,24 @@ export async function  getGroupMessages(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await prisma.group.findUnique({
-         where: { id: groupId },
-         include: { members: true },
-      });
-      if (!group) 
-         throw new Error(GroupMessages.FETCH_NOT_FOUND);
+      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId));
       
       const isMember = group.members.some((m:any) => m.userId === userId);
       if (!isMember) 
          throw new Error(GroupMessages.FETCH_NOT_FOUND); 
 
-      const messages = await prisma.message.findMany({
-         where: { groupId },
-         orderBy: { createdAt: 'asc' },
-      });
+      console.log("Group fetched:", group);
+      // console.log("Group fetched:", group.chat);
+      // const chat = group.chat;
 
-      respond.data = { messages: messages as Message[] };
-  
+      // respond.data = chat
+      
    } 
-   catch (error) 
+   catch (error)
    {
       sendError(res ,error);
    }
-   
    return res.send(respond);
-  
 }
 
 

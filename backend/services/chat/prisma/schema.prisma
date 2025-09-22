@@ -1,4 +1,3 @@
-// This is your Prisma schema file
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -10,6 +9,7 @@ generator client {
 
 
 // ------------------- Enums -------------------
+
 enum GroupRole {
   OWNER
   ADMIN
@@ -25,21 +25,22 @@ enum ReactionType {
   WOW       // 😮
   FIRE      // 🔥 (premium)
   DIAMOND   // 💎 (premium)
-  MONEY     // 🤑 (premium)
-  STAR      // ⭐ (premium)
+  MONEY     // 🤑
+  STAR      // ⭐
 }
 
-enum MessageType {
-  TEXT
-  IMAGE
-  AUDIO
-  STICKER
-}
 
 enum ChatType {
   PRIVATE
   GROUP
 }
+
+
+enum groupType {
+  PUBLIC
+  PRIVATE
+}
+
 
 // ------------------- Chat -------------------
 model Chat {
@@ -48,8 +49,7 @@ model Chat {
 
   members   ChatMember[]
   messages  Message[]
-
-  group     Group?       @relation
+  group     Group?
 
   createdAt DateTime     @default(now())
 }
@@ -57,11 +57,10 @@ model Chat {
 
 model ChatMember {
   id      Int    @id @default(autoincrement())
-
   chatId  Int
   userId  String
 
-  chat    Chat   @relation(fields: [chatId], references: [id])
+  chat    Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   @@unique([chatId, userId])
 }
@@ -69,57 +68,43 @@ model ChatMember {
 
 // ------------------- Message -------------------
 model Message {
-  id        Int          @id @default(autoincrement())
+  id         Int          @id @default(autoincrement())
+  chatId     Int
+  senderId   String
 
-  chatId    Int
-  senderId  String
-  type      MessageType   @default(TEXT)
-
-  content   String        
-  attachments Attachment[]
+  content    String        
   reactions   Reaction[]
 
-  timestamp   DateTime    @default(now())
+  timestamp  DateTime      @default(now())
 
-  chat      Chat         @relation(fields: [chatId], references: [id])
+  chat       Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
 }
 
-// ------------------- Attachments -------------------
-model Attachment {
-  id        Int      @id @default(autoincrement())
-
-  messageId Int
-  type      MessageType
-  url       String
-  size      Int?
-
-  message   Message  @relation(fields: [messageId], references: [id])
-}
 
 // ------------------- Group -------------------
 model Group {
   id        Int        @id @default(autoincrement())
-  
   name      String
   desc      String?
+  chatId    Int  @unique
+
+  type   groupType  @default(PRIVATE)
   members   GroupMember[]
   polls     Poll[]
 
-  chat      Chat?      @relation(fields: [chatId], references: [id])
-  chatId    Int?  @unique
+  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   createdAt DateTime   @default(now())
 }
 
-
 model GroupMember {
   id       Int        @id @default(autoincrement())
-
+  
   userId   String
   groupId  Int
   role     GroupRole  @default(MEMBER)
 
-  group    Group      @relation(fields: [groupId], references: [id])
+  group    Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
 }
@@ -128,19 +113,20 @@ model GroupMember {
 // ------------------- Reactions -------------------
 model Reaction {
   id        Int      @id @default(autoincrement())
-
   userId    String
   messageId Int
   emoji     ReactionType
   timestamp DateTime @default(now())
 
-  message   Message  @relation(fields: [messageId], references: [id])
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
 }
+
 
 // ------------------- Polls -------------------
 model Poll {
   id        Int           @id @default(autoincrement())
-
   groupId   Int
   userId    String
   question  String
@@ -148,19 +134,17 @@ model Poll {
 
   createdAt DateTime      @default(now())
 
-  group     Group         @relation(fields: [groupId], references: [id])
+  group     Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 model PollOption {
   id      Int        @id @default(autoincrement())
-
   pollId  Int
   text    String
   votes   PollVote[]
 
-  poll    Poll       @relation(fields: [pollId], references: [id])
+  poll    Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
 }
-
 
 model PollVote {
   id        Int        @id @default(autoincrement())
@@ -168,9 +152,7 @@ model PollVote {
   userId    String
   votedAt   DateTime   @default(now())
 
-  option    PollOption @relation(fields: [optionId], references: [id])
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   @@unique([optionId, userId])
 }
-
-

@@ -35,3 +35,13 @@ export function sendError(res: FastifyReply, error: unknown, statusCode = 400)
 
   return res.status(statusCode).send(response);
 }
+
+
+
+
+export async function verifyUserId(userId : string)
+{
+    const res = await fetch(`http://user:4001/api/user/${userId}`);
+    if(res.status !== 200)
+      throw new Error('User not found');
+}

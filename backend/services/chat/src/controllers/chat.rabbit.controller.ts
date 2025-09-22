@@ -22,7 +22,12 @@ export enum ReactionType {
   STAR    = "STAR"      // ⭐
 }
 
+enum typeofChat {
+   PRIVATE = 'PRIVATE',
+   GROUP = 'GROUP',
+}
 
+const { PRIVATE , GROUP } = typeofChat ;
 
 export enum MessageType 
 {
@@ -79,25 +84,117 @@ export enum MessageType
 
 
 
+export async function CreateMessageRecord(data: any)
+{
+  const { chatId, content , senderId } = data;
+
+  const chat = await prisma.chat.findUnique({ where: { id: Number(chatId) } , include: { members: true } });
+  if (!chat) throw new Error("Chat not found");
+
+  const isMember = chat.members.some((m:any) => m.userId === senderId);
+  if (!isMember) throw new Error("User is not a member of the chat");
+
+
+  await prisma.message.create({
+    data: {
+      chatId : Number(chatId),
+      content,
+      senderId,
+    },
+  });
+
+  const targetId = chat.members.filter((m:any) => m.userId !== senderId).map((m:any) => m.userId);
+  
+  console.log("Sending message to queue:", {message : content , targetId});
+  await sendDataToQueue( {message : content , targetId} , "broadcastData" );
+
+}
 
 
 
+async function AddORUpdateReactionRecord(data: any)
+{
+  const { messageId, reactionType , userId } = data;
 
+  const message = await prisma.message.findUnique({ where: { id: Number(messageId) } });
+    if (!message) throw new Error("Message not found");
+
+  const chat = await prisma.chat.findUnique({ where: { id: Number(message.chatId) } , include: { members: true } });
+    if (!chat) throw new Error("Chat not found");
+
+  const isMember = chat.members.some((m:any) => m.userId === userId);
+    if (!isMember) throw new Error("User is not a member of the chat");
+
+  await prisma.reaction.upsert({
+    where: {
+      messageId_userId: {
+        messageId,
+        userId,
+      },
+    },
+    update: {
+      emoji: reactionType,
+    },
+    create: {
+      messageId: Number(messageId),
+      userId,
+      emoji: reactionType,
+    },
+  });
+
+  const targetId = chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
+  
+  console.log("Sending reaction to queue:", {reaction : reactionType , targetId});
+  await sendDataToQueue( {reaction : reactionType , targetId} , "broadcastData" );
+
+}
+
+
+async function RemoveReactionRecord(data: any)
+{
+  const { messageId, reactionType , userId } = data;
+
+  const message = await prisma.message.findUnique({ where: { id: Number(messageId) } });
+    if (!message) throw new Error("Message not found");
+
+  const chat = await prisma.chat.findUnique({ where: { id: Number(message.chatId) } , include: { members: true } });
+    if (!chat) throw new Error("Chat not found");
+
+  const isMember = chat.members.some((m:any) => m.userId === userId);
+    if (!isMember) throw new Error("User is not a member of the chat");
+
+  await prisma.reaction.deleteMany({
+    where: {
+      messageId : Number(messageId),
+      userId,
+      emoji: reactionType,
+    },
+  });
+
+  const targetId = chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
+  
+  console.log("Sending reaction removal to queue:", {reaction : reactionType , targetId});
+  await sendDataToQueue( {reaction : reactionType , targetId} , "broadcastData" );
+
+}    
 
 
 
 
 export async function processChatMessageFromRabbitMQ(msg: any)
 {
-    const data = JSON.parse(msg.content.toString());
+  const data = JSON.parse(msg.content.toString());
 
-    console.log("Processing message in chat service:", data);
-    if (data === null) return;
+  console.log("Processing message in chat service:", data);
+  if (data === null) return;
 
-    const msgType = data.type;
+  const msgType = data.type;
 
-   console.log("Message type:", msgType);
+  if(msgType === MessageType.PRIVATE_MESSAGE)
+    await CreateMessageRecord(data);
+  else if( msgType === MessageType.ADD_REACTION)
 
-    channel.ack(msg);
+
+  channel.ack(msg);
 }
 
