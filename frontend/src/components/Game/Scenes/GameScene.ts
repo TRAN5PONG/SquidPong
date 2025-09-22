@@ -91,7 +91,6 @@ export class Game {
         this.scene,
         this.userId === this.hostId ? 1 : -1
       );
-      console.log(this.userId, this.hostId, this.guestId);
       this.camera.attach(this.canvas);
 
       // Network

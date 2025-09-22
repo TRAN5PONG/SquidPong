@@ -24,6 +24,7 @@ export class GameController {
   private paddleSyncTimer: ReturnType<typeof setInterval> | null = null;
   private currentTick: number = 0;
   private lastCollisionTick: number = 0;
+  public MyTurnToServe: boolean = false;
 
   // GameState
   public gameState: GameState = GameState.WAITING_FOR_SERVE;
@@ -43,6 +44,8 @@ export class GameController {
     this.rollbackManager = new RollbackManager(physics, ball);
     this.setCallbacks();
 
+    // For now, right paddle always serves first just for testing
+    this.MyTurnToServe = this.localPaddle.side === "RIGHT" ? true : false;
     this.net.on("opponent:paddle", (data) => {
       this.onOpponentPaddleState(data);
     });
@@ -101,8 +104,16 @@ export class GameController {
   }
 
   private attachBallToPaddle(): void {
-    const paddlePos = this.localPaddle.getMeshPosition();
-    const zOffset = this.localPaddle.isLocal === true ? 0.3 : -0.3;
+    let paddlePos;
+    let zOffset;
+    if (this.MyTurnToServe) {
+      paddlePos = this.localPaddle.getMeshPosition();
+      zOffset = this.localPaddle.side === "LEFT" ? 1 : -1;
+    } else {
+      paddlePos = this.opponentPaddle.getMeshPosition();
+      zOffset = this.opponentPaddle.side === "LEFT" ? 1 : -1;
+    }
+
     const newBallPos = paddlePos.add(new Vector3(0, 0, zOffset));
 
     this.ball.setMeshPosition(newBallPos);

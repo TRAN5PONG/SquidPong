@@ -5,6 +5,8 @@ import {
   Color3,
   Texture,
   AbstractMesh,
+  Plane,
+  Scalar
 } from "@babylonjs/core";
 import { Vec3 } from "@/types/network";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
@@ -41,6 +43,9 @@ export class Paddle extends BasePaddle {
   // Paddle Physics
   public paddle_physics!: PaddlePhy | null;
 
+  // plane for mouse tracking
+  private paddlePlane: Plane | null = null;
+
   constructor(
     scene: Scene,
     side: PaddleSide,
@@ -74,8 +79,16 @@ export class Paddle extends BasePaddle {
       this.mesh?.position.z || (this.side === "LEFT" ? -2.8 : 2.8);
 
     if (this.isLocal) {
-      this.enableMouseTracking();
+      this.setupPaddlePlane();
+      this.enableLiveMouseTracking();
     }
+  }
+  private setupPaddlePlane(): void {
+    if (!this.mesh) return;
+
+    const planePosition = new Vector3(0, this.mesh.position.y, 0);
+    const planeNormal = new Vector3(0, 1, 0);
+    this.paddlePlane = Plane.FromPositionAndNormal(planePosition, planeNormal);
   }
 
   private setupInitialPosition() {
@@ -85,72 +98,43 @@ export class Paddle extends BasePaddle {
     this.mesh.rotation.set(0, 0, 0);
   }
 
-  private enableMouseTracking() {
-    this.scene.onPointerObservable.add((pointerInfo) => {
-      if (!this.mesh) return;
-      const evt = pointerInfo.event;
-      const camera = this.scene.activeCamera;
-      if (!camera) return;
+  private enableLiveMouseTracking(): void {
+    this.scene.onBeforeRenderObservable.add(() => {
+      if (!this.mesh || !this.paddlePlane) return;
+
+      const pointerX = this.scene.pointerX;
+      const pointerY = this.scene.pointerY;
+      if (pointerX === undefined || pointerY === undefined) return;
+
+      const ray = this.scene.createPickingRay(pointerX, pointerY, null, this.scene.activeCamera);
+      const distance = ray.intersectsPlane(this.paddlePlane);
+      if (distance === null) return;
 
       const boundaries = this.getBoundaries();
-      const ray = this.scene.createPickingRay(
-        evt.offsetX,
-        evt.offsetY,
-        null,
-        camera
-      );
-      const paddleY = 2.6;
+      const point = ray.origin.add(ray.direction.scale(distance));
 
-      if (Math.abs(ray.direction.y) > 0.0001) {
-        const t = (paddleY - ray.origin.y) / ray.direction.y;
-        const worldX = ray.origin.x + t * ray.direction.x;
-        const worldZ = ray.origin.z + t * ray.direction.z;
+      this.clampedX = Math.max(boundaries.x.min, Math.min(boundaries.x.max, point.x));
+      this.clampedZ = Math.max(boundaries.z.min, Math.min(boundaries.z.max, point.z));
 
-        this.clampedX = worldX;
-        this.clampedZ = Math.max(
-          boundaries.z.min,
-          Math.min(boundaries.z.max, worldZ)
-        );
-      }
     });
   }
 
   public update() {
     if (!this.mesh) return;
 
-    const targetPos = new Vector3(
-      this.clampedX,
-      this.mesh.position.y,
-      this.clampedZ
-    );
+    const targetPos = new Vector3(this.clampedX, this.mesh.position.y, this.clampedZ);
     const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.6);
     this.mesh.position.copyFrom(interpolated);
 
-    if (this.paddle_physics)
-      this.paddle_physics.setPaddleTargetPosition(
-        interpolated.x,
-        interpolated.y,
-        interpolated.z
-      );
-    this.setupMouseRotation();
-  }
-
-  setupMouseRotation(): void {
-    if (!this.mesh) return;
-
+    // Smooth rotation
     const boundaries = this.getBoundaries();
-    const maxRotation = Math.PI / 2;
+    const pct = (interpolated.x - boundaries.x.min) / (boundaries.x.max - boundaries.x.min);
+    const centered = pct * 2 - 1;
+    const targetRot = centered * -(Math.PI / 2);
+    this.mesh.rotation.z = Scalar.Lerp(this.mesh.rotation.z, targetRot, 0.2);
 
-    const x = this.mesh.position.x;
-
-    const clampedX = Math.max(boundaries.x.min, Math.min(boundaries.x.max, x));
-
-    // Convert X to a percentage between -1 (left) and +1 (right)
-    const pct =
-      (clampedX - boundaries.x.min) / (boundaries.x.max - boundaries.x.min); // 0..1
-    const centered = pct * 2 - 1; // -1..+1
-
-    this.mesh.rotation.z = centered * -maxRotation;
+    // Sync with physics
+    this.paddle_physics?.setPaddleTargetPosition(interpolated.x, interpolated.y, interpolated.z);
   }
 
   private getBoundaries() {
