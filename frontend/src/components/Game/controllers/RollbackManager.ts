@@ -2,7 +2,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Physics } from "@/components/Game/physics";
 import { Ball } from "../entities/Ball";
 import { Vec3, BallHistory } from "@/types/network";
-import { ServeBall } from "./GameController";
+import { GameState } from "./GameController";
 
 export interface RollbackState {
   position: Vector3;
@@ -20,7 +20,7 @@ export class RollbackManager {
   private physics: Physics;
   private ball: Ball;
 
-  private serveState: ServeBall = ServeBall.FOLLOWING_PADDLE;
+  private serveState: GameState = GameState.WAITING_FOR_SERVE;
 
   constructor(physics: Physics, ball: Ball) {
     this.physics = physics;
@@ -32,7 +32,7 @@ export class RollbackManager {
   }
 
   public recordState(currentTick: number): void {
-    if (this.serveState === ServeBall.IN_PLAY) {
+    if (this.serveState === GameState.IN_PLAY) {
       const state: BallHistory = {
         position: this.physics.getBallPosition().clone(),
         velocity: this.physics.getBallVelocity().clone(),
@@ -112,7 +112,7 @@ export class RollbackManager {
       this.physics.Step();
 
       // Record the re-simulated state
-      if (this.serveState === ServeBall.IN_PLAY) {
+      if (this.serveState === GameState.IN_PLAY) {
         this.ballHistory.push({
           position: this.physics.getBallPosition().clone(),
           velocity: this.physics.getBallVelocity().clone(),
