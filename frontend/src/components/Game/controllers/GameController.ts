@@ -1,5 +1,4 @@
 // debug paddle
-import { Scene } from "@babylonjs/core";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Network } from "../network/network";
 import { Paddle } from "../entities/Paddle/GamePaddle";
@@ -7,6 +6,8 @@ import { Ball } from "../entities/Ball";
 import { Physics } from "../physics";
 import { RollbackManager } from "./RollbackManager";
 import { BallHitMessage } from "@/types/network";
+import { Scene } from "@babylonjs/core";
+import { PointerEventTypes } from "@babylonjs/core";
 
 export enum GameState {
   WAITING_FOR_SERVE,
@@ -20,6 +21,7 @@ export class GameController {
   private ball!: Ball;
   private physics!: Physics;
   private rollbackManager!: RollbackManager;
+  private scene: Scene;
   // Sync
   private paddleSyncTimer: ReturnType<typeof setInterval> | null = null;
   private currentTick: number = 0;
@@ -34,7 +36,8 @@ export class GameController {
     opponentPaddle: Paddle,
     ball: Ball,
     physics: Physics,
-    net: Network
+    net: Network,
+    scene: Scene
   ) {
     this.localPaddle = localPaddle;
     this.opponentPaddle = opponentPaddle;
@@ -43,11 +46,31 @@ export class GameController {
     this.net = net;
     this.rollbackManager = new RollbackManager(physics, ball);
     this.setCallbacks();
+    this.scene = scene;
 
     // For now, right paddle always serves first just for testing
     this.MyTurnToServe = this.localPaddle.side === "RIGHT" ? true : false;
+
+    // Listen for opponent paddle updates
     this.net.on("opponent:paddle", (data) => {
       this.onOpponentPaddleState(data);
+    });
+    // Listen for ball hit updates
+    this.net.on("ball:hit", (data: BallHitMessage) => {
+      // Ignore old messages
+      if (data.tick < this.currentTick) return;
+    });
+
+    // Listen for mouse click to serve
+    this.scene.onPointerObservable.add((pointerInfo) => {
+      if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
+        const event = pointerInfo.event as PointerEvent;
+        if (event.button === 0 && (this.MyTurnToServe && this.gameState == GameState.WAITING_FOR_SERVE)) { // left click
+          console.log("Pointer down event detected");
+          this.BallServe();
+          this.gameState = GameState.IN_PLAY;
+        }
+      }
     });
   }
 
@@ -63,7 +86,7 @@ export class GameController {
     this.updateVisualsBall(alpha);
   }
   /*
-  * if serveState is FOLLOWING_PADDLE, position the ball in front of the local paddle
+  * if GameState is WAITING_FOR_SERVE, position the ball in front of the local paddle
   * else, interpolate the ball position between previous and current physics positions
   */
   private updateVisualsBall(alpha: number): void {
@@ -115,8 +138,12 @@ export class GameController {
     }
 
     const newBallPos = paddlePos.add(new Vector3(0, 0, zOffset));
-
-    this.ball.setMeshPosition(newBallPos);
+    const interpolated = Vector3.Lerp(
+      this.ball.getMeshPosition(),
+      newBallPos,
+      0.4
+    );
+    this.ball.setMeshPosition(interpolated);
 
     // TODO: not ideal to set physics position every frame
     // just when serving would be better
@@ -171,11 +198,6 @@ export class GameController {
       this.paddleSyncTimer = null;
     }
   }
-
-  /*
-  * Send the ball position to the opponent if local player is serving
-  */
-
 
 
   // ================= collision callbacks =================
@@ -279,7 +301,6 @@ export class GameController {
     this.currentTick++;
   }
 
-
   // ==================== Game state methods =================
   public pauseGame(): void {
     this.stopPaddleSync();
@@ -292,15 +313,35 @@ export class GameController {
   public resetGame(): void {
   }
 
+  // ==================== Serve methods =================
+  public BallServe(): void {
+    this.physics.setBallFrozen(false);
+    const serveVelocity = new Vector3(0, 2.5, 0);
+    const ballPos = this.ball.getMeshPosition();
 
-  // ==================== Game loop methods =================
-  public fixedUpdate(dt: number): void {
+    this.physics.setBallPosition(ballPos.x, ballPos.y, ballPos.z);
+    this.physics.setBallVelocity(serveVelocity.x, serveVelocity.y, serveVelocity.z);
+
+    // Sync serve to opponent
+    const serveMsg: BallHitMessage = {
+      position: { x: ballPos.x, y: ballPos.y, z: ballPos.z },
+      velocity: { x: serveVelocity.x, y: serveVelocity.y, z: serveVelocity.z },
+      spin: { x: 0, y: 0, z: 0 },
+      applySpin: false,
+      tick: this.currentTick,
+    };
+    console.log("Sending serve message:", serveMsg);
+    this.net.sendMessage("ball_hit", serveMsg);
+  }
+
+  // ==================== Main update methods =================
+  public fixedUpdate(): void {
     if (!this.ball || !this.physics) return;
 
     this.updateLocalPaddle();
-    // this.physics.ball.setPosition("PREV");
-    // this.physics.Step();
-    // this.physics.ball.setPosition("CURR");
+    this.physics.ball.setPosition("PREV");
+    this.physics.Step();
+    this.physics.ball.setPosition("CURR");
     // this.rollbackManager?.recordState();
     this.incrementTick();
     this.startPaddleSync();

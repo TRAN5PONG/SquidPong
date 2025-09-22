@@ -33,7 +33,7 @@ export class Paddle extends BasePaddle {
   // prev Positions
   private prev_pos: Vector3 = Vector3.Zero();
 
-  // prev and current Rotations
+  // prev Rotations
   private prev_rot: Vector3 = Vector3.Zero();
 
   // Targets
@@ -173,7 +173,12 @@ export class Paddle extends BasePaddle {
     return this.prev_pos;
   }
   setPrevPosition(): void {
-    this.prev_pos = this.mesh.position.clone();
+    if (!this.mesh) return;
+    this.prev_pos = new Vector3(
+      this.mesh.position.x,
+      this.mesh.position.y,
+      this.mesh.position.z
+    );
   }
 
   // For Rotation interpolation
@@ -181,6 +186,7 @@ export class Paddle extends BasePaddle {
     return this.prev_rot;
   }
   setPrevRotation(): void {
+    if (!this.mesh) return;
     this.prev_rot = this.mesh.rotation.clone();
   }
 

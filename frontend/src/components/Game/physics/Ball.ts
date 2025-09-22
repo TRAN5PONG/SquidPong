@@ -3,8 +3,8 @@ import { constants } from "@/utils/constants";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 export class Ball {
-  private prev_pos: RAPIER.Vector3;
-  private current_pos: RAPIER.Vector3;
+  private prev_pos: Vector3;
+  private current_pos: Vector3;
   public body: RAPIER.RigidBody;
   public collider: RAPIER.Collider;
 
@@ -29,24 +29,34 @@ export class Ball {
 
     this.collider = world.createCollider(colliderDesc, this.body);
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
+
+    const initialPos = new Vector3(
+      this.body.translation().x,
+      this.body.translation().y,
+      this.body.translation().z
+    );
+    this.prev_pos = initialPos.clone();
+    this.current_pos = initialPos.clone();
   }
 
   getPrevPosition(): Vector3 {
-    return new Vector3(
-      this.prev_pos.x,
-      this.prev_pos.y,
-      this.prev_pos.z
-    );
+    return this.prev_pos;
   }
   getCurrentPosition(): Vector3 {
-    return new Vector3(
-      this.current_pos.x,
-      this.current_pos.y,
-      this.current_pos.z
-    );
+    return this.current_pos;
   }
   setPosition(type: "PREV" | "CURR"): void {
-    if (type === "PREV") this.prev_pos = this.body.translation();
-    else this.current_pos = this.body.translation();
+    if (type === "PREV")
+      this.prev_pos = new Vector3(
+        this.body.translation().x,
+        this.body.translation().y,
+        this.body.translation().z
+      );
+    else
+      this.current_pos = new Vector3(
+        this.body.translation().x,
+        this.body.translation().y,
+        this.body.translation().z
+      );
   }
 }

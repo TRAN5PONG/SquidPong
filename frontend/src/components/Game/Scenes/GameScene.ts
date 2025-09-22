@@ -134,7 +134,8 @@ export class Game {
         this.opponentPaddle,
         this.ball,
         this.physics,
-        this.net
+        this.net,
+        this.scene
       );
 
       // Debugging tools
@@ -172,7 +173,7 @@ export class Game {
 
       // --- Fixed-step physics loop ---
       while (accumulator >= FIXED_DT) {
-        this.controller.fixedUpdate(FIXED_DT);
+        this.controller.fixedUpdate();
         accumulator -= FIXED_DT;
       }
       // --- Compute interpolation factor for visuals ---
