@@ -17,7 +17,7 @@ interface NetworkEvents {
   "game:started": (data: { startTime: number }) => void;
   "gameStartAt": (startAt: number) => void;
   "opponent:paddle": (data: any) => void;
-  "ball:hit": (data: BallHitMessage) => void;
+  "BallHitMessage": (data: BallHitMessage) => void;
 }
 
 export class Network {
@@ -148,12 +148,11 @@ export class Network {
       this.emit("game:started", data);
     });
     this.room.onMessage("opponent:paddle", (data) => {
-      // TODO: call handler to update opponent paddle state
       this.emit("opponent:paddle", data);
       // console.log("Opponent Paddle Data:", data);
     });
     this.room.onMessage("BallHitMessage", (data: BallHitMessage) => {
-      this.emit("ball:hit", data);
+      this.emit("BallHitMessage", data);
     })
   }
 

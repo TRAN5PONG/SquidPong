@@ -14,12 +14,14 @@ export interface Vec3 {
 
 export type playerSide = -1 | 1 | null;
 
+
 export interface BallHistory {
-    position: Vector3;
-    velocity: Vector3;
-    spin: Vector3;
+    position: [number, number, number];
+    velocity: [number, number, number];
+    spin: [number, number, number];
     tick: number;
 }
+
 export interface BallHitMessage {
     position: Vec3;            // position of the ball at hit time
     velocity: Vec3;             // the velocity you wanted the ball to have after hit
