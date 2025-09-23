@@ -1,7 +1,7 @@
 import prisma from "../db/database";
 import { channel } from "../integration/rabbitmqClient";
 import { sendDataToQueue } from "../integration/rabbitmqClient";
-
+import { checkChatMembershipAndGetOthers } from "../utils/chat";
 import redis from "../integration/redisClient";
 
 // import { handleMessage } from "../utils/process.message";
@@ -84,69 +84,41 @@ export enum MessageType
 
 
 
-export async function CreateMessageRecord(data: any)
+export async function CreateMessageRecord(chatId : number , senderId : string  ,  content  : string )
 {
-  const { chatId, content , senderId } = data;
 
-  const chat = await prisma.chat.findUnique({ where: { id: Number(chatId) } , include: { members: true } });
-  if (!chat) throw new Error("Chat not found");
+  await prisma.message.create({ data: {chatId , content, senderId} });
 
-  const isMember = chat.members.some((m:any) => m.userId === senderId);
-  if (!isMember) throw new Error("User is not a member of the chat");
-
-
-  await prisma.message.create({
-    data: {
-      chatId : Number(chatId),
-      content,
-      senderId,
-    },
-  });
-
-  const targetId = chat.members.filter((m:any) => m.userId !== senderId).map((m:any) => m.userId);
-  
-  console.log("Sending message to queue:", {message : content , targetId});
-  await sendDataToQueue( {message : content , targetId} , "broadcastData" );
-
+  return {content};
 }
 
 
 
-async function AddORUpdateReactionRecord(data: any)
+async function AddORUpdateReactionRecord(messages : [] ,  messageId: number , reaction : string)
 {
-  const { messageId, reactionType , userId } = data;
 
-  const message = await prisma.message.findUnique({ where: { id: Number(messageId) } });
-    if (!message) throw new Error("Message not found");
-
-  const chat = await prisma.chat.findUnique({ where: { id: Number(message.chatId) } , include: { members: true } });
-    if (!chat) throw new Error("Chat not found");
-
-  const isMember = chat.members.some((m:any) => m.userId === userId);
-    if (!isMember) throw new Error("User is not a member of the chat");
+  console.log(messages)
+  const message:any = messages.find((m:any) => m.id === messageId);
+  if (!message) throw new Error("Message not found");
 
   await prisma.reaction.upsert({
     where: {
       messageId_userId: {
         messageId,
-        userId,
+        userId : message.senderId,
       },
     },
     update: {
-      emoji: reactionType,
+      emoji: reaction,
     },
     create: {
       messageId: Number(messageId),
-      userId,
-      emoji: reactionType,
+      userId : message.senderId,
+      emoji: reaction,
     },
   });
 
-  const targetId = chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
-  
-  console.log("Sending reaction to queue:", {reaction : reactionType , targetId});
-  await sendDataToQueue( {reaction : reactionType , targetId} , "broadcastData" );
-
+  return {reaction};
 }
 
 
@@ -179,22 +151,146 @@ async function RemoveReactionRecord(data: any)
 }    
 
 
+export async function editMessageRecord(data: any)
+{
+  const { messageId, newContent , editorId } = data;
+
+  const message = await prisma.message.findUnique({ where: { id: Number(messageId) } });
+    if (!message) throw new Error("Message not found");
+
+  if(message.senderId !== editorId) throw new Error("Only the sender can edit the message");
+
+  await prisma.message.update({
+    where: { id: Number(messageId) },
+    data: { content: newContent },
+  });
+
+  const chat = await prisma.chat.findUnique({ where: { id: Number(message.chatId) } , include: { members: true } });
+    if (!chat) throw new Error("Chat not found");
+
+  const targetId = chat.members.filter((m:any) => m.userId !== editorId).map((m:any) => m.userId);
+  
+  console.log("Sending edited message to queue:", {editedMessage : newContent , targetId});
+  await sendDataToQueue( {editedMessage : newContent , targetId} , "broadcastData" );
+  
+}
+
+
+export async function deleteMessageRecord(data: any)
+{
+  const { messageId, deleterId } = data;
+
+  const message = await prisma.message.findUnique({ where: { id: Number(messageId) } });
+    if (!message) throw new Error("Message not found");
+
+  if(message.senderId !== deleterId) throw new Error("Only the sender can delete the message");
+
+  await prisma.message.delete({
+    where: { id: Number(messageId) },
+  });
+
+  const chat = await prisma.chat.findUnique({ where: { id: Number(message.chatId) } , include: { members: true } });
+    if (!chat) throw new Error("Chat not found");
+
+  const targetId = chat.members.filter((m:any) => m.userId !== deleterId).map((m:any) => m.userId);
+  
+  console.log("Sending deleted message info to queue:", {deletedMessageId : messageId , targetId});
+  await sendDataToQueue( {deletedMessageId : messageId , targetId} , "broadcastData" );
+  
+}
+
+
+export async function replyMessageRecord(data: any)
+{
+  const { chatId, content , senderId , replyToId } = data;
+
+  const chat = await prisma.chat.findUnique({ where: { id: Number(chatId) } , include: { members: true } });
+  if (!chat) throw new Error("Chat not found");
+  
+  const isMember = chat.members.some((m:any) => m.userId === senderId);
+  if (!isMember) throw new Error("User is not a member of the chat");
+  const repliedMessage = await prisma.message.findUnique({ where: { id: Number(replyToId) } });
+  if (!repliedMessage) throw new Error("Replied message not found");
+
+  const newMessage = await prisma.message.create({
+    data: {
+      chatId : Number(chatId),
+      content,
+      senderId,
+      replyToId: Number(replyToId),
+    },
+  });
+  
+  const targetId = chat.members.filter((m:any) => m.userId !== senderId).map((m:any) => m.userId);
+  console.log("Sending replied message to queue:", {message : content , replyToId, targetId});
+  await sendDataToQueue( {message : content , replyToId, targetId} , "broadcastData" );
+
+  return newMessage;  
+
+}
+
+
+
+export async function forwardMessageRecord(data: any)
+{
+  const { originalMessageId, newChatId , senderId } = data;
+
+  const originalMessage = await prisma.message.findUnique({ where: { id: Number(originalMessageId) } });
+    if (!originalMessage) throw new Error("Original message not found");
+
+  const newChat = await prisma.chat.findUnique({ where: { id: Number(newChatId) } , include: { members: true } });
+    if (!newChat) throw new Error("New chat not found");
+
+  const isMember = newChat.members.some((m:any) => m.userId === senderId);
+    if (!isMember) throw new Error("User is not a member of the new chat");
+
+  const forwardedMessage = await prisma.message.create({
+    data: {
+      chatId : Number(newChatId),
+      content: originalMessage.content,
+      senderId,
+    },
+  });
+
+  const targetId = newChat.members.filter((m:any) => m.userId !== senderId).map((m:any) => m.userId);
+  
+  console.log("Sending forwarded message to queue:", {message : originalMessage.content , targetId});
+  await sendDataToQueue( {message : originalMessage.content , targetId} , "broadcastData" );
+
+  return forwardedMessage;
+
+}
+
+
 
 
 export async function processChatMessageFromRabbitMQ(msg: any)
 {
-  const data = JSON.parse(msg.content.toString());
+  let respond;
 
-  console.log("Processing message in chat service:", data);
-  if (data === null) return;
+  try 
+  {
+    const data = JSON.parse(msg.content.toString());
+    if (data === null) throw new Error("Received null data from RabbitMQ");
+    
+    const { type , chatId , senderId , content , reaction , messageId } = data;
+    const {targetId , chat} = await checkChatMembershipAndGetOthers(Number(chatId), Number(senderId));
 
-  const msgType = data.type;
+    
+    if( type === MessageType.PRIVATE_MESSAGE || type === MessageType.GROUP_MESSAGE )
+      respond = await CreateMessageRecord(Number(chatId), String(senderId), String(content) );
+    else if( type === MessageType.ADD_REACTION )
+      respond = await AddORUpdateReactionRecord(chat.messages , Number(messageId), reaction );
 
-  if(msgType === MessageType.PRIVATE_MESSAGE)
-    await CreateMessageRecord(data);
-  else if( msgType === MessageType.ADD_REACTION)
 
+    await sendDataToQueue( {...respond , targetId } , "broadcastData" );
+    channel.ack(msg);
+  }
+  catch (error) 
+  {
+    console.error("Error processing message in chat service:", error);
+    channel.nack(msg, false, false); // Discard the message on error
+  }
 
-  channel.ack(msg);
 }
 

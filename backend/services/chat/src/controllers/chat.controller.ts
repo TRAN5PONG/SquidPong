@@ -61,6 +61,7 @@ export async function removeChat(req: FastifyRequest, res: FastifyReply)
 
 }
 
+
 export async function getChatById(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: chatMessages.FETCH_SUCCESS };
@@ -73,7 +74,8 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply)
    {
       const chat = await prisma.chat.findUnique({
          where: { id: Number(chatId) },
-         include: { members: true },
+         include: { members: true , messages: true },
+
       });
       if (!chat) 
          throw new Error(chatMessages.FETCH_NOT_FOUND);

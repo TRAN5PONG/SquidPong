@@ -16,6 +16,7 @@ enum GroupRole {
   MEMBER
 }
 
+
 enum ReactionType {
   LIKE      // 👍
   LOVE      // ❤️
@@ -23,12 +24,19 @@ enum ReactionType {
   SAD       // 😢
   ANGRY     // 😡
   WOW       // 😮
-  FIRE      // 🔥 (premium)
-  DIAMOND   // 💎 (premium)
+  FIRE      // 🔥
+  DIAMOND   // 💎
   MONEY     // 🤑
   STAR      // ⭐
 }
 
+
+enum MessageType {
+  TEXT
+  URL
+  POLL
+  IMAGE
+}
 
 enum ChatType {
   PRIVATE
@@ -36,10 +44,19 @@ enum ChatType {
 }
 
 
-enum groupType {
+enum GroupType {
   PUBLIC
   PRIVATE
 }
+
+
+enum MemberStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
 
 
 // ------------------- Chat -------------------
@@ -49,10 +66,12 @@ model Chat {
 
   members   ChatMember[]
   messages  Message[]
+
   group     Group?
 
   createdAt DateTime     @default(now())
 }
+
 
 
 model ChatMember {
@@ -69,16 +88,58 @@ model ChatMember {
 // ------------------- Message -------------------
 model Message {
   id         Int          @id @default(autoincrement())
+
   chatId     Int
   senderId   String
 
-  content    String        
-  reactions   Reaction[]
+  type       MessageType  @default(TEXT)
+  content    String?
+  reactions  Reaction[]
 
-  timestamp  DateTime      @default(now())
+  replyToId  Int?
+  replyTo    Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies    Message[]    @relation("MessageReplies")
 
-  chat       Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  poll       Poll?
+
+  chat       Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  timestamp  DateTime     @default(now())
 }
+
+
+// ------------------- Polls -------------------
+model Poll {
+  id        Int        @id @default(autoincrement())
+  messageId Int        @unique
+  question  String
+  options   PollOption[]
+
+  createdAt DateTime   @default(now())
+  message   Message    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+
+model PollOption {
+  id      Int        @id @default(autoincrement())
+  pollId  Int
+  text    String
+  votes   PollVote[]
+
+  poll    Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+}
+
+
+model PollVote {
+  id        Int        @id @default(autoincrement())
+  optionId  Int
+  userId    String
+  votedAt   DateTime   @default(now())
+
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([optionId, userId])
+}
+
 
 
 // ------------------- Group -------------------
@@ -88,9 +149,8 @@ model Group {
   desc      String?
   chatId    Int  @unique
 
-  type   groupType  @default(PRIVATE)
+  type   GroupType  @default(PRIVATE)
   members   GroupMember[]
-  polls     Poll[]
 
   chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
@@ -100,8 +160,10 @@ model Group {
 model GroupMember {
   id       Int        @id @default(autoincrement())
   
-  userId   String
+  userId   String @unique
   groupId  Int
+  status   MemberStatus @default(PENDING)
+
   role     GroupRole  @default(MEMBER)
 
   group    Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -123,36 +185,4 @@ model Reaction {
   @@unique([messageId, userId])
 }
 
-
-// ------------------- Polls -------------------
-model Poll {
-  id        Int           @id @default(autoincrement())
-  groupId   Int
-  userId    String
-  question  String
-  options   PollOption[]
-
-  createdAt DateTime      @default(now())
-
-  group     Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
-}
-
-model PollOption {
-  id      Int        @id @default(autoincrement())
-  pollId  Int
-  text    String
-  votes   PollVote[]
-
-  poll    Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
-}
-
-model PollVote {
-  id        Int        @id @default(autoincrement())
-  optionId  Int
-  userId    String
-  votedAt   DateTime   @default(now())
-
-  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
-
-  @@unique([optionId, userId])
-}
+  

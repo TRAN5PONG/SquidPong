@@ -3,14 +3,16 @@ import { GroupMessages } from "./RespondMessage";
 import { verifyUserId } from "./helper";
 
 
+
+// change later to accept newMemberId and check if it's valid userId 
 export async function checkUserAndFetchGroup( groupId: number, userId?: number, newMemberId?: number , checkNewMember = false ) 
 {
   if (newMemberId !== undefined)
-   {
+  {
       if (checkNewMember)
-         await verifyUserId(`${newMemberId}`);
+        await verifyUserId(`${newMemberId}`);
       if (userId !== undefined && userId === newMemberId)
-         throw new Error(GroupMessages.MEMBER_ADDED_FAILED);
+        throw new Error(GroupMessages.MEMBER_ADDED_FAILED);
     }
 
       const group = await prisma.group.findUnique({
