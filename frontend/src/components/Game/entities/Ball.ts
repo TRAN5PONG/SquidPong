@@ -13,7 +13,6 @@ export class Ball {
   private meshGroup: TransformNode | null = null;
   private readonly scene: Scene;
   mesh!: AbstractMesh;
-  private previousBallPos: Vec3 | null = null;
 
   constructor(scene: Scene) {
     this.scene = scene;

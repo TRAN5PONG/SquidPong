@@ -56,9 +56,11 @@ export class GameController {
       this.onOpponentPaddleState(data);
     });
     // Listen for ball hit updates
-    this.net.on("ball:hit", (data: BallHitMessage) => {
-      // Ignore old messages
-      if (data.tick < this.currentTick) return;
+    this.net.on("BallHitMessage", (data: BallHitMessage) => {
+      this.gameState = GameState.IN_PLAY;
+      const syncInfo = this.rollbackManager.analyzeSync(data.tick, this.currentTick);
+
+      this.rollbackManager.applyNetworkState(syncInfo, data.position, data.velocity, data.spin, data.applySpin);
     });
 
     // Listen for mouse click to serve
@@ -259,7 +261,7 @@ export class GameController {
         applySpin: this.physics!.getApplySpin(),
         tick: this.currentTick,
       };
-      this.net.sendMessage("ball_hit", hitMsg);
+      this.net.sendMessage("ball:hit", hitMsg);
     };
     this.physics.onBallFloorCollision = (ball, floor) => {
       // this.resetGame();
@@ -330,8 +332,7 @@ export class GameController {
       applySpin: false,
       tick: this.currentTick,
     };
-    console.log("Sending serve message:", serveMsg);
-    this.net.sendMessage("ball_hit", serveMsg);
+    this.net.sendMessage("ball:hit", serveMsg);
   }
 
   // ==================== Main update methods =================
@@ -342,7 +343,9 @@ export class GameController {
     this.physics.ball.setPosition("PREV");
     this.physics.Step();
     this.physics.ball.setPosition("CURR");
-    // this.rollbackManager?.recordState();
+
+    // if (this.serveState === GameState.IN_PLAY)
+    this.rollbackManager?.recordState(this.currentTick);
     this.incrementTick();
     this.startPaddleSync();
   }

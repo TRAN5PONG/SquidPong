@@ -97,38 +97,19 @@ export class MatchRoom extends Room<MatchState> {
     // Player's paddle update
     this.onMessage("player:paddle", (client, message) => {
       const _client = client as any;
-      const player = this.state.players.get(_client.matchPlayerId);
-      if (!player) return;
 
-      // Send send just the opponent paddle to each player
-      for (const [id, other] of this.state.players) {
-        if (id !== player.id) {
-          const otherPlayer = this.clients.find(c => (c as any).matchPlayerId === id);
-          if (otherPlayer) {
-            otherPlayer.send("opponent:paddle", {
-              position: message.position,
-              velocity: message.velocity,
-              rotation: message.rotation,
-            });
-          }
-        }
-      }
+      // Broadcast to everyone except the sender
+      this.broadcast("opponent:paddle", {
+        position: message.position,
+        velocity: message.velocity,
+        rotation: message.rotation,
+      }, { except: client });
     });
     // ball hit event from host
     this.onMessage("ball:hit", (client, message) => {
-      const _client = client as any;
-      const player = this.state.players.get(_client.matchPlayerId);
-      if (!player) return;
-
-      for (const [id, other] of this.state.players) {
-        if (id !== player.id) {
-          const otherPlayer = this.clients.find(c => (c as any).matchPlayerId === id);
-          if (otherPlayer) {
-            otherPlayer.send("ball:hit", message);
-          }
-        }
-      }
+      this.broadcast("BallHitMessage", message, { except: client });
     });
+
     // Player give up
     this.onMessage("player:give-up", (client) => {
       const _client = client as any;
