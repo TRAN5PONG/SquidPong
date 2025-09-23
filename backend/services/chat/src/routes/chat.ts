@@ -1,10 +1,16 @@
 import { RouteHandlerMethod , FastifySchema  } from 'fastify';
 
 import { createChat , removeChat   , getChatById } from '../controllers/chat.controller';
-// import { createPoll , getGroupPolls , getPollById , addPollOption , votePollOption , removePoll } from '../controllers/poll.controller';
-import { createGroup , removeGroup , getGroupById , addGroupMember , removeGroupMember , listGroupMembers , getGroupMessages , updateMemberRole , updateGroupInfo } from '../controllers/group.controller';
-import { addGroupMemberSchema } from '../schemas/group.schema';
+import {
+  createGroup, updateGroupInfo, removeGroup, getGroupById, getGoupes,
+  removeGroupMember, leaveGroup, listGroupMembers,
+  requestJoinGroup, getJoinRequests, approveJoinRequest, rejectJoinRequest,
+  getGroupMessages, updateMember
+} from '../controllers/group.controller';
 
+import { createPoll } from '../controllers/poll.controller';
+
+import { ReactionsForMessage } from '../controllers/reaction.controller';
 
 type Route = {
     method  : 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH'; 
@@ -12,6 +18,7 @@ type Route = {
     handler : RouteHandlerMethod;
     schema? : FastifySchema;
 };
+
 
 
 // ------------------- Chat Endpoints -------------------
@@ -24,24 +31,35 @@ export const chatRoutes : Route[] = [
 
 
 // ------------------- Group Endpoints -------------------
-export const groupRoutes : Route[] = [
-  { method: 'POST',   url: '/api/group/new',                        handler: createGroup },
-  { method: 'DELETE', url: '/api/group/remove/:groupId',            handler: removeGroup },
-  { method: 'GET',    url: '/api/group/show/:groupId',              handler: getGroupById },
-  
-  { method: 'POST',   url: '/api/group/:groupId/member/add',        handler: addGroupMember , schema : addGroupMemberSchema },
-  { method: 'DELETE', url: '/api/group/:groupId/member/remove/:id', handler: removeGroupMember },
-  { method: 'PATCH',  url: '/api/group/:groupId/member/:memberId/role', handler: updateMemberRole },
-  { method: 'PATCH',  url: '/api/group/:groupId' , handler: updateGroupInfo },
+export const groupRoutes: Route[] = [
 
-  { method: 'GET',    url: '/api/group/:groupId/members',           handler: listGroupMembers },
-  { method: 'GET',    url: '/api/group/:groupId/messages',          handler: getGroupMessages },
+  // Group management
+  { method: 'POST',   url: '/api/group/',                       handler: createGroup },                // create new group
+  { method: 'PATCH',  url: '/api/group/:groupId',              handler: updateGroupInfo },            // update group info
+  { method: 'DELETE', url: '/api/group/:groupId',              handler: removeGroup },                // delete group
+  { method: 'GET',    url: '/api/group/:groupId',              handler: getGroupById },               // get group by id
+  { method: 'GET',    url: '/api/group',                       handler: getGoupes },                  // list/search group
+
+  // Members management
+  { method: 'PATCH',  url: '/api/group/:groupId/members', handler: updateMember }, // update role or status (flexible endpoint)
+  { method: 'DELETE', url: '/api/group/:groupId/members', handler: removeGroupMember }, // remove member
+  { method: 'POST',   url: '/api/group/:groupId/members/leave', handler: leaveGroup },             // leave group voluntarily
+  { method: 'GET',    url: '/api/group/:groupId/members',      handler: listGroupMembers },         // list members
+
+  // Join requests (for private group)
+  { method: 'POST',   url: '/api/group/:groupId/join-requests',           handler: requestJoinGroup },
+  { method: 'GET',    url: '/api/group/:groupId/join-requests',           handler: getJoinRequests },
+  { method: 'PATCH',  url: '/api/group/:groupId/join-requests/approve', handler: approveJoinRequest },
+  { method: 'PATCH',  url: '/api/group/:groupId/join-requests/reject',  handler: rejectJoinRequest },
+
+  // Messages
+  { method: 'GET',    url: '/api/group/:groupId/messages',     handler: getGroupMessages },
+
 ];
-
 
 // ------------------- Poll REST Endpoints -------------------
 export const pollRoutes: Route[] = [
-  // { method: 'POST', url: '/api/group/:groupId/polls', handler: createPoll },
+  { method: 'POST', url: '/api/group/:groupId/polls', handler: createPoll },
 
   // { method: 'GET', url: '/api/group/:groupId/polls', handler: getGroupPolls },
 
@@ -55,3 +73,9 @@ export const pollRoutes: Route[] = [
 ];
 
 
+
+
+export const reactionRoutes: Route[] = [
+
+  {method: 'GET', url: '/api/chat/:messageId/reactions', handler: ReactionsForMessage},
+];

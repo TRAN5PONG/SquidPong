@@ -18,6 +18,18 @@ export enum MessageResponses {
 
 
 export enum PollMessages {
+  POLL_CREATED = 'Poll created successfully.',
+  POLL_CREATION_FAILED = 'Failed to create poll.',
+  POLL_FETCHED = 'Poll fetched successfully.',
+  POLL_FETCH_FAILED = 'Failed to fetch poll.',
+  POLLS_FETCHED = 'Polls fetched successfully.',
+  POLLS_FETCH_FAILED = 'Failed to fetch polls.',
+  POLL_DELETED = 'Poll deleted successfully.',
+  POLL_DELETE_FAILED = 'Failed to delete poll.',
+  OPTION_ADDED = 'Option added to poll successfully.',
+  OPTION_ADD_FAILED = 'Failed to add option to poll.',
+  VOTE_SUBMITTED = 'Vote submitted successfully.',
+  VOTE_SUBMIT_FAILED = 'Failed to submit vote.',
   POLL_CREATED_SUCCESS = 'Poll created successfully.',
   POLL_CREATED_FAILED = 'Failed to create poll.',
   POLL_FETCHED_SUCCESS = 'Poll fetched successfully.',
@@ -36,7 +48,25 @@ export enum PollMessages {
 }
 
 export enum GroupMessages {
+
     // Group CRUD
+    JOIN_REQUEST_REJECTED_SUCCESS = 'Join request rejected successfully.',
+    JOIN_REQUEST_REJECTED_FAILED = 'Failed to reject join request.',
+    JOIN_REQUEST_APPROVED_SUCCESS = 'Join request approved successfully.',
+    JOIN_REQUESTS_FETCHED_SUCCESS = 'Join requests fetched successfully.',
+    JOIN_REQUEST_NOT_FOUND = 'Join request not found.',
+    JOIN_REQUEST_ALREADY_HANDLED = 'Join request has already been handled.',
+    USER_ALREADY_IN_GROUP = 'User is already a member of the group.',
+    USER_ALREADY_REQUESTED = 'User has already requested to join the group.',
+    USER_NOT_REQUESTED = 'User has not requested to join the group.',
+    NOT_HAVE_PERMISSION = 'You do not have permission to perform this action.',
+    MEMBER_NOT_EXISTS = 'Member does not exist.',
+    YOURE_NOT_OWNER = 'You are not the owner of the group.',
+    MEMBER_ALREADY_IN_GROUP = 'Member is already in the group.',
+    CANTJOIN_PRIVATE = 'Cannot join a private group without an invitation or approval.',
+    NOT_MEMBER_CANNOT_JOIN = 'Only group members can join the group.',
+    NOT_MEMBER_CANNOT_LEAVE = 'Only group members can leave the group.',
+    NOT_OWNER_CANNOT_CHANGE_TYPE = 'Only the group owner can change the group type.',
     CREATED_SUCCESS = 'Group created successfully.',
     CREATED_FAILED = 'Failed to create group.',
     FETCH_SUCCESS = 'Group fetched successfully.',
@@ -51,12 +81,13 @@ export enum GroupMessages {
     JOINED_FAILED = 'Failed to join group.',
     LEFT_SUCCESS = 'Left group successfully.',
     LEFT_FAILED = 'Failed to leave group.',
+    CHANGE_OWNER_FIRST = 'Transfer ownership before leaving the group.',
+    CANNOT_LEAVE_OWNER = 'Group owner cannot leave the group without transferring ownership.',
     MEMBERS_LISTED_SUCCESS = 'Group members listed successfully.',
     MEMBERS_LISTED_FAILED = 'Failed to list group members.',
     MEMBER_ADDED_SUCCESS = 'Member added successfully.',
     MEMBER_ADDED_FAILED = 'Failed to add member.',
     MEMBER_ALREADY_EXISTS = 'Member already exists in the group.',
-    NOT_HAVE_PERMISSION = 'You do not have permission to perform this action.',
     SELF_ADD_ERROR = 'Cannot add yourself as a member.',
     MEMBER_REMOVED_SUCCESS = 'Member removed successfully.',
     MEMBER_REMOVED_FAILED = 'Failed to remove member.',
@@ -68,7 +99,20 @@ export enum GroupMessages {
     ROLE_ASSIGNED_FAILED = 'Failed to assign role.',
     ROLE_REMOVED_SUCCESS = 'Role removed successfully.',
     ROLE_REMOVED_FAILED = 'Failed to remove role.',
-    
+    ROLE_ALREADY_ASSIGNED = 'Role already assigned to the member.',
+    CANNOT_CHANGE_OWNER_ROLE = 'Cannot change the role of the group owner.',
+
+    // Group Settings
+    SETTINGS_UPDATED_SUCCESS = 'Group settings updated successfully.',
+    SETTINGS_UPDATED_FAILED = 'Failed to update group settings.',
+
+    // Fetching Messages
+    MESSAGES_FETCHED_SUCCESS = 'Group messages fetched successfully.',
+    MESSAGES_FETCHED_FAILED = 'Failed to fetch group messages.',
+
+    // Fetching Groups
+    USER_GROUPS_FETCHED_SUCCESS = 'User groups fetched successfully.',
+    USER_GROUPS_FETCHED_FAILED = 'Failed to fetch user groups.',
 
     // Polls
     POLL_CREATED_SUCCESS = 'Poll created successfully.',
@@ -114,4 +158,14 @@ export enum chatMessages {
 
     INVALID_REQUEST = 'Invalid request for chat.',
     SERVER_ERROR = 'Internal server error while handling chat.',
+}
+
+export enum Reaction {
+  REACTION_ADDED = 'Reaction added successfully.',
+  REACTION_REMOVED = 'Reaction removed successfully.',
+  REACTION_UPDATED = 'Reaction updated successfully.',
+  REACTIONS_FETCHED = 'Reactions fetched successfully.',
+  REACTION_NOT_FOUND = 'Reaction not found.',
+  INVALID_REQUEST = 'Invalid request for reactions.',
+  SERVER_ERROR = 'Internal server error while handling reactions.',
 }
