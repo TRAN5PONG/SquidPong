@@ -71,7 +71,6 @@ export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
     {
       sendError(res, error);
     }
-    
   return res.send(respond)
 }
 

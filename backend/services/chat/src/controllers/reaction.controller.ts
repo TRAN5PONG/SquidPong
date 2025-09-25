@@ -34,7 +34,7 @@ export async function ReactionsForMessage(req: FastifyRequest, res: FastifyReply
         if (!isMember) throw new Error('You are not a member of this chat');
 
         const reactions = await prisma.reaction.findMany({
-            where: { Number(messageId) },
+            where: { messageId : Number(messageId) },
         });
 
         respond.data = reactions;

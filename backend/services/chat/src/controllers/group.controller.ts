@@ -5,7 +5,7 @@ import { Message } from '../utils/types';
 import { verifyUserId } from '../utils/helper';
 import { GroupMessages } from '../utils/RespondMessage';
 import { checkUserAndFetchGroup } from '../utils/group.check';
-
+import { convertParsedMultipartToJson } from '../utils/helper';
 
 enum GroupRole {
    ADMIN = 'ADMIN',
@@ -44,10 +44,8 @@ const { PENDING , APPROVED , REJECTED , BANNED } = MemberStatus ;
 
 
 
-// ------------------- Group Controller (Reordered) -------------------
 
 
-/** 1️⃣ Group Creation */
 export async function createGroup(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.CREATED_SUCCESS };
@@ -55,9 +53,10 @@ export async function createGroup(req: FastifyRequest, res: FastifyReply)
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
-   const { name  , desc , type  } = req.body as { name: string; desc: string , type: TypeofGoup | undefined  };
-
-   console.log(name , desc , type );
+   const {name , desc , type , image} = await convertParsedMultipartToJson(req) as { name: string; desc: string , type: TypeofGoup | undefined , image?: any  };
+   
+   // const { name  , desc , type  } = req.body as { name: string; desc: string , type: TypeofGoup | undefined  };
+   console.log(name , desc , type , image );
    try
    {
       const newGroup = await prisma.group.create({
@@ -65,6 +64,7 @@ export async function createGroup(req: FastifyRequest, res: FastifyReply)
       name,
       desc,
       type: type ?? PRIVATE_G,
+      imageUrl : image ?? null,
       members: {
          create: [
            {
@@ -146,11 +146,6 @@ export async function updateGroupInfo(req: FastifyRequest, res: FastifyReply)
 
 
 
-
-
-
-
-/** 4️⃣ Update Member (Role / Status) */
 export async function updateMember(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<null> = { success: true, message: GroupMessages.ROLE_UPDATED_SUCCESS };
@@ -284,6 +279,7 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
 
    const { groupId } = req.params as { groupId: string  };
 
+   
    try 
    {
       const group = await checkUserAndFetchGroup(Number(groupId));

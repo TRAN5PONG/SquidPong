@@ -17,6 +17,7 @@
  "dependencies": 
  {
   "fastify": "^5.4.0",
+  "@fastify/multipart": "^9.0.3",
   "sqlite3": "^5.1.7",
   "dotenv": "^16.3.1",
   "ioredis": "^5.3.2",

@@ -10,6 +10,9 @@ RUN npm install
 
 RUN npm i --save-dev @types/amqplib
 
+RUN npm install nodemailer
+
+
 COPY ./src ./src
 
 COPY ./prisma ./prisma

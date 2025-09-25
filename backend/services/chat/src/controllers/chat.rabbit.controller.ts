@@ -35,31 +35,12 @@ export enum MessageType
   // --- Persisted ---
   PRIVATE_MESSAGE   = "private-message",
   GROUP_MESSAGE     = "group-message",
-  FORWARD_MESSAGE   = "forward-message",
-  REPLY_MESSAGE     = "reply-message",
   EDIT_MESSAGE      = "edit-message",
   DELETE_MESSAGE    = "delete-message",
+  REPLY_MESSAGE     = "reply-message",
 
   ADD_REACTION      = "add-reaction",
   REMOVE_REACTION   = "remove-reaction",
-
-  SEND_IMAGE        = "send-image",
-  SEND_VIDEO        = "send-video",
-  SEND_AUDIO        = "send-audio",
-  SEND_FILE         = "send-file",
-  SEND_VOICE_NOTE   = "send-voice-note",
-  SEND_STICKER      = "send-sticker",
-
-
-  
-  CREATE_GROUP      = "create-group",
-  UPDATE_GROUP      = "update-group",
-  DELETE_GROUP      = "delete-group",
-  ADD_MEMBER        = "add-member",
-  REMOVE_MEMBER     = "remove-member",
-  LEAVE_GROUP       = "leave-group",
-  PROMOTE_ADMIN     = "promote-admin",
-  DEMOTE_ADMIN      = "demote-admin",
 
   CREATE_POLL       = "create-poll",
   VOTE_POLL         = "vote-poll",
@@ -67,19 +48,7 @@ export enum MessageType
 
   // --- Ephemeral ---
   USER_TYPING       = "user-typing",
-  USER_ONLINE       = "user-online",
-  USER_OFFLINE      = "user-offline",
-  MESSAGE_DELIVERED = "message-delivered",
-  MESSAGE_SEEN      = "message-seen",
-  GAME_MESSAGE      = "game-message",
-  MATCH_EVENT       = "match-event",
 
-  
-  // --- Semi-ephemeral ---
-  VOICE_CALL_START  = "voice-call-start",
-  VOICE_CALL_END    = "voice-call-end",
-  VIDEO_CALL_START  = "video-call-start",
-  VIDEO_CALL_END    = "video-call-end",
 }
 
 
@@ -94,10 +63,8 @@ export async function CreateMessageRecord(chatId : number , senderId : string  ,
 
 
 
-async function AddORUpdateReactionRecord(messages : [] ,  messageId: number , reaction : string)
+async function AddORUpdateReactionRecord(messages : [] ,  messageId: number , emoji : ReactionType , userId : string)
 {
-
-  console.log(messages)
   const message:any = messages.find((m:any) => m.id === messageId);
   if (!message) throw new Error("Message not found");
 
@@ -105,127 +72,80 @@ async function AddORUpdateReactionRecord(messages : [] ,  messageId: number , re
     where: {
       messageId_userId: {
         messageId,
-        userId : message.senderId,
+        userId
       },
     },
-    update: {
-      emoji: reaction,
-    },
-    create: {
-      messageId: Number(messageId),
-      userId : message.senderId,
-      emoji: reaction,
-    },
+    update: { emoji },
+    create: { messageId, userId, emoji },
   });
 
-  return {reaction};
+  return {emoji};
 }
 
 
-async function RemoveReactionRecord(data: any)
+async function RemoveReactionRecord(messages : [],  messageId: number , userId: string)
 {
-  const { messageId, reactionType , userId } = data;
+  const message:any = messages.find((m:any) => m.id === messageId);
+  if (!message) throw new Error("Message not found");
 
-  const message = await prisma.message.findUnique({ where: { id: Number(messageId) } });
-    if (!message) throw new Error("Message not found");
-
-  const chat = await prisma.chat.findUnique({ where: { id: Number(message.chatId) } , include: { members: true } });
-    if (!chat) throw new Error("Chat not found");
-
-  const isMember = chat.members.some((m:any) => m.userId === userId);
-    if (!isMember) throw new Error("User is not a member of the chat");
-
-  await prisma.reaction.deleteMany({
+  await prisma.reaction.delete({
     where: {
-      messageId : Number(messageId),
-      userId,
-      emoji: reactionType,
+      messageId_userId: {
+        messageId: Number(messageId),
+        userId : userId,
+      },
     },
   });
-
-  const targetId = chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
   
-  console.log("Sending reaction removal to queue:", {reaction : reactionType , targetId});
-  await sendDataToQueue( {reaction : reactionType , targetId} , "broadcastData" );
+  return {removedReactionMessageId : messageId};
 
 }    
 
 
-export async function editMessageRecord(data: any)
+export async function editMessageRecord(messages : [] ,  messageId : number , newContent : string , userId : string)
 {
-  const { messageId, newContent , editorId } = data;
-
-  const message = await prisma.message.findUnique({ where: { id: Number(messageId) } });
+  const message:any = messages.find((m:any) => m.id === messageId);
     if (!message) throw new Error("Message not found");
-
-  if(message.senderId !== editorId) throw new Error("Only the sender can edit the message");
-
+  
+  if(message.senderId !== userId) throw new Error("Only the sender can edit the message");
+  
   await prisma.message.update({
-    where: { id: Number(messageId) },
-    data: { content: newContent },
+    where: { id:messageId },
+    data: { content: newContent , isEdited: true },
   });
 
-  const chat = await prisma.chat.findUnique({ where: { id: Number(message.chatId) } , include: { members: true } });
-    if (!chat) throw new Error("Chat not found");
-
-  const targetId = chat.members.filter((m:any) => m.userId !== editorId).map((m:any) => m.userId);
-  
-  console.log("Sending edited message to queue:", {editedMessage : newContent , targetId});
-  await sendDataToQueue( {editedMessage : newContent , targetId} , "broadcastData" );
-  
+  return {editedMessageId : messageId , newContent};
 }
 
 
-export async function deleteMessageRecord(data: any)
+export async function deleteMessageRecord(messages : [] ,  messageId : number , userId : string)
 {
-  const { messageId, deleterId } = data;
-
-  const message = await prisma.message.findUnique({ where: { id: Number(messageId) } });
+  const message:any = messages.find((m:any) => m.id === messageId);
     if (!message) throw new Error("Message not found");
-
-  if(message.senderId !== deleterId) throw new Error("Only the sender can delete the message");
-
-  await prisma.message.delete({
-    where: { id: Number(messageId) },
-  });
-
-  const chat = await prisma.chat.findUnique({ where: { id: Number(message.chatId) } , include: { members: true } });
-    if (!chat) throw new Error("Chat not found");
-
-  const targetId = chat.members.filter((m:any) => m.userId !== deleterId).map((m:any) => m.userId);
   
-  console.log("Sending deleted message info to queue:", {deletedMessageId : messageId , targetId});
-  await sendDataToQueue( {deletedMessageId : messageId , targetId} , "broadcastData" );
+  if(message.senderId !== userId) throw new Error("Only the sender can delete the message");
   
+  await prisma.message.delete({ where: { id:messageId } });
+
+  return {deletedMessageId : messageId};
 }
 
 
-export async function replyMessageRecord(data: any)
+export async function replyMessageRecord(messages : [] ,  messageId : number , replyContent : string , userId : string)
 {
-  const { chatId, content , senderId , replyToId } = data;
-
-  const chat = await prisma.chat.findUnique({ where: { id: Number(chatId) } , include: { members: true } });
-  if (!chat) throw new Error("Chat not found");
+  const message:any = messages.find((m:any) => m.id === messageId);
+    if (!message) throw new Error("Message not found");
   
-  const isMember = chat.members.some((m:any) => m.userId === senderId);
-  if (!isMember) throw new Error("User is not a member of the chat");
-  const repliedMessage = await prisma.message.findUnique({ where: { id: Number(replyToId) } });
-  if (!repliedMessage) throw new Error("Replied message not found");
-
-  const newMessage = await prisma.message.create({
+  const replyMessage = await prisma.message.create({
     data: {
-      chatId : Number(chatId),
-      content,
-      senderId,
-      replyToId: Number(replyToId),
+      chatId : message.chatId,
+      content: replyContent,
+      senderId: userId,
+      replyToId: messageId,
     },
   });
   
-  const targetId = chat.members.filter((m:any) => m.userId !== senderId).map((m:any) => m.userId);
-  console.log("Sending replied message to queue:", {message : content , replyToId, targetId});
-  await sendDataToQueue( {message : content , replyToId, targetId} , "broadcastData" );
-
-  return newMessage;  
+  return {replyMessage};
 
 }
 
@@ -263,6 +183,13 @@ export async function forwardMessageRecord(data: any)
 
 
 
+export async function isTypingRecord(isTyping: boolean)
+{
+
+  return {isTyping};
+}
+
+
 
 export async function processChatMessageFromRabbitMQ(msg: any)
 {
@@ -273,16 +200,25 @@ export async function processChatMessageFromRabbitMQ(msg: any)
     const data = JSON.parse(msg.content.toString());
     if (data === null) throw new Error("Received null data from RabbitMQ");
     
-    const { type , chatId , senderId , content , reaction , messageId } = data;
+    const { type , chatId , senderId , content , reaction , messageId , isTyping } = data;
     const {targetId , chat} = await checkChatMembershipAndGetOthers(Number(chatId), Number(senderId));
 
     
+
     if( type === MessageType.PRIVATE_MESSAGE || type === MessageType.GROUP_MESSAGE )
       respond = await CreateMessageRecord(Number(chatId), String(senderId), String(content) );
     else if( type === MessageType.ADD_REACTION )
-      respond = await AddORUpdateReactionRecord(chat.messages , Number(messageId), reaction );
-
-
+      respond = await AddORUpdateReactionRecord(chat.messages as any , Number(messageId), reaction as ReactionType , senderId);
+    else if( type === MessageType.REMOVE_REACTION )
+      respond = await RemoveReactionRecord(chat.messages as any , Number(messageId) , senderId);
+    else if( type === MessageType.EDIT_MESSAGE )
+      respond = await editMessageRecord(chat.messages as any , Number(messageId) , content , senderId);
+    else if( type === MessageType.DELETE_MESSAGE )
+      return await deleteMessageRecord(chat.messages as any , Number(messageId) , senderId);
+    else if( type === MessageType.REPLY_MESSAGE )
+      respond = await replyMessageRecord(chat.messages as any , Number(messageId) , content , senderId);
+    else if( type === MessageType.USER_TYPING )
+      respond = await isTypingRecord(Boolean(isTyping));
     await sendDataToQueue( {...respond , targetId } , "broadcastData" );
     channel.ack(msg);
   }
