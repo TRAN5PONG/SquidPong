@@ -1,51 +1,6 @@
 import redis from "../integration/redisClient";
-import nodemailer from 'nodemailer'
-import html from './code'
 
-
-
-
-let transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'abdoqoubai@gmail.com',
-    pass: 'zuhe fyst rlzr tjfc' ,
-  },
-});
-
-
-
-function generateEmailHtml(code: string): string 
-{
-  return html.replace('{{code}}', code);
-}
-
-
-
-async function sendEmail(email: string, code: string) 
-{
-
-  const url = "https://xylar.app.n8n.cloud/webhook/send-message";
-
-const data = {
-      email: email,
-      message: `this is code ${code}`
-    };
-
-const res = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-token": "MY_SECRET_TOKEN"
-            },
-            body: JSON.stringify(data)
-            })
-      
-
-  return ;
-
-}
-
+import { sendEmail } from "./sendEmail";
 
 
 
@@ -61,11 +16,21 @@ async function generate6DigitCode(): Promise<string>
 
 export async function sendEmailMessage(data:any)
 {
+  const {type , email} = data;
   const code: string = await generate6DigitCode();
-  await redis.set(`verify:${data.email}`, code, "EX", "260");
-
-
-  await sendEmail(data.email , code);
+  let time;
+  
+  switch(type)
+  {
+    case 'VERIFY' : time = 300; break;
+    case 'RESET' : time = 600; break;
+    case '2FA'   : time = 300; break;
+    default      : time = 300; break;
+  }
+  
+  const key = `${type}:${email}`;
+  await redis.set(key, code, "EX", time);
+  // await sendEmail(); // send email function
 }
 
 

@@ -43,8 +43,9 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
     const token = cookie.split('=')[1];
     if (!token) throw new Error("Missing access token");
 
-    const tokenExists = await redis.get(token);
-    if (!tokenExists) throw new Error("Token expired or invalid");
+    // mode development
+    // const tokenExists = await redis.get(token);
+    // if (!tokenExists) throw new Error("Token expired or invalid");
 
     const payload: any = await app.jwt.verify(token);
 

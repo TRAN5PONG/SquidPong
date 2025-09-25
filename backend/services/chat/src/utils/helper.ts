@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-
+import fs from 'fs';
+import { pipeline } from 'stream/promises';
 
 export async function verifyFriendship(senderId: string, receiverId: string) 
 {
@@ -45,3 +46,35 @@ export async function verifyUserId(userId : string)
     if(res.status !== 200)
       throw new Error('User not found');
 }
+
+
+
+
+
+
+
+
+
+export async function convertParsedMultipartToJson(req: FastifyRequest): Promise<any> 
+{
+  const rawBody = req.body as any;
+  const data: Record<string, any> = {};
+  let filePath: string | undefined;
+
+  for (const key in rawBody) 
+  {
+    const field = rawBody[key];
+
+    if (field?.type === 'file') 
+    {
+      filePath = `/tmp/group/${Date.now()}-${field.filename}`;
+      await pipeline(field.file, fs.createWriteStream(filePath));
+      data[key] = `http://localhost:4000${filePath}`;
+    } 
+    else if (field?.type === 'field') 
+      data[key] = field.value;
+  }
+
+  return { ...data };
+}
+

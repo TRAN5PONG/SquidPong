@@ -27,6 +27,5 @@ async function start()
 {
   await  initRabbitMQ();
   await receiveFromQueue("emailhub")
-  await receiveFromQueue("friends")
 }
 start();

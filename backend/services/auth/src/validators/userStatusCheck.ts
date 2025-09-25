@@ -5,13 +5,22 @@ import { VerifyPassword } from "../utils/hashedPassword";
 import { UserProfileMessage ,EmailMessage ,PasswordMessage } from "../utils/messages";
 
 
+enum typeOfStatus
+{
+  VERIFY = 'VERIFY',
+  RESET  = 'RESET',
+  TWOFA  = '2FA'
+}
+
+const { VERIFY , RESET , TWOFA } = typeOfStatus;
+
 export async function isUserVerified(body:any)
 {
     const userdb = await prisma.user.findUnique({ where: { email: body.email }})
     if(userdb && userdb.password)
       throw new Error(EmailMessage.EMAIL_ALREADY_VERIFIED);
 
-    const key = `verification:${body.email}`;
+    const key = `${VERIFY}:${body.email}`;
     const code = await redis.get(key);
     if(!code)
       throw new Error(EmailMessage.VERIFICATION_TOKEN_EXPIRED)
@@ -68,7 +77,7 @@ export async function isUserAlreadyRegistered(body:any)
 export async function isResetCodeValid(code:string , confirmPassword:string , newPassword:string , user:any)
 {
   
-  const key = `resetpassword:${user.email}`;
+  const key = `${RESET}:${user.email}`;
   const token = await redis.get(key);
   if(!token)
     throw new Error(PasswordMessage.RESET_TOKEN_EXPIRED)
@@ -78,7 +87,7 @@ export async function isResetCodeValid(code:string , confirmPassword:string , ne
   
   if(confirmPassword != newPassword)
     throw new Error(PasswordMessage.PASSWORDS_DO_NOT_MATCH)
-      
+
   if(await VerifyPassword(newPassword , user.password) == false)
     throw new Error(PasswordMessage.PASSWORD_SAME_AS_OLD)
     

@@ -102,6 +102,8 @@ model Message {
 
   poll       Poll?
 
+  isEdited   Boolean      @default(false)
+
   chat       Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
   timestamp  DateTime     @default(now())
 }
@@ -141,14 +143,16 @@ model PollVote {
 }
 
 
-
 // ------------------- Group -------------------
 model Group {
   id        Int        @id @default(autoincrement())
+
   name      String
   desc      String?
-  chatId    Int  @unique
+  imageUrl  String @default("http://localhost:4000/tmp/default_group.png")
 
+  chatId    Int  @unique
+  
   type   GroupType  @default(PRIVATE)
   members   GroupMember[]
 

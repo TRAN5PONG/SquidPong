@@ -12,7 +12,6 @@ export async function initRabbitMQ()
   channel = await connection.createChannel();
   
   await channel.assertQueue("emailhub");
-  await channel.assertQueue("friends");
 
   console.log("Connected to RabbitMQ");
 }
@@ -43,10 +42,8 @@ export async function receiveFromQueue(queue: string)
       const data = JSON.parse(msg.content.toString());
       channel.ack(msg);
 
-      if(queue == 'friends')
-        await notifyFromFriendsQueue(data);
-      else if(queue == 'emailhub')
-        sendEmailMessage(data);
+    if(queue == 'emailhub')
+      sendEmailMessage(data);
     });
   }
   catch (err: any) 
