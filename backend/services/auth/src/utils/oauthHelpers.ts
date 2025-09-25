@@ -99,12 +99,14 @@ export async function fetchAvatarImagePipeline(imageUrl: string, username: strin
   if (!res.body) throw new Error('No response body');
 
   const ext = res.headers.get('content-type')?.split('/');
-  const filePath = `http://localhost:4000/api/user/avatars/${username}.${ext ? ext[1] : 'jpg'}`;
+  let filePath = `/auth/uploads/avatar/${username}.${ext ? ext[1] : 'jpg'}`;
+  
   
   
   console.log('Saving avatar to', filePath);
   const nodeStream = Readable.fromWeb(res.body as any);
 
   await pipe(nodeStream, fs.createWriteStream(filePath));
-  return filePath;
+  filePath = `http://localhost:4000/api/user/avatars/${username}.${ext ? ext[1] : 'jpg'}`;
+  return (filePath);
 }
