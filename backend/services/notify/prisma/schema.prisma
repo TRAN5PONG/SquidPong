@@ -16,6 +16,7 @@ enum NotificationStatus {
   DELETED
 }
 
+
 enum NotificationType {
   INFO         // general information
   SUCCESS      // success messages
@@ -38,6 +39,7 @@ enum NotificationTitle {
   MATCH_STARTED         // "Match Started"
   MATCH_FINISHED        // "Match Finished"
 }
+
 
 
 model Notification {

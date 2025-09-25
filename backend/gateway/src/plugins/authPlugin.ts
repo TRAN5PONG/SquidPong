@@ -3,9 +3,6 @@ import cookie from '@fastify/cookie';
 import session from '@fastify/session';
 import jwt from '@fastify/jwt';
 import cors from '@fastify/cors' 
-import fastifyStatic from '@fastify/static';
-
-
 
 
 
@@ -38,9 +35,6 @@ const jwt_config:any = {
      app.register(cookie);
      app.register(session, session_option);
      app.register(jwt, jwt_config);
-     app.register(fastifyStatic, {
-      root: '/tmp/images/',
-      prefix: '/tmp/images/',
-    });
+
   }
   

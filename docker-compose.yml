@@ -81,6 +81,7 @@ services:
     ports:
       - "5001:5555"
     volumes:
+      - ./uploads/user/:/auth/uploads/
       - ./backend/services/auth/src:/auth/src
       - ./backend/services/auth/prisma:/auth/prisma
     networks:
@@ -102,7 +103,7 @@ services:
     ports:
       - "5002:5555"
     volumes:
-      - ./uploads/user/:/tmp/
+      - ./uploads/user/:/user/uploads
       - ./backend/services/user/src:/user/src
       - ./backend/services/user/prisma:/user/prisma
     networks:
@@ -145,7 +146,7 @@ services:
     ports:
       - "5004:5555"
     volumes:
-      - ./uploads/chat/:/tmp/
+      - ./uploads/chat/:/chat/uploads
       - ./backend/services/chat/src:/chat/src
       - ./backend/services/chat/prisma:/chat/prisma
     networks: 

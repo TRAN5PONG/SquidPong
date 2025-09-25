@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
-
+import fastifyStatic from '@fastify/static';
 
 
 export default async function registerPlugins(app:FastifyInstance) 
@@ -36,6 +36,15 @@ app.register(fastifySwaggerUi, { routePrefix: '/api/user/docs', });
     fields: 10,
   },
   attachFieldsToBody: true,
+  });
+
+
+
+
+  app.register(fastifyStatic, {
+    root: '/user/uploads/avatar',
+    prefix: "/api/user/avatars/",
+    decorateReply: false,
   });
 
 
