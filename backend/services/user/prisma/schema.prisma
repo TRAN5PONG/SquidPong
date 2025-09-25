@@ -107,8 +107,8 @@ model Profile {
 
   status    UserStatus   @default(ONLINE)
   lastSeen  DateTime     @default(now())
-  avatar    String        @default("testing.png")
-  banner    String        @default("testing.png")
+  avatar    String        @default("http://localhost:4000/avatars/default.png")
+  banner    String        @default("http://localhost:4000/banners/default.png")
   bio       String        @default("Just here to have fun, level up, and make some epic memories!")
   
 
@@ -130,9 +130,6 @@ model Profile {
   playerSelectedPaddle    PlayerPaddle @default(Boss)
 
 }
-
-
-
 
 
 

@@ -14,7 +14,7 @@ import app from '../app';
 import { PasswordMessage ,EmailMessage , AuthError, UserProfileMessage } from '../utils/messages';
 import { fetchIntraToken , fetchGoogleUser , fetchIntraUser , sendResponseToFrontend } from '../utils/oauthHelpers';
 import { sendError } from '../utils/errorHandler';
-
+import {fetchAvatarImagePipeline} from '../utils/oauthHelpers';
 
 
 declare module 'fastify' {
@@ -176,7 +176,8 @@ export async function getGooglCallbackehandler(req: FastifyRequest, res: Fastify
   {
     const googleData = await fetchGoogleUser(req);
     
-    const user = await createAccount(googleData);
+    const avatar = await fetchAvatarImagePipeline(googleData.avatar, googleData.email.split('@')[0]);
+    const user = await createAccount({...googleData , avatar});
     await isTwoFactorEnabled(res, user, respond);
   } 
   catch (error) 
@@ -213,7 +214,9 @@ export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyR
     const access_token = await fetchIntraToken(code);
     const userJSON = await fetchIntraUser(access_token);
 
-    const account = await createAccount(userJSON);
+    const avatar = await fetchAvatarImagePipeline(userJSON.avatar, userJSON.username);
+
+    const account = await createAccount({...userJSON , avatar});
     await isTwoFactorEnabled(res, account, respond);
 
   }
