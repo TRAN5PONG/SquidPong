@@ -50,6 +50,7 @@ export enum PollMessages {
 export enum GroupMessages {
 
     // Group CRUD
+    CANNOT_CHANGE_OWN_ROLE = 'You cannot change your own role in the group.',
     JOIN_REQUEST_REJECTED_SUCCESS = 'Join request rejected successfully.',
     JOIN_REQUEST_REJECTED_FAILED = 'Failed to reject join request.',
     JOIN_REQUEST_APPROVED_SUCCESS = 'Join request approved successfully.',
@@ -141,6 +142,7 @@ export enum GroupMessages {
 
 
 export enum chatMessages {
+  CANNOT_CHAT_SELF = 'Cannot create chat with yourself.',
   MEMBER_ALREADY_EXISTS = 'Member already exists in the chat.',
   SELF_CHAT_ERROR = 'Cannot create chat with yourself.',
     CREATED_SUCCESS = 'Chat created successfully.',

@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../db/database';
 import { ApiResponse  , sendError , verifyFriendship  } from '../utils/helper';
 import { Message } from '../utils/types';
-import { verifyUserId } from '../utils/helper';
+import { fetchAndEnsureUser } from '../utils/helper';
 import { GroupMessages } from '../utils/RespondMessage';
 import { checkUserAndFetchGroup } from '../utils/group.check';
 import { convertParsedMultipartToJson } from '../utils/helper';
@@ -44,8 +44,6 @@ const { PENDING , APPROVED , REJECTED , BANNED } = MemberStatus ;
 
 
 
-
-
 export async function createGroup(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.CREATED_SUCCESS };
@@ -55,44 +53,32 @@ export async function createGroup(req: FastifyRequest, res: FastifyReply)
 
    const {name , desc , type , image} = await convertParsedMultipartToJson(req) as { name: string; desc: string , type: TypeofGoup | undefined , image?: any  };
    
-   // const { name  , desc , type  } = req.body as { name: string; desc: string , type: TypeofGoup | undefined  };
-   console.log(name , desc , type , image );
+   
    try
    {
+
+      const user = await fetchAndEnsureUser(userId);
       const newGroup = await prisma.group.create({
-      data: {
-      name,
-      desc,
-      type: type ?? PRIVATE_G,
-      imageUrl : image ?? null,
-      members: {
-         create: [
-           {
-               userId,
-               role: OWNER,
-               status: APPROVED,
-           },
-         ],
-       },
-       chat: {
-         create: {
-           type: GROUP,
-           members: {
-             create: [
-               { userId},
-             ],
-           },
+         data: {
+            name,
+            desc,
+            ...(type !== undefined && { type }),
+            ...(image !== undefined && { imageUrl : image }),
+            members: { create: [ { user: { connect: { id: user.id } }, role: OWNER, status: APPROVED }]},
+            chat: {
+               create: {
+                  type: GROUP,
+                  members: { create: [ {user: { connect: { id: user.id } } }]},
+               },
+            },
          },
-       },
-      },
-      include: {
-        chat: true,
-      },
+         include: {
+            chat: true,
+            members: true,
+         },
       });
 
-      if (!newGroup)
-         throw new Error(GroupMessages.CREATED_FAILED);
-      respond.data = newGroup;
+   respond.data = newGroup;
    
    }
    catch (error) {
@@ -101,6 +87,7 @@ export async function createGroup(req: FastifyRequest, res: FastifyReply)
       
    return res.send(respond);
 }
+
 
 
 
@@ -157,10 +144,11 @@ export async function updateMember(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId), Number(memberId));
+      if(memberId != Number(userId)) throw new Error(GroupMessages.CANNOT_CHANGE_OWN_ROLE);
+      const group = await checkUserAndFetchGroup(Number(groupId));
    
       const requester = group.members.find((m:any) => m.userId === userId);
-      if (!requester || requester.role === MEMBER) throw new Error(GroupMessages.NOT_HAVE_PERMISSION); 
+      if (!requester || requester.role !== OWNER) throw new Error(GroupMessages.NOT_HAVE_PERMISSION); 
 
       const member = group.members.find((m:any) => m.userId === String(memberId));
       if (!member) throw new Error(GroupMessages.MEMBER_NOT_EXISTS);
@@ -170,13 +158,13 @@ export async function updateMember(req: FastifyRequest, res: FastifyReply)
       if(newRole === OWNER)
       {
          await prisma.groupMember.update({
-               where : { userId },
+               where : { userId_groupId : { userId , groupId : Number(groupId) } },
                data : {  role : ADMIN }
             });
       }
 
       await prisma.groupMember.update({
-         where: { groupId: Number(groupId), userId: String(memberId) },
+         where: { userId_groupId : { userId : String(memberId) , groupId : Number(groupId) } },
             data: { role : newRole ?? member.role }
       });
    
@@ -188,7 +176,6 @@ export async function updateMember(req: FastifyRequest, res: FastifyReply)
    
    return res.send(respond);
 }
-
 
 
 /** 5️⃣ Remove Member */
@@ -203,7 +190,8 @@ export async function removeGroupMember(req: FastifyRequest, res: FastifyReply)
    
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId), Number(memberId));
+      if(memberId === Number(userId)) throw new Error(GroupMessages.MEMBER_REMOVED_FAILED);
+      const group = await checkUserAndFetchGroup(Number(groupId));
 
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role === MEMBER)
@@ -212,14 +200,11 @@ export async function removeGroupMember(req: FastifyRequest, res: FastifyReply)
       const member = group.members.find((m:any) => m.userId === String(memberId));
       if (!member)  throw new Error(GroupMessages.MEMBER_REMOVED_FAILED); 
       
-      if(member.role === ADMIN && requester.role !== OWNER)
-         throw new Error(GroupMessages.MEMBER_REMOVED_FAILED);
+      if(member.role === ADMIN && requester.role !== OWNER) throw new Error(GroupMessages.MEMBER_REMOVED_FAILED);
 
-      await prisma.groupMember.delete({
-         where: { id: member.id },
-      });
-      await prisma.chatMember.deleteMany({
-         where: { chatId: Number(group.chatId), userId: String(memberId) },
+      await prisma.groupMember.delete({ where: { id: member.id }});
+      await prisma.chatMember.delete({
+         where: { chatId_userId: { chatId: Number(group.chatId), userId: String(memberId) } },
       });
       
    }
@@ -230,6 +215,7 @@ export async function removeGroupMember(req: FastifyRequest, res: FastifyReply)
    
    return res.send(respond);  
 }   
+
 
 
 /** 6️⃣ Leave Group */
@@ -243,7 +229,7 @@ export async function leaveGroup (req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId));
+      const group = await checkUserAndFetchGroup(Number(groupId));
 
       const member = group.members.find((m:any) => m.userId === userId);
       if (!member) 
@@ -252,12 +238,9 @@ export async function leaveGroup (req: FastifyRequest, res: FastifyReply)
       if(member.role === OWNER)
          throw new Error(GroupMessages.CANNOT_LEAVE_OWNER);
 
-      await prisma.groupMember.delete({
-         where: { id: member.id },
-      });
-      
-      await prisma.chatMember.deleteMany({
-         where: { chatId: Number(group.chatId), userId: String(userId) },
+      await prisma.groupMember.delete({ where: { id: member.id }});
+      await prisma.chatMember.delete({
+         where: { chatId_userId: { chatId: Number(group.chatId), userId } },
       });
 
    } 
@@ -268,6 +251,7 @@ export async function leaveGroup (req: FastifyRequest, res: FastifyReply)
 
    return res.send(respond);
 }
+
 
 
 /** 7️⃣ Join Requests (Private Groups) */
@@ -282,6 +266,7 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
    
    try 
    {
+      const user = await fetchAndEnsureUser(userId);
       const group = await checkUserAndFetchGroup(Number(groupId));
 
       const alreadyMember = group.members.some((m:any) => m.userId === userId);
@@ -292,7 +277,7 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
          await prisma.groupMember.create({
             data: {
                groupId: Number(groupId),
-               userId: String(userId),
+               userId: user.id, 
                role: MEMBER,
                status: PENDING,
             },
@@ -305,7 +290,7 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
          await prisma.groupMember.create({
             data: {
                groupId: Number(groupId),
-               userId: String(userId),
+               userId: user.id,
                role: MEMBER,
                status: APPROVED,
             },
@@ -314,7 +299,7 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
          await prisma.chatMember.create({
             data: {
                chatId : Number(group.chatId),
-               userId: String(userId),
+               userId: user.id,
             },
          });
       }
@@ -339,7 +324,7 @@ export async function getJoinRequests (req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId));
+      const group = await checkUserAndFetchGroup(Number(groupId));
       
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role === MEMBER) 
@@ -379,19 +364,20 @@ export async function approveJoinRequest (req: FastifyRequest, res: FastifyReply
    
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId));
+      const user = await fetchAndEnsureUser(String(memberId));
+      const group = await checkUserAndFetchGroup(Number(groupId));
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role === MEMBER) 
          throw new Error(GroupMessages.NOT_HAVE_PERMISSION); 
 
       const request = await prisma.groupMember.findUnique({
-         where: { userId: String(memberId) },
+         where: { userId_groupId: { userId: String(memberId), groupId: Number(groupId) }   },
       });
       if (!request || request.status !== PENDING || request.groupId !== Number(groupId)) 
          throw new Error(GroupMessages.JOIN_REQUEST_NOT_FOUND);
       
       await prisma.groupMember.update({
-         where: { userId: String(memberId) },
+         where: { userId_groupId: { userId: String(memberId), groupId: Number(groupId) } },
          data: { status: APPROVED },
       });
 
@@ -423,20 +409,21 @@ export async function rejectJoinRequest (req: FastifyRequest, res: FastifyReply)
    
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId));
+      const group = await checkUserAndFetchGroup(Number(groupId));
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role === MEMBER) 
          throw new Error(GroupMessages.NOT_HAVE_PERMISSION); 
 
       const request = await prisma.groupMember.findUnique({
-         where: { userId: String(memberId) },
+         where: { userId_groupId: { userId: String(memberId), groupId: Number(groupId) }   },
       });
       if (!request || request.status !== PENDING || request.groupId !== Number(groupId)) 
          throw new Error(GroupMessages.JOIN_REQUEST_NOT_FOUND);
       
       await prisma.groupMember.delete({
-         where: { userId: String(memberId)},
+         where: { userId_groupId: { userId: String(memberId), groupId: Number(groupId) }  },
       });
+
 
    } 
    catch (error) 
@@ -486,7 +473,7 @@ export async function listGroupMembers(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId));
+      const group = await checkUserAndFetchGroup(Number(groupId));
       
       const isMember = group.members.some((m:any) => m.userId === userId);
       if (!isMember) 
@@ -548,7 +535,7 @@ export async function getGroupMessages(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId), Number(userId));
+      const group = await checkUserAndFetchGroup(Number(groupId));
       
       const isMember = group.members.some((m:any) => m.userId === userId);
       if (!isMember) 

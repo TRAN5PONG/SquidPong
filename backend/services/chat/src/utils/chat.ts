@@ -2,14 +2,14 @@
 import prisma from "../db/database"
 
 
-export async function findChatBetweenUsers (userId1:number, userId2:number) : Promise<number | null>
+export async function findChatBetweenUsers (userId1:number, userId2:number) : Promise<number>
 {
   const user1Chats = await prisma.chatMember.findMany({
     where: { userId: String(userId1) },
     select: { chatId: true }
   })
   
-  if (user1Chats.length === 0) throw new Error("No chats found for userId1")
+  if (user1Chats.length === 0) return 0;
   
   const chatIds = user1Chats.map((chat:any) => chat.chatId)
   
@@ -21,7 +21,7 @@ export async function findChatBetweenUsers (userId1:number, userId2:number) : Pr
     select: { chatId: true }
   })
   
-  if(!sharedChat) throw new Error("No shared chat found between the two users")
+  if(!sharedChat) return 0;
   
   return sharedChat?.chatId;
 }

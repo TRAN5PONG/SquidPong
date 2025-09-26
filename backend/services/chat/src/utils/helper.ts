@@ -1,14 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import fs from 'fs';
 import { pipeline } from 'stream/promises';
+import prisma from '../db/database';
 
 export async function verifyFriendship(senderId: string, receiverId: string) 
 {
-    const res = await fetch(`http://user:4001/api/friend/verify?senderId=${senderId}&receiverId=${receiverId}`);
-    const dataJson = await res.json();
-
-    return true;  // default to true for now, to be removed later
-    // return dataJson.data.areFriends;
+  const res = await fetch(`http://user:4001/api/friend/verify?senderId=${senderId}&receiverId=${receiverId}`);
+      
+  if(res.status !== 200)
+    throw new Error('Failed to verify friendship status.');
 }
 
 
@@ -38,19 +38,12 @@ export function sendError(res: FastifyReply, error: unknown, statusCode = 400)
 }
 
 
-
-
-export async function verifyUserId(userId : string)
+export async function fetchAndEnsureUser(userId: string) 
 {
-    const res = await fetch(`http://user:4001/api/user/${userId}`);
-    if(res.status !== 200)
-      throw new Error('User not found');
+  let user = await prisma.user.findUnique({ where: { userId }});
+  if(!user) throw new Error('User not found in chat service.');
+  return user;
 }
-
-
-
-
-
 
 
 

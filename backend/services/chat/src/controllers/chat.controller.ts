@@ -3,24 +3,103 @@ import prisma from '../db/database';
 import { ApiResponse  , sendError , verifyFriendship  } from '../utils/helper';
 import { Message } from '../utils/types';
 import { chatMessages  } from '../utils/RespondMessage';
-import { verifyUserId } from '../utils/helper';
 import { findChatBetweenUsers } from '../utils/chat';
+import { fetchAndEnsureUser } from '../utils/helper';
+
+
+
+export async function createUser(req: FastifyRequest, res: FastifyReply)
+{
+   console.log("Creating user in chat service...");
+   const respond: ApiResponse<null> = { success: true, message: 'User ensured in chat service.' };
+   const {userId , username , firstName , lastName , avatar , isVerified} = req.body as { userId: string , username : string , firstName : string , lastName : string , avatar : string , isVerified : boolean };
+ 
+   try
+   {
+      const user = await prisma.user.create({
+         data: {
+            userId : String(userId),
+            username,
+            firstName,
+            lastName,
+            avatar,
+            isVerified
+         },
+      });
+      console.log("User created in chat service:", user);
+   }
+   catch (error) 
+   {
+      console.log("User already exists in chat service.");
+      sendError(res ,error);
+   }
+
+   return res.send(respond);
+}
+
+
+
+export async function updateUser(req: FastifyRequest, res: FastifyReply)
+{
+   const respond: ApiResponse<null> = { success: true, message: 'User updated in chat service.' };
+   const {userId , username , firstName , lastName , avatar , isVerified} = req.body as { userId: string , username : string , firstName : string , lastName : string , avatar : string , isVerified : boolean };
+ 
+   try
+   {
+      const user = await prisma.user.update({
+         where: { userId : String(userId) },
+         data: {
+            ...(username !== undefined && { username }),
+            ...(firstName !== undefined && { firstName }),
+            ...(lastName !== undefined && { lastName }),
+            ...(avatar !== undefined && { avatar }),
+            ...(isVerified !== undefined && { isVerified }),
+         },
+      });
+      
+   }
+   catch (error) 
+   {
+      console.log("Error updating user in chat service.");
+      sendError(res ,error);
+   }
+
+   return res.send(respond);
+}
 
 
 
 export async function createChat(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<{chatId : number}> = { success: true, message: chatMessages.CREATED_SUCCESS };
-   const {userId , friendId} = req.query as { userId: string , friendId : string };
+   const headers = req.headers as { 'x-user-id': string };
+   const userId = headers['x-user-id'];
 
+   const {friendId} = req.body as {friendId : string };
 
    try
    {
+      if (userId === friendId)
+         throw new Error(chatMessages.CANNOT_CHAT_SELF);
+      
+
+      // Check if a chat already exists between the two users
+      const existingChatId = await findChatBetweenUsers(Number(userId), Number(friendId));
+      
+      if(existingChatId)
+      {
+         respond.data = { chatId: existingChatId };
+         return res.send(respond);
+      }
+
+      await verifyFriendship(userId, friendId);
+
+      const user = await fetchAndEnsureUser(userId);
       const newChat = await prisma.chat.create({
          data: {
             members: {
                create: [
-                  { userId: userId },
+                  { userId },
                   { userId: friendId },
                ],
               },
@@ -38,7 +117,6 @@ export async function createChat(req: FastifyRequest, res: FastifyReply)
 
    return res.send(respond);
 }
-
 
 
 

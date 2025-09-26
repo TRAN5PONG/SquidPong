@@ -14,7 +14,7 @@ async function start()
 {
 	try 
 	{
-		app.listen({port: port, host: host}, () => { console.log(`chat service running at http://chat:${port}`) })
+		app.listen({port ,  host}, () => { console.log(`chat service running at http://chat:${port}`) })
 	} 
 	catch (error) 
 	{
