@@ -4,7 +4,7 @@ CREATE TABLE "User" (
     "username" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT,
-    "twoFAMethod" TEXT NOT NULL DEFAULT 'none',
+    "twoFAMethod" TEXT NOT NULL DEFAULT 'NONE',
     "twoFASecret" TEXT,
     "twoFAQRCode" TEXT,
     "twoFAKey" TEXT,
