@@ -1,6 +1,6 @@
 import { RouteHandlerMethod , FastifySchema  } from 'fastify';
 
-import {updateUser ,  createUser ,   createChat , removeChat   , getChatById } from '../controllers/chat.controller';
+import {getLastActiveUsers , updateUser ,  createUser ,   createChat , removeChat   , getChatById } from '../controllers/chat.controller';
 import {
   createGroup, updateGroupInfo, removeGroup, getGroupById, getGoupes,
   removeGroupMember, leaveGroup, listGroupMembers,
@@ -23,6 +23,7 @@ type Route = {
 
 // ------------------- Chat Endpoints -------------------
 export const chatRoutes : Route[] = [
+  {method: 'GET',    url: '/api/chat/active/users',          handler : getLastActiveUsers},
   { method: 'POST',   url: '/api/chat/new/user',                handler: createUser },          
   { method: 'POST',   url: '/api/chat/new/user/update',                handler: updateUser },          
 
