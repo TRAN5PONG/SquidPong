@@ -39,17 +39,27 @@ services:
     restart: always
     networks:
       - web
-
-  # swagger-ui:
-  #   image: swaggerapi/swagger-ui:latest
-  #   container_name: swagger
-  #   restart: always
-  #   ports:
-  #     - "9090:8080"
-  #   environment:
-  #     - URLS=[{"url":"http://localhost:4000/api/auth/docs/json","name":"Auth Service"},{"url":"http://localhost:4000/api/user/docs/json","name":"User Service"}]
-  #   networks:
-  #     - web
+  
+  swagger-docs:
+    image: swaggerapi/swagger-ui:latest
+    container_name: api-docs
+    restart: always
+    ports:
+      - "3030:8080"
+    environment:
+      - URLS=[{"url":"http://localhost:4000/api/auth/docs/json","name":"🔐 Auth Service"}]
+      - DEEP_LINKING=true
+      - DISPLAY_OPERATION_ID=true
+      - DEFAULT_MODELS_EXPAND_DEPTH=1
+      - DEFAULT_MODEL_EXPAND_DEPTH=1
+      - DISPLAY_REQUEST_DURATION=true
+      - DOC_EXPANSION=list
+      - FILTER=true
+      - SHOW_EXTENSIONS=true
+      - SHOW_COMMON_EXTENSIONS=true
+      - TRY_IT_OUT_ENABLED=true
+    networks:
+      - web
 
   gateway:
     build: ./backend/gateway

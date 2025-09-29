@@ -24,7 +24,7 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
     {
       filePath = `/tmp/images/${Date.now()}-${field.filename}`;
       await pipeline(field.file, fs.createWriteStream(filePath));
-      data[key] = `${process.env.URL}${filePath}`;
+                  data[key] = `${process.env.BACKEND_URL}${filePath}`;
     } 
     else if (field?.type === 'field') 
       data[key] = field.value;
@@ -138,4 +138,12 @@ export async function getProfile(userId: number)
     where: { userId },
   });
   if (!profile) throw new Error(`Profile not found for userId ${userId}`);
+}
+
+
+export function checkSecretToken(req: FastifyRequest)
+{
+  const secretToken = req.headers['x-secret-token'] as string;
+  if (secretToken !== process.env.SECRET_TOKEN)
+    throw new Error('Unauthorized: Invalid secret token');
 }

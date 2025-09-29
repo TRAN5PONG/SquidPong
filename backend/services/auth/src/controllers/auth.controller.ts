@@ -27,11 +27,6 @@ declare module 'fastify' {
 
 
 
-export async function getRootHandler(req:FastifyRequest , res:FastifyReply)
-{
-  return res.send({msg : "hello ft_trandandan"})
-}
-
 
 export async function postSignupHandler(req:FastifyRequest , res:FastifyReply)
 {
@@ -149,7 +144,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
 
     fetch(`http://user:4001/api/user/me`, {
       method: "DELETE",
-      headers : {"x-user-id": `${id}`}
+      headers : {"x-user-id": `${id}` , 'X-Secret-Token': process.env.SECRET_TOKEN || '' }
     })
 
     respond.success = true;
@@ -192,11 +187,10 @@ export async function getGooglCallbackehandler(req: FastifyRequest, res: Fastify
 
 export async function getIntrahandler(req:FastifyRequest , res:FastifyReply) 
 {
+  const client_id = process.env.INTRA_CLIENT_ID;
+  const URL = `https://api.intra.42.fr/oauth/authorize?client_id=${client_id}&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fapi%2Fauth%2Fintra%2Fcallback&response_type=code`
 
-  const client_id = process.env.IDINTRA;
-  const url =  `https://api.intra.42.fr/oauth/authorize?client_id=${client_id}&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fapi%2Fauth%2Fintra%2Fcallback&response_type=code`;
-
- return  res.redirect(url)
+ return  res.redirect(URL)
 }
 
 
@@ -204,7 +198,7 @@ export async function getIntrahandler(req:FastifyRequest , res:FastifyReply)
 
 export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyReply)
 {
-  const respond: ApiResponse<{ is2FAEnabled: boolean }> = { success: true, message: 'login success', };
+  const respond: ApiResponse<{ is2FAEnabled: boolean }> = { success: true, message: 'created account'};
 
   respond.data = { is2FAEnabled: false };
   const { code } = req.query as any;

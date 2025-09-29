@@ -36,15 +36,16 @@ async function updatestatus(userId: number )
 
 
   await sendSingleMultipartVoid(
-    'http://user:4001/api/user/me',
+    'http://user:4001/api/user/live',
     "status",
     "ONLINE",
     userId.toString()
     );
 
-  await fetch(`http://user:4001/update-xylar99`, {
+  await fetch(`http://user:4001/api/user/sync`, {
     method: "POST",
     headers: {
+      'X-Secret-Token': process.env.SECRET_TOKEN || '',
       "Content-Type": "application/json",
       "x-user-id": userId.toString(),
     },
@@ -53,10 +54,9 @@ async function updatestatus(userId: number )
     
 }
 
-
-
-
 // end helper function
+
+
 
 
 
@@ -133,13 +133,11 @@ async function onClientDisconnect(ws: any)
     console.log(`Client disconnected: ${userId}`);
     
 
-
-
-    await sendSingleMultipartVoid('http://user:4001/api/user/me', "status", "OFFLINE", userId);
-
-    await fetch(`http://user:4001/update-xylar99`, {
+    await sendSingleMultipartVoid('http://user:4001/api/user/live', "status", "OFFLINE", userId);
+    await fetch(`http://user:4001/api/user/sync`, {
     method: "POST",
     headers: {
+      'X-Secret-Token': process.env.SECRET_TOKEN || '',
       "Content-Type": "application/json",
       "x-user-id": userId.toString(),
     },

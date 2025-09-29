@@ -1,5 +1,4 @@
 import { fastify, FastifyInstance } from 'fastify';
-import { authenticateUser } from './validators/middleware';
 import { authRoutes , twofaRoutes } from './routes/auth';
 import registerPlugins from './plugins/plugins';
 
@@ -13,7 +12,3 @@ registerPlugins(app);
 
 app.register(async () => {authRoutes.forEach(route => app.route(route))});
 app.register(async () => { twofaRoutes.forEach(route => app.route(route)); });
-
-
-
-

@@ -3,8 +3,8 @@ import app from './app'
 import { initRabbitMQ , receiveFromQueue } from './integration/rabbitmqClient';
 dotenv.config();
 
-const port = Number(process.env.PORT);
-const host = process.env.HOST;
+const port = Number(process.env.USER_SERVICE_PORT);
+const host = process.env.USER_SERVICE_HOST;
 
 
 async function fastifyserver()

@@ -6,12 +6,11 @@ export async function sendToService( url: string, method: string , id:any = null
   let type = 'application/json';
   const options:any = {
     method: method,
-    headers: {},
+    headers: { 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
   };
 
   if (body != null && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()))
   {
-
     options.headers['Content-Type'] = type;
     options.body = JSON.stringify(body);
   }

@@ -1,12 +1,12 @@
 import app from './app'
 import dotenv from 'dotenv'
-import {initRabbitMQ } from './integration/rabbitmqClient'
+import { initRabbitMQ } from './integration/rabbitmqClient'
 
 
 dotenv.config()
 
-const port = Number(process.env.PORT)
-const host = process.env.HOST
+const port = Number(process.env.AUTH_SERVICE_PORT)
+const host = process.env.AUTH_SERVICE_HOST
 
 
 
@@ -14,7 +14,7 @@ async function start()
 {
 	try 
 	{
-		app.listen({port: port, host: host}, () => { console.log(`Auth service running at http://auth:${port}`) })
+		app.listen({port, host}, () => { console.log(`Auth service running at http://auth:${port}`) })
 	} 
 	catch (error) 
 	{
@@ -24,7 +24,6 @@ async function start()
 
 	await initRabbitMQ()
 }
-
 
 
 start()

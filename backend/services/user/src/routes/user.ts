@@ -14,10 +14,11 @@ type Route = {
     schema? : FastifySchema;
 };
 
+
 const userRoutes: Route[] = [
   { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler },
-  { method: 'POST', url: '/update-xylar99', handler: userController.updateProfileHandler99 },
-  { method: 'PUT', url: '/api/user/me', handler: userController.updateProfileHandler },
+  { method: 'PUT', url: '/api/user/sync', handler: userController.updateProfileHandlerDB },
+  { method: 'PUT', url: '/api/user/live', handler: userController.updateProfileHandler },
   { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler },
   { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler },
   { method: 'GET', url: '/api/user/:id', handler: userController.getUserByIdHandler },
@@ -25,6 +26,7 @@ const userRoutes: Route[] = [
 
   { method: 'GET', url: '/api/user/search', handler: userController.searchUsersHandler },
 ];
+
 
 const friendRoutes: Route[] = [
   { method: 'GET', url: '/api/friend/pending', handler: friendController.getPendingRequestsHandler },
