@@ -2,11 +2,12 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import fs from 'fs';
 import { pipeline } from 'stream/promises';
 import prisma from '../db/database';
+import { redis } from '../integration/redisClient';
 
 export async function verifyFriendship(senderId: string, receiverId: string) 
 {
   const res = await fetch(`http://user:4001/api/friend/verify?senderId=${senderId}&receiverId=${receiverId}`);
-      
+
   if(res.status !== 200)
     throw new Error('Failed to verify friendship status.');
 }
@@ -40,7 +41,13 @@ export function sendError(res: FastifyReply, error: unknown, statusCode = 400)
 
 export async function fetchAndEnsureUser(userId: string) 
 {
-  let user = await prisma.user.findUnique({ where: { userId }});
+  let user;
+  const key = `profile:${userId}`;
+
+  if(await redis.exists(key))
+    return await redis.get(key);
+
+  user = await prisma.user.findUnique({ where: { userId }});
   if(!user) throw new Error('User not found in chat service.');
   return user;
 }
@@ -71,3 +78,12 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
   return { ...data };
 }
 
+
+
+
+export function checkSecretToken(req: FastifyRequest)
+{
+  const secretToken = req.headers['x-secret-token'] as string;
+  if (secretToken !== process.env.SECRET_TOKEN)
+    throw new Error('Unauthorized: Invalid secret token');
+}

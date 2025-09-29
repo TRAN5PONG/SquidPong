@@ -1,7 +1,18 @@
-:4000 {
+http://localhost:4000 {
   reverse_proxy gateway:4000
 }
 
-:80 {
+http://localhost:80 {
+  reverse_proxy frontend:5173
+}
+
+
+
+
+http://10.14.9.1:4000 {
+  reverse_proxy gateway:4000
+}
+
+http://10.14.9.1:80 {
   reverse_proxy frontend:5173
 }

@@ -3,6 +3,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -10,12 +11,10 @@ datasource db {
 
 
 
-
-
 enum TwoFAMethod {
-  NONE
-  AUTHENTICATOR
-  EMAIL
+  none
+  authenticator
+  email
 }
 
 
@@ -27,7 +26,7 @@ model User {
   password    String?
 
 
-  twoFAMethod TwoFAMethod     @default(NONE)
+  twoFAMethod TwoFAMethod     @default(none)
 
   // app
   twoFASecret String?

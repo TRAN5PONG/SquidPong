@@ -6,13 +6,7 @@ import registerPlugins from './plugins/plugins';
 const app: FastifyInstance = fastify();
 export default app;
 
-
 registerPlugins(app);
-
-
-
 
 app.addHook('onRequest', authenticateUser);
 app.addHook('onError', errorHandler);
-
-

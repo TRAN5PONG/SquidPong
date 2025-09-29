@@ -5,6 +5,7 @@ import { ApiResponse, sendError } from '../utils/errorHandler';
 import { Profile } from '../utils/types';
 import { redis } from '../utils/redis';
 import { ProfileMessages, PreferenceMessages, NotificationMessages, GeneralMessages } from '../utils/responseMessages';
+import { checkSecretToken } from '../utils/utils';
 
 
 
@@ -12,19 +13,21 @@ import { ProfileMessages, PreferenceMessages, NotificationMessages, GeneralMessa
 export async function createProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const response: ApiResponse<null> = {  success: true,  message: ProfileMessages.CREATE_SUCCESS  };
-
   const body = req.body as any;
 
+  const avatar = `${process.env.BACKEND_URL}/api/user/avatars/${(body.avatar != undefined) ? body.avatar : 'default.png'}`;
+  
   const newProfileData: any = {
     userId: body.id,
     username: body.username,
     firstName: body.fname,
     lastName: body.lname,
-    avatar: body.avatar,
+    avatar
   };
 
   try 
   {
+    checkSecretToken(req);
     const profile = await prisma.profile.create({
       data: {
         ...newProfileData,
@@ -38,10 +41,9 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
     // Ensure user exists in chat service
     await fetch('http://chat:4003/api/chat/new/user', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newProfileData, isVerified: false })
+      headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
+      body: JSON.stringify({ ...newProfileData, isVerified: false  , avatar : profile.avatar }),
     });
-
 
 
   } 
@@ -53,24 +55,32 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
 }
 
 
-export async function updateProfileHandler99(req: FastifyRequest, res: FastifyReply) 
+export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
   
   const {status} = req.body as {status : string};
-  console.log("------------------------------status : ", status);
-  console.log("updateProfileHandler99 called for userId:", userId);
 
   try 
   {
 
+  checkSecretToken(req);
   if(status == "ONLINE")
     await prisma.profile.update({ where: { userId }, data: { status : "ONLINE" } });
   else
-    await syncRedisProfileToDbAppendArrays(userId);
+  {
+    const profile = await syncRedisProfileToDbAppendArrays(userId);
 
+    // Ensure user is updated in chat service
+    const chatUser = await fetch('http://chat:4003/api/chat/user/update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
+      body: JSON.stringify({ userId : String(userId) , username : profile.username , firstName : profile.firstName , lastName : profile.lastName , avatar : profile.avatar , isVerified : false }),
+    });
+    
+  }
   }
   catch (error) {
     return sendError(res, error);
@@ -113,13 +123,11 @@ export async function getAllUserHandler(req: FastifyRequest, res: FastifyReply)
   {
     const onlineUserIds: string[] = await redis.getOnlineUsers();
 
-    // Fetch offline users from the database
     const offlineProfiles = await prisma.profile.findMany({
       where: { status: "OFFLINE" },
       include: { preferences: { include: { notifications: true } } },
     });
 
-    // Fetch online users from Redis cache
     const onlineProfiles: Profile[] = [];
     for (const userId of onlineUserIds) 
     {
@@ -161,6 +169,13 @@ export async function deleteProfileHandler(req: FastifyRequest, res: FastifyRepl
     await prisma.profile.delete({ where: { userId } });
 
     await redis.del(cacheKey);
+
+    // Ensure user is deleted in chat service
+    await fetch('http://chat:4003/api/chat/user/delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
+      body: JSON.stringify({ userId : String(userId) }),
+    });
 
   }
   catch (error) {

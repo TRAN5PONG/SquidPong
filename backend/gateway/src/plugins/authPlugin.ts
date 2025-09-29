@@ -18,19 +18,20 @@ const session_option = {
 
   
 const jwt_config:any = {
-    secret: process.env.JWTSECRET
+  secret: process.env.GATEWAY_JWT_SECRET
   }
 
 
+  const cors_options : any = {
+    origin: [process.env.FRONTEND_URL , process.env.SWAGGER_URL],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ["Content-Type", "x-user-id"]
+  }
 
 
   export default async function registerPlugins(app: FastifyInstance) {
-    app.register(cors, {
-        origin: ['http://localhost:8080', 'http://localhost:5173' , 'http://localhost:9090'],
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ["Content-Type", "x-user-id"]
-      });
+    app.register(cors, cors_options);
 
      app.register(cookie);
      app.register(session, session_option);

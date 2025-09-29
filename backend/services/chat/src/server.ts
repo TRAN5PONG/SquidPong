@@ -5,8 +5,8 @@ import {initRabbitMQ , receiveFromQueue } from './integration/rabbitmqClient'
 
 dotenv.config()
 
-const port = Number(process.env.PORT)
-const host = process.env.HOST
+const port = Number(process.env.CHAT_SERVICE_PORT)
+const host = process.env.CHAT_SERVICE_HOST
 
 
 

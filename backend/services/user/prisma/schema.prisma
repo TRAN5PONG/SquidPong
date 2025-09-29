@@ -107,7 +107,7 @@ model Profile {
 
   status    UserStatus   @default(ONLINE)
   lastSeen  DateTime     @default(now())
-  avatar    String        @default("http://localhost:4000/api/user/avatars/default.png")
+  avatar    String        @default("/api/user/avatars/default.png")
   banner    String        @default("http://localhost:4000/api/user/banners/default.png")
   bio       String        @default("Just here to have fun, level up, and make some epic memories!")
 
