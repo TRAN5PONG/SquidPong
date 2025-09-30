@@ -11,7 +11,7 @@ import {
 import { createPoll } from '../controllers/poll.controller';
 import { ReactionsForMessage } from '../controllers/reaction.controller';
 
-
+import { createUserSchema , updateUserSchema , deleteUserSchema , createChatSchema ,  removeChatSchema , getChatByIdSchema } from '../schemas/chat.schema';
 
 type Route = {
     method  : 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH'; 
@@ -24,14 +24,14 @@ type Route = {
 
 // ------------------- Chat Endpoints -------------------
 export const chatRoutes : Route[] = [
-  { method: 'POST',   url: '/api/chat/user/create',            handler: createUser },          
-  { method: 'PUT',   url: '/api/chat/user/update',     handler: updateUser },          
-  { method: 'DELETE',   url: '/api/chat/user/delete',     handler: deleteUser },          
+  { method: 'POST',   url: '/api/chat/user/create',            handler: createUser, schema: createUserSchema },          
+  { method: 'PUT',   url: '/api/chat/user/update',     handler: updateUser, schema: updateUserSchema },          
+  { method: 'DELETE',   url: '/api/chat/user/delete',     handler: deleteUser, schema: deleteUserSchema },          
 
 
-  { method: 'POST',   url: '/api/chat/new',                handler: createChat },          
-  { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat },          
-  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById },    
+  { method: 'POST',   url: '/api/chat/new',                handler: createChat , schema: createChatSchema },          
+  { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat , schema: removeChatSchema },          
+  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById , schema: getChatByIdSchema },    
 ];
 
 
