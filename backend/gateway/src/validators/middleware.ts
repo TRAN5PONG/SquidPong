@@ -13,6 +13,7 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
   const publicURIs: string[] = [
     '/', '/favicon.ico',
     '/api/user/docs/json',
+    '/api/chat/docs',
     '/api/auth/docs/json',
     '/api/auth/signup', 
     '/api/auth/login', 

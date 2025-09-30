@@ -3,6 +3,11 @@ http://localhost:4000 {
 }
 
 http://localhost:80 {
+  handle /squid-docs/* {
+    root * /usr/share/caddy
+    file_server
+  }
+  
   reverse_proxy frontend:5173
 }
 
@@ -14,5 +19,11 @@ http://10.14.9.1:4000 {
 }
 
 http://10.14.9.1:80 {
+  handle /squid-docs/* {
+    root * /usr/share/caddy
+    file_server
+  }
+  
   reverse_proxy frontend:5173
 }
+

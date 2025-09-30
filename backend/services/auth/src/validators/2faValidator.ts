@@ -41,7 +41,7 @@ export async function setJwtTokens(res: FastifyReply, user: any | null)
 export async function isTwoFactorEnabled(res: FastifyReply, user: any | null , respond: ApiResponse ) : Promise<any>
 {
 
-  if(user.twoFAMethod == "NONE")
+  if(user.twoFAMethod == "none")
   {
     respond.data.is2FAEnabled = false;
     await setJwtTokens(res , user);
@@ -49,7 +49,7 @@ export async function isTwoFactorEnabled(res: FastifyReply, user: any | null , r
   }
   
   respond.data.is2FAEnabled = true;
-  const message = (user.twoFAMethod == "EMAIL") ? "A verification code has been sent to your email." : "Please enter the code from your authenticator app.";
+  const message = (user.twoFAMethod == "email") ? "A verification code has been sent to your email." : "Please enter the code from your authenticator app.";
   respond.message = message;
 }
 

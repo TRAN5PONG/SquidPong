@@ -39,7 +39,7 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
     await redis.set(redisKey, profile);
     
     // Ensure user exists in chat service
-    await fetch('http://chat:4003/api/chat/new/user', {
+    await fetch('http://chat:4003/api/chat/user/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
       body: JSON.stringify({ ...newProfileData, isVerified: false  , avatar : profile.avatar }),

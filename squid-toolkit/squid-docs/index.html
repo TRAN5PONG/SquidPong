@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SquidPong API Documentation</title>
+    <link rel="stylesheet" href="./style.css">
+    <link href='https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap' rel='stylesheet'>
+    <link href='https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap' rel='stylesheet'>
+    <link href='https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap' rel='stylesheet'>
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css' rel='stylesheet'>
+</head>
+<body>
+    <div class="squid-game-bg">
+        <div class="floating-shapes">
+            <div class="shape triangle"></div>
+            <div class="shape circle"></div>
+            <div class="shape square"></div>
+            <div class="shape triangle"></div>
+            <div class="shape circle"></div>
+            <div class="shape square"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="squid-logo">
+                        <div class="tentacle-group">
+                            <div class="tentacle t1"></div>
+                            <div class="tentacle t2"></div>
+                            <div class="tentacle t3"></div>
+                            <div class="tentacle t4"></div>
+                        </div>
+                        <div class="squid-body"></div>
+                        <div class="squid-eyes">
+                            <div class="eye left"></div>
+                            <div class="eye right"></div>
+                        </div>
+                    </div>
+                    <div class="title-group">
+                        <h1 class="api-title">SquidPong API</h1>
+                        <p class="api-description">Advanced Microservices Documentation Hub</p>
+                        <div class="game-symbols">
+                            <span class="symbol triangle">△</span>
+                            <span class="symbol circle">○</span>
+                            <span class="symbol square">□</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-badges">
+                    <div class="version-badge">
+                        <i class="fas fa-code-branch"></i>
+                        <span>v2.0.0</span>
+                    </div>
+                    <div class="status-badge online">
+                        <i class="fas fa-circle"></i>
+                        <span>Online</span>
+                    </div>
+                    <div class="theme-toggle" id="theme-toggle">
+                        <i class="fas fa-moon"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Game Stats -->
+        <div class="game-stats">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-server"></i></div>
+                <div class="stat-info">
+                    <span class="stat-number" id="services-count">6</span>
+                    <span class="stat-label">Services</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-route"></i></div>
+                <div class="stat-info">
+                    <span class="stat-number" id="endpoints-count">0</span>
+                    <span class="stat-label">Endpoints</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-tags"></i></div>
+                <div class="stat-info">
+                    <span class="stat-number" id="tags-count">0</span>
+                    <span class="stat-label">Tags</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <span class="stat-number" id="response-time">--</span>
+                    <span class="stat-label">Response Time</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Selection -->
+        <nav class="service-nav">
+            <div class="service-grid">
+                <div class="service-card active" data-service="chat">
+                    <div class="service-icon"><i class="fas fa-comments"></i></div>
+                    <div class="service-info">
+                        <h3>Chat Service</h3>
+                        <p>Real-time messaging</p>
+                    </div>
+                    <div class="service-status online"></div>
+                </div>
+                <div class="service-card" data-service="auth">
+                    <div class="service-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="service-info">
+                        <h3>Auth Service</h3>
+                        <p>Authentication & Authorization</p>
+                    </div>
+                    <div class="service-status offline"></div>
+                </div>
+                <div class="service-card" data-service="game">
+                    <div class="service-icon"><i class="fas fa-gamepad"></i></div>
+                    <div class="service-info">
+                        <h3>Game Service</h3>
+                        <p>Game mechanics & logic</p>
+                    </div>
+                    <div class="service-status offline"></div>
+                </div>
+                <div class="service-card" data-service="user">
+                    <div class="service-icon"><i class="fas fa-users"></i></div>
+                    <div class="service-info">
+                        <h3>User Service</h3>
+                        <p>User management</p>
+                    </div>
+                    <div class="service-status offline"></div>
+                </div>
+                <div class="service-card" data-service="tournament">
+                    <div class="service-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="service-info">
+                        <h3>Tournament Service</h3>
+                        <p>Tournament management</p>
+                    </div>
+                    <div class="service-status offline"></div>
+                </div>
+                <div class="service-card" data-service="notify">
+                    <div class="service-icon"><i class="fas fa-bell"></i></div>
+                    <div class="service-info">
+                        <h3>Notify Service</h3>
+                        <p>Notifications & alerts</p>
+                    </div>
+                    <div class="service-status offline"></div>
+                </div>
+            </div>
+            <div class="service-actions">
+                <button class="action-btn refresh-btn" id="refresh-btn">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Refresh</span>
+                </button>
+                <button class="action-btn test-btn" id="test-btn">
+                    <i class="fas fa-vial"></i>
+                    <span>Test API</span>
+                </button>
+                <button class="action-btn export-btn" id="export-btn">
+                    <i class="fas fa-download"></i>
+                    <span>Export</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Search and Filters -->
+        <div class="search-section">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Search endpoints, methods, descriptions...">
+                <button class="clear-search" id="clear-search">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-method="all">All</button>
+                <button class="filter-btn" data-method="get">GET</button>
+                <button class="filter-btn" data-method="post">POST</button>
+                <button class="filter-btn" data-method="put">PUT</button>
+                <button class="filter-btn" data-method="delete">DELETE</button>
+                <button class="filter-btn" data-method="patch">PATCH</button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs" id="nav-tabs">
+            <!-- Tags will be loaded dynamically -->
+        </nav>
+
+        <!-- Content -->
+        <main class="main-content">
+            <div class="endpoints-container" id="endpoints-container">
+                <!-- Endpoints will be loaded here -->
+            </div>
+        </main>
+
+        <!-- Loading State -->
+        <div class="loader-container" id="loader">
+            <div class="squid-game-loader">
+                <div class="loader-doll">
+                    <div class="doll-head"></div>
+                    <div class="doll-body"></div>
+                    <div class="doll-arms">
+                        <div class="arm left"></div>
+                        <div class="arm right"></div>
+                    </div>
+                    <div class="doll-legs">
+                        <div class="leg left"></div>
+                        <div class="leg right"></div>
+                    </div>
+                </div>
+                <div class="loading-text">
+                    <p>Red Light, Green Light...</p>
+                    <p class="loading-subtitle">Loading API Documentation</p>
+                </div>
+                <div class="loading-progress">
+                    <div class="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div class="error-container" id="error-container" style="display: none;">
+            <div class="error-content">
+                <div class="error-illustration">
+                    <div class="broken-doll">
+                        <div class="doll-pieces">
+                            <div class="piece"></div>
+                            <div class="piece"></div>
+                            <div class="piece"></div>
+                        </div>
+                    </div>
+                </div>
+                <h2>Game Over!</h2>
+                <p id="error-message">Unable to load API documentation</p>
+                <div class="error-actions">
+                    <button class="retry-btn" onclick="location.reload()">
+                        <i class="fas fa-redo"></i>
+                        Try Again
+                    </button>
+                    <button class="help-btn">
+                        <i class="fas fa-question-circle"></i>
+                        Get Help
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Testing Modal -->
+        <div class="modal" id="test-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>API Testing Console</h3>
+                    <button class="close-modal" id="close-test-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="test-form">
+                        <div class="form-group">
+                            <label>Method</label>
+                            <select id="test-method">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                                <option value="PATCH">PATCH</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>URL</label>
+                            <input type="text" id="test-url" placeholder="Enter API endpoint">
+                        </div>
+                        <div class="form-group">
+                            <label>Headers</label>
+                            <textarea id="test-headers" placeholder='{"Authorization": "Bearer token"}'></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Body</label>
+                            <textarea id="test-body" placeholder='{"key": "value"}'></textarea>
+                        </div>
+                        <button class="test-send-btn" id="test-send">
+                            <i class="fas fa-paper-plane"></i>
+                            Send Request
+                        </button>
+                    </div>
+                    <div class="test-response">
+                        <h4>Response</h4>
+                        <div class="response-status" id="response-status"></div>
+                        <pre class="response-body" id="response-body"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html>
