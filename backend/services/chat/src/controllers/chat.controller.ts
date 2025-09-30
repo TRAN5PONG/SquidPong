@@ -6,7 +6,7 @@ import { chatMessages  } from '../utils/RespondMessage';
 import { findChatBetweenUsers } from '../utils/chat';
 import { fetchAndEnsureUser } from '../utils/helper';
 import { checkSecretToken } from '../utils/helper';
-
+import app from '../app';
 
 export async function createUser(req: FastifyRequest, res: FastifyReply)
 {
@@ -26,7 +26,6 @@ export async function createUser(req: FastifyRequest, res: FastifyReply)
             isVerified
          },
       });
-      console.log("User created in chat service:", user);
    }
    catch (error) 
    {
@@ -143,6 +142,9 @@ export async function createChat(req: FastifyRequest, res: FastifyReply)
 export async function removeChat(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<null> = { success: true, message: chatMessages.DELETE_SUCCESS };
+   
+   console.log("Request to delete chat received");
+   console.log(app.swagger());
    const {userId , friendId} = req.query as { userId: string , friendId : string };
 
     try 
