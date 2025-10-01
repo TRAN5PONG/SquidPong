@@ -193,3 +193,125 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply)
       return res.send(respond);
 
 }
+
+
+export async function getRecentChats(req: FastifyRequest, res: FastifyReply) 
+{
+   const respond: ApiResponse<any> = { success: true, message: 'Recent chats fetched successfully.' };
+   
+   const headers = req.headers as { 'x-user-id': string };
+   const userId = headers['x-user-id'];
+   
+   const { limit = '10' } = req.query as { limit?: string };
+
+   try 
+   {
+
+      const recentChats = await prisma.chat.findMany({
+         where: {
+            members: { some: { userId } },
+            messages: { some: {} }
+         },
+         include: {
+            members: {
+               include: {
+                  user: {
+                     select: {
+                        userId: true,
+                        username: true,
+                        firstName: true,
+                        lastName: true,
+                        avatar: true,
+                        isVerified: true
+                     }
+                  }
+               }
+            },
+            group: {
+               select: {
+                  id: true,
+                  name: true,
+                  desc: true,
+                  imageUrl: true,
+                  type: true
+               }
+            },
+            messages: {
+               orderBy: {
+                  timestamp: 'desc'
+               },
+               take: 1,
+               include: {
+                  sender: {
+                     select: {
+                        userId: true,
+                        username: true,
+                        firstName: true,
+                        lastName: true,
+                        avatar: true
+                     }
+                  }
+               }
+            }
+         }
+      });
+
+
+      const formattedChats = recentChats
+         .filter((chat: any) => chat.messages.length > 0)
+         .map((chat: any) => {
+            const lastMessage = chat.messages[0];
+            
+            if (chat.type === 'PRIVATE') 
+               {
+               const otherUser = chat.members.find((member: any) => member.userId !== userId)?.user;
+               
+               return {
+                  chatId: chat.id,
+                  type: 'PRIVATE',
+                  user: otherUser,
+                  lastMessage: {
+                     id: lastMessage.id,
+                     content: lastMessage.content,
+                     type: lastMessage.type,
+                     sender: lastMessage.sender,
+                     timestamp: lastMessage.timestamp,
+                     isEdited: lastMessage.isEdited
+                  },
+                  createdAt: chat.createdAt
+               };
+            } 
+            else {
+               return {
+                  chatId: chat.id,
+                  type: 'GROUP',
+                  group: chat.group,
+                  lastMessage: {
+                     id: lastMessage.id,
+                     content: lastMessage.content,
+                     type: lastMessage.type,
+                     sender: lastMessage.sender,
+                     timestamp: lastMessage.timestamp,
+                     isEdited: lastMessage.isEdited
+                  },
+                  createdAt: chat.createdAt
+               };
+            }
+         })
+         .sort((a: any, b: any) => {
+            const aTime = new Date(a.lastMessage.timestamp).getTime();
+            const bTime = new Date(b.lastMessage.timestamp).getTime();
+            return bTime - aTime; // Sort by most recent first
+         })
+         .slice(0, Number(limit));
+
+      respond.data = { recentChats: formattedChats, total: formattedChats.length};
+
+   } 
+   catch (error) 
+   {
+      sendError(res, error);
+   }
+
+   return res.send(respond);
+}

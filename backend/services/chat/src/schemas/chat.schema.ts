@@ -1,4 +1,3 @@
-
 import { FastifySchema } from 'fastify';
 
 // =============== USER SCHEMAS ===============
@@ -97,6 +96,7 @@ export const updateUserSchema: FastifySchema = {
   }
 };
 
+
 export const deleteUserSchema: FastifySchema = {
   tags: ['Chat - User Management'],
   summary: 'Delete user from chat service',
@@ -134,6 +134,7 @@ export const deleteUserSchema: FastifySchema = {
     }
   }
 };
+
 
 // =============== CHAT SCHEMAS ===============
 
@@ -313,6 +314,113 @@ export const getChatByIdSchema: FastifySchema = {
       }
     },
     404: {
+      type: "object",
+      properties: {
+        success: { type: "boolean" },
+        error: { type: "string" },
+        message: { type: "string" }
+      }
+    }
+  }
+};
+
+export const getRecentChatsSchema: FastifySchema = {
+  tags: ['Chat - Recent Conversations'],
+  summary: 'Get recent chats',
+  description: 'Get the most recent chats (both private and group) for the current user',
+  headers: {
+    type: "object",
+    properties: {
+      'x-user-id': { type: "string", description: "Current user ID" }
+    },
+    required: ["x-user-id"]
+  },
+  querystring: {
+    type: "object",
+    properties: {
+      limit: { 
+        type: "string", 
+        pattern: "^[0-9]+$", 
+        description: "Maximum number of recent chats to return (default: 10)" 
+      }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        success: { type: "boolean" },
+        message: { type: "string" },
+        data: {
+          type: "object",
+          properties: {
+            recentChats: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  chatId: { type: "number" },
+                  type: { type: "string", enum: ["PRIVATE", "GROUP"] },
+                  user: {
+                    type: "object",
+                    properties: {
+                      userId: { type: "string" },
+                      username: { type: "string" },
+                      firstName: { type: "string" },
+                      lastName: { type: "string" },
+                      avatar: { type: "string" },
+                      isVerified: { type: "boolean" }
+                    }
+                  },
+                  group: {
+                    type: "object",
+                    properties: {
+                      id: { type: "number" },
+                      name: { type: "string" },
+                      desc: { type: "string" },
+                      imageUrl: { type: "string" },
+                      type: { type: "string", enum: ["PUBLIC", "PRIVATE"] }
+                    }
+                  },
+                  lastMessage: {
+                    type: "object",
+                    properties: {
+                      id: { type: "number" },
+                      content: { type: "string" },
+                      type: { type: "string", enum: ["TEXT", "URL", "POLL", "IMAGE"] },
+                      sender: {
+                        type: "object",
+                        properties: {
+                          userId: { type: "string" },
+                          username: { type: "string" },
+                          firstName: { type: "string" },
+                          lastName: { type: "string" },
+                          avatar: { type: "string" }
+                        }
+                      },
+                      timestamp: { type: "string", format: "date-time" },
+                      isEdited: { type: "boolean" }
+                    }
+                  },
+                  createdAt: { type: "string", format: "date-time" }
+                }
+              }
+            },
+            total: { type: "number" }
+          }
+        }
+      }
+    },
+    400: {
+      type: "object",
+      properties: {
+        success: { type: "boolean" },
+        error: { type: "string" },
+        message: { type: "string" }
+      }
+    },
+    401: {
       type: "object",
       properties: {
         success: { type: "boolean" },
