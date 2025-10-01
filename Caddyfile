@@ -3,7 +3,7 @@ http://localhost:4000 {
 }
 
 http://localhost:80 {
-  handle /squid-docs/* {
+  handle /squid-docs* {
     root * /usr/share/caddy
     file_server
   }
@@ -19,7 +19,7 @@ http://10.14.9.1:4000 {
 }
 
 http://10.14.9.1:80 {
-  handle /squid-docs/* {
+  handle /squid-docs* {
     root * /usr/share/caddy
     file_server
   }

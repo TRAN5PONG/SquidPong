@@ -3,300 +3,529 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SquidPong API Documentation</title>
-    <link rel="stylesheet" href="./style.css">
-    <link href='https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap' rel='stylesheet'>
-    <link href='https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap' rel='stylesheet'>
-    <link href='https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap' rel='stylesheet'>
-    <link href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css' rel='stylesheet'>
+    <title>SquidPong API Arena - Developer Dashboard</title>
+    <link rel="stylesheet" href="gaming-style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="squid-game-bg">
-        <div class="floating-shapes">
-            <div class="shape triangle"></div>
-            <div class="shape circle"></div>
-            <div class="shape square"></div>
-            <div class="shape triangle"></div>
-            <div class="shape circle"></div>
-            <div class="shape square"></div>
-        </div>
+    <!-- Gaming Background -->
+    <div class="game-arena">
+        <div class="neural-grid"></div>
+        <div class="floating-particles"></div>
     </div>
 
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <div class="squid-logo">
-                        <div class="tentacle-group">
-                            <div class="tentacle t1"></div>
-                            <div class="tentacle t2"></div>
-                            <div class="tentacle t3"></div>
-                            <div class="tentacle t4"></div>
-                        </div>
-                        <div class="squid-body"></div>
-                        <div class="squid-eyes">
-                            <div class="eye left"></div>
-                            <div class="eye right"></div>
-                        </div>
-                    </div>
-                    <div class="title-group">
-                        <h1 class="api-title">SquidPong API</h1>
-                        <p class="api-description">Advanced Microservices Documentation Hub</p>
-                        <div class="game-symbols">
-                            <span class="symbol triangle">△</span>
-                            <span class="symbol circle">○</span>
-                            <span class="symbol square">□</span>
-                        </div>
-                    </div>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <div class="player-card">
+                <div class="avatar-ring">
+                    <img src="../frontend/public/assets/avatar.jpg" alt="Developer" class="avatar">
                 </div>
-                <div class="header-badges">
-                    <div class="version-badge">
-                        <i class="fas fa-code-branch"></i>
-                        <span>v2.0.0</span>
-                    </div>
-                    <div class="status-badge online">
-                        <i class="fas fa-circle"></i>
-                        <span>Online</span>
-                    </div>
-                    <div class="theme-toggle" id="theme-toggle">
-                        <i class="fas fa-moon"></i>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Game Stats -->
-        <div class="game-stats">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-server"></i></div>
-                <div class="stat-info">
-                    <span class="stat-number" id="services-count">6</span>
-                    <span class="stat-label">Services</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-route"></i></div>
-                <div class="stat-info">
-                    <span class="stat-number" id="endpoints-count">0</span>
-                    <span class="stat-label">Endpoints</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-tags"></i></div>
-                <div class="stat-info">
-                    <span class="stat-number" id="tags-count">0</span>
-                    <span class="stat-label">Tags</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                <div class="stat-info">
-                    <span class="stat-number" id="response-time">--</span>
-                    <span class="stat-label">Response Time</span>
+                <div class="player-info">
+                    <span class="player-name">API Developer</span>
+                    <span class="rank-badge">
+                        <i class="fas fa-code"></i> EXPERT
+                    </span>
                 </div>
             </div>
         </div>
-
-        <!-- Service Selection -->
-        <nav class="service-nav">
-            <div class="service-grid">
-                <div class="service-card active" data-service="chat">
-                    <div class="service-icon"><i class="fas fa-comments"></i></div>
-                    <div class="service-info">
-                        <h3>Chat Service</h3>
-                        <p>Real-time messaging</p>
-                    </div>
-                    <div class="service-status online"></div>
-                </div>
-                <div class="service-card" data-service="auth">
-                    <div class="service-icon"><i class="fas fa-shield-alt"></i></div>
-                    <div class="service-info">
-                        <h3>Auth Service</h3>
-                        <p>Authentication & Authorization</p>
-                    </div>
-                    <div class="service-status offline"></div>
-                </div>
-                <div class="service-card" data-service="game">
-                    <div class="service-icon"><i class="fas fa-gamepad"></i></div>
-                    <div class="service-info">
-                        <h3>Game Service</h3>
-                        <p>Game mechanics & logic</p>
-                    </div>
-                    <div class="service-status offline"></div>
-                </div>
-                <div class="service-card" data-service="user">
-                    <div class="service-icon"><i class="fas fa-users"></i></div>
-                    <div class="service-info">
-                        <h3>User Service</h3>
-                        <p>User management</p>
-                    </div>
-                    <div class="service-status offline"></div>
-                </div>
-                <div class="service-card" data-service="tournament">
-                    <div class="service-icon"><i class="fas fa-trophy"></i></div>
-                    <div class="service-info">
-                        <h3>Tournament Service</h3>
-                        <p>Tournament management</p>
-                    </div>
-                    <div class="service-status offline"></div>
-                </div>
-                <div class="service-card" data-service="notify">
-                    <div class="service-icon"><i class="fas fa-bell"></i></div>
-                    <div class="service-info">
-                        <h3>Notify Service</h3>
-                        <p>Notifications & alerts</p>
-                    </div>
-                    <div class="service-status offline"></div>
+        
+        <div class="nav-center">
+            <div class="search-arena">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" placeholder="Search endpoints, services..." class="search-input" id="global-search">
+                <div class="search-glow"></div>
+            </div>
+        </div>
+        
+        <div class="nav-right">
+            <div class="nav-actions">
+                <button class="nav-btn" id="notifications-btn">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-count">3</span>
+                </button>
+                <button class="nav-btn" id="settings-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <div class="wallet-balance">
+                    <i class="fas fa-coins"></i>
+                    <span>1,337</span>
                 </div>
             </div>
-            <div class="service-actions">
-                <button class="action-btn refresh-btn" id="refresh-btn">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Refresh</span>
+        </div>
+    </nav>
+
+    <!-- Main Game Interface -->
+    <main class="game-dashboard">
+        <!-- Left Panel - Character/Service Selection -->
+        <aside class="character-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-users"></i>
+                    API SERVICES
+                </h2>
+                <div class="status-indicator online">
+                    <span class="status-dot"></span>
+                    <span>6 ONLINE</span>
+                </div>
+            </div>
+
+            <div class="characters-grid">
+                <!-- Auth Service Character -->
+                <div class="character-card active" data-service="auth">
+                    <div class="character-model">
+                        <div class="character-avatar auth-character">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="character-glow"></div>
+                    </div>
+                    <div class="character-info">
+                        <h3 class="character-name">AUTH</h3>
+                        <p class="character-role">Guardian</p>
+                        <div class="character-stats">
+                            <div class="stat">
+                                <span class="stat-label">Endpoints</span>
+                                <span class="stat-value">12</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Status</span>
+                                <span class="stat-value online">READY</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="selection-indicator"></div>
+                </div>
+
+                <!-- User Service Character -->
+                <div class="character-card" data-service="user">
+                    <div class="character-model">
+                        <div class="character-avatar user-character">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="character-glow"></div>
+                    </div>
+                    <div class="character-info">
+                        <h3 class="character-name">USER</h3>
+                        <p class="character-role">Player</p>
+                        <div class="character-stats">
+                            <div class="stat">
+                                <span class="stat-label">Endpoints</span>
+                                <span class="stat-value">15</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Status</span>
+                                <span class="stat-value online">READY</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="selection-indicator"></div>
+                </div>
+
+                <!-- Game Service Character -->
+                <div class="character-card" data-service="game">
+                    <div class="character-model">
+                        <div class="character-avatar game-character">
+                            <i class="fas fa-gamepad"></i>
+                        </div>
+                        <div class="character-glow"></div>
+                    </div>
+                    <div class="character-info">
+                        <h3 class="character-name">GAME</h3>
+                        <p class="character-role">Arena Master</p>
+                        <div class="character-stats">
+                            <div class="stat">
+                                <span class="stat-label">Endpoints</span>
+                                <span class="stat-value">18</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Status</span>
+                                <span class="stat-value online">READY</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="selection-indicator"></div>
+                </div>
+
+                <!-- Chat Service Character -->
+                <div class="character-card" data-service="chat">
+                    <div class="character-model">
+                        <div class="character-avatar chat-character">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div class="character-glow"></div>
+                    </div>
+                    <div class="character-info">
+                        <h3 class="character-name">CHAT</h3>
+                        <p class="character-role">Communicator</p>
+                        <div class="character-stats">
+                            <div class="stat">
+                                <span class="stat-label">Endpoints</span>
+                                <span class="stat-value">10</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Status</span>
+                                <span class="stat-value online">READY</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="selection-indicator"></div>
+                </div>
+
+                <!-- Tournament Service Character -->
+                <div class="character-card" data-service="tournament">
+                    <div class="character-model">
+                        <div class="character-avatar tournament-character">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="character-glow"></div>
+                    </div>
+                    <div class="character-info">
+                        <h3 class="character-name">TOURNAMENT</h3>
+                        <p class="character-role">Champion</p>
+                        <div class="character-stats">
+                            <div class="stat">
+                                <span class="stat-label">Endpoints</span>
+                                <span class="stat-value">14</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Status</span>
+                                <span class="stat-value online">READY</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="selection-indicator"></div>
+                </div>
+
+                <!-- Notification Service Character -->
+                <div class="character-card" data-service="notify">
+                    <div class="character-model">
+                        <div class="character-avatar notify-character">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="character-glow"></div>
+                    </div>
+                    <div class="character-info">
+                        <h3 class="character-name">NOTIFY</h3>
+                        <p class="character-role">Messenger</p>
+                        <div class="character-stats">
+                            <div class="stat">
+                                <span class="stat-label">Endpoints</span>
+                                <span class="stat-value">8</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Status</span>
+                                <span class="stat-value online">READY</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="selection-indicator"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Panel - Main Game Area -->
+        <section class="game-arena-main">
+            <!-- Game Mode Selection -->
+            <div class="game-mode-panel">
+                <div class="mode-header">
+                    <h2 class="mode-title">
+                        <i class="fas fa-code"></i>
+                        API TESTING ARENA
+                    </h2>
+                    <div class="mode-subtitle">Select an endpoint to see the battle settings</div>
+                </div>
+
+                <div class="current-selection">
+                    <div class="selection-card">
+                        <div class="selection-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="selection-info">
+                            <h3 id="current-service">AUTH SERVICE</h3>
+                            <p id="current-description">Authentication & Authorization endpoints</p>
+                            <div class="selection-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Ready Players</span>
+                                    <span class="stat-value" id="ready-count">12</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Response Time</span>
+                                    <span class="stat-value" id="response-time">~45ms</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ready-status">
+                            <div class="ready-indicator active">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <span class="ready-text">READY</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Method Filter Buttons -->
+                <div class="method-arena">
+                    <div class="method-header">
+                        <span class="method-label">BATTLE MODE</span>
+                    </div>
+                    <div class="method-buttons">
+                        <button class="method-btn active" data-method="all">
+                            <span class="method-icon">⚔️</span>
+                            <span class="method-text">ALL</span>
+                        </button>
+                        <button class="method-btn" data-method="get">
+                            <span class="method-icon">🛡️</span>
+                            <span class="method-text">GET</span>
+                        </button>
+                        <button class="method-btn" data-method="post">
+                            <span class="method-icon">⚡</span>
+                            <span class="method-text">POST</span>
+                        </button>
+                        <button class="method-btn" data-method="put">
+                            <span class="method-icon">🔥</span>
+                            <span class="method-text">PUT</span>
+                        </button>
+                        <button class="method-btn" data-method="delete">
+                            <span class="method-icon">💥</span>
+                            <span class="method-text">DELETE</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Endpoints Battle List -->
+            <div class="endpoints-battleground">
+                <div class="battleground-header">
+                    <h3 class="battleground-title">
+                        <i class="fas fa-crosshairs"></i>
+                        AVAILABLE BATTLES
+                    </h3>
+                    <div class="battle-count">
+                        <span id="battle-count">12</span> Ready
+                    </div>
+                </div>
+
+                <div class="endpoints-list" id="endpoints-container">
+                    <!-- Endpoints will be dynamically loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel - Battle Statistics & Quick Actions -->
+        <aside class="stats-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-chart-line"></i>
+                    ARENA STATS
+                </h2>
+            </div>
+
+            <!-- Live Statistics -->
+            <div class="live-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number" id="total-requests">1,337</span>
+                        <span class="stat-label">Total Requests</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number" id="avg-response">42ms</span>
+                        <span class="stat-label">Avg Response</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number" id="success-rate">99.8%</span>
+                        <span class="stat-label">Success Rate</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="action-header">
+                    <h3>QUICK ACTIONS</h3>
+                </div>
+                
+                <button class="action-btn primary" id="test-all-btn">
+                    <i class="fas fa-play"></i>
+                    <span>TEST ALL ENDPOINTS</span>
+                    <div class="btn-glow"></div>
                 </button>
-                <button class="action-btn test-btn" id="test-btn">
-                    <i class="fas fa-vial"></i>
-                    <span>Test API</span>
-                </button>
-                <button class="action-btn export-btn" id="export-btn">
+
+                <button class="action-btn secondary" id="export-docs-btn">
                     <i class="fas fa-download"></i>
-                    <span>Export</span>
+                    <span>EXPORT DOCS</span>
+                    <div class="btn-glow"></div>
+                </button>
+
+                <button class="action-btn secondary" id="load-postman-btn">
+                    <i class="fas fa-sync"></i>
+                    <span>RELOAD COLLECTION</span>
+                    <div class="btn-glow"></div>
                 </button>
             </div>
-        </nav>
 
-        <!-- Search and Filters -->
-        <div class="search-section">
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Search endpoints, methods, descriptions...">
-                <button class="clear-search" id="clear-search">
+            <!-- Mini Game Modes -->
+            <div class="mini-games">
+                <div class="mini-header">
+                    <h3>GAME MODES</h3>
+                </div>
+                
+                <div class="game-mode-card" data-mode="1v1">
+                    <div class="mode-icon">
+                        <img src="../frontend/public/assets/1vs1.png" alt="1v1" class="mode-image">
+                    </div>
+                    <div class="mode-info">
+                        <span class="mode-name">1v1 API BATTLE</span>
+                        <span class="mode-desc">Test single endpoint</span>
+                    </div>
+                </div>
+
+                <div class="game-mode-card" data-mode="tournament">
+                    <div class="mode-icon">
+                        <img src="../frontend/public/assets/podium1.png" alt="Tournament" class="mode-image">
+                    </div>
+                    <div class="mode-info">
+                        <span class="mode-name">TOURNAMENT</span>
+                        <span class="mode-desc">Test all endpoints</span>
+                    </div>
+                </div>
+
+                <div class="game-mode-card" data-mode="ai">
+                    <div class="mode-icon">
+                        <img src="../frontend/public/assets/1vsAI.png" alt="AI Battle" class="mode-image">
+                    </div>
+                    <div class="mode-info">
+                        <span class="mode-name">AI STRESS TEST</span>
+                        <span class="mode-desc">Automated testing</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Battle Modal (Testing Interface) -->
+    <div class="battle-modal" id="battle-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-arena">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-sword"></i>
+                    API BATTLE ARENA
+                </h2>
+                <button class="modal-close" id="close-battle-modal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="filter-buttons">
-                <button class="filter-btn active" data-method="all">All</button>
-                <button class="filter-btn" data-method="get">GET</button>
-                <button class="filter-btn" data-method="post">POST</button>
-                <button class="filter-btn" data-method="put">PUT</button>
-                <button class="filter-btn" data-method="delete">DELETE</button>
-                <button class="filter-btn" data-method="patch">PATCH</button>
-            </div>
-        </div>
 
-        <!-- Navigation Tabs -->
-        <nav class="nav-tabs" id="nav-tabs">
-            <!-- Tags will be loaded dynamically -->
-        </nav>
-
-        <!-- Content -->
-        <main class="main-content">
-            <div class="endpoints-container" id="endpoints-container">
-                <!-- Endpoints will be loaded here -->
-            </div>
-        </main>
-
-        <!-- Loading State -->
-        <div class="loader-container" id="loader">
-            <div class="squid-game-loader">
-                <div class="loader-doll">
-                    <div class="doll-head"></div>
-                    <div class="doll-body"></div>
-                    <div class="doll-arms">
-                        <div class="arm left"></div>
-                        <div class="arm right"></div>
-                    </div>
-                    <div class="doll-legs">
-                        <div class="leg left"></div>
-                        <div class="leg right"></div>
-                    </div>
-                </div>
-                <div class="loading-text">
-                    <p>Red Light, Green Light...</p>
-                    <p class="loading-subtitle">Loading API Documentation</p>
-                </div>
-                <div class="loading-progress">
-                    <div class="progress-bar"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Error State -->
-        <div class="error-container" id="error-container" style="display: none;">
-            <div class="error-content">
-                <div class="error-illustration">
-                    <div class="broken-doll">
-                        <div class="doll-pieces">
-                            <div class="piece"></div>
-                            <div class="piece"></div>
-                            <div class="piece"></div>
-                        </div>
-                    </div>
-                </div>
-                <h2>Game Over!</h2>
-                <p id="error-message">Unable to load API documentation</p>
-                <div class="error-actions">
-                    <button class="retry-btn" onclick="location.reload()">
-                        <i class="fas fa-redo"></i>
-                        Try Again
-                    </button>
-                    <button class="help-btn">
-                        <i class="fas fa-question-circle"></i>
-                        Get Help
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- API Testing Modal -->
-        <div class="modal" id="test-modal">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h3>API Testing Console</h3>
-                    <button class="close-modal" id="close-test-modal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="test-form">
-                        <div class="form-group">
-                            <label>Method</label>
-                            <select id="test-method">
+                <div class="battle-setup">
+                    <!-- Request Configuration -->
+                    <div class="config-panel">
+                        <h3 class="config-title">BATTLE CONFIGURATION</h3>
+                        
+                        <div class="config-group">
+                            <label>METHOD</label>
+                            <select class="config-select" id="battle-method">
                                 <option value="GET">GET</option>
                                 <option value="POST">POST</option>
                                 <option value="PUT">PUT</option>
                                 <option value="DELETE">DELETE</option>
-                                <option value="PATCH">PATCH</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>URL</label>
-                            <input type="text" id="test-url" placeholder="Enter API endpoint">
+
+                        <div class="config-group">
+                            <label>TARGET URL</label>
+                            <input type="text" class="config-input" id="battle-url" placeholder="http://localhost:4000/api/...">
                         </div>
-                        <div class="form-group">
-                            <label>Headers</label>
-                            <textarea id="test-headers" placeholder='{"Authorization": "Bearer token"}'></textarea>
+
+                        <div class="config-group">
+                            <label>HEADERS</label>
+                            <textarea class="config-textarea" id="battle-headers" placeholder='{"Authorization": "Bearer token"}'></textarea>
                         </div>
-                        <div class="form-group">
-                            <label>Body</label>
-                            <textarea id="test-body" placeholder='{"key": "value"}'></textarea>
+
+                        <div class="config-group">
+                            <label>PAYLOAD</label>
+                            <textarea class="config-textarea" id="battle-body" placeholder='{"key": "value"}'></textarea>
                         </div>
-                        <button class="test-send-btn" id="test-send">
-                            <i class="fas fa-paper-plane"></i>
-                            Send Request
+
+                        <button class="battle-start-btn" id="start-battle-btn">
+                            <i class="fas fa-rocket"></i>
+                            <span>START BATTLE</span>
+                            <div class="btn-pulse"></div>
                         </button>
                     </div>
-                    <div class="test-response">
-                        <h4>Response</h4>
-                        <div class="response-status" id="response-status"></div>
-                        <pre class="response-body" id="response-body"></pre>
+
+                    <!-- Response Display -->
+                    <div class="response-panel">
+                        <h3 class="response-title">BATTLE RESULTS</h3>
+                        
+                        <div class="response-status" id="battle-status">
+                            <div class="status-indicator waiting">
+                                <span class="status-text">Waiting for battle...</span>
+                            </div>
+                        </div>
+
+                        <div class="response-data">
+                            <div class="response-tabs">
+                                <button class="response-tab active" data-tab="response">Response</button>
+                                <button class="response-tab" data-tab="headers">Headers</button>
+                                <button class="response-tab" data-tab="timing">Timing</button>
+                            </div>
+                            
+                            <div class="response-content">
+                                <pre class="response-code" id="battle-response"><code>// Battle results will appear here...</code></pre>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="./script.js"></script>
+    <!-- Bottom Action Bar -->
+    <footer class="action-bar">
+        <div class="action-left">
+            <button class="footer-btn" id="settings-panel-btn">
+                <i class="fas fa-cog"></i>
+                <span>SETTINGS</span>
+            </button>
+            <button class="footer-btn" id="help-btn">
+                <i class="fas fa-question-circle"></i>
+                <span>HELP</span>
+            </button>
+        </div>
+        
+        <div class="action-center">
+            <div class="connection-status">
+                <div class="connection-indicator online"></div>
+                <span class="connection-text">API Arena Online</span>
+            </div>
+        </div>
+        
+        <div class="action-right">
+            <button class="start-btn" id="main-start-btn">
+                <span class="btn-text">START</span>
+                <i class="fas fa-play"></i>
+                <div class="btn-glow-effect"></div>
+            </button>
+        </div>
+    </footer>
+
+    <script src="gaming-script.js"></script>
 </body>
 </html>

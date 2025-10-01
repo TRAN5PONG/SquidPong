@@ -1,6 +1,6 @@
 import { RouteHandlerMethod , FastifySchema  } from 'fastify';
 
-import {deleteUser , updateUser ,  createUser ,   createChat , removeChat   , getChatById } from '../controllers/chat.controller';
+import {deleteUser , updateUser ,  createUser ,   createChat , removeChat   , getChatById, getRecentChats } from '../controllers/chat.controller';
 import {
   createGroup, updateGroupInfo, removeGroup, getGroupById, getGoupes,
   removeGroupMember, leaveGroup, listGroupMembers,
@@ -11,7 +11,7 @@ import {
 import { createPoll } from '../controllers/poll.controller';
 import { ReactionsForMessage } from '../controllers/reaction.controller';
 
-import { createUserSchema , updateUserSchema , deleteUserSchema , createChatSchema ,  removeChatSchema , getChatByIdSchema } from '../schemas/chat.schema';
+import { createUserSchema , updateUserSchema , deleteUserSchema , createChatSchema ,  removeChatSchema , getChatByIdSchema, getRecentChatsSchema } from '../schemas/chat.schema';
 
 type Route = {
     method  : 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH'; 
@@ -28,6 +28,7 @@ export const chatRoutes : Route[] = [
   { method: 'PUT',   url: '/api/chat/user/update',     handler: updateUser, schema: updateUserSchema },          
   { method: 'DELETE',   url: '/api/chat/user/delete',     handler: deleteUser, schema: deleteUserSchema },          
 
+  { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats },
 
   { method: 'POST',   url: '/api/chat/new',                handler: createChat , schema: createChatSchema },          
   { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat , schema: removeChatSchema },          
