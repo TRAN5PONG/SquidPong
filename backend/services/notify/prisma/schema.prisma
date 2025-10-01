@@ -8,7 +8,7 @@ datasource db {
 }
 
 
-
+// =============== Enums ===============
 enum NotificationStatus {
   UNREAD
   READ
@@ -16,41 +16,58 @@ enum NotificationStatus {
   DELETED
 }
 
-
 enum NotificationType {
-  INFO         // general information
-  SUCCESS      // success messages
-  WARNING      // warnings
-  ERROR        // errors
-  ALERT        // urgent notifications
-  FRIEND       // friend request, friend accepted
-  TOURNAMENT   // tournament updates
-  CHAT         // chat messages
+  INFO         
+  SUCCESS      
+  WARNING      
+  ERROR        
+  ALERT        
+  FRIEND       
+  TOURNAMENT   
+  CHAT         
 }
-
 
 enum NotificationTitle {
-  FRIEND_REQUEST        // "New Friend Request"
-  FRIEND_ACCEPTED       // "Friend Request Accepted"
-  CHAT_MESSAGE          // "New Chat Message"
-  TOURNAMENT_REGISTERED // "Registered in Tournament"
-  TOURNAMENT_STARTED    // "Tournament Started"
-  TOURNAMENT_FINISHED   // "Tournament Finished"
-  MATCH_STARTED         // "Match Started"
-  MATCH_FINISHED        // "Match Finished"
+  FRIEND_REQUEST        
+  FRIEND_ACCEPTED       
+  CHAT_MESSAGE          
+  TOURNAMENT_REGISTERED 
+  TOURNAMENT_STARTED    
+  TOURNAMENT_FINISHED   
+  MATCH_STARTED         
+  MATCH_FINISHED        
 }
 
 
 
+// =============== User Model ===============
+model User {
+  id          String   @id @default(cuid())
+
+  userId      String   @unique
+  username    String   
+  firstName   String
+  lastName    String?
+  isVerified  Boolean  @default(false)
+  avatar      String   
+
+  notifications Notification[]
+
+  createdAt   DateTime @default(now())
+}
+
+
+// =============== Notification Model ===============
 model Notification {
   id        Int      @id @default(autoincrement())
 
-  userId    Int       
-  title     NotificationTitle
+  userId    String       
   message   String
 
   type      NotificationType   @default(INFO)
-  status    NotificationStatus @default(UNREAD)
+  isRead    Boolean            @default(false)
+
+  user      User         @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

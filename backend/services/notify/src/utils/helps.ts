@@ -5,11 +5,9 @@ import prisma from "../db/database";
 export async function createNotification(data: any) 
 {
 
-  console.log('create new notification')
   return prisma.notification.create({
     data: {
       userId: data.userId,
-      title: data.title,
       message: data.message,
       // type: data.type ?? 'INFO',
       // status: data.status ?? 'UNREAD',
@@ -32,8 +30,9 @@ export async function updateNotification(data: any)
 
   return prisma.notification.update({
     where: { id: notification.id },
-    data: {status : data.status},
+    data: {isRead : true},
   });
+  
 }
 
 export async function deleteNotification(data: any) 

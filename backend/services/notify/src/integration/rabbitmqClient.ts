@@ -1,10 +1,9 @@
 import amqp from "amqplib";
 
 import { sendEmailMessage } from "../utils/verification_messenger";
-import { createNotification , updateNotification , deleteNotification } from "../controllers/helps.controller";
+import { createNotification , updateNotification , deleteNotification } from "../utils/helps";
 let connection: any;
 let channel: any;
-import { isUserOnline } from "../utils/utils";
 
 export async function initRabbitMQ() 
 {
@@ -12,6 +11,7 @@ export async function initRabbitMQ()
   channel = await connection.createChannel();
   
   await channel.assertQueue("emailhub");
+  await channel.assertQueue("notify");
 
   console.log("Connected to RabbitMQ");
 }
@@ -52,16 +52,3 @@ export async function receiveFromQueue(queue: string)
   }
 }
 
-
-async function notifyFromFriendsQueue(data:any) 
-{
-  
-  
-  if(await isUserOnline(data.to))
-    await sendDataToQueue(data , 'test');
-  else
-    console.log(`from notify user ${data.to} is not online `)
-  
-  await createNotification({userId : Number(data.to) , title : "FRIEND_REQUEST" , message : data.message , type : "FRIEND"})
-  
-}
