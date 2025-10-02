@@ -35,9 +35,6 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
       },
     });
 
-    const redisKey = `profile:${profile.userId}`;
-    await redis.set(redisKey, profile);
-    
     // Ensure user exists in chat service
     await fetch('http://chat:4003/api/chat/user/create', {
       method: 'POST',

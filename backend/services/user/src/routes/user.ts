@@ -2,8 +2,6 @@ import { RouteHandlerMethod , FastifySchema } from 'fastify';
 import * as userController from '../controllers/user.controller';
 import * as friendController from '../controllers/friend.controller';
 import * as blockController from '../controllers/block.controller';
-import { createProfileSchema , updateProfileSchema , deleteProfileSchema , getCurrentUserSchema  , getUserByIdSchema , getAllUserSchema} from '../validators/ProfileSchema';
-
 
 
 
@@ -16,6 +14,7 @@ type Route = {
 
 
 const userRoutes: Route[] = [
+
   { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler },
   { method: 'PUT', url: '/api/user/sync', handler: userController.updateProfileHandlerDB },
   { method: 'PUT', url: '/api/user/live', handler: userController.updateProfileHandler },
@@ -29,15 +28,20 @@ const userRoutes: Route[] = [
 
 
 const friendRoutes: Route[] = [
-  { method: 'GET', url: '/api/friend/pending', handler: friendController.getPendingRequestsHandler },
-  { method: 'GET', url: '/api/friend/all', handler: friendController.getFriendsListHandler },
+
   { method: 'POST', url: '/api/friend/request', handler: friendController.sendFriendRequestHandler },
   { method: 'POST', url: '/api/friend/accept', handler: friendController.acceptFriendRequestHandler },
   { method: 'POST', url: '/api/friend/reject', handler: friendController.rejectFriendRequestHandler },
+
+  { method: 'GET', url: '/api/friend/pending', handler: friendController.getPendingRequestsHandler },
+  { method: 'GET', url: '/api/friend/all', handler: friendController.getFriendsListHandler },
+  
   { method: 'DELETE', url: '/api/friend/:friendId', handler: friendController.removeFriendHandler },
-
-  { method: 'GET', url: '/api/friend/verify', handler: friendController.verifyFriendshipHandler },
-
+  
+  { method: 'GET', url: '/api/friend/verify/:friendId', handler: friendController.verifyFriendshipHandler },
+  
+  { method: 'GET', url: '/api/blocked/all', handler: blockController.getBlockedUsersHandler },
+  
   { method: 'POST', url: '/api/blocked/:blockId', handler: blockController.blockUserHandler },
   { method: 'DELETE', url: '/api/blocked/:blockId', handler: blockController.unblockUserHandler },
 

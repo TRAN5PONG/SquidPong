@@ -168,11 +168,12 @@ model NotificationSettings {
 model Friendship {
   id        String @id @default(cuid())
 
-  senderId    String
-  receiverId  String
+  senderId    Int
+  receiverId  Int
   status      FriendshipStatus @default(PENDING)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([senderId, receiverId])
 }
