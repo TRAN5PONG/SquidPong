@@ -134,10 +134,9 @@ export async function syncRedisProfileToDbAppendArrays(userId: number)
 export async function getProfile(userId: number)
 {
 
-  const profile = await prisma.profile.findUnique({
-    where: { userId },
-  });
+  const profile = await prisma.profile.findUnique({ where: { userId }});
   if (!profile) throw new Error(`Profile not found for userId ${userId}`);
+  return profile;
 }
 
 
@@ -146,4 +145,15 @@ export function checkSecretToken(req: FastifyRequest)
   const secretToken = req.headers['x-secret-token'] as string;
   if (secretToken !== process.env.SECRET_TOKEN)
     throw new Error('Unauthorized: Invalid secret token');
+}
+
+
+
+export async function isCheck(userId: number, friendId: number)
+{
+  if(userId === friendId)
+    throw new Error('You cannot perform this action on yourself.');
+
+  await getProfile(friendId);
+
 }

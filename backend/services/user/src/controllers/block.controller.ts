@@ -3,7 +3,7 @@ import prisma from '../db/database';
 import { Profile } from '../utils/types';
 import { ApiResponse, sendError } from '../utils/errorHandler';
 import { getProfile } from '../utils/utils';
-
+import { isCheck } from '../utils/utils';
 import { BlockMessages , FriendMessages } from '../utils/responseMessages';
 import { redis } from '../utils/redis';
 
@@ -24,30 +24,34 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
   const respond: ApiResponse<null> = { success: true, message:  BlockMessages.BLOCK_SUCCESS  };
   
   const headers = req.headers as any;
-  const userId = headers['x-user-id'];
-  const { blockId } = req.params as any;
+  const userId = Number(headers['x-user-id']);
+  const blockId = Number((req.params as any).blockId);
 
+  console.log("userId:", userId, "blockId:", blockId);
   try 
   {
-    await getProfile(Number(blockId));
+    await isCheck(userId , blockId);
 
-    // Must be friends first to block
-    const friendship = await prisma.friendship.findFirst({
+    const existingFriendship = await prisma.friendship.findFirst({
       where: {
         OR: [
-          { senderId: userId, receiverId: blockId, status: ACCEPTED },
-          { senderId: blockId, receiverId: userId, status: ACCEPTED },
+          { senderId: userId, receiverId: blockId },
+          { senderId: blockId, receiverId: userId },
         ],
+        status: ACCEPTED,
       },
     });
-
-    if (!friendship) throw new Error(FriendMessages.NOT_FRIENDS);
+    if(!existingFriendship)
+      throw new Error(BlockMessages.BLOCK_NO_FRIEND);
+    
+    console.log("Existing Friendship:", existingFriendship);
 
     await prisma.friendship.update({
-      where: { id: friendship.id },
-      data: { status: BLOCKED },
+      where: { id: existingFriendship.id},
+      data: { senderId: userId, receiverId: blockId, status: BLOCKED},
     });
 
+    
   } 
   catch (error) {
     sendError(res, error);
@@ -64,28 +68,26 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
   const respond: ApiResponse<null> = { success: true, message: BlockMessages.UNBLOCK_SUCCESS  };
   
   const headers = req.headers as any;
-  const userId = headers['x-user-id'];
-  const { blockId } = req.params as any;
+  const userId = Number(headers['x-user-id']);
+  const blockId = Number((req.params as any).blockId);
 
   try 
   {
-    await getProfile(Number(blockId));
-
-    const friendship = await prisma.friendship.findFirst({
+    await isCheck(userId , blockId);
+    const existingFriendship = await prisma.friendship.findFirst({
       where: {
-        OR: [
-          { senderId: userId, receiverId: blockId, status: BLOCKED },
-          { senderId: blockId, receiverId: userId, status: BLOCKED },
-        ],
+        senderId: userId, receiverId: blockId,
+        status: BLOCKED,
       },
     });
-
-    if (!friendship) throw new Error(BlockMessages.UNBLOCK_NOT_FOUND);
+    if(!existingFriendship)
+      throw new Error(BlockMessages.UNBLOCK_NOT_FOUND);
 
     await prisma.friendship.update({
-      where: { id: friendship.id },
+      where: { id: existingFriendship.id},
       data: { status: ACCEPTED },
     });
+
   } 
   catch (error) {
     sendError(res, error);
@@ -96,49 +98,38 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
 
 
 
-
-
-
 export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<Profile[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
+  
   const headers = req.headers as any;
-  const userId = headers['x-user-id'];
+  const userId = Number(headers['x-user-id']);
 
   try 
   {
     const friendships = await prisma.friendship.findMany({
-      where: {
-        status: BLOCKED,
-        OR: [
-          { senderId: userId },
-          { receiverId: userId }
-        ]
-      }
+      where: { senderId: userId, status: BLOCKED}
     });
-
-    const friendIds = friendships.map((f:any) => f.senderId === userId ? f.receiverId : f.senderId);
-
+    
+    const friendIds = friendships.map((f:any) => f.receiverId);
     const onlineUserIds: string[] = await redis.getOnlineUsers();
     const onlineFriends: Profile[] = [];
-  
+
     for (const friendId of friendIds) 
     {
-      if (onlineUserIds.includes(friendId)  ) 
+      if (onlineUserIds.includes(friendId.toString())) 
       {
         const profile = await redis.get(`profile:${friendId}`);
-        if (profile)
-          onlineFriends.push({ ...profile});
+        onlineFriends.push({ ...profile});
+        friendIds.splice(friendIds.indexOf(friendId), 1);
       }
     }
 
-
     const offlineFriends = await prisma.profile.findMany({
-      where: { status: "OFFLINE" }
+      where: { userId: { in: friendIds }, status: "OFFLINE" }
     });
 
     const allFriends = [...onlineFriends, ...offlineFriends];
-
     respond.data = allFriends;
   } 
   catch (error) {
@@ -147,3 +138,4 @@ export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyRe
 
   return res.send(respond);
 }
+

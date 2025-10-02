@@ -41,17 +41,18 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
     const cookie = req.headers.cookie;
     if (!cookie) throw new Error("Not allowed");
 
-    const token = cookie.split('=')[1];
-    if (!token) throw new Error("Missing access token");
-
+    const tokenCookie = cookie.split('; ').find((c:string) => c.startsWith('accessToken='));
+    if (!tokenCookie) throw new Error("Not allowed");
+    
+    const token = tokenCookie.split('=')[1];
+    if (!token) throw new Error("Not allowed");
+    
     // mode development
     // const tokenExists = await redis.get(token);
     // if (!tokenExists) throw new Error("Token expired or invalid");
 
     const payload: any = await app.jwt.verify(token);
-
     req.id = payload.userId;
-
   } 
   catch (error) 
   {

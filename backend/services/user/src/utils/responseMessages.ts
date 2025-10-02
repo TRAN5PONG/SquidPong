@@ -58,6 +58,7 @@ export enum GeneralMessages {
 }
 
 export enum FriendMessages {
+  ADD_SELF = 'You cannot send a friend request to yourself.',
   NOT_FRIENDS = 'You can only block existing friends.',
   FETCH_SUCCESS = 'Friends list fetched successfully.',
   FETCH_NOT_FOUND = 'No friends found for the user.',
@@ -93,6 +94,7 @@ export enum FriendMessages {
 }
 
 export enum BlockMessages {
+  BLOCK_NO_FRIEND = 'You can only block existing friends.',
   BLOCK_SUCCESS = 'User blocked successfully.',
   BLOCK_FAILED = 'Failed to block user.',
   BLOCK_NOT_FOUND = 'No friendship found to block user.',
