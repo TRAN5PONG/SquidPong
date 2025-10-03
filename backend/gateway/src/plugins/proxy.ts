@@ -1,167 +1,57 @@
 import { FastifyInstance , FastifyRequest, FastifyReply } from 'fastify'
 import fastifyHttpProxy from '@fastify/http-proxy'
-import fastifySwagger from '@fastify/swagger';
-import fastifySwaggerUi from '@fastify/swagger-ui';
+
+interface ServiceConfig {
+  name: string;
+  port: number;
+  prefix: string;
+  upstream: string;
+}
+
+const services : ServiceConfig[]  = 
+[
+    { name: 'auth', port: 4001, prefix: '/api/auth', upstream: 'http://auth:4001' },
+    // { name: 'auth-2fa', port: 4001, prefix: '/api/2fa', upstream: 'http://auth:4001' },
+    // { name: 'user', port: 4002, prefix: '/api/user', upstream: 'http://user:4002' },
+    // { name: 'friend', port: 4002, prefix: '/api/friend', upstream: 'http://user:4002' },
+    // { name: 'blocked', port: 4002, prefix: '/api/blocked', upstream: 'http://user:4002' },
+    // { name: 'chat', port: 4003, prefix: '/api/chat', upstream: 'http://chat:4003' },
+    // { name: 'group', port: 4003, prefix: '/api/group', upstream: 'http://chat:4003' },
+    // { name: 'game', port: 4005, prefix: '/api/game', upstream: 'http://game:4005' },
+    // { name: 'room', port: 4005, prefix: '/api/room', upstream: 'http://game:4005' }
+  ];
+
+
 
 export default async function registerProxy(app: FastifyInstance)
 {
+  // for (const service of services) 
+  //   {
+  //   try 
+  //   {
+  //     app.register(fastifyHttpProxy, {
+  //       upstream: service.upstream,
+  //       prefix: service.prefix,
+  //       rewritePrefix: service.prefix,
+  //       http2: false,
 
+  //       // preHandler: async (req: FastifyRequest, reply: FastifyReply) => {
+  //       //   req.headers['x-user-id'] = req.id;
+  //       // },
+  //     });
+      
+  //     console.log(`✅ Proxy registered for ${service.name} at ${service.upstream}`);
+  //   } 
+  //   catch (error) {
+  //     console.error(`❌ Failed to register proxy for ${service.name}:`, error);
+  //   }
+  // }
 
-
-app.register(fastifySwagger, {
-    openapi: {
-      openapi: '3.0.0',
-      info: {
-        title: 'Test swagger',
-        description: 'Testing the Fastify swagger API',
-        version: '0.1.0'
-      },
-      servers: [
-        {
-          url: 'http://localhost:4000',
-        }
-      ],
-    }
-  })
-
-
-app.register(fastifySwaggerUi, { routePrefix: '/api/auth/docs', });
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://user:4001',
-  prefix: '/api/user',
-  rewritePrefix: '/api/user',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://auth:4444',
-  prefix: '/api/auth',
-  rewritePrefix: '/api/auth',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://auth:4444',
-  prefix: '/api/2fa',
-  rewritePrefix: '/api/2fa',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://user:4001',
-  prefix: '/api/friend',
-  rewritePrefix: '/api/friend',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://user:4001',
-  prefix: '/api/blocked',
-  rewritePrefix: '/api/blocked',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://game:3000',
-  prefix: '/api/game',
-  rewritePrefix: '/api/game',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-}
-);
-
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://game:3000',
-  prefix: '/api/room',
-  rewritePrefix: '/api/room',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-})
-
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://chat:4003',
-  prefix: '/api/chat',
-  rewritePrefix: '/api/chat',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-})
-
-
-app.register(fastifyHttpProxy, {
-
-  upstream: 'http://chat:4003',
-  prefix: '/api/group',
-  rewritePrefix: '/api/group',
-  http2: false,
-
-  preHandler: async (req:any, reply:any) => {
-    req.headers['x-user-id'] = req.id;
-  },
-
-})
-
-
+  app.register(fastifyHttpProxy, {
+    upstream: 'http://auth:4001',
+    prefix: '/api/auth',
+    rewritePrefix: '/api/auth',
+    http2: false,
+  });
 
 }

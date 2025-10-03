@@ -10,6 +10,7 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
   const respond: ApiResponse<null> = { success: false, message: 'Unauthorized' };
   const url = req.url;
 
+  console.log(`Authenticating request for URL: ${url}`);
   const publicURIs: string[] = [
     '/', '/favicon.ico',
     '/api/user/docs/json',

@@ -2,6 +2,30 @@ import { RouteHandlerMethod , FastifySchema } from 'fastify';
 import * as userController from '../controllers/user.controller';
 import * as friendController from '../controllers/friend.controller';
 import * as blockController from '../controllers/block.controller';
+import { 
+  createProfileSchema,
+  updateProfileLiveSchema,
+  updateProfileDBSchema,
+  getCurrentUserSchema,
+  getUserByIdSchema,
+  getAllUsersSchema,
+  searchUsersSchema,
+  deleteProfileSchema
+} from '../schemas/user.schemas';
+import {
+  sendFriendRequestSchema,
+  acceptFriendRequestSchema,
+  rejectFriendRequestSchema,
+  getFriendsListSchema,
+  getPendingRequestsSchema,
+  removeFriendSchema,
+  verifyFriendshipSchema
+} from '../schemas/friend.schemas';
+import {
+  blockUserSchema,
+  unblockUserSchema,
+  getBlockedUsersSchema
+} from '../schemas/block.schemas';
 
 
 
@@ -15,35 +39,35 @@ type Route = {
 
 const userRoutes: Route[] = [
 
-  { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler },
-  { method: 'PUT', url: '/api/user/sync', handler: userController.updateProfileHandlerDB },
-  { method: 'PUT', url: '/api/user/live', handler: userController.updateProfileHandler },
-  { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler },
-  { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler },
-  { method: 'GET', url: '/api/user/:id', handler: userController.getUserByIdHandler },
-  { method: 'GET', url: '/api/user/all', handler: userController.getAllUserHandler },
+  { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler, schema: createProfileSchema },
+  { method: 'PUT', url: '/api/user/sync', handler: userController.updateProfileHandlerDB, schema: updateProfileDBSchema },
+  { method: 'PUT', url: '/api/user/live', handler: userController.updateProfileHandler, schema: updateProfileLiveSchema },
+  { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler, schema: deleteProfileSchema },
+  { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler, schema: getCurrentUserSchema },
+  { method: 'GET', url: '/api/user/:id', handler: userController.getUserByIdHandler, schema: getUserByIdSchema },
+  { method: 'GET', url: '/api/user/all', handler: userController.getAllUserHandler, schema: getAllUsersSchema },
 
-  { method: 'GET', url: '/api/user/search', handler: userController.searchUsersHandler },
+  { method: 'GET', url: '/api/user/search', handler: userController.searchUsersHandler, schema: searchUsersSchema },
 ];
 
 
 const friendRoutes: Route[] = [
 
-  { method: 'POST', url: '/api/friend/request', handler: friendController.sendFriendRequestHandler },
-  { method: 'POST', url: '/api/friend/accept', handler: friendController.acceptFriendRequestHandler },
-  { method: 'POST', url: '/api/friend/reject', handler: friendController.rejectFriendRequestHandler },
+  { method: 'POST', url: '/api/friend/request', handler: friendController.sendFriendRequestHandler, schema: sendFriendRequestSchema },
+  { method: 'POST', url: '/api/friend/accept', handler: friendController.acceptFriendRequestHandler, schema: acceptFriendRequestSchema },
+  { method: 'POST', url: '/api/friend/reject', handler: friendController.rejectFriendRequestHandler, schema: rejectFriendRequestSchema },
 
-  { method: 'GET', url: '/api/friend/pending', handler: friendController.getPendingRequestsHandler },
-  { method: 'GET', url: '/api/friend/all', handler: friendController.getFriendsListHandler },
+  { method: 'GET', url: '/api/friend/pending', handler: friendController.getPendingRequestsHandler, schema: getPendingRequestsSchema },
+  { method: 'GET', url: '/api/friend/all', handler: friendController.getFriendsListHandler, schema: getFriendsListSchema },
   
-  { method: 'DELETE', url: '/api/friend/:friendId', handler: friendController.removeFriendHandler },
+  { method: 'DELETE', url: '/api/friend/:friendId', handler: friendController.removeFriendHandler, schema: removeFriendSchema },
   
-  { method: 'GET', url: '/api/friend/verify/:friendId', handler: friendController.verifyFriendshipHandler },
+  { method: 'GET', url: '/api/friend/verify/:friendId', handler: friendController.verifyFriendshipHandler, schema: verifyFriendshipSchema },
   
-  { method: 'GET', url: '/api/blocked/all', handler: blockController.getBlockedUsersHandler },
+  { method: 'GET', url: '/api/blocked/all', handler: blockController.getBlockedUsersHandler, schema: getBlockedUsersSchema },
   
-  { method: 'POST', url: '/api/blocked/:blockId', handler: blockController.blockUserHandler },
-  { method: 'DELETE', url: '/api/blocked/:blockId', handler: blockController.unblockUserHandler },
+  { method: 'POST', url: '/api/blocked/:blockId', handler: blockController.blockUserHandler, schema: blockUserSchema },
+  { method: 'DELETE', url: '/api/blocked/:blockId', handler: blockController.unblockUserHandler, schema: unblockUserSchema },
 
 ];
 

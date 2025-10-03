@@ -10,8 +10,7 @@ export async function initRabbitMQ()
   connection = await amqp.connect("amqp://rabbitmq:5672");
   channel = await connection.createChannel();
   
-  await channel.assertQueue("emailhub");
-  await channel.assertQueue("notify");
+  await channel.assertQueue("notification");
 
   console.log("Connected to RabbitMQ");
 }
@@ -42,8 +41,9 @@ export async function receiveFromQueue(queue: string)
       const data = JSON.parse(msg.content.toString());
       channel.ack(msg);
 
-    if(queue == 'emailhub')
+    if(data.type == 'emailhub')
       sendEmailMessage(data);
+    
     });
   }
   catch (err: any) 

@@ -4,18 +4,18 @@ import { OAuth2Namespace } from '@fastify/oauth2';
 import { isUserVerified , isResetCodeValid , isUserAlreadyRegistered  , isUserAllowedToLogin} from '../validators/userStatusCheck';
 import { createAccount } from '../utils/utils';
 import { isTwoFactorEnabled } from '../validators/2faValidator';
-import { ApiResponse } from '../utils/errorHandler';
-import { VerifyPassword } from '../utils/hashedPassword';
-import { hashPassword } from '../utils/hashedPassword';
+import { ApiResponse , sendError } from '../utils/errorHandler';
+import { VerifyPassword , hashPassword } from '../utils/hashedPassword';
 import { sendDataToQueue } from '../integration/rabbitmqClient';
 import redis from '../integration/redisClient';
 import prisma from '../db/database';
-import app from '../app';
 import { PasswordMessage ,EmailMessage , AuthError, UserProfileMessage } from '../utils/messages';
 import { fetchIntraToken , fetchGoogleUser , fetchIntraUser , sendResponseToFrontend } from '../utils/oauthHelpers';
-import { sendError } from '../utils/errorHandler';
 import {fetchAvatarImagePipeline} from '../utils/oauthHelpers';
 
+
+
+import app from '../app';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -30,19 +30,19 @@ declare module 'fastify' {
 
 export async function postSignupHandler(req:FastifyRequest , res:FastifyReply)
 {
-    const respond : ApiResponse<null > = {success : true  , message : EmailMessage.EMAIL_VERIFICATION_SENT}
-    const body = req.body as any;
+  const respond : ApiResponse<null > = {success : true  , message : EmailMessage.EMAIL_VERIFICATION_SENT}
+  const body = req.body as {email : string , username : string , password : string , firstName : string , lastName : string};
 
-    try
-    {
-      await isUserAlreadyRegistered(body);
-      await sendVerificationEmail(body);
-    }
-    catch (error) 
-    {
-      sendError(res, error);
-    }
-    
+  try
+  {
+    await isUserAlreadyRegistered(body);
+    await sendVerificationEmail(body);
+  }
+  catch (error) 
+  {
+    sendError(res, error);
+  }
+      
   return res.send(respond)
 }
 
@@ -142,7 +142,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
     res.clearCookie("refreshToken");
 
 
-    fetch(`http://user:4001/api/user/me`, {
+    fetch(`http://user:4002/api/user/me`, {
       method: "DELETE",
       headers : {"x-user-id": `${id}` , 'X-Secret-Token': process.env.SECRET_TOKEN || '' }
     })

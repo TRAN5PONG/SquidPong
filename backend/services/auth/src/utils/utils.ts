@@ -17,7 +17,7 @@ export async function   createAccount(data:any): Promise<any>
     {
         delete data.id;
         const profile  = {...Created , ...data }
-        await sendToService('http://user:4001/api/user/me' , 'POST'  , null , profile)
+        await sendToService('http://user:4002/api/user/me' , 'POST'  , null , profile)
     }
         
     return Created;

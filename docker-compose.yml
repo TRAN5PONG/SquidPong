@@ -47,12 +47,17 @@ services:
     image: gateway-image
     container_name: gateway
     restart: always
-    command: sh -c "sleep 6 && npm run dev"
+    command: sh -c "sleep 10 && npm run dev"
     volumes:
       - ./frontend/src/uploads:/tmp/
       - ./backend/gateway/src:/gateway/src
     env_file:
       - ./backend/gateway/.env
+    depends_on:
+      - auth
+      - user
+      - chat
+      - notify
     networks:
       - web
 
@@ -157,7 +162,7 @@ services:
   #   env_file:
   #     - ./backend/services/game/.env
   #   ports:
-  #     - "3000:3000"
+  #     - "4005:4005"
   #     - "5005:5555"
   #   volumes:
   #     - ./backend/services/game/src:/game/src
