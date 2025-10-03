@@ -6,10 +6,19 @@ import { redis } from '../integration/redisClient';
 
 export async function verifyFriendship(senderId: string, receiverId: string) 
 {
-  const res = await fetch(`http://user:4001/api/friend/verify?senderId=${senderId}&receiverId=${receiverId}`);
+  const res = await fetch(`http://user:4001/api/friend/verify/${receiverId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-secret-token': process.env.SECRET_TOKEN || '',
+      'x-user-id': senderId,
+    }});
 
   if(res.status !== 200)
     throw new Error('Failed to verify friendship status.');
+  const data = await res.json();
+  if(!data.success || !data.data?.areFriends)
+    throw new Error('Users are not friends.');
 }
 
 

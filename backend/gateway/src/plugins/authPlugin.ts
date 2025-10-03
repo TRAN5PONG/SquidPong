@@ -23,7 +23,7 @@ const jwt_config:any = {
 
 
   const cors_options : any = {
-    origin: [process.env.FRONTEND_URL , process.env.SWAGGER_URL],
+    origin: [process.env.FRONTEND_URL],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ["Content-Type", "x-user-id"]

@@ -138,6 +138,7 @@ export async function getPendingRequestsHandler(req: FastifyRequest, res: Fastif
 }
 
 
+
 // ----------------- SEND FRIEND REQUEST -----------------
 export async function sendFriendRequestHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -156,12 +157,15 @@ export async function sendFriendRequestHandler(req: FastifyRequest, res: Fastify
       where: { senderId_receiverId: { senderId, receiverId } }
     });
     if (exists) throw new Error(`this frindship is ${exists.status}`);
-
+    
     await prisma.friendship.create({
-    data: { senderId, receiverId, status: PENDING },
+      data: { senderId, receiverId, status: PENDING },
     });
-
-  } 
+    
+    // const profile = await getProfile(senderId);
+    // const dataToSend = { type: 'friend_request', profile : { userId : profile.userId , username : profile.username , avatarUrl : profile.avatarUrl , status : profile.status }};
+    // await sendDataToQueue({...dataToSend , targetId : Number(receiverId)} , 'broadcastData');
+  }
   catch (error) {
     return sendError(res, error);
   }
@@ -183,16 +187,19 @@ export async function acceptFriendRequestHandler(req: FastifyRequest, res: Fasti
   {
     
     await isCheck(receiverId , senderId);
-
     const friendship = await prisma.friendship.findUnique({
       where: { senderId_receiverId: { senderId, receiverId } , status: PENDING }
     });
     if (!friendship) throw new Error(FriendMessages.ACCEPT_NOT_FOUND);
-
+    
     await prisma.friendship.update({
       where: {senderId_receiverId: { senderId, receiverId }},
       data: { status: ACCEPTED },
     });
+
+    // const profile = await getProfile(receiverId);
+    // const dataToSend = { type: 'friend_accept', profile : { userId : profile.userId , username : profile.username , avatarUrl : profile.avatarUrl , status : profile.status }};
+    // await sendDataToQueue({...dataToSend , targetId : Number(senderId)} , 'broadcastData');
   } 
   catch (error) {
     sendError(res, error);
@@ -272,8 +279,12 @@ export async function verifyFriendshipHandler(req: FastifyRequest, res: FastifyR
   const userId = Number(headers['x-user-id']);
   const {friendId} = req.params as { friendId: string };
 
+  const secretToken = headers['x-secret-token'];
   try 
   {
+
+    if (secretToken != process.env.SECRET_TOKEN)
+      throw new Error('Unauthorized');
 
     await isCheck(userId , Number(friendId));
 

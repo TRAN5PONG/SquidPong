@@ -32,17 +32,17 @@ async function sendSingleMultipartVoid(url: string, fieldName: string, value: st
 
 async function updatestatus(userId: number )
 {
-  await fetch(`http://user:4001/api/user/me`, { headers: { "x-user-id": `userId` }});
+  await fetch(`http://user:4002/api/user/me`, { headers: { "x-user-id": `userId` }});
 
 
   await sendSingleMultipartVoid(
-    'http://user:4001/api/user/live',
+    'http://user:4002/api/user/live',
     "status",
     "ONLINE",
     userId.toString()
     );
 
-  await fetch(`http://user:4001/api/user/sync`, {
+  await fetch(`http://user:4002/api/user/sync`, {
     method: "POST",
     headers: {
       'X-Secret-Token': process.env.SECRET_TOKEN || '',
@@ -133,8 +133,8 @@ async function onClientDisconnect(ws: any)
     console.log(`Client disconnected: ${userId}`);
     
 
-    await sendSingleMultipartVoid('http://user:4001/api/user/live', "status", "OFFLINE", userId);
-    await fetch(`http://user:4001/api/user/sync`, {
+    await sendSingleMultipartVoid('http://user:4002/api/user/live', "status", "OFFLINE", userId);
+    await fetch(`http://user:4002/api/user/sync`, {
     method: "POST",
     headers: {
       'X-Secret-Token': process.env.SECRET_TOKEN || '',
@@ -157,7 +157,7 @@ async function onClientDisconnect(ws: any)
 
 export function handleHttpUpgrade(req: any, socket: any, head: any) 
 {
-  const includesURL = ['/chat'];
+  const includesURL = ['/events'];
 
   try 
     {
