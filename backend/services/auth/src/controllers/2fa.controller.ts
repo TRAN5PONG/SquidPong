@@ -37,7 +37,7 @@ export async function setupTwoFAHandler(req: FastifyRequest, res: FastifyReply)
     }
     else
     {
-      await setupEmail2FA(id, user.email);
+      await setupEmail2FA(user.email);
       respond.data = null;
     }
 
@@ -82,7 +82,7 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
     if(method == AUTHENTICATOR)
       enableAuthenticatorCode(id, user.twoFASecret!, code);
     else
-      enableEmailCode(id, code);
+      enableEmailCode(user.email, code);
 
   } 
   catch (error) {
