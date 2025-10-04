@@ -13,7 +13,7 @@ export async function hashPassword(password: string): Promise<string | null>
 
 export async function VerifyPassword(password: string , hashedPassword:any): Promise<boolean>
 {
-    const isMatch = await bcrypt.compare(password, hashedPassword);
+  const isMatch = await bcrypt.compare(password, hashedPassword);
 
   return isMatch;
 }

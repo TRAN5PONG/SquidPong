@@ -91,7 +91,7 @@ export const createProfileSchema: FastifySchema = {
   body: {
     type: 'object',
     properties: {
-      id: {
+      userId: {
         type: 'number',
         description: 'User ID from auth service'
       },
@@ -101,13 +101,13 @@ export const createProfileSchema: FastifySchema = {
         maxLength: 30,
         description: 'Username'
       },
-      fname: {
+      firstName: {
         type: 'string',
         minLength: 1,
         maxLength: 50,
         description: 'First name'
       },
-      lname: {
+      lastName: {
         type: 'string',
         minLength: 1,
         maxLength: 50,
@@ -118,7 +118,7 @@ export const createProfileSchema: FastifySchema = {
         description: 'Avatar image filename (optional)'
       }
     },
-    required: ['id', 'username', 'fname', 'lname'],
+    required: ['userId', 'username', 'firstName', 'lastName'],
     additionalProperties: false
   },
   response: {

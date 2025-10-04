@@ -26,6 +26,6 @@ async function StartServer()
 async function start() 
 {
   await  initRabbitMQ();
-  await receiveFromQueue("notification")
+  await receiveFromQueue()
 }
 start();

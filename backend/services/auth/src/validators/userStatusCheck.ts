@@ -1,5 +1,6 @@
 
 import prisma from "../db/database";
+import { sendDataToQueue } from "../integration/rabbitmqClient";
 import redis from "../integration/redisClient";
 import { VerifyPassword } from "../utils/hashedPassword";
 import { UserProfileMessage ,EmailMessage ,PasswordMessage } from "../utils/messages";
@@ -14,26 +15,23 @@ enum typeOfStatus
 
 const { VERIFY , RESET , TWOFA } = typeOfStatus;
 
-export async function isUserVerified(body:any)
+export async function isUserVerified(email:string , code:string)
 {
-    const userdb = await prisma.user.findUnique({ where: { email: body.email }})
-    if(userdb && userdb.password)
-      throw new Error(EmailMessage.EMAIL_ALREADY_VERIFIED);
+  const userdb = await prisma.user.findUnique({ where: { email}})
+  if(userdb && userdb.password)
+    throw new Error(EmailMessage.EMAIL_ALREADY_VERIFIED);
 
-    const key = `${VERIFY}:${body.email}`;
-    const code = await redis.get(key);
-    if(!code)
-      throw new Error(EmailMessage.VERIFICATION_TOKEN_EXPIRED)
+  const codeRedis = await redis.get(`${VERIFY}:${email}`);
+  if(!codeRedis)  throw new Error(EmailMessage.VERIFICATION_TOKEN_EXPIRED)
 
-    if(code != body.code)
-      throw new Error(EmailMessage.INVALID_VERIFICATION_TOKEN)
+  if(codeRedis != code) throw new Error(EmailMessage.INVALID_VERIFICATION_TOKEN)
 }
 
 
 
 
 
-export async function isUserAllowedToLogin(body:any , user:any | null)
+export async function isUserAllowedToLogin(password:string , user:any | null)
 {
     if(!user)
       throw new Error(UserProfileMessage.USER_NOT_FOUND)
@@ -41,54 +39,52 @@ export async function isUserAllowedToLogin(body:any , user:any | null)
     if(!user.password)
         throw new Error(UserProfileMessage.OAUTH_LOGIN_REQUIRED)
 
-    if(await VerifyPassword(body.password , user.password) ==  false)
+    if(await VerifyPassword(password , user.password) ==  false)
       throw new Error(UserProfileMessage.INVALID_CREDENTIALS)
 
 }
 
 
-
-export async function isUserAlreadyRegistered(body:any)
+export async function isUserAlreadyRegistered(email: string, username: string , respond : any) 
 {
-    const UserByemail     = await prisma.user.findUnique({ where: { email: body.email}})
-    const UserByUsername  = await prisma.user.findUnique({ where: { username: body.username}})
+  const userByEmail = await prisma.user.findUnique({ where: { email } });
+  const userByUsername = await prisma.user.findUnique({ where: { username } });
 
-    if(!UserByemail && !UserByUsername)
-      return;
-
-    if(UserByemail?.password)
+  if (userByEmail && userByUsername && userByEmail.id === userByUsername.id) 
+  {
+    if (userByEmail.password !== null)
       throw new Error(UserProfileMessage.USER_ALREADY_EXISTS);
-    else if(!UserByemail?.password)
-        return;
 
+    respond.message = EmailMessage.USER_NOW_LINKED_ACCOUNT;
+    return ;
+  }
 
-    if(UserByemail != UserByUsername)
-    {
-      if(UserByemail)
-        throw new Error(UserProfileMessage.EMAIL_ALREADY_USED);
-      throw new Error(UserProfileMessage.USERNAME_ALREADY_USED);
-    }
+  if (userByEmail)
+    throw new Error(EmailMessage.EMAIL_ALREADY_REGISTERED);
+
+  if (userByUsername)
+    throw new Error(UserProfileMessage.USERNAME_ALREADY_TAKEN);
 
 }
 
 
 
-
-export async function isResetCodeValid(code:string , confirmPassword:string , newPassword:string , user:any)
+export async function isResetCodeValid(email: string , oldPassword : string, newPassword:string , code:string )
 {
   
-  const key = `${RESET}:${user.email}`;
-  const token = await redis.get(key);
-  if(!token)
+  const key = `${RESET}:${email}`;
+  const codeRedis = await redis.get(key);
+  if(!codeRedis)
+  {
+    await sendDataToQueue({type : 'emailhub' , data : {email , type : RESET}}, "notification");
     throw new Error(PasswordMessage.RESET_TOKEN_EXPIRED)
-
-  if(token != code)
-    throw new Error(PasswordMessage.INVALID_RESET_TOKEN)
+  }
   
-  if(confirmPassword != newPassword)
-    throw new Error(PasswordMessage.PASSWORDS_DO_NOT_MATCH)
+  if(codeRedis != code) throw new Error(PasswordMessage.INVALID_RESET_TOKEN)
+  
+  console.log(oldPassword , newPassword);
+  if(await VerifyPassword(newPassword , oldPassword)) throw new Error(PasswordMessage.PASSWORD_SAME_AS_OLD)
 
-  if(await VerifyPassword(newPassword , user.password) == false)
-    throw new Error(PasswordMessage.PASSWORD_SAME_AS_OLD)
+  await redis.del(`RESET:${email}`)
     
 }

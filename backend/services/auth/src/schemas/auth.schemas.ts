@@ -1,10 +1,10 @@
 import { FastifySchema } from 'fastify';
 
-// =============================================
-// AUTH SERVICE SCHEMAS - Complete API Documentation
-// =============================================
+// // =============================================
+// // AUTH SERVICE SCHEMAS - Complete API Documentation
+// // =============================================
 
-// Common response schemas
+// // Common response schemas
 const successResponse = {
   type: 'object',
   properties: {
@@ -24,9 +24,9 @@ const errorResponse = {
   required: ['success', 'message']
 };
 
-// =============================================
-// USER REGISTRATION & LOGIN SCHEMAS
-// =============================================
+// // =============================================
+// // USER REGISTRATION & LOGIN SCHEMAS
+// // =============================================
 
 export const signupSchema: FastifySchema = {
   body: {
@@ -39,8 +39,8 @@ export const signupSchema: FastifySchema = {
       },
       password: {
         type: 'string',
-        minLength: 5,
-        description: 'User password (minimum 8 characters)'
+        minLength: 6,
+        description: 'User password (minimum 6 characters)'
       },
       username: {
         type: 'string',
@@ -84,15 +84,31 @@ export const loginSchema: FastifySchema = {
     properties: {
       email: {
         type: 'string',
-        description: 'User email or username'
+        format: 'email',
+        description: 'User email address'
+      },
+      username: {
+        type: 'string',
+        minLength: 3,
+        maxLength: 30,
+        pattern: '^[a-zA-Z0-9_]+$',
+        description: 'Username (3-30 characters, alphanumeric and underscore only)'
       },
       password: {
         type: 'string',
         description: 'User password'
       }
     },
-    required: ['email', 'password'],
-    additionalProperties: false
+    required: ['password'],
+    additionalProperties: false,
+    anyOf: [
+      {
+        required: ['email']
+      },
+      {
+        required: ['username']
+      }
+    ]
   },
   response: {
     200: {
@@ -152,14 +168,15 @@ export const verifyEmailSchema: FastifySchema = {
       code: {
         type: 'string',
         pattern: '^[0-9]{6}$',
-        length: 6,
+        minLength: 6,
+        maxLength: 6,
         description: '6-digit verification code'
       }
     },
     required: ['email', 'code'],
     additionalProperties: false
   },
-  response: {
+  response: { 
     200: {
       ...successResponse,
       description: 'Email verified successfully'
@@ -176,15 +193,31 @@ export const verifyEmailSchema: FastifySchema = {
 // =============================================
 
 export const forgotPasswordSchema: FastifySchema = {
-  headers: {
+  body: {
     type: 'object',
     properties: {
-      'x-user-id': {
+      email: {
         type: 'string',
-        description: 'User ID from authentication token'
+        format: 'email',
+        description: 'User email address'
+      },
+      username: {
+        type: 'string',
+        minLength: 3,
+        maxLength: 30,
+        pattern: '^[a-zA-Z0-9_]+$',
+        description: 'Username (3-30 characters, alphanumeric and underscore only)'
       }
     },
-    required: ['x-user-id']
+    additionalProperties: false,
+    anyOf: [
+      {
+        required: ['email']
+      },
+      {
+        required: ['username']
+      }
+    ]
   },
   response: {
     200: {
@@ -199,37 +232,44 @@ export const forgotPasswordSchema: FastifySchema = {
 };
 
 export const resetPasswordSchema: FastifySchema = {
-  headers: {
-    type: 'object',
-    properties: {
-      'x-user-id': {
-        type: 'string',
-        description: 'User ID from authentication token'
-      }
-    },
-    required: ['x-user-id']
-  },
   body: {
     type: 'object',
     properties: {
+      email: {
+        type: 'string',
+        format: 'email',
+        description: 'User email address'
+      },
+      username: {
+        type: 'string',
+        minLength: 3,
+        maxLength: 30,
+        pattern: '^[a-zA-Z0-9_]+$',
+        description: 'Username (3-30 characters, alphanumeric and underscore only)'
+      },
       code: {
         type: 'string',
         pattern: '^[0-9]{6}$',
+        minLength: 6,
+        maxLength: 6,
         description: '6-digit reset code from email'
       },
       newPassword: {
         type: 'string',
-        minLength: 8,
-        description: 'New password (minimum 8 characters)'
-      },
-      confirmPassword: {
-        type: 'string',
-        minLength: 8,
-        description: 'Confirm new password (must match newPassword)'
+        minLength: 6,
+        description: 'New password (minimum 6 characters)'
       }
     },
-    required: ['code', 'newPassword', 'confirmPassword'],
-    additionalProperties: false
+    required: ['code', 'newPassword'],
+    additionalProperties: false,
+    anyOf: [
+      {
+        required: ['email']
+      },
+      {
+        required: ['username']
+      }
+    ]
   },
   response: {
     200: {
@@ -251,8 +291,7 @@ export const changePasswordSchema: FastifySchema = {
         type: 'string',
         description: 'User ID from authentication token'
       }
-    },
-    required: ['x-user-id']
+    }
   },
   body: {
     type: 'object',
@@ -263,8 +302,8 @@ export const changePasswordSchema: FastifySchema = {
       },
       newPassword: {
         type: 'string',
-        minLength: 8,
-        description: 'New password (minimum 8 characters)'
+        minLength: 6,
+        description: 'New password (minimum 6 characters)'
       }
     },
     required: ['oldPassword', 'newPassword'],
@@ -311,8 +350,7 @@ export const deleteAccountSchema: FastifySchema = {
         type: 'string',
         description: 'User ID from authentication token'
       }
-    },
-    required: ['x-user-id']
+    }
   },
   response: {
     200: {
