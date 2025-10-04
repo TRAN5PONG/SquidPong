@@ -48,16 +48,11 @@ export async function setupAuthenticatorApp(user: any)
 
 
 
-export async function setupEmail2FA(userId: number, email: string) 
+export async function setupEmail2FA(email: string) 
 {
   try 
   {
     await sendCodeToEmail(email , "2FA");
-    await prisma.user.update({
-      where: { id: userId },
-      data: { twoFAMethod: EMAIL },
-    });
-
   } 
   catch (err) {
     console.error("Error setting up Email 2FA:", err);
