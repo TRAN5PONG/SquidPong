@@ -15,6 +15,7 @@ export enum AuthMessage {
   }
   
   export enum AuthError {
+    LOGIN_SUCCESSFUL = 'Login successful.',
     TOKEN_EXPIRED = 'Session expired. Please login again.',
     UNKNOWN_ERROR = 'An unknown error occurred.',
     INTERNAL_SERVER_ERROR = 'Internal server error.',
@@ -95,11 +96,12 @@ export enum AuthMessage {
   }
 
   export enum PasswordMessage {
-    RESET_TOKEN_EXPIRED = 'Reset code has expired.',
+    RESET_TOKEN_EXPIRED = 'Reset code has expired. we have sent you a new one to your email.',
     INVALID_RESET_TOKEN = 'Invalid reset code.',
     PASSWORDS_DO_NOT_MATCH = 'Passwords do not match.',
     PASSWORD_RESET_EMAIL_SENT = 'Password reset email sent.',
     PASSWORD_RESET_SUCCESS = 'Password reset successful.',
+    PASSWORD_CHANGED_SUCCESS = 'Password changed successfully.',
     PASSWORD_RESET_INVALID = 'Invalid reset token.',
     PASSWORD_RESET_EXPIRED = 'Reset link has expired.',
     CURRENT_PASSWORD_INCORRECT = 'Current password is incorrect.',
@@ -107,6 +109,9 @@ export enum AuthMessage {
   }
   
   export enum EmailMessage {
+    USER_NOW_LINKED_ACCOUNT = 'User now has a linked account. u have two options for login.',
+    EMAIL_LINKED_ACCOUNT = 'Email is linked to an OAuth account. Please login using your OAuth provider.',
+    EMAIL_ALREADY_REGISTERED = 'Email is already registered.',
     EMAIL_VERIFIED_SUCCESSFULLY = 'Email has been successfully verified.',
     EMAIL_ALREADY_VERIFIED = 'Email is already verified.',
     EMAIL_VERIFICATION_REQUIRED = 'Please verify your email.',
@@ -117,6 +122,10 @@ export enum AuthMessage {
   
   export enum UserProfileMessage
   {
+    U_HAVE_ACCOUNT_OAUTH = 'You have an account via OAuth. u cant change password.',
+    USERNAME_ALREADY_TAKEN = 'Username is already taken.',
+    INVALID_USERNAME = 'Invalid username.',
+    USER_NOT_FOUND = 'User not found.',
     DELETE_ACCOUNT_SUCCESS = 'Account deleted successfully.', // ✅ NEW
     LOGIN_SUCCESSFUL = 'Login successful.', // ✅ NEW
     LOGOUT_SUCCESSFUL = 'Logout successful.', // ✅ NEW
@@ -127,9 +136,8 @@ export enum AuthMessage {
     PASSWORDS_DO_NOT_MATCH = 'Passwords do not match.',
     SIGNUP_DISABLED = 'Signup is currently disabled.',
     USER_ALREADY_EXISTS = 'User already exists.', // ✅ NEW
-  OAUTH_LOGIN_REQUIRED = 'Please login using your OAuth provider.', // ✅ NEW
-  INVALID_CREDENTIALS = 'Invalid email or password.',  
-    USER_NOT_FOUND = 'User not found.',
+    OAUTH_LOGIN_REQUIRED = 'Please login using your OAuth provider.', // ✅ NEW
+    INVALID_CREDENTIALS = 'Invalid email or password.',  
     PROFILE_NOT_COMPLETE = 'User profile is incomplete.',
     AVATAR_UPLOAD_SUCCESS = 'Avatar uploaded successfully.',
     AVATAR_UPLOAD_FAIL = 'Avatar upload failed.',

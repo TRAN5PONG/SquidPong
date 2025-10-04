@@ -14,7 +14,8 @@ async function start()
 {
 	try 
 	{
-		app.listen({port, host}, () => { console.log(`Auth service running at http://auth:${port}`) })
+		console.log(`Starting Auth service on port ${port}...`)
+		await app.listen({port , host}, () => { console.log(`Auth service running at http://auth:${port}`) })
 	} 
 	catch (error) 
 	{

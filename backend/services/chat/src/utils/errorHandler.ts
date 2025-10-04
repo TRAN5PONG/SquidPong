@@ -1,4 +1,3 @@
-
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
 // Enhanced error handler with dynamic validation messages
@@ -63,7 +62,6 @@ export function errorHandler( error: FastifyError, request: FastifyRequest, repl
 }
 
 
-
 export type ApiResponse<T = any> = {
   success: boolean;
   message: string;
@@ -71,9 +69,7 @@ export type ApiResponse<T = any> = {
 };
 
 
-
-export function sendError(res: FastifyReply, error: unknown, statusCode = 400) 
-{
+export function sendError(res: FastifyReply, error: unknown, statusCode = 400) {
   const message = error instanceof Error ? error.message : String(error);
 
   const response: ApiResponse<null> = {

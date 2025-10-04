@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { setJwtTokens } from '../validators/2faValidator';
 import { authenticator } from "otplib";
 import { TwoFA  , UserProfileMessage ,  TwoFaEmaiL } from '../utils/messages';
-
+import { sendCodeToEmail } from './verification_messenger';
 
 enum TwoFAMethod 
 {
@@ -19,11 +19,14 @@ export const {NONE , AUTHENTICATOR , EMAIL} = TwoFAMethod;
 
 const serviceName = "SquidPong";
 
-export async function setupAuthenticatorApp(userId: number, username: string) 
+export async function setupAuthenticatorApp(user: any) 
 {
 
+  if(user.twoFAKey != null)
+    return { twoFAQRCode: user.twoFAQRCode, twoFAKey: user.twoFAKey };
+
     const twoFASecret = authenticator.generateSecret();
-    const otpauth = authenticator.keyuri(username, serviceName, twoFASecret);
+    const otpauth = authenticator.keyuri(user.username, serviceName, twoFASecret);
     const twoFAKey = otpauth.split("=")[1].split("&")[0];
     const twoFAQRCode = await QRCode.toDataURL(otpauth, {
     color: {
@@ -33,8 +36,8 @@ export async function setupAuthenticatorApp(userId: number, username: string)
     });
 
     await prisma.user.update({
-      where: { id: userId },
-      data: { twoFASecret, twoFAKey, twoFAQRCode, twoFAMethod: AUTHENTICATOR,},
+      where: { id : user.id },
+      data: { twoFASecret, twoFAKey, twoFAQRCode,},
     });
 
     return { twoFAQRCode, twoFAKey };
@@ -49,11 +52,7 @@ export async function setupEmail2FA(userId: number, email: string)
 {
   try 
   {
-    const code = generateEmailCode();
-    await redis.set(`2fa:email:${userId}`, code, "EX", 300); // 300s = 5min
-
-    await sendTwoFACodeEmail(email, code);
-
+    await sendCodeToEmail(email , "2FA");
     await prisma.user.update({
       where: { id: userId },
       data: { twoFAMethod: EMAIL },
@@ -98,22 +97,16 @@ export async function enableAuthenticatorCode(id: number,twoFASecret : string , 
 }
 
 
-
-
-export async function enableEmailCode(userId: number, code: string)
+export async function enableEmailCode(email: string, code: string)
 {
 
-  const storedCode = await redis.get(`2fa:email:${userId}`);
-  if (!storedCode)
-    throw new Error(TwoFaEmaiL.TWO_FA_EMAIL_EXPIRED);
-
-  if (storedCode !== code)
-    throw new Error(TwoFaEmaiL.INVALID_2FA_CODE);
-      
-  await redis.del(`2fa:email:${userId}`);
-
+  const storedCode = await redis.get(`2FA:${email}`);
+  if (!storedCode) throw new Error(TwoFaEmaiL.TWO_FA_EMAIL_EXPIRED);
+  if (storedCode !== code) throw new Error(TwoFaEmaiL.INVALID_2FA_CODE);
+  
+  await redis.del(`2FA:${email}`);
   await prisma.user.update({
-    where: { id: userId },
+    where: { email },
     data: { twoFAMethod: EMAIL },
   });
 

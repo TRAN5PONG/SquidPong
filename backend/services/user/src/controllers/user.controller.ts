@@ -13,17 +13,9 @@ import { checkSecretToken } from '../utils/utils';
 export async function createProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const response: ApiResponse<null> = {  success: true,  message: ProfileMessages.CREATE_SUCCESS  };
-  const body = req.body as any;
-
-  const avatar = `${process.env.BACKEND_URL}/api/user/avatars/${(body.avatar != undefined) ? body.avatar : 'default.png'}`;
+  const {userId , username , firstName , lastName , avatar} = req.body as {userId : number , username : string , firstName : string , lastName : string , avatar? : string};
   
-  const newProfileData: any = {
-    userId: body.id,
-    username: body.username,
-    firstName: body.fname,
-    lastName: body.lname,
-    avatar
-  };
+  const newProfileData: any = { userId , username, firstName, lastName, avatar};
 
   try 
   {

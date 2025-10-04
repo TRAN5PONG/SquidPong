@@ -14,7 +14,7 @@ async function generate6DigitCode(): Promise<string>
 
 
 
-export async function sendEmailMessage(data:any)
+export async function sendEmailMessage(data: { email: string; type: string })
 {
   const {type , email} = data;
   const code: string = await generate6DigitCode();

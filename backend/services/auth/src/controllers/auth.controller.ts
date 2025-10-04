@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { sendVerificationEmail } from '../utils/verification_messenger';
+import { sendVerificationEmail , sendCodeToEmail } from '../utils/verification_messenger';
 import { OAuth2Namespace } from '@fastify/oauth2';
 import { isUserVerified , isResetCodeValid , isUserAlreadyRegistered  , isUserAllowedToLogin} from '../validators/userStatusCheck';
 import { createAccount } from '../utils/utils';
@@ -26,17 +26,15 @@ declare module 'fastify' {
 
 
 
-
-
 export async function postSignupHandler(req:FastifyRequest , res:FastifyReply)
 {
   const respond : ApiResponse<null > = {success : true  , message : EmailMessage.EMAIL_VERIFICATION_SENT}
-  const body = req.body as {email : string , username : string , password : string , firstName : string , lastName : string};
-
+  const {email , username , password , firstName , lastName} = req.body as {email : string , username : string , password : string , firstName : string , lastName : string};
+  
   try
   {
-    await isUserAlreadyRegistered(body);
-    await sendVerificationEmail(body);
+    await isUserAlreadyRegistered(email , username , respond);
+    await sendVerificationEmail({email , password , username , firstName , lastName});
   }
   catch (error) 
   {
@@ -51,14 +49,14 @@ export async function postSignupHandler(req:FastifyRequest , res:FastifyReply)
 export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
 {
   const respond : ApiResponse<null > = {success : true  , message : EmailMessage.EMAIL_VERIFIED_SUCCESSFULLY}
-  const body = req.body as any;
+  const {email , code} = req.body as {email : string , code : string};
 
     try 
     {
-      await isUserVerified(body);
-      const data = await redis.get(body.email);
-      if(!data)
-          throw new Error(AuthError.VALIDATION_ERROR)
+      await isUserVerified(email  , code);
+      const data = await redis.get(email);
+      if(!data) throw new Error(AuthError.VALIDATION_ERROR)
+      
       const parsed = JSON.parse(data);
       await createAccount(parsed);
     }
@@ -73,23 +71,27 @@ export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
 
 export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
 {
-    const body = req.body as any;
-    const respond : ApiResponse<{is2FAEnabled : boolean} > = {success : true  , message : UserProfileMessage.LOGIN_SUCCESSFUL}
-    respond.data = {is2FAEnabled : false}
+  const respond : ApiResponse<{ is2FAEnabled: boolean }> = {success : true  , message : AuthError.LOGIN_SUCCESSFUL , data : { is2FAEnabled : false}}
+  
+  const {email , username , password} = req.body as {email? : string , password : string , username ?: string};
+  try 
+  {
+    let user ;
+    if(email)
+      user = await prisma.user.findUnique({ where: { email }})
+    else if(username)
+      user = await prisma.user.findUnique({ where: { username }})
 
-    try 
-    {
-      const user = await prisma.user.findUnique({ where: { email: body.email}})
-      if(!user)
-        throw new Error(UserProfileMessage.USER_NOT_FOUND)
+    if(!user)
+      throw new Error(UserProfileMessage.USER_NOT_FOUND)
 
-      await isUserAllowedToLogin(body , user);
-      await isTwoFactorEnabled(res , user , respond);
-    }
-    catch (error) 
-    {
-      sendError(res, error);
-    }
+    await isUserAllowedToLogin(password , user);
+    await isTwoFactorEnabled(user.id, user.twoFAMethod, res, respond);
+  }
+  catch (error) 
+  {
+    sendError(res, error);
+  }
     
   return res.send(respond)
 }
@@ -148,7 +150,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
     })
 
     respond.success = true;
-    respond.message = `Account with id ${id} deleted successfully`;
+    respond.message = `Account  ${user.username} deleted successfully`;
     
   } 
   catch (error) 
@@ -173,7 +175,7 @@ export async function getGooglCallbackehandler(req: FastifyRequest, res: Fastify
     
     const avatar = await fetchAvatarImagePipeline(googleData.avatar, googleData.email.split('@')[0]);
     const user = await createAccount({...googleData , avatar});
-    await isTwoFactorEnabled(res, user, respond);
+    await isTwoFactorEnabled(user.id, user.twoFAMethod, res, respond);
   } 
   catch (error) 
   {
@@ -211,7 +213,7 @@ export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyR
     const avatar = await fetchAvatarImagePipeline(userJSON.avatar, userJSON.username);
 
     const account = await createAccount({...userJSON , avatar});
-    await isTwoFactorEnabled(res, account, respond);
+    await isTwoFactorEnabled(account.id, account.twoFAMethod, res, respond);
 
   }
   catch (error) 
@@ -265,24 +267,18 @@ export async function postRefreshTokenHandler(req: FastifyRequest, res: FastifyR
 export async function postForgotPasswordHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond : ApiResponse<null > = {success : true  , message : PasswordMessage.PASSWORD_RESET_EMAIL_SENT}
-  const headers = req.headers as any;
-  const id = Number(headers['x-user-id'])
+  const {email , username} = req.body as {email? : string , username? : string};
   
+  let user;
   try 
   {
-    const user = await prisma.user.findFirst({ where: { id , password : {not : null} }})
-    if(!user)
-      throw new Error(  UserProfileMessage.USER_NOT_FOUND)
-    const email = user.email;
+    if(email)
+      user = await prisma.user.findUnique({ where: { email }})
+    else if(username)
+      user = await prisma.user.findUnique({ where: { username }})
+    if(!user) throw new Error(  UserProfileMessage.USER_NOT_FOUND)
 
-    // TODO: changed later  to function in utils
-    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const key = `resetpassword:${email}`;
-    await redis.set(key, resetCode, "EX", 600); // Code valid for 10 minutes
-    await sendDataToQueue({email , resetCode}, "emailhub");
-  
-    // End TODO
-
+    sendCodeToEmail(user.email , "RESET");
   } 
   catch (error) 
   {
@@ -297,20 +293,21 @@ export async function postForgotPasswordHandler(req: FastifyRequest, res: Fastif
 export async function postResetPasswordHandler(req: FastifyRequest, res: FastifyReply) 
 {
 
-  const respond : ApiResponse<null > = {success : true  , message : PasswordMessage.PASSWORD_RESET_SUCCESS}
-  const {confirmPassword , newPassword , code } = req.body as any;
+  const respond : ApiResponse<null > = {success : true  , message : PasswordMessage.PASSWORD_CHANGED_SUCCESS}
+  const {email , username  , newPassword , code } = req.body as {email? : string , username? : string , newPassword : string , code : string};
 
-  const headers = req.headers as any;
-  const id = Number(headers['x-user-id'])
   try 
   {
-    const user = await prisma.user.findFirst({ where: { id , password : {not : null} }})
-    if(!user)
-      throw new Error(UserProfileMessage.USER_NOT_FOUND)
+    let user;
+    if(email)
+      user = await prisma.user.findUnique({ where: { email }})
+    else if(username)
+      user = await prisma.user.findUnique({ where: { username }})
+    if(!user) throw new Error(UserProfileMessage.USER_NOT_FOUND)
 
-    isResetCodeValid(code , confirmPassword , newPassword , user);
-    await prisma.user.update({ where: { id}  , data : {password : await hashPassword(newPassword)} })
-
+    if(!user.password) throw new Error(UserProfileMessage.U_HAVE_ACCOUNT_OAUTH)
+    await isResetCodeValid(user.email , user.password , newPassword , code);
+    await prisma.user.update({ where: { id : user.id}  , data : {password : await hashPassword(newPassword)} })
   } 
   catch (error) 
   {
@@ -323,23 +320,19 @@ export async function postResetPasswordHandler(req: FastifyRequest, res: Fastify
 
 export async function postChangePasswordHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond : ApiResponse<null > = {success : true  , message : PasswordMessage.PASSWORD_RESET_SUCCESS}
+  const respond : ApiResponse<null > = {success : true  , message : PasswordMessage.PASSWORD_CHANGED_SUCCESS}
   const headers = req.headers as any;
   const id = Number(headers['x-user-id'])
   
   const {oldPassword , newPassword} = req.body as any;
-
   try 
   {
-    const user = await prisma.user.findFirst({ where: { id , password : {not : null} }})
-    
-    if(!user)
-      throw new Error(UserProfileMessage.USER_NOT_FOUND)
-    if(await VerifyPassword(oldPassword , user.password) == false)
-      throw new Error(PasswordMessage.PASSWORD_SAME_AS_OLD)
+    const user = await prisma.user.findFirst({ where: { id }});
+    if(!user) throw new Error(UserProfileMessage.USER_NOT_FOUND);
+    if(!user.password) throw new Error(UserProfileMessage.U_HAVE_ACCOUNT_OAUTH)
 
+    if(!await VerifyPassword(oldPassword , user.password)) throw new Error(PasswordMessage.CURRENT_PASSWORD_INCORRECT)
     await prisma.user.update({ where: { id}  , data : {password : await hashPassword(newPassword)} })
-
   } 
   catch (error) 
   {

@@ -12,13 +12,11 @@ import { setupAuthenticatorApp  , setupEmail2FA  ,verifyAuthenticatorCode , veri
 
 
 
-// STEP 1 - Setup 2FA (App or Email)
 export async function setupTwoFAHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<{ twoFAQRCode: string; twoFAKey: string } | null> = { success: true, message: TwoFA.TWO_FA_SETUP_SUCCESS};
   const { method } = req.params as any;
 
-  console.log("2FA Method: ", method);
   const id = Number((req.headers as any)["x-user-id"]);
 
   try 
@@ -34,7 +32,7 @@ export async function setupTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 
     if(method === AUTHENTICATOR)
     {
-      const { twoFAQRCode, twoFAKey } = await setupAuthenticatorApp(id, user.username);
+      const { twoFAQRCode, twoFAKey } = await setupAuthenticatorApp(user);
       respond.data = { twoFAQRCode, twoFAKey };
     }
     else

@@ -31,18 +31,17 @@ export async function sendDataToQueue(data: any, queue: string)
 
 // Consumer function for RabbitMQ
 
-export async function receiveFromQueue(queue: string) 
+export async function receiveFromQueue() 
 {
+  const queue = "notification";
   try 
   {
     channel.consume(queue, async (msg: any) => {
-      if (!msg) return;
-
-      const data = JSON.parse(msg.content.toString());
-      channel.ack(msg);
-
+    if (!msg) return;
+    const data = JSON.parse(msg.content.toString());
+    channel.ack(msg);
     if(data.type == 'emailhub')
-      sendEmailMessage(data);
+      sendEmailMessage(data.data);
     
     });
   }
