@@ -25,52 +25,7 @@ const errorResponse = {
   required: ['success', 'message']
 };
 
-// Profile object schema
-const profileSchema = {
-  type: 'object',
-  properties: {
-    id: { type: 'number' },
-    userId: { type: 'number' },
-    username: { type: 'string' },
-    firstName: { type: 'string' },
-    lastName: { type: 'string' },
-    avatar: { type: 'string' },
-    bio: { type: 'string', nullable: true },
-    location: { type: 'string', nullable: true },
-    status: { 
-      type: 'string',
-      enum: ['ONLINE', 'OFFLINE', 'AWAY', 'BUSY']
-    },
-    isVerified: { type: 'boolean' },
-    createdAt: { type: 'string', format: 'date-time' },
-    updatedAt: { type: 'string', format: 'date-time' },
-    preferences: {
-      type: 'object',
-      properties: {
-        id: { type: 'number' },
-        profileId: { type: 'number' },
-        language: { type: 'string' },
-        timezone: { type: 'string' },
-        theme: { type: 'string' },
-        notifications: {
-          type: 'object',
-          properties: {
-            id: { type: 'number' },
-            preferenceId: { type: 'number' },
-            email: { type: 'boolean' },
-            push: { type: 'boolean' },
-            sms: { type: 'boolean' },
-            friendRequests: { type: 'boolean' },
-            gameInvitations: { type: 'boolean' },
-            messages: { type: 'boolean' }
-          }
-        }
-      }
-    }
-  }
-};
 
-// =============================================
 // PROFILE MANAGEMENT SCHEMAS
 // =============================================
 
@@ -196,7 +151,7 @@ export const updateProfileLiveSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: profileSchema
+        data: {}
       },
       description: 'Profile updated successfully'
     },
@@ -273,7 +228,7 @@ export const getCurrentUserSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: profileSchema
+        data: {}
       },
       description: 'Profile retrieved successfully'
     },
@@ -293,7 +248,8 @@ export const getUserByIdSchema: FastifySchema = {
     properties: {
       id: {
         type: 'string',
-        description: 'User ID'
+        pattern: '^[0-9]+$',
+        description: 'User ID (digits only)'
       }
     },
     required: ['id']
@@ -304,7 +260,39 @@ export const getUserByIdSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: profileSchema
+        data: {}
+      },
+      description: 'Profile retrieved successfully'
+    },
+    404: {
+      ...errorResponse,
+      description: 'Profile not found'
+    }
+  }
+};
+
+
+export const getUserByUserNameSchema: FastifySchema = {
+  description: 'Get user profile by ID',
+  tags: ['Profile Management'],
+  summary: 'Get User by ID',
+  params: {
+    type: 'object',
+    properties: {
+      Username: {
+        type: 'string',
+        description: 'User ID (digits only)'
+      }
+    },
+    required: ['Username']
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {}
       },
       description: 'Profile retrieved successfully'
     },
@@ -327,7 +315,7 @@ export const getAllUsersSchema: FastifySchema = {
         message: { type: 'string' },
         data: {
           type: 'array',
-          items: profileSchema
+          items: {}
         }
       },
       description: 'Users retrieved successfully'
@@ -362,7 +350,7 @@ export const searchUsersSchema: FastifySchema = {
         message: { type: 'string' },
         data: {
           type: 'array',
-          items: profileSchema
+          items: {}
         }
       },
       description: 'Search results retrieved successfully'

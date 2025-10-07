@@ -162,13 +162,12 @@ const App = () => {
         const userData = await getUserProfile();
         // console.log("User data:", userData);
         setUser(userData.data!);
-      socketManager.connect("ws://localhost:4000/chat-notification"); // TODO: xylar-99 change 
 
       } catch (error) {
         console.log("No valid session found");
       }
     };
-    // socketManager.connect("ws://localhost:4000/chat-notification");
+    socketManager.connect("ws://localhost:4000/events"); // TODO: xylar-99 change
 
     initializeAuth();
   }, []);

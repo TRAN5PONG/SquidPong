@@ -57,14 +57,14 @@ export async function updateProfileRedis(body: any, userId: number)
     }
   }
 
-  if (body.preferences)
-    await redis.mergeObject(redisKey, "preferences", body.preferences);
+  // if (body.preferences)
+  //   await redis.mergeObject(redisKey, "preferences", body.preferences);
 
-  for (const [key, value] of Object.entries(body)) 
-  {
-    if (!jsonArrayFields.includes(key as keyof typeof profile) && key !== "preferences")
-      await redis.update(redisKey, key, value);
-  }
+  // for (const [key, value] of Object.entries(body)) 
+  // {
+  //   if (!jsonArrayFields.includes(key as keyof typeof profile) && key !== "preferences")
+  //     await redis.update(redisKey, key, value);
+  // }
 
   return await redis.get(redisKey);
 }
@@ -157,4 +157,55 @@ export async function isCheck(userId: number, friendId: number)
   const profile = await getProfile(friendId);
 
   return profile;
+}
+
+
+
+
+export async function updateUserInServices(serviceUrl: string,method : string ,   body : any )
+{
+  await fetch(serviceUrl, {
+    method: method,
+    headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function isReadyExists(username: string | undefined ) : Promise<boolean>
+{
+  if (!username) return false;
+  const existingProfile = await prisma.profile.findUnique({ where: { username } });
+  return (!!existingProfile);
+}
+
+export async function sendServiceRequest({ url , method = 'GET', body, headers = {}}: {
+  url: string;
+  method?: string;
+  body?: any;
+  headers?: Record<string, string>;
+}) 
+{
+  const options: RequestInit = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+  };
+
+  if (body !== undefined) 
+  {
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
+  }
+
+  const response = await fetch(url, options);
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) 
+    {
+    return await response.json();
+  } 
+  else {
+    return await response.text();
+  }
+  
 }

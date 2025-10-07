@@ -10,7 +10,8 @@ import {
   getUserByIdSchema,
   getAllUsersSchema,
   searchUsersSchema,
-  deleteProfileSchema
+  deleteProfileSchema,
+  getUserByUserNameSchema
 } from '../schemas/user.schemas';
 import {
   sendFriendRequestSchema,
@@ -40,15 +41,18 @@ type Route = {
 const userRoutes: Route[] = [
 
   { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler, schema: createProfileSchema },
-  { method: 'PUT', url: '/api/user/sync', handler: userController.updateProfileHandlerDB, schema: updateProfileDBSchema },
-  { method: 'PUT', url: '/api/user/live', handler: userController.updateProfileHandler, schema: updateProfileLiveSchema },
+  { method: 'PUT', url: '/api/user/db', handler: userController.updateProfileHandlerDB },
+  { method: 'PUT', url: '/api/user/realtime', handler: userController.updateProfileHandler },
   { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler, schema: deleteProfileSchema },
+  
   { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler, schema: getCurrentUserSchema },
+  // { method: 'GET', url: '/api/user/:Username', handler: userController.getUserByUserNameHandler  , schema: getUserByUserNameSchema },
   { method: 'GET', url: '/api/user/:id', handler: userController.getUserByIdHandler, schema: getUserByIdSchema },
   { method: 'GET', url: '/api/user/all', handler: userController.getAllUserHandler, schema: getAllUsersSchema },
-
   { method: 'GET', url: '/api/user/search', handler: userController.searchUsersHandler, schema: searchUsersSchema },
 ];
+
+
 
 
 const friendRoutes: Route[] = [

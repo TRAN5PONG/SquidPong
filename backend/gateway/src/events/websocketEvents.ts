@@ -155,32 +155,30 @@ async function onClientDisconnect(ws: any)
 
 
 
+
 export function handleHttpUpgrade(req: any, socket: any, head: any) 
 {
   const includesURL = ['/events'];
 
   try 
-    {
-    if (!includesURL.includes(req.url))
-        throw new Error('No endpoint found');
+  {
+    if (!includesURL.includes(req.url)) throw new Error('No endpoint found');
+    const token = req.headers.cookie.split('=')[1]
+    if (!token) throw new Error('No accessToken found');
 
-      
-      const token = req.headers.cookie.split('=')[1]
-      if (!token) throw new Error('No accessToken found');
+    const payload: any = app.jwt.verify(token);
 
-      const payload: any = app.jwt.verify(token);
+    ws.handleUpgrade(req, socket, head, (client:any) => {
+      client.userId = payload.userId;
+      ws.emit('connection', client, req);
+    });
 
-      ws.handleUpgrade(req, socket, head, (client:any) => {
-        client.userId = payload.userId;
-        ws.emit('connection', client, req);
-      });
-
-    } 
-    catch (err) 
-    {
-      console.log("not loged yet  please login first")
-      socket.destroy();
-    }
+  } 
+  catch (err) 
+  {
+    console.log("not loged yet  please login first")
+    socket.destroy();
+  }
 }
 
 

@@ -16,9 +16,12 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
     '/api/user/docs/json',
     '/api/chat/docs',
     '/api/auth/docs/json',
+
     '/api/auth/signup', 
-    '/api/auth/login', 
     '/api/auth/verify-email', 
+    '/api/auth/login',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password', 
     '/api/auth/intra', 
     '/api/auth/google', 
     '/api/auth/refresh'
