@@ -8,28 +8,30 @@ import { Readable } from 'stream';
 
 import app from "../app";
 
+
 export async function fetchIntraToken(code: string): Promise<string>
 {
-
-  const body = {
+  const body = new URLSearchParams({
     grant_type: 'authorization_code',
-    client_id: process.env.IDINTRA,
-    client_secret: process.env.SECRETINTRA,
+    client_id: process.env.INTRA_CLIENT_ID!,
+    client_secret: process.env.INTRA_CLIENT_SECRET!,
     code,
-    redirect_uri: `${process.env.URL}/api/auth/intra/callback`,
-  };
+    redirect_uri: `${process.env.BACKEND_URL}/api/auth/intra/callback`,
+  });
 
   const tokens = await fetch('https://api.intra.42.fr/oauth/token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
   });
 
   const tokensJSON = await tokens.json();
   return tokensJSON.access_token;
 }
 
-export async function fetchIntraUser(access_token: string): Promise<any> {
+export async function fetchIntraUser(access_token: string): Promise<any> 
+{
+
   const user = await fetch('https://api.intra.42.fr/v2/me', {
     headers: { Authorization: `Bearer ${access_token}` },
   });
@@ -37,8 +39,8 @@ export async function fetchIntraUser(access_token: string): Promise<any> {
   const userJSON = await user.json();
 
   // Map fields
-  userJSON['fname'] = userJSON.first_name;
-  userJSON['lname'] = userJSON.last_name;
+  userJSON['firstName'] = userJSON.first_name;
+  userJSON['lastName'] = userJSON.last_name;
   userJSON['avatar'] = userJSON.image.link;
   userJSON['username'] = userJSON.login;
 

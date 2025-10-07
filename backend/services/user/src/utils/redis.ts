@@ -60,13 +60,21 @@ export async function get(key: string)
 }
 
 // ----------------- JSON Update / Merge -----------------
-export function update(key: string, path: string, value: any) 
+export async function update(key: string, path: string, value: Record<string, any>) 
 {
+  // Get current object at path
+  const current = await rediss.call(
+    "JSON.GET",
+    key,
+    path.startsWith("$") ? path : `$.${path}`
+  );
+  const currentObj = current ? JSON.parse(current as string)[0] : {};
+  const merged = { ...currentObj, ...value };
   return rediss.call(
     "JSON.SET",
     key,
     path.startsWith("$") ? path : `$.${path}`,
-    JSON.stringify(value)
+    JSON.stringify(merged)
   );
 }
 

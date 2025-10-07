@@ -122,6 +122,7 @@ export enum AuthMessage {
   
   export enum UserProfileMessage
   {
+    UPDATE_SUCCESS = 'account updated successfully.',
     U_HAVE_ACCOUNT_OAUTH = 'You have an account via OAuth. u cant change password.',
     USERNAME_ALREADY_TAKEN = 'Username is already taken.',
     INVALID_USERNAME = 'Invalid username.',

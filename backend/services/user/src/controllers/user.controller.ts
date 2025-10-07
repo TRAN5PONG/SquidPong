@@ -6,9 +6,9 @@ import { Profile } from '../utils/types';
 import { redis } from '../utils/redis';
 import { ProfileMessages, PreferenceMessages, NotificationMessages, GeneralMessages } from '../utils/responseMessages';
 import { checkSecretToken } from '../utils/utils';
-
-
-
+import { updateUserInServices } from '../utils/utils';
+import { sendServiceRequest } from '../utils/utils';
+import { isReadyExists } from '../utils/utils';
 
 export async function createProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -27,14 +27,6 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
       },
     });
 
-    // Ensure user exists in chat service
-    await fetch('http://chat:4003/api/chat/user/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
-      body: JSON.stringify({ ...newProfileData, isVerified: false  , avatar : profile.avatar }),
-    });
-
-
   } 
   catch (error) {
     return sendError(res, error);
@@ -50,30 +42,51 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
   
-  const {status} = req.body as {status : string};
+  const { username, firstName, lastName, banner, bio, isVerified } = req.body as {
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+    banner?: string;
+    bio?: string;
+    isVerified?: boolean;
+  };
 
-  try 
+  try
   {
+    const existingProfile = await prisma.profile.findUnique({ where: { userId } });
+    
+    if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
+    if(username == existingProfile.username) throw new Error(ProfileMessages.SAME_USERNAME);
+    if(await isReadyExists(username)) throw new Error(ProfileMessages.READY_EXISTS);
 
-  checkSecretToken(req);
-  if(status == "ONLINE")
-    await prisma.profile.update({ where: { userId }, data: { status : "ONLINE" } });
-  else
-  {
-    const profile = await syncRedisProfileToDbAppendArrays(userId);
 
-    // Ensure user is updated in chat service
-    const chatUser = await fetch('http://chat:4003/api/chat/user/update', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
-      body: JSON.stringify({ userId : String(userId) , username : profile.username , firstName : profile.firstName , lastName : profile.lastName , avatar : profile.avatar , isVerified : false }),
+    const updatedProfile = await prisma.profile.update({
+      where: { userId },
+      data: { username, firstName, lastName, 
+          banner,  bio,  isVerified
+        },
     });
     
-  }
+    if(username)
+    {
+    await sendServiceRequest({
+        url: 'http://auth:4001/api/auth/update',
+        method: 'POST',
+        body: {username },
+        headers: { 'X-Secret-Token': process.env.SECRET_TOKEN || '' , 'x-user-id': String(userId) },
+    });
+    }
+
+    const redisKey = `profile:${userId}`;
+    if(await redis.exists(redisKey))
+      await redis.update(redisKey, '$', {level : 3 }); 
+
+    respond.data = { ...updatedProfile };
+
   }
   catch (error) {
     return sendError(res, error);
-  }
+  }  
 
   return res.send(respond);
 }
@@ -82,24 +95,13 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
 
 export async function updateProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<Profile> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
+  const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
-  
-  try 
-  {
-    const body = await convertParsedMultipartToJson(req);
 
-    console.log("Body Update : ", body);
-    respond.data = await updateProfileRedis(body , userId);
-
-  }
-  catch (error) {
-    return sendError(res, error);
-  }
-
-  return res.send(respond);
+  const {}
 }
+
 
 
 
@@ -110,27 +112,8 @@ export async function getAllUserHandler(req: FastifyRequest, res: FastifyReply)
 
   try 
   {
-    const onlineUserIds: string[] = await redis.getOnlineUsers();
-
-    const offlineProfiles = await prisma.profile.findMany({
-      where: { status: "OFFLINE" },
-      include: { preferences: { include: { notifications: true } } },
-    });
-
-    const onlineProfiles: Profile[] = [];
-    for (const userId of onlineUserIds) 
-    {
-      const profile = await redis.get(`profile:${userId}`);
-      if (profile)
-        onlineProfiles.push({ ...profile, status: "ONLINE" });
-    }
-
-    const allProfiles = [
-      ...offlineProfiles,
-      ...onlineProfiles,
-    ];
-
-    respond.data = allProfiles;
+    const profiles = await prisma.profile.findMany({ include: { preferences: true } });
+    respond.data = profiles;
 
   } 
   catch (error) {
@@ -139,6 +122,8 @@ export async function getAllUserHandler(req: FastifyRequest, res: FastifyReply)
 
   return res.send(respond);
 }
+
+
 
 
 export async function deleteProfileHandler(req: FastifyRequest, res: FastifyReply) 
@@ -160,11 +145,7 @@ export async function deleteProfileHandler(req: FastifyRequest, res: FastifyRepl
     await redis.del(cacheKey);
 
     // Ensure user is deleted in chat service
-    await fetch('http://chat:4003/api/chat/user/delete', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
-      body: JSON.stringify({ userId : String(userId) }),
-    });
+    // await updateUserInServices('http://chat:4003/api/chat/user/delete', 'DELETE' , { userId : String(userId) });
 
   }
   catch (error) {
@@ -187,20 +168,22 @@ export async function getCurrentUserHandler(req: FastifyRequest, res: FastifyRep
 
   try 
   {
-    let profile = await redis.get(cacheKey);
-
-    if (!profile) 
-    {
-      profile = await prisma.profile.findUnique({
+    const profile = await prisma.profile.findUnique({
         where: { userId },
         include: { preferences: true },
       });
-
       if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
-      await redis.set(cacheKey, profile);
-    }
 
-    respond.data = profile;
+    console.log("Profile DB : " , profile);
+    const profileRedis = await redis.get(cacheKey);
+
+    console.log("Profile Redis : " , profileRedis);
+      await redis.set(cacheKey, {username : profile.username , firstName : profile.firstName , lastName : profile.lastName , avatar : profile.avatar  ,
+        isVerified : profile.isVerified , status : profile.status,
+        walletBalance : profile.walletBalance , level : profile.level , rankDivision : profile.rankDivision , rankTier : profile.rankTier
+      });
+
+    respond.data = {...profile , ...profileRedis};
   } 
   catch (error) {
     return sendError(res, error);
@@ -299,3 +282,72 @@ export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply)
 
   return res.send(respond);
 }
+
+export async function getUserByUserNameHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<any> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
+  const { Username } =  req.params as { Username: string };
+  
+  try 
+  {
+    let profile  = await prisma.profile.findUnique({ where: { username : Username } });
+    if(!profile) throw new Error(GeneralMessages.NOT_FOUND);
+
+    const cacheKey = `profile:${profile.userId}`;
+    if(await redis.exists(cacheKey))
+      profile = await redis.get(cacheKey);
+  
+    respond.data = profile;
+  }
+  catch (error) {
+    return sendError(res, error);
+  }
+
+  return res.send(respond);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// 🎯 DB Profile Object
+const dbProfileFields = {
+  username: true,
+  firstName: true,
+  lastName: true,
+  avatar: true,
+  banner: true,
+  bio: true,
+  isVerified: true,
+  rankDivision: true,
+  rankTier: true,
+  preferences: true,
+};
+
+
+
+
+
+
+// ⚡ Redis Cache Profile Object
+const redisProfileFields = {
+  username: true,         // needed for in-game name
+  avatar: true,           // show in match
+  walletBalance: true,    // coins
+  level: true,            // XP/level
+  rankDivision: true,
+  rankTier: true,
+  status: true,           // ONLINE / IN_MATCH
+  lastSeen: true,
+  playerCharacters: true, // inventory
+  playerSelectedCharacter: true,
+  playerPaddles: true,
+  playerSelectedPaddle: true,
+};

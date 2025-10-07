@@ -4,23 +4,33 @@ import { sendToService } from '../integration/api_calls';
 
 
 
-export async function   createAccount(data:any): Promise<any>
+export async function createAccount(data: any): Promise<any> 
 {
 
-    let password:string = data?.password ?? null;
-    const user = await prisma.user.findUnique({where : {email : data.email}})
-        
-    const dataUser = {email : data.email , password , username : data.username }
-    const Created = await prisma.user.upsert({ where: { email: data.email }, update: password ? {password} : {} , create: dataUser });
-        
-    if(!user)
-    {
-        delete data.id;
-        const profile  = {userId : Created.id , username : data.username , firstName : data.firstName , lastName : data.lastName , avatar : data.avatar}
-        await sendToService('http://user:4002/api/user/me' , 'POST'  , null , profile)
-    }
-        
-    return Created;
+   console.log("Creating account with data:", data);
+  const { email, username, password, firstName, lastName, avatar } = data;
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: (password != undefined) ? { password } : {},
+    create: { email, password, username },
+  });
+
+  if (!existingUser) 
+   {
+      const profile = { userId: user.id, username, firstName, lastName, avatar };
+      console.log("Creating profile with data:", profile);
+
+      await fetch(`http://user:4002/api/user/me`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json', 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
+        body: JSON.stringify(profile),
+      });
+      
+   }
+
+  return user;
 }
 
 

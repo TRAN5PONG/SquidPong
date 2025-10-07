@@ -1,5 +1,10 @@
 // responseMessages.ts
+
+
+
 export enum ProfileMessages {
+  READY_EXISTS = 'The username is already taken.',
+  SAME_USERNAME = 'The new username is the same as the current one.',
   FETCH_SUCCESS = 'Profile fetched successfully.',
   FETCH_NOT_FOUND = 'Profile not found in the database.',
 

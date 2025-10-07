@@ -73,6 +73,9 @@ export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
 {
   const respond : ApiResponse<{ is2FAEnabled: boolean }> = {success : true  , message : AuthError.LOGIN_SUCCESSFUL , data : { is2FAEnabled : false}}
   
+
+  // case check if ready is logged in  so here redirect to home page
+
   const {email , username , password} = req.body as {email? : string , password : string , username ?: string};
   try 
   {
@@ -174,7 +177,7 @@ export async function getGooglCallbackehandler(req: FastifyRequest, res: Fastify
     const googleData = await fetchGoogleUser(req);
     
     const avatar = await fetchAvatarImagePipeline(googleData.avatar, googleData.email.split('@')[0]);
-    const user = await createAccount({...googleData , avatar});
+    const user = await createAccount({email : googleData.email , username : googleData.email.split('@')[0] , firstName : googleData.given_name, lastName : googleData.family_name , avatar});
     await isTwoFactorEnabled(user.id, user.twoFAMethod, res, respond);
   } 
   catch (error) 
@@ -190,11 +193,10 @@ export async function getGooglCallbackehandler(req: FastifyRequest, res: Fastify
 export async function getIntrahandler(req:FastifyRequest , res:FastifyReply) 
 {
   const client_id = process.env.INTRA_CLIENT_ID;
-  const URL = `https://api.intra.42.fr/oauth/authorize?client_id=${client_id}&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fapi%2Fauth%2Fintra%2Fcallback&response_type=code`
-
- return  res.redirect(URL)
+  const redirect_uri = encodeURIComponent('http://localhost:4000/api/auth/intra/callback');
+  const URL = `https://api.intra.42.fr/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=code`;
+  return res.redirect(URL);
 }
-
 
 
 
@@ -209,12 +211,15 @@ export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyR
   {
     const access_token = await fetchIntraToken(code);
     const userJSON = await fetchIntraUser(access_token);
-
+    if (!userJSON || !userJSON.username || !userJSON.avatar) 
+    {
+      respond.success = false;
+      respond.message = 'Failed to fetch user data from Intra.42';
+      return sendResponseToFrontend(res, respond);
+    }
     const avatar = await fetchAvatarImagePipeline(userJSON.avatar, userJSON.username);
-
-    const account = await createAccount({...userJSON , avatar});
+    const account = await createAccount({email : userJSON.email , username : userJSON.username , firstName : userJSON.firstName, lastName : userJSON.lastName , avatar});
     await isTwoFactorEnabled(account.id, account.twoFAMethod, res, respond);
-
   }
   catch (error) 
   {
@@ -342,6 +347,27 @@ export async function postChangePasswordHandler(req: FastifyRequest, res: Fastif
   return res.send(respond);
 }
 
+export async function postUpdateAuthHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<null> = { success: true, message: 'User updated successfully' };
+  const { username } = req.body as { username: string };
+  const headers = req.headers as any;
+  const id = Number(headers['x-user-id']);
 
+  const secretToken = req.headers['x-secret-token'] as string;
+  try 
+  {
+    if (secretToken !== process.env.SECRET_TOKEN)
+      throw new Error('Unauthorized: Invalid secret token');
 
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) throw new Error('User not found');
+    await prisma.user.update({ where: { id }, data: { username } });
+  } 
+  catch (error) {
+    return sendError(res, error);
+  }
+
+  return res.send(respond);
+}
 

@@ -116,6 +116,7 @@ model Profile {
   updatedAt DateTime     @updatedAt
 
   isVerified    Boolean    @default(false)
+  
   walletBalance Int        @default(0)
   level         Int        @default(1)
   rankDivision  RankDivision @default(BRONZE)
@@ -177,3 +178,9 @@ model Friendship {
 
   @@unique([senderId, receiverId])
 }
+
+
+
+
+
+

@@ -20,6 +20,9 @@ function generateToken(length = 10)
 
 export async function setJwtTokens(res: FastifyReply, userId: number) 
 {
+
+  // here check is user is ready have token or not if have token in redis just return it
+
   const accessToken = await app.jwt.sign({ userId }, { expiresIn: "7d" });
   const refreshToken = await app.jwt.sign({ userId}, { expiresIn: "30d" });
 
