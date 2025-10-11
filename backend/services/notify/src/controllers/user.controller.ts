@@ -1,6 +1,13 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../db/database';
-import { ApiResponse, sendError, checkSecretToken } from '../utils/errorHandler';
+import { ApiResponse, sendError } from '../utils/errorHandler';
+
+function checkSecretToken(req: FastifyRequest) {
+  const token = req.headers['x-secret-token'];
+  if (token !== process.env.SECRET_TOKEN) {
+    throw new Error('Unauthorized: Invalid secret token');
+  }
+}
 
 export async function createUser(req: FastifyRequest, res: FastifyReply) 
 {

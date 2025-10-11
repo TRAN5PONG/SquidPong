@@ -106,7 +106,6 @@ const authRoutes: Route[] = [
     handler: authController.postRefreshTokenHandler,
     schema: refreshTokenSchema,
   },
-
   {
     method: "DELETE",
     url: "/api/auth/delete-account",

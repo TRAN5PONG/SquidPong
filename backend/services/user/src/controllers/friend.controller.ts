@@ -6,7 +6,7 @@ import { getProfile } from '../utils/utils';
 import { sendDataToQueue } from '../integration/rabbitmqClient';
 import { redis } from '../utils/redis';
 import { FriendMessages , ProfileMessages } from '../utils/responseMessages';
-import { isCheck } from '../utils/utils';
+import { isCheck  , mergeProfileWithRedis} from '../utils/utils';
 
 enum FriendshipStatus {
   PENDING = "PENDING",
@@ -22,7 +22,6 @@ const {PENDING, ACCEPTED} = FriendshipStatus;
 export async function getFriendsListHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<Profile[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
-  
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
 
@@ -37,53 +36,26 @@ export async function getFriendsListHandler(req: FastifyRequest, res: FastifyRep
         ]
       }
     });
-
     const friendIds = friendships.map((f:any) => f.senderId === userId ? f.receiverId : f.senderId);
-
-    const onlineUserIds: string[] = await redis.getOnlineUsers();
-    const onlineFriends: Profile[] = [];
-
-    for (const friendId of friendIds) 
-    {
-      if (onlineUserIds.includes(friendId.toString())) 
-      {
-        const profile = await redis.get(`profile:${friendId}`);
-        onlineFriends.push({ ...profile});
-        friendIds.splice(friendIds.indexOf(friendId), 1);
-      }
-    }
-
-
-    const offlineFriends = await prisma.profile.findMany({
-      where: { userId: { in: friendIds }, status: "OFFLINE" }
-    });
-
-    const allFriends = [...onlineFriends, ...offlineFriends];
-    respond.data = allFriends;
+    const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
+    
+    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
+    respond.data = mergedProfiles;
   } 
   catch (error) {
     return sendError(res, error);
   }
-
   return res.send(respond);
 }
 
-
-
 export async function getPendingRequestsHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<{ sent: Profile[]; received: Profile[] }> = { 
-    success: true, 
-    message: FriendMessages.PENDING_FETCH_SUCCESS,
-    data: { sent: [], received: [] }
-  };
-
+  const respond: ApiResponse<{ sent: Profile[]; received: Profile[] }> = {  success: true,   message: FriendMessages.PENDING_FETCH_SUCCESS,  data: { sent: [], received: [] }};
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
-
+  
   try 
   {
-
     const friendships = await prisma.friendship.findMany({
       where: {
         status: PENDING,
@@ -93,50 +65,23 @@ export async function getPendingRequestsHandler(req: FastifyRequest, res: Fastif
         ]
       }
     });
-
     const sentIds: number[] = [];
     const receivedIds: number[] = [];
-
-
     friendships.forEach((f:any) => {
       (f.senderId === userId) ? sentIds.push(f.receiverId) : receivedIds.push(f.senderId);
     });
-
-
-
-    const onlineUserIds: string[] = await redis.getOnlineUsers();
-    
-    const onlineFriends: any[] = [];
-    const offlineFriends: any[] = [];
-
-
-    for (const friendId of [...sentIds, ...receivedIds]) 
-    {
-      if (onlineUserIds.includes(friendId.toString())) 
-      {
-        const profile = await redis.get(`profile:${friendId}`);
-        if (profile)
-          onlineFriends.push({ ...profile});
-      }
-    }
-
-    const offlineProfiles = await prisma.profile.findMany({
-      where: { userId: { in: [...sentIds, ...receivedIds].filter((id:number) => !onlineUserIds.includes(id.toString())) }, status: "OFFLINE" }
-    });
-
-    offlineFriends.push(...offlineProfiles);
-
-    respond.data.sent = [...onlineFriends, ...offlineFriends].filter(p => sentIds.includes(p.userId));
-    respond.data.received = [...onlineFriends, ...offlineFriends].filter(p => receivedIds.includes(p.userId));
-
-  }
+    const allIds = [...sentIds, ...receivedIds];
+    const profiles = await prisma.profile.findMany({ where: { userId: { in: allIds } } });
+    // Merge DB and Redis profiles for all pending friends
+    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
+    respond.data.sent = mergedProfiles.filter((p:any) => sentIds.includes(p.userId));
+    respond.data.received = mergedProfiles.filter((p:any) => receivedIds.includes(p.userId));
+  } 
   catch (error) {
     return sendError(res, error);
   }
-
   return res.send(respond);
 }
-
 
 
 // ----------------- SEND FRIEND REQUEST -----------------

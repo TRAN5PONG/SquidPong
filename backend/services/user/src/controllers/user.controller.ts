@@ -7,8 +7,10 @@ import { redis } from '../utils/redis';
 import { ProfileMessages, PreferenceMessages, NotificationMessages, GeneralMessages } from '../utils/responseMessages';
 import { checkSecretToken } from '../utils/utils';
 import { updateUserInServices } from '../utils/utils';
-import { sendServiceRequest } from '../utils/utils';
-import { isReadyExists } from '../utils/utils';
+import { sendServiceRequest , getPromotedRank , isReadyExists } from '../utils/utils';
+import { mergeProfileWithRedis } from '../utils/utils';
+
+
 
 export async function createProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -42,29 +44,25 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
   
-  const { username, firstName, lastName, banner, bio, isVerified } = req.body as {
+  const { username, firstName, lastName, banner, bio } = req.body as {
     username?: string;
     firstName?: string;
     lastName?: string;
     banner?: string;
     bio?: string;
-    isVerified?: boolean;
   };
 
   try
   {
     const existingProfile = await prisma.profile.findUnique({ where: { userId } });
-    
     if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
+    
     if(username == existingProfile.username) throw new Error(ProfileMessages.SAME_USERNAME);
     if(await isReadyExists(username)) throw new Error(ProfileMessages.READY_EXISTS);
 
-
-    const updatedProfile = await prisma.profile.update({
-      where: { userId },
+    const updatedProfile = await prisma.profile.update({ where: { userId },
       data: { username, firstName, lastName, 
-          banner,  bio,  isVerified
-        },
+              banner,  bio },
     });
     
     if(username)
@@ -73,7 +71,7 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
         url: 'http://auth:4001/api/auth/update',
         method: 'POST',
         body: {username },
-        headers: { 'X-Secret-Token': process.env.SECRET_TOKEN || '' , 'x-user-id': String(userId) },
+        headers: { 'x-secret-token': process.env.SECRET_TOKEN || '' , 'x-user-id': String(userId) },
     });
     }
 
@@ -82,15 +80,12 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
       await redis.update(redisKey, '$', {level : 3 }); 
 
     respond.data = { ...updatedProfile };
-
   }
   catch (error) {
     return sendError(res, error);
   }  
-
   return res.send(respond);
 }
-
 
 
 export async function updateProfileHandler(req: FastifyRequest, res: FastifyReply) 
@@ -98,32 +93,46 @@ export async function updateProfileHandler(req: FastifyRequest, res: FastifyRepl
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
+  const Token = headers['x-secret-token'];
+  const body = req.body as { level?: number };
+  const cacheKey = `profile:${userId}`;
 
-  const {}
+  try 
+  {
+    if (Token !== process.env.SECRET_TOKEN) throw new Error(GeneralMessages.UNAUTHORIZED);
+    const profileRedis = await redis.get(cacheKey);
+    
+    const new_level = body.level !== undefined ? profileRedis.level + body.level : Number(profileRedis.level);
+    const { newRankTier, newRankDivision , newLevel } = getPromotedRank(profileRedis, new_level);
+    
+    await redis.update(cacheKey, '$', {
+      level: newLevel,
+      rankTier: newRankTier,
+      rankDivision: newRankDivision
+    });
+  }
+  catch (error) {
+    return sendError(res, error);
+  }
+  return res.send(respond);
 }
-
-
 
 
 
 export async function getAllUserHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<Profile[]> = {success: true,  message: ProfileMessages.FETCH_SUCCESS};
-
   try 
   {
     const profiles = await prisma.profile.findMany({ include: { preferences: true } });
-    respond.data = profiles;
-
+    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
+    respond.data = mergedProfiles;
   } 
   catch (error) {
     return sendError(res, error);
   }
-
   return res.send(respond);
 }
-
-
 
 
 export async function deleteProfileHandler(req: FastifyRequest, res: FastifyReply) 
@@ -155,74 +164,64 @@ export async function deleteProfileHandler(req: FastifyRequest, res: FastifyRepl
   return res.send(respond);
 }
 
-
-
-
 export async function getCurrentUserHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
-
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
-  const cacheKey = `profile:${userId}`;
 
   try 
   {
     const profile = await prisma.profile.findUnique({
-        where: { userId },
-        include: { preferences: true },
-      });
-      if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
-
-    console.log("Profile DB : " , profile);
-    const profileRedis = await redis.get(cacheKey);
-
-    console.log("Profile Redis : " , profileRedis);
-      await redis.set(cacheKey, {username : profile.username , firstName : profile.firstName , lastName : profile.lastName , avatar : profile.avatar  ,
-        isVerified : profile.isVerified , status : profile.status,
-        walletBalance : profile.walletBalance , level : profile.level , rankDivision : profile.rankDivision , rankTier : profile.rankTier
-      });
-
-    respond.data = {...profile , ...profileRedis};
+      where: { userId },
+      include: { preferences: true },
+    });
+    if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
+    respond.data = await mergeProfileWithRedis(profile);
   } 
   catch (error) {
     return sendError(res, error);
   }
-
   return res.send(respond);
 }
-
-
 
 export async function getUserByIdHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
-  
-  const { id } =  req.params as { id: string };
-  const cacheKey = `profile:${id}`;
+  const { id } = req.params as { id: string };
 
   try 
   {
-    let profile = await redis.get(cacheKey);
-
-    if (!profile) 
-    {
-      profile = await prisma.profile.findUnique({
-        where: { userId : Number(id)  },
-        include: { preferences: true },
-      });
-
-      if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
-    }
-
-    respond.data = profile;
-  }
+    const profile = await prisma.profile.findUnique({
+      where: { userId: Number(id) },
+      include: { preferences: true },
+    });
+    if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
+    respond.data = await mergeProfileWithRedis(profile);
+  } 
   catch (error) {
     return sendError(res, error);
   }
-
   return res.send(respond);
 }
+
+
+export async function getUserByUserNameHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<any> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
+  const { Username } = req.params as { Username: string };
+  try 
+  {
+    const profile = await prisma.profile.findUnique({ where: { username: Username } });
+    if (!profile) throw new Error(GeneralMessages.NOT_FOUND);
+    respond.data = await mergeProfileWithRedis(profile);
+  } 
+  catch (error) {
+    return sendError(res, error);
+  }
+  return res.send(respond);
+}
+
 
 
 
@@ -231,123 +230,24 @@ export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply)
   const respond: ApiResponse<Profile[]> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
   const { query } = req.query as { query: string };
 
-  if (!query)
-  {
-    respond.success = false;
-    respond.message =  'Query parameter is required';
-    return res.status(400).send(respond);
-  }
-
   try 
   {
+    if(!query) throw new Error('Query parameter is required');
 
-    const onlineUserIds: string[] = await redis.getOnlineUsers();
-    const onlineProfiles: Profile[] = [];
-
-    // Fetch online users from Redis cache
-    for (const userId of onlineUserIds) 
-    {
-      const profile = await redis.get(`profile:${userId}`);
-      if (profile) 
-      {
-        if (
-          profile.username.toLowerCase().includes(query.toLowerCase()) ||
-          profile.firstName.toLowerCase().includes(query.toLowerCase())
-        ) 
-        {
-          onlineProfiles.push({ ...profile});
-        }
-      }
-    }
-
-
-    const offlineProfiles = await prisma.profile.findMany({
+    const dbProfiles = await prisma.profile.findMany({
       where: {
         OR: [
-          { username: { contains: query,} },
-          { firstName: { contains: query,} },
-        ],
-        id: { notIn: onlineUserIds },
+          { username: { contains: query } },
+          { firstName: { contains: query } }
+        ]
       },
-      include: { preferences: { include: { notifications: true } } },
+      include: { preferences: { include: { notifications: true } } }
     });
-
-    const allProfiles = [...onlineProfiles, ...offlineProfiles];
-
-    respond.data = allProfiles;
+    const mergedProfiles = await Promise.all(dbProfiles.map(mergeProfileWithRedis));
+    respond.data = mergedProfiles;
   } 
   catch (error) {
     return sendError(res, error);
   }
-
   return res.send(respond);
 }
-
-export async function getUserByUserNameHandler(req: FastifyRequest, res: FastifyReply) 
-{
-  const respond: ApiResponse<any> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
-  const { Username } =  req.params as { Username: string };
-  
-  try 
-  {
-    let profile  = await prisma.profile.findUnique({ where: { username : Username } });
-    if(!profile) throw new Error(GeneralMessages.NOT_FOUND);
-
-    const cacheKey = `profile:${profile.userId}`;
-    if(await redis.exists(cacheKey))
-      profile = await redis.get(cacheKey);
-  
-    respond.data = profile;
-  }
-  catch (error) {
-    return sendError(res, error);
-  }
-
-  return res.send(respond);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-// 🎯 DB Profile Object
-const dbProfileFields = {
-  username: true,
-  firstName: true,
-  lastName: true,
-  avatar: true,
-  banner: true,
-  bio: true,
-  isVerified: true,
-  rankDivision: true,
-  rankTier: true,
-  preferences: true,
-};
-
-
-
-
-
-
-// ⚡ Redis Cache Profile Object
-const redisProfileFields = {
-  username: true,         // needed for in-game name
-  avatar: true,           // show in match
-  walletBalance: true,    // coins
-  level: true,            // XP/level
-  rankDivision: true,
-  rankTier: true,
-  status: true,           // ONLINE / IN_MATCH
-  lastSeen: true,
-  playerCharacters: true, // inventory
-  playerSelectedCharacter: true,
-  playerPaddles: true,
-  playerSelectedPaddle: true,
-};

@@ -72,3 +72,17 @@ model Notification {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+
+// =============== Notification Settings Model ===============
+model NotificationSettings {
+  id                String @id @default(cuid())
+  preferencesId     String @unique
+
+  friendRequests    Boolean @default(true)
+  chatMessages      Boolean @default(true)
+  gameInvites       Boolean @default(true)
+  tournamentUpdates Boolean @default(true)
+
+  preferences ProfilePreferences @relation(fields: [preferencesId], references: [id], onDelete: Cascade)
+}

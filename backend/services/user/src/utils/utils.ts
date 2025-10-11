@@ -209,3 +209,57 @@ export async function sendServiceRequest({ url , method = 'GET', body, headers =
   }
   
 }
+
+
+
+
+
+
+
+
+
+export function getPromotedRank(profileRedis: any, newLevel: number) 
+{
+  const rankDivisions = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'MASTER'];
+  let newRankTier = profileRedis.rankTier;
+  let newRankDivision = profileRedis.rankDivision;
+
+  // Promotion logic: if level >= 100, promote tier
+  if (newLevel >= 100) 
+  {
+    switch (profileRedis.rankTier) {
+      case 'I':
+        newRankTier = 'II';
+        break;
+      case 'II':
+        newRankTier = 'III';
+        break;
+      case 'III':
+        const currentDivisionIndex = rankDivisions.indexOf(profileRedis.rankDivision);
+        if (currentDivisionIndex < rankDivisions.length - 1) {
+          newRankDivision = rankDivisions[currentDivisionIndex + 1];
+          newRankTier = 'I';
+        }
+        break;
+      default:
+        break;
+    }
+    newLevel = newLevel % 100;
+  }
+  return { newRankTier, newRankDivision , newLevel };
+}
+
+
+
+
+
+export async function mergeProfileWithRedis(profile: any): Promise<any> 
+{
+  const cacheKey = `profile:${profile.userId}`;
+  if (await redis.exists(cacheKey)) 
+  {
+    const redisProfile = await redis.get(cacheKey);
+    return { ...profile, ...redisProfile };
+  }
+  return profile;
+}

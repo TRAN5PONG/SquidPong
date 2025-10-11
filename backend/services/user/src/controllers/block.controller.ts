@@ -6,6 +6,7 @@ import { getProfile } from '../utils/utils';
 import { isCheck } from '../utils/utils';
 import { BlockMessages , FriendMessages } from '../utils/responseMessages';
 import { redis } from '../utils/redis';
+import { mergeProfileWithRedis } from '../utils/utils';
 
 
 
@@ -97,45 +98,25 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
 }
 
 
-
 export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<Profile[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
-  
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
-
+  
   try 
   {
     const friendships = await prisma.friendship.findMany({
-      where: { senderId: userId, status: BLOCKED}
+      where: { senderId: userId, status: BLOCKED }
     });
-    
     const friendIds = friendships.map((f:any) => f.receiverId);
-    const onlineUserIds: string[] = await redis.getOnlineUsers();
-    const onlineFriends: Profile[] = [];
-
-    for (const friendId of friendIds) 
-    {
-      if (onlineUserIds.includes(friendId.toString())) 
-      {
-        const profile = await redis.get(`profile:${friendId}`);
-        onlineFriends.push({ ...profile});
-        friendIds.splice(friendIds.indexOf(friendId), 1);
-      }
-    }
-
-    const offlineFriends = await prisma.profile.findMany({
-      where: { userId: { in: friendIds }, status: "OFFLINE" }
-    });
-
-    const allFriends = [...onlineFriends, ...offlineFriends];
-    respond.data = allFriends;
+    const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
+    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
+    respond.data = mergedProfiles;
   } 
   catch (error) {
     return sendError(res, error);
   }
-
   return res.send(respond);
 }
 
