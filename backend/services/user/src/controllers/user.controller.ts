@@ -61,8 +61,7 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
     if(await isReadyExists(username)) throw new Error(ProfileMessages.READY_EXISTS);
 
     const updatedProfile = await prisma.profile.update({ where: { userId },
-      data: { username, firstName, lastName, 
-              banner,  bio },
+      data: { username, firstName, lastName, banner,  bio },
     });
     
     if(username)
@@ -148,14 +147,9 @@ export async function deleteProfileHandler(req: FastifyRequest, res: FastifyRepl
   {
     const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) throw new Error(ProfileMessages.DELETE_NOT_FOUND);
-
+    
     await prisma.profile.delete({ where: { userId } });
-
     await redis.del(cacheKey);
-
-    // Ensure user is deleted in chat service
-    // await updateUserInServices('http://chat:4003/api/chat/user/delete', 'DELETE' , { userId : String(userId) });
-
   }
   catch (error) {
     return sendError(res, error);
@@ -178,7 +172,7 @@ export async function getCurrentUserHandler(req: FastifyRequest, res: FastifyRep
     });
     if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
     respond.data = await mergeProfileWithRedis(profile);
-  } 
+  }
   catch (error) {
     return sendError(res, error);
   }
@@ -210,6 +204,7 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
   const { Username } = req.params as { Username: string };
+
   try 
   {
     const profile = await prisma.profile.findUnique({ where: { username: Username } });
