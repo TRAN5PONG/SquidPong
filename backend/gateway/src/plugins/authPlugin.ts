@@ -22,20 +22,18 @@ const jwt_config:any = {
   }
 
 
-  const cors_options : any = {
-    origin: [process.env.FRONTEND_URL],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ["Content-Type", "x-user-id"]
-  }
+const cors_options : any = {
+  origin: [process.env.FRONTEND_URL],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ["Content-Type", "x-user-id"]
+}
 
 
-  export default async function registerPlugins(app: FastifyInstance) {
-    app.register(cors, cors_options);
-
-     app.register(cookie);
-     app.register(session, session_option);
-     app.register(jwt, jwt_config);
-
-  }
-  
+export default async function registerPlugins(app: FastifyInstance) 
+{
+  app.register(cors, cors_options);
+  app.register(cookie);
+  app.register(session, session_option);
+  app.register(jwt, jwt_config);
+}

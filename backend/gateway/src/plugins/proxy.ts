@@ -17,8 +17,8 @@ const services : ServiceConfig[]  =
     { name: 'blocked', prefix: '/api/blocked', upstream: 'http://user:4002' },
     { name: 'chat',  prefix: '/api/chat', upstream: 'http://chat:4003' },
     { name: 'group',  prefix: '/api/group', upstream: 'http://chat:4003' },
-    { name: 'game', prefix: '/api/game', upstream: 'http://game:4005' },
-    { name: 'room', prefix: '/api/room', upstream: 'http://game:4005' }
+    // { name: 'game', prefix: '/api/game', upstream: 'http://game:4005' },
+    // { name: 'room', prefix: '/api/room', upstream: 'http://game:4005' }
 ];
 
 
