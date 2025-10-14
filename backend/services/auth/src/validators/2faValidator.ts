@@ -51,8 +51,13 @@ export async function isTwoFactorEnabled(userId : number ,  twoFAMethod : string
     return ;
   }
   
-  respond.data.is2FAEnabled = true;
+  const twoFAToken = generateToken(); 
+  const redisKey = `2fa:token:${twoFAToken}`;
+  await redis.set(redisKey, JSON.stringify({ userId, twoFAMethod }), 'EX', 5 * 60); // Expires in 5 minutes
+  
   const message = (twoFAMethod == "email") ? "A verification code has been sent to your email." : "Please enter the code from your authenticator app.";
+  
+  respond.data = { is2FAEnabled: true , twoFAToken };
   respond.message = message;
 }
 

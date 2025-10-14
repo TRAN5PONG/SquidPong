@@ -64,7 +64,7 @@ model User {
   userId    String   @unique
   username    String   
   firstName   String
-  lastName    String?
+  lastName    String
   isVerified Boolean  @default(false)
   avatar      String  
 

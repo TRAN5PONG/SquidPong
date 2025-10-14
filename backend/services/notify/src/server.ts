@@ -12,7 +12,11 @@ async function StartServer()
 {
     try 
     {
-        app.listen({port : port , host : host} , () => { console.log(`Notify service running at http://notify:${port}`) })
+
+    app.listen({port  , host } , () => { console.log(`Notify service running at http://notify:${port}`) })
+    await initRabbitMQ();
+    await receiveFromQueue()
+  
     } 
     catch (error) 
     {
@@ -22,10 +26,4 @@ async function StartServer()
 }
 
 
-
-async function start() 
-{
-  await  initRabbitMQ();
-  await receiveFromQueue()
-}
-start();
+StartServer();

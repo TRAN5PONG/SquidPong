@@ -579,3 +579,53 @@ export async function removeGroup(req: FastifyRequest, res: FastifyReply)
 
    return res.send(respond);
 }
+
+
+/** 🆕 Admin/Owner Invite User to Group */
+export async function inviteUserToGroup(req: FastifyRequest, res: FastifyReply) 
+{
+   const respond: ApiResponse<any> = { success: true, message: GroupMessages.USER_INVITED_SUCCESS };
+   const headers = req.headers as { 'x-user-id': string };
+   const userId = headers['x-user-id'];
+
+   const { groupId } = req.params as { groupId: string };
+   const { targetUserId } = req.body as { targetUserId: string };
+   
+   try 
+   {
+      const targetUser = await fetchAndEnsureUser(targetUserId);
+      const group = await checkUserAndFetchGroup(Number(groupId));
+      
+      const requester = group.members.find((m:any) => m.userId === userId);
+      if (!requester || requester.role === MEMBER) 
+         throw new Error(GroupMessages.NOT_HAVE_PERMISSION);
+
+      const alreadyMember = group.members.some((m:any) => m.userId === targetUserId);
+      if (alreadyMember) throw new Error(GroupMessages.MEMBER_ALREADY_IN_GROUP);
+
+      await prisma.groupMember.create({
+         data: {
+            groupId: Number(groupId),
+            userId: targetUserId,
+            role: MEMBER,
+            status: APPROVED,
+         },
+      });
+
+      // Add to chat as well
+      await prisma.chatMember.create({
+         data: {
+            chatId: Number(group.chatId),
+            userId: targetUserId,
+         },
+      });
+
+      respond.data = { invitedUser: targetUser.username, groupName: group.name };
+   } 
+   catch (error) 
+   {
+      sendError(res, error);
+   }
+   
+   return res.send(respond);
+}

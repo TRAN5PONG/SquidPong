@@ -6,12 +6,15 @@ import {
   createProfileSchema,
   updateProfileLiveSchema,
   updateProfileDBSchema,
+  updateProfileIntraSchema,
   getCurrentUserSchema,
   getUserByIdSchema,
   getAllUsersSchema,
   searchUsersSchema,
   deleteProfileSchema,
-  getUserByUserNameSchema
+  getUserByUserNameSchema,
+  purchaseItemSchema,
+  getShopItemsSchema
 } from '../schemas/user.schemas';
 import {
   sendFriendRequestSchema,
@@ -43,6 +46,7 @@ const userRoutes: Route[] = [
   { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler, schema: createProfileSchema },
   { method: 'PUT', url: '/api/user/db', handler: userController.updateProfileHandlerDB },
   { method: 'PUT', url: '/api/user/realtime', handler: userController.updateProfileHandler },
+  { method: 'POST', url: '/api/user/profile-image', handler: userController.updateProfileImageHandler, schema: updateProfileIntraSchema },
   { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler, schema: deleteProfileSchema },
   
   { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler, schema: getCurrentUserSchema },
@@ -50,6 +54,9 @@ const userRoutes: Route[] = [
   { method: 'GET', url: '/api/user/:id', handler: userController.getUserByIdHandler, schema: getUserByIdSchema },
   { method: 'GET', url: '/api/user/all', handler: userController.getAllUserHandler, schema: getAllUsersSchema },
   { method: 'GET', url: '/api/user/search', handler: userController.searchUsersHandler, schema: searchUsersSchema },
+  
+  // Shop routes
+  // { method: 'POST', url: '/api/user/purchase', handler: userController.purchaseItemHandler, schema: purchaseItemSchema },
 ];
 
 

@@ -1,6 +1,6 @@
 import { RouteHandlerMethod , FastifySchema } from 'fastify';
 import { getNotificationHistoryHandler, markNotificationAsReadHandler, deleteNotificationHandler, deleteAllNotificationsHandler } from '../controllers/notify.controller';
-import { createUser, updateUser, deleteUser } from '../controllers/user.controller';
+import { createUser, updateUser } from '../controllers/user.controller';
 
 type Route = {
     method  : 'GET' | 'POST' | 'DELETE' | 'PATCH' | 'PUT'; 
@@ -14,7 +14,6 @@ const notifyRoutes: Route[] = [
   // User Management Routes (Internal)
   { method: 'POST', url: '/api/notify/user/create', handler: createUser, },
   { method: 'PUT', url: '/api/notify/user/update', handler: updateUser, },
-  { method: 'DELETE', url: '/api/notify/user/delete', handler: deleteUser },
   
   // Notification Routes
   { method: 'GET', url: '/api/notify/history', handler: getNotificationHistoryHandler },

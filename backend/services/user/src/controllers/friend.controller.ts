@@ -4,7 +4,7 @@ import { ApiResponse, sendError } from '../utils/errorHandler';
 import { Profile } from '../utils/types';
 import { getProfile } from '../utils/utils';
 import { sendDataToQueue } from '../integration/rabbitmqClient';
-import { redis } from '../utils/redis';
+import { redis } from '../integration/redis';
 import { FriendMessages , ProfileMessages } from '../utils/responseMessages';
 import { isCheck  , mergeProfileWithRedis} from '../utils/utils';
 

@@ -1,10 +1,9 @@
+
 import fs from 'fs';
 import { pipeline } from 'stream/promises';
 import { FastifyRequest } from 'fastify';
 import prisma from '../db/database';
-
-import { redis } from './redis';
-
+import { redis } from '../integration/redis';
 import { ProfileMessages } from './responseMessages';
 
 
@@ -24,10 +23,8 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
     {
       filePath = `/tmp/images/${Date.now()}-${field.filename}`;
       await pipeline(field.file, fs.createWriteStream(filePath));
-                  data[key] = `${process.env.BACKEND_URL}${filePath}`;
-    } 
-    else if (field?.type === 'field') 
-      data[key] = field.value;
+        data[key] = `${process.env.BACKEND_URL}${filePath}`;
+    }
   }
 
   return { ...data };
@@ -166,7 +163,7 @@ export async function updateUserInServices(serviceUrl: string,method : string , 
 {
   await fetch(serviceUrl, {
     method: method,
-    headers: { 'Content-Type': 'application/json' , 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
+    headers: { 'Content-Type': 'application/json' , 'x-secret-token': process.env.SECRET_TOKEN || '' },
     body: JSON.stringify(body),
   });
 }
@@ -210,12 +207,42 @@ export async function sendServiceRequest({ url , method = 'GET', body, headers =
   
 }
 
+// Service configuration
+const SERVICE_URLS = {
+  auth: 'http://auth:4001/api/auth',
+  chat: 'http://chat:4003/api/chat',
+  notify: 'http://notify:4004/api/notify'
+} as const;
 
+const ENDPOINTS = {
+  POST: '/user/create',
+  PUT: '/user/update',
+  DELETE : '/user/update'
+}
+// HTTP methods that don't support body
+const NO_BODY_METHODS = ['GET', 'DELETE'];
 
+export async function sendServiceRequestSimple(serviceName : string , userId : number, method : string = 'GET', body?: any ) 
+{
+  const url = SERVICE_URLS[serviceName as keyof typeof SERVICE_URLS] + (ENDPOINTS as any)[method.toUpperCase()];
+  
+  const headers: Record<string, string> = {
+    'x-secret-token': process.env.SECRET_TOKEN || '',
+    'x-user-id': String(userId),
+  };
+  
+  const options: RequestInit = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+  };
 
-
-
-
+  if (!NO_BODY_METHODS.includes(method.toUpperCase()) && body !== undefined) 
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
+  const response = await fetch(url, options);
+}
 
 
 export function getPromotedRank(profileRedis: any, newLevel: number) 
@@ -263,3 +290,81 @@ export async function mergeProfileWithRedis(profile: any): Promise<any>
   }
   return profile;
 }
+
+
+
+
+export async function purchaseItem(user : any, itemType: 'playerCharacters' | 'playerPaddles', itemName: string) : Promise<any>
+{
+  const { getCharacterPrice, getPaddlePrice } = await import('../utils/itemPrices');
+  const new_data : any = {};
+  let itemPrice : number = 0;
+  new_data['playerCharacters'] = user.playerCharacters;
+  new_data['playerPaddles'] = user.playerPaddles;
+  
+  if(itemName === undefined) return;
+  if (itemType === 'playerCharacters')
+  {
+    if(user.playerCharacters.includes(itemName))
+      return new_data[itemType];
+    itemPrice = getCharacterPrice(itemName);
+  } 
+  else if (itemType === 'playerPaddles')
+  {
+    if(user.playerPaddles.includes(itemName))
+      return new_data[itemType];
+    itemPrice = getPaddlePrice(itemName);
+  } 
+
+  let existsInRedis = false;
+  const userId = user.userId; 
+  const userKey = `user:${userId}`;
+  let walletBalance : number = 0; 
+  if (await redis.exists(userKey)) 
+  {
+    existsInRedis = true;
+    walletBalance = (await redis.get(userKey))?.walletBalance;
+  } 
+  else 
+    walletBalance = user.walletBalance; 
+  if (walletBalance < itemPrice)
+    throw new Error(`Insufficient wallet balance. Required: ${itemPrice}, Available: ${walletBalance}`);  
+  const newWalletBalance = walletBalance - itemPrice;
+  if(existsInRedis)
+    await redis.update( userKey , '$' , {walletBalance : newWalletBalance} );
+  else
+  {
+
+    user.walletBalance = newWalletBalance;
+    // new_data['walletBalance'] = newWalletBalance;
+  }
+
+  new_data[itemType].push(itemName);
+  return new_data[itemType];
+}
+
+
+
+
+
+
+
+
+/**
+ * Buy verified status for a user for 500 coins.
+ * Deducts coins and sets isVerified=true if enough balance.
+ * Throws error if insufficient balance or already verified.
+ */
+export async function buyVerified(user: any)
+{
+  const userKey = `profile:${user.userId}`;
+  
+  if(user.isVerified) return true;
+  if(user.walletBalance < 500)  return false;
+  
+  user.walletBalance -= 500;
+
+  if (await redis.exists(userKey)) 
+    await redis.update(userKey, '$', { isVerified: true });
+}
+

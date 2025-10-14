@@ -6,8 +6,6 @@ import { sendToService } from '../integration/api_calls';
 
 export async function createAccount(data: any): Promise<any> 
 {
-
-   console.log("Creating account with data:", data);
   const { email, username, password, firstName, lastName, avatar } = data;
   const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -20,11 +18,10 @@ export async function createAccount(data: any): Promise<any>
   if (!existingUser) 
    {
       const profile = { userId: user.id, username, firstName, lastName, avatar };
-      console.log("Creating profile with data:", profile);
-
+      
       await fetch(`http://user:4002/api/user/me`, {
         method: "POST",
-        headers: { 'Content-Type': 'application/json', 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
+        headers: { 'Content-Type': 'application/json', 'x-secret-token': process.env.SECRET_TOKEN || '' },
         body: JSON.stringify(profile),
       });
       

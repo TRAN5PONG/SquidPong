@@ -149,10 +149,10 @@ export const verify2FASchema: FastifySchema = {
     properties: {
       'x-user-id': {
         type: 'string',
-        description: 'User ID from authentication token'
+        description: 'User ID from authentication token (optional if twoFAToken provided)'
       }
     },
-    required: ['x-user-id']
+    required: []
   },
   params: {
     type: 'object',
@@ -172,6 +172,10 @@ export const verify2FASchema: FastifySchema = {
         type: 'string',
         pattern: '^[0-9]{6}$',
         description: '6-digit verification code from authenticator app or email'
+      },
+      twoFAToken: {
+        type: 'string',
+        description: '2FA token received during login (optional, used for login flow)'
       }
     },
     required: ['code'],

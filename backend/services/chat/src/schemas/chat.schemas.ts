@@ -100,12 +100,12 @@ export const createUserSchema: FastifySchema = {
   headers: {
     type: 'object',
     properties: {
-      'X-Secret-Token': {
+      'x-secret-token': {
         type: 'string',
         description: 'Internal service authentication token'
       }
     },
-    required: ['X-Secret-Token']
+    required: ['x-secret-token']
   },
   body: {
     type: 'object',
@@ -161,12 +161,12 @@ export const updateUserSchema: FastifySchema = {
   headers: {
     type: 'object',
     properties: {
-      'X-Secret-Token': {
+      'x-secret-token': {
         type: 'string',
         description: 'Internal service authentication token'
       }
     },
-    required: ['X-Secret-Token']
+    required: ['x-secret-token']
   },
   body: {
     type: 'object',
@@ -222,12 +222,12 @@ export const deleteUserSchema: FastifySchema = {
   headers: {
     type: 'object',
     properties: {
-      'X-Secret-Token': {
+      'x-secret-token': {
         type: 'string',
         description: 'Internal service authentication token'
       }
     },
-    required: ['X-Secret-Token']
+    required: ['x-secret-token']
   },
   body: {
     type: 'object',

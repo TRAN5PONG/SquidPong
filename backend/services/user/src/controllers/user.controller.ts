@@ -1,34 +1,36 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../db/database';
-import { updateProfileRedis , convertParsedMultipartToJson , syncRedisProfileToDbAppendArrays } from '../utils/utils';
 import { ApiResponse, sendError } from '../utils/errorHandler';
 import { Profile } from '../utils/types';
-import { redis } from '../utils/redis';
-import { ProfileMessages, PreferenceMessages, NotificationMessages, GeneralMessages } from '../utils/responseMessages';
+import { redis } from '../integration/redis';
+import { ProfileMessages, GeneralMessages } from '../utils/responseMessages';
 import { checkSecretToken } from '../utils/utils';
-import { updateUserInServices } from '../utils/utils';
 import { sendServiceRequest , getPromotedRank , isReadyExists } from '../utils/utils';
 import { mergeProfileWithRedis } from '../utils/utils';
-
-
+import { convertParsedMultipartToJson } from '../utils/utils';
+import { purchaseItem } from '../utils/utils';
+import { sendServiceRequestSimple } from '../utils/utils';
+import { buyVerified } from '../utils/utils';
 
 export async function createProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const response: ApiResponse<null> = {  success: true,  message: ProfileMessages.CREATE_SUCCESS  };
-  const {userId , username , firstName , lastName , avatar} = req.body as {userId : number , username : string , firstName : string , lastName : string , avatar? : string};
-  
-  const newProfileData: any = { userId , username, firstName, lastName, avatar};
+  const body = req.body as {userId : number ,  username: string; firstName: string; lastName: string; avatar?: string };
 
+  body['avatar'] = body['avatar'] || `/default/avatar.png`;
   try 
   {
     checkSecretToken(req);
-    const profile = await prisma.profile.create({
+    await prisma.profile.create({
       data: {
-        ...newProfileData,
+        ...body,
         preferences: { create: { notifications: { create: {} } } },
       },
     });
 
+    
+    await sendServiceRequestSimple('chat', body.userId, 'POST',  {...body , userId : String(body.userId) } )
+    await sendServiceRequestSimple('notify', body.userId, 'POST',{...body , userId : String(body.userId) } )
   } 
   catch (error) {
     return sendError(res, error);
@@ -38,46 +40,70 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
 }
 
 
+
+
+
+
 export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
-  
-  const { username, firstName, lastName, banner, bio } = req.body as {
-    username?: string;
-    firstName?: string;
-    lastName?: string;
-    banner?: string;
-    bio?: string;
-  };
 
+  let body = req.body as any;
   try
   {
-    const existingProfile = await prisma.profile.findUnique({ where: { userId } });
+    let existingProfile = await prisma.profile.findUnique({ where: { userId } });
     if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
-    
-    if(username == existingProfile.username) throw new Error(ProfileMessages.SAME_USERNAME);
-    if(await isReadyExists(username)) throw new Error(ProfileMessages.READY_EXISTS);
 
-    const updatedProfile = await prisma.profile.update({ where: { userId },
-      data: { username, firstName, lastName, banner,  bio },
-    });
-    
-    if(username)
-    {
-    await sendServiceRequest({
-        url: 'http://auth:4001/api/auth/update',
-        method: 'POST',
-        body: {username },
-        headers: { 'x-secret-token': process.env.SECRET_TOKEN || '' , 'x-user-id': String(userId) },
-    });
+    if(body.username == existingProfile.username) throw new Error(ProfileMessages.SAME_USERNAME);
+    if(await isReadyExists(body.username)) throw new Error(ProfileMessages.READY_EXISTS);
+
+    body.playerCharacters = await purchaseItem(existingProfile ,'playerCharacters' ,  body.playerCharacters);
+    body.playerPaddles = await purchaseItem(existingProfile ,'playerPaddles' ,  body.playerPaddles);
+    body['walletBalance'] = existingProfile.walletBalance;
+    if(body.isVerified === true)
+      body['isVerified'] = buyVerified(existingProfile);
+  
+  const updatedProfile = await prisma.profile.update({
+          where: { userId },
+          data: {
+            ...body,
+            ...(body.preferences && {
+              preferences: {
+                update: {
+                  ...body.preferences,
+                  ...(body.preferences.notifications && {
+                    notifications: {
+                      update: { ...body.preferences.notifications }
+                    }
+                  })
+                }
+              }
+            })
+          }
+        });
+
+    if(body.username)
+      await sendServiceRequestSimple('chat', userId, 'PUT',{username : body.username } )
+
+    const dataSend = {
+      ...(body.username && { username : body.username }),
+      ...(body.firstName && { firstName : body.firstName }),
+      ...(body.lastName && { lastName : body.lastName }),
+      ...(body.isVerified && { isVerified : body.isVerified }),
     }
 
+    console.log("notify test" , body.preferences.notificationSettings)
+
+    await sendServiceRequestSimple('chat', userId, 'PUT', dataSend )
+    await sendServiceRequestSimple('notify', userId, 'PUT', {...dataSend , notificationSettings : 
+    {...(body.preferences.notifications && { ...body.preferences.notifications })}
+    } )
+   
     const redisKey = `profile:${userId}`;
     if(await redis.exists(redisKey))
-      await redis.update(redisKey, '$', {level : 3 }); 
-
+      await redis.update(redisKey, '$', dataSend); 
     respond.data = { ...updatedProfile };
   }
   catch (error) {
@@ -145,16 +171,20 @@ export async function deleteProfileHandler(req: FastifyRequest, res: FastifyRepl
 
   try 
   {
+    checkSecretToken(req);
     const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) throw new Error(ProfileMessages.DELETE_NOT_FOUND);
     
-    await prisma.profile.delete({ where: { userId } });
+    const deletedUsername = `deleted_user_${userId}`;
+    await prisma.profile.update({ where: { userId }, data: { isDeleted: true , username : deletedUsername } });
     await redis.del(cacheKey);
+
+    await sendServiceRequestSimple('chat', userId, 'PUT', {username : deletedUsername } )
+    await sendServiceRequestSimple('notify', userId, 'PUT', {username : deletedUsername } )
   }
   catch (error) {
     return sendError(res, error);
   }
-
   return res.send(respond);
 }
 
@@ -187,7 +217,7 @@ export async function getUserByIdHandler(req: FastifyRequest, res: FastifyReply)
   try 
   {
     const profile = await prisma.profile.findUnique({
-      where: { userId: Number(id) },
+      where: { userId: Number(id)  , isDeleted : false },
       include: { preferences: true },
     });
     if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
@@ -218,6 +248,41 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
 }
 
 
+export async function updateProfileImageHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
+  const headers = req.headers as any;
+  const userId = Number(headers['x-user-id']);
+
+  try 
+  {
+    // parse multipart fields and file (avatar) if present
+    const parsed = await convertParsedMultipartToJson(req) as any;
+
+    const { avatar } = parsed;
+
+    const existingProfile = await prisma.profile.findUnique({ where: { userId } });
+    if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
+
+    const updated = await prisma.profile.update({ where: { userId }, data: { ...(avatar && { avatar }) } });
+
+    // change later
+    // const redisKey = `profile:${userId}`;
+    // if (await redis.exists(redisKey)) 
+    // {
+    //   await redis.update(redisKey, '$', updateBody);
+    // }
+
+    respond.data = updated;
+  }
+  catch (error) {
+    return sendError(res, error);
+  }
+
+  return res.send(respond);
+}
+
+
 
 
 export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply) 
@@ -231,6 +296,7 @@ export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply)
 
     const dbProfiles = await prisma.profile.findMany({
       where: {
+        isDeleted : false,
         OR: [
           { username: { contains: query } },
           { firstName: { contains: query } }
@@ -245,4 +311,77 @@ export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply)
     return sendError(res, error);
   }
   return res.send(respond);
+}
+
+
+export async function getShopItemsHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const response: ApiResponse<any> = { success: true, message: 'Shop items retrieved successfully' };
+  const userId = parseInt(req.headers['x-user-id'] as string);
+
+  try {
+    const { ITEM_PRICES } = await import('../utils/itemPrices');
+    
+    const userKey = `user:${userId}`;
+    let userProfile: any = null;
+    let existingCharacters: string[] = [];
+    let existingPaddles: string[] = [];
+
+    // Check Redis first, then database
+    if (await redis.exists(userKey)) {
+      userProfile = await redis.get(userKey);
+      existingCharacters = Array.isArray(userProfile?.playerCharacters) 
+        ? userProfile.playerCharacters 
+        : JSON.parse(userProfile?.playerCharacters || '["Zero"]');
+      existingPaddles = Array.isArray(userProfile?.playerPaddles) 
+        ? userProfile.playerPaddles 
+        : JSON.parse(userProfile?.playerPaddles || '["Boss"]');
+    } else {
+      userProfile = await prisma.profile.findUnique({
+        where: { userId },
+        select: {
+          playerCharacters: true,
+          playerPaddles: true,
+          walletBalance: true
+        }
+      });
+
+      if (!userProfile) {
+        throw new Error('User not found');
+      }
+
+      existingCharacters = JSON.parse(userProfile.playerCharacters || '["Zero"]');
+      existingPaddles = JSON.parse(userProfile.playerPaddles || '["Boss"]');
+    }
+
+    // Build shop data
+    const availableCharacters = Object.entries(ITEM_PRICES.characters).map(([name, price]) => ({
+      name,
+      price,
+      type: 'character',
+      owned: existingCharacters.includes(name),
+      canPurchase: !existingCharacters.includes(name) && (userProfile?.walletBalance || 0) >= price
+    }));
+
+    const availablePaddles = Object.entries(ITEM_PRICES.paddles).map(([name, price]) => ({
+      name,
+      price,
+      type: 'paddle',
+      owned: existingPaddles.includes(name),
+      canPurchase: !existingPaddles.includes(name) && (userProfile?.walletBalance || 0) >= price
+    }));
+
+    response.data = {
+      walletBalance: userProfile?.walletBalance || 0,
+      characters: availableCharacters,
+      paddles: availablePaddles,
+      ownedCharacters: existingCharacters,
+      ownedPaddles: existingPaddles
+    };
+
+  } catch (error) {
+    return sendError(res, error);
+  }
+
+  return res.send(response);
 }

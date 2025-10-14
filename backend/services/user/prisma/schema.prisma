@@ -116,6 +116,7 @@ model Profile {
   updatedAt DateTime     @updatedAt
 
   isVerified    Boolean    @default(false)
+  isDeleted     Boolean    @default(false)
   
   walletBalance Int        @default(0)
   level         Float        @default(0)
