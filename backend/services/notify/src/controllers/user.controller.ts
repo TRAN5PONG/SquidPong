@@ -12,26 +12,15 @@ function checkSecretToken(req: FastifyRequest) {
 export async function createUser(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<null> = { success: true, message: 'User ensured in notify service.' };
-  const { userId, username, firstName, lastName, avatar, isVerified } = req.body as {
-    userId: string;
-    username: string;
-    firstName: string;
-    lastName: string;
-    avatar: string;
-    isVerified: boolean;
-  };
+  const body = req.body as { userId: string; username: string; firstName: string; lastName: string; avatar : string; isVerified : boolean };
 
   try 
   {
     checkSecretToken(req);
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
-        userId: String(userId),
-        username,
-        firstName,
-        lastName,
-        avatar,
-        isVerified
+        ...body,
+        notificationSettings: { create: {} }
       },
     });
   } 
@@ -45,46 +34,20 @@ export async function createUser(req: FastifyRequest, res: FastifyReply)
 export async function updateUser(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<null> = { success: true, message: 'User updated in notify service.' };
-  const { userId, username, firstName, lastName, avatar, isVerified } = req.body as {
-    userId: string;
-    username?: string;
-    firstName?: string;
-    lastName?: string;
-    avatar?: string;
-    isVerified?: boolean;
-  };
+  const userId = String((req.headers as any)['x-user-id']);
 
+  const body = req.body as any;
+
+  console.log('notify services   Update request body:', body);
   try 
   {
     checkSecretToken(req);
     await prisma.user.update({
-      where: { userId: String(userId) },
+      where: { userId },
       data: {
-        ...(username !== undefined && { username }),
-        ...(firstName !== undefined && { firstName }),
-        ...(lastName !== undefined && { lastName }),
-        ...(avatar !== undefined && { avatar }),
-        ...(isVerified !== undefined && { isVerified }),
+        ...body,
+        ...(body.notificationSettings &&  {notificationSettings: { update: {...body.notificationSettings} }})
       },
-    });
-  } 
-  catch (error) {
-    sendError(res, error);
-  }
-
-  return res.send(respond);
-}
-
-export async function deleteUser(req: FastifyRequest, res: FastifyReply) 
-{
-  const respond: ApiResponse<null> = { success: true, message: 'User deleted from notify service.' };
-  const { userId } = req.body as { userId: string };
-
-  try 
-  {
-    checkSecretToken(req);
-    await prisma.user.delete({
-      where: { userId: String(userId) },
     });
   } 
   catch (error) {

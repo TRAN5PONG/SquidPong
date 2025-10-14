@@ -16,6 +16,7 @@ enum NotificationStatus {
   DELETED
 }
 
+
 enum NotificationType {
   INFO         
   SUCCESS      
@@ -40,24 +41,37 @@ enum NotificationTitle {
 
 
 
-// =============== User Model ===============
 model User {
   id          String   @id @default(cuid())
 
   userId      String   @unique
   username    String   
   firstName   String
-  lastName    String?
+  lastName    String
   isVerified  Boolean  @default(false)
-  avatar      String   
+  avatar      String   @default("")
 
   notifications Notification[]
-
+  notificationSettings   NotificationSettings?
   createdAt   DateTime @default(now())
 }
 
 
-// =============== Notification Model ===============
+
+model NotificationSettings {
+  id                String @id @default(cuid())
+  preferencesId     String @unique
+
+  friendRequests    Boolean @default(true)
+  chatMessages      Boolean @default(true)
+  gameInvites       Boolean @default(true)
+  tournamentUpdates Boolean @default(true)
+
+  preferences User @relation(fields: [preferencesId], references: [id], onDelete: Cascade)
+}
+
+
+
 model Notification {
   id        Int      @id @default(autoincrement())
 
@@ -71,18 +85,4 @@ model Notification {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-
-// =============== Notification Settings Model ===============
-model NotificationSettings {
-  id                String @id @default(cuid())
-  preferencesId     String @unique
-
-  friendRequests    Boolean @default(true)
-  chatMessages      Boolean @default(true)
-  gameInvites       Boolean @default(true)
-  tournamentUpdates Boolean @default(true)
-
-  preferences ProfilePreferences @relation(fields: [preferencesId], references: [id], onDelete: Cascade)
 }

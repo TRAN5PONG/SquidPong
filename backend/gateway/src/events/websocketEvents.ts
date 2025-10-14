@@ -45,7 +45,7 @@ async function updatestatus(userId: number )
   await fetch(`http://user:4002/api/user/sync`, {
     method: "POST",
     headers: {
-      'X-Secret-Token': process.env.SECRET_TOKEN || '',
+      'x-secret-token': process.env.SECRET_TOKEN || '',
       "Content-Type": "application/json",
       "x-user-id": userId.toString(),
     },
@@ -137,7 +137,7 @@ async function onClientDisconnect(ws: any)
     await fetch(`http://user:4002/api/user/sync`, {
     method: "POST",
     headers: {
-      'X-Secret-Token': process.env.SECRET_TOKEN || '',
+      'x-secret-token': process.env.SECRET_TOKEN || '',
       "Content-Type": "application/json",
       "x-user-id": userId.toString(),
     },

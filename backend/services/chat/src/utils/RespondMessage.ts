@@ -133,6 +133,12 @@ export enum GroupMessages {
     POLL_RESULTS_FETCHED_SUCCESS = 'Poll results fetched successfully.',
     POLL_RESULTS_FETCHED_FAILED = 'Failed to fetch poll results.',
 
+    // User Invitations
+    USER_INVITED_SUCCESS = 'User invited to group successfully.',
+    USER_INVITED_FAILED = 'Failed to invite user to group.',
+    USER_REQUESTS_FETCHED_SUCCESS = 'User join requests fetched successfully.',
+    USER_REQUESTS_FETCHED_FAILED = 'Failed to fetch user join requests.',
+
     // General Errors
     INVALID_REQUEST = 'Invalid request.',
     SERVER_ERROR = 'Internal server error.',

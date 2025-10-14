@@ -71,10 +71,7 @@ export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
 
 export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
 {
-  const respond : ApiResponse<{ is2FAEnabled: boolean }> = {success : true  , message : AuthError.LOGIN_SUCCESSFUL , data : { is2FAEnabled : false}}
-  
-
-  // case check if ready is logged in  so here redirect to home page
+  const respond : ApiResponse<{ is2FAEnabled: boolean; twoFAToken?: string }> = {success : true  , message : AuthError.LOGIN_SUCCESSFUL , data : { is2FAEnabled : false}}
 
   const {email , username , password} = req.body as {email? : string , password : string , username ?: string};
   try 
@@ -149,7 +146,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
 
     fetch(`http://user:4002/api/user/me`, {
       method: "DELETE",
-      headers : {"x-user-id": `${id}` , 'X-Secret-Token': process.env.SECRET_TOKEN || '' }
+      headers : {"x-user-id": `${id}` , 'x-secret-token': process.env.SECRET_TOKEN || '' }
     })
 
     respond.success = true;
@@ -169,7 +166,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
 export async function getGooglCallbackehandler(req: FastifyRequest, res: FastifyReply)
 {
 
-  const respond: ApiResponse<{ is2FAEnabled: boolean }> = { success: true, message:  'login success' };
+  const respond: ApiResponse<{ is2FAEnabled: boolean; twoFAToken?: string }> = { success: true, message:  'login success' };
   respond.data = { is2FAEnabled: false};
 
   try 
@@ -202,7 +199,7 @@ export async function getIntrahandler(req:FastifyRequest , res:FastifyReply)
 
 export async function getIntracallbackhandler(req: FastifyRequest, res: FastifyReply)
 {
-  const respond: ApiResponse<{ is2FAEnabled: boolean }> = { success: true, message: 'created account'};
+  const respond: ApiResponse<{ is2FAEnabled: boolean; twoFAToken?: string }> = { success: true, message: 'created account'};
 
   respond.data = { is2FAEnabled: false };
   const { code } = req.query as any;

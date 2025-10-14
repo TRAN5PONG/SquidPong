@@ -1,8 +1,9 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../db/database';
+import redis from '../integration/redisClient';
 import { TwoFA  , UserProfileMessage ,  TwoFaEmaiL } from '../utils/messages';
 import { ApiResponse, sendError } from '../utils/errorHandler';
-
+import { setJwtTokens } from '../validators/2faValidator';
 
 import { NONE , AUTHENTICATOR , EMAIL } from '../utils/twofa.helper';
 import { setupAuthenticatorApp  , setupEmail2FA  ,verifyAuthenticatorCode , verifyEmailCode , enableAuthenticatorCode , enableEmailCode  } from '../utils/twofa.helper';
@@ -98,27 +99,38 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<null> = { success: true, message: TwoFA.TWO_FA_ENABLE_SUCCESS };
-  const {code} = req.body as any;
-  const id = Number((req.headers as any)["x-user-id"]);
-
-  const method = (req.params as any).method;
+  const {code, twoFAToken} = req.body as {code: string, twoFAToken: string};
+  const methodParam = (req.params as any).method; 
+  
+  let userId: number;
+  let twoFAMethod: string;
 
   try 
   {
-    const user = await prisma.user.findUnique({ where: { id } });
+
+    const redisKey = `2fa:token:${twoFAToken}`;
+    const tokenData = await redis.get(redisKey);
+    if (!tokenData) throw new Error("Invalid or expired 2FA token");
+    const parsedData = JSON.parse(tokenData);
+    
+    userId = parsedData.userId;
+    twoFAMethod = parsedData.twoFAMethod;
+    
+    // Remove token after use
+    await redis.del(redisKey);
+    
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error(UserProfileMessage.USER_NOT_FOUND);
 
+    if(user.twoFAMethod != methodParam) throw new Error(`2FA is enabled via ${user.twoFAMethod} .`);
 
-    if(user.twoFAMethod == NONE)
-      throw new Error("2FA is not setup. Please setup 2FA first.");
-    else if(user.twoFAMethod != method)
-      throw new Error(`2FA is enabled via ${user.twoFAMethod} .`);
-
-    if(method == AUTHENTICATOR)
-      verifyAuthenticatorCode(id, user.twoFASecret!, code);
+    if(twoFAMethod == AUTHENTICATOR)
+      verifyAuthenticatorCode(userId, user.twoFASecret!, code);
     else
-      verifyEmailCode(id, code);
+      verifyEmailCode(userId, code);
 
+      await setJwtTokens(res, userId);
+      respond.message = "Login successful";
   } 
   catch (error) {
     sendError(res, error);

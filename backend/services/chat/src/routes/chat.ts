@@ -1,14 +1,15 @@
 import { RouteHandlerMethod , FastifySchema  } from 'fastify';
 
-import {deleteUser , updateUser ,  createUser ,   createChat , removeChat   , getChatById, getRecentChats } from '../controllers/chat.controller';
+import {  createChat , removeChat   , getChatById, getRecentChats } from '../controllers/chat.controller';
+import { createUser, updateUser } from '../controllers/user.controller';
 import {
   createGroup, updateGroupInfo, removeGroup, getGroupById, getGoupes,
   removeGroupMember, leaveGroup, listGroupMembers,
   requestJoinGroup, getJoinRequests, approveJoinRequest, rejectJoinRequest,
-  getGroupMessages, updateMember
+  getGroupMessages, updateMember, inviteUserToGroup
 } from '../controllers/group.controller';
 
-import { createPoll } from '../controllers/poll.controller';
+import { createPoll, getGroupPolls, getPollById, votePollOption, addPollOption, removePoll } from '../controllers/poll.controller';
 import { ReactionsForMessage } from '../controllers/reaction.controller';
 
 
@@ -33,12 +34,17 @@ import {
   getJoinRequestsSchema,
   approveJoinRequestSchema,
   rejectJoinRequestSchema,
-  getGroupMessagesSchema
+  getGroupMessagesSchema,
+  inviteUserToGroupSchema,
 } from '../schemas/group.schemas';
 
 import {
   createPollSchema,
-  getReactionsForMessageSchema
+  getReactionsForMessageSchema,
+  getGroupPollsSchema,
+  getPollByIdSchema,
+  votePollOptionSchema,
+  removePollSchema
 } from '../schemas/poll.schemas';
 
 type Route = {
@@ -54,7 +60,6 @@ type Route = {
 export const chatRoutes : Route[] = [
   { method: 'POST',   url: '/api/chat/user/create',            handler: createUser },          
   { method: 'PUT',   url: '/api/chat/user/update',     handler: updateUser, },          
-  { method: 'DELETE',   url: '/api/chat/user/delete',     handler: deleteUser,  },          
 
   { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats, schema: newGetRecentChatsSchema },
 
@@ -87,7 +92,8 @@ export const groupRoutes: Route[] = [
   { method: 'PATCH',  url: '/api/group/:groupId/join-requests/approve', handler: approveJoinRequest, schema: approveJoinRequestSchema },
   { method: 'PATCH',  url: '/api/group/:groupId/join-requests/reject',  handler: rejectJoinRequest, schema: rejectJoinRequestSchema },
 
-  // Messages
+  // Admin/Owner invite users
+  { method: 'POST',   url: '/api/group/:groupId/invite',                 handler: inviteUserToGroup, schema: inviteUserToGroupSchema },
   { method: 'GET',    url: '/api/group/:groupId/messages',     handler: getGroupMessages, schema: getGroupMessagesSchema },
 
 ];
@@ -95,16 +101,11 @@ export const groupRoutes: Route[] = [
 // ------------------- Poll REST Endpoints -------------------
 export const pollRoutes: Route[] = [
   { method: 'POST', url: '/api/group/:groupId/polls', handler: createPoll, schema: createPollSchema },
-
-  // { method: 'GET', url: '/api/group/:groupId/polls', handler: getGroupPolls },
-
-  // { method: 'GET', url: '/api/polls/:pollId', handler: getPollById },
-
-  // { method: 'POST', url: '/api/polls/:pollId/options', handler: addPollOption },
-
-  // { method: 'POST', url: '/api/polls/:pollId/votes', handler: votePollOption },
-
-  // { method: 'DELETE', url: '/api/polls/:pollId', handler: removePoll },
+  { method: 'GET', url: '/api/group/:groupId/polls', handler: getGroupPolls, schema: getGroupPollsSchema },
+  { method: 'GET', url: '/api/polls/:pollId', handler: getPollById, schema: getPollByIdSchema },
+  { method: 'POST', url: '/api/polls/:pollId/options', handler: addPollOption },
+  { method: 'POST', url: '/api/polls/:pollId/votes', handler: votePollOption, schema: votePollOptionSchema },
+  { method: 'DELETE', url: '/api/polls/:pollId', handler: removePoll, schema: removePollSchema },
 ];
 
 

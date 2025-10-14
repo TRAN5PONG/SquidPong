@@ -3,10 +3,10 @@
 # Database cleanup script for SquidPong services
 # This script removes/resets databases for specified services
 
-SERVICES_DIR="/home/abquaoub/Desktop/SquidPong/backend/services"
+SERVICES_DIR="/home/xylar-99/Desktop/SquidPong/backend/services"
 
 # Default services if none specified
-DEFAULT_SERVICES="auth user chat"
+DEFAULT_SERVICES="auth user chat notify"
 
 # Color codes for output
 RED='\033[0;31m'

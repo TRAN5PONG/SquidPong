@@ -36,12 +36,12 @@ export const createProfileSchema: FastifySchema = {
   headers: {
     type: 'object',
     properties: {
-      'X-Secret-Token': {
+      'x-secret-token': {
         type: 'string',
         description: 'Internal service authentication token'
       }
     },
-    required: ['X-Secret-Token']
+    required: ['x-secret-token']
   },
   body: {
     type: 'object',
@@ -166,6 +166,47 @@ export const updateProfileLiveSchema: FastifySchema = {
   }
 };
 
+export const updateProfileIntraSchema: FastifySchema = {
+  description: 'Update user profile from Intra (accepts multipart image)',
+  tags: ['Profile Management'],
+  summary: 'Update Profile (Intra)',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID from authentication token'
+      }
+    },
+    required: ['x-user-id']
+  },
+  consumes: ['multipart/form-data'],
+  body: {
+    type: 'object',
+    properties: {
+      username: { type: 'string', minLength: 3, maxLength: 30, description: 'Username' },
+      firstName: { type: 'string', minLength: 1, maxLength: 50, description: 'First name' },
+      lastName: { type: 'string', minLength: 1, maxLength: 50, description: 'Last name' },
+      avatar: { type: 'string', description: 'Avatar image file' }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Profile updated successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Invalid input data'
+    },
+    404: {
+      ...errorResponse,
+      description: 'Profile not found'
+    }
+  }
+};
+
 export const updateProfileDBSchema: FastifySchema = {
   description: 'Sync profile from Redis to database (internal call)',
   tags: ['Profile Management'],
@@ -177,12 +218,12 @@ export const updateProfileDBSchema: FastifySchema = {
         type: 'string',
         description: 'User ID from authentication token'
       },
-      'X-Secret-Token': {
+      'x-secret-token': {
         type: 'string',
         description: 'Internal service authentication token'
       }
     },
-    required: ['x-user-id', 'X-Secret-Token']
+    required: ['x-user-id', 'x-secret-token']
   },
   body: {
     type: 'object',
@@ -384,6 +425,88 @@ export const deleteProfileSchema: FastifySchema = {
     404: {
       ...errorResponse,
       description: 'Profile not found'
+    }
+  }
+};
+
+// PURCHASE SCHEMAS
+// =============================================
+
+export const purchaseItemSchema: FastifySchema = {
+  description: 'Purchase character or paddle with wallet balance',
+  tags: ['Shop'],
+  summary: 'Purchase Item',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID for authentication'
+      }
+    },
+    required: ['x-user-id']
+  },
+  body: {
+    type: 'object',
+    properties: {
+      itemType: {
+        type: 'string',
+        enum: ['character', 'paddle'],
+        description: 'Type of item to purchase'
+      },
+      itemName: {
+        type: 'string',
+        description: 'Name of the item to purchase (e.g., "Taizen", "Survivor")'
+      }
+    },
+    required: ['itemType', 'itemName']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Item purchased successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Invalid item type or name'
+    },
+    402: {
+      ...errorResponse,
+      description: 'Insufficient wallet balance'
+    },
+    409: {
+      ...errorResponse,
+      description: 'Item already owned'
+    },
+    404: {
+      ...errorResponse,
+      description: 'User not found'
+    }
+  }
+};
+
+export const getShopItemsSchema: FastifySchema = {
+  description: 'Get available shop items and user ownership status',
+  tags: ['Shop'],
+  summary: 'Get Shop Items',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID for authentication'
+      }
+    },
+    required: ['x-user-id']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Shop items retrieved successfully'
+    },
+    404: {
+      ...errorResponse,
+      description: 'User not found'
     }
   }
 };

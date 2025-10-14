@@ -858,3 +858,58 @@ export const getGroupMessagesSchema: FastifySchema = {
     }
   }
 };
+
+
+// =============================================
+// INVITE USER TO GROUP SCHEMA
+// =============================================
+export const inviteUserToGroupSchema: FastifySchema = {
+  description: 'Invite a user to join group (Admin/Owner only)',
+  tags: ['Group Management'],
+  params: {
+    type: 'object',
+    properties: {
+      groupId: { type: 'string', description: 'Group ID' }
+    },
+    required: ['groupId']
+  },
+  body: {
+    type: 'object',
+    properties: {
+      targetUserId: { type: 'string', description: 'User ID to invite' }
+    },
+    required: ['targetUserId']
+  },
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': { type: 'string', description: 'Current user ID' }
+    },
+    required: ['x-user-id']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      properties: {
+        ...successResponse.properties,
+        data: {
+          type: 'object',
+          properties: {
+            invitedUser: { type: 'string' },
+            groupName: { type: 'string' }
+          }
+        }
+      },
+      description: 'User invited successfully'
+    },
+    403: {
+      ...errorResponse,
+      description: 'Not authorized to invite users'
+    },
+    404: {
+      ...errorResponse,
+      description: 'Group or user not found'
+    }
+  }
+};
+

@@ -6,7 +6,7 @@ export async function sendToService( url: string, method: string , id:any = null
   let type = 'application/json';
   const options:any = {
     method: method,
-    headers: { 'X-Secret-Token': process.env.SECRET_TOKEN || '' },
+    headers: { 'x-secret-token': process.env.SECRET_TOKEN || '' },
   };
 
   if (body != null && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()))
