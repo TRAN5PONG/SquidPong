@@ -16,6 +16,8 @@ export async function createChat(req: FastifyRequest, res: FastifyReply)
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
+   console.log(`Creating chat for userId: ${userId}`);
+   console.log(`Request body: ${JSON.stringify(req.body)}`);
    const {friendId} = req.body as {friendId : string };
 
    try
@@ -32,20 +34,20 @@ export async function createChat(req: FastifyRequest, res: FastifyReply)
 
       await verifyFriendship(userId, friendId);
 
-      const user = await fetchAndEnsureUser(userId);
-      const newChat = await prisma.chat.create({
-         data: {
-            members: {
-               create: [
-                  { userId },
-                  { userId: friendId },
-               ],
-              },
-          },
-      });
-
-      console.log(newChat);
-      respond.data = { chatId: newChat.id };
+         // Fetch both users by userId field
+      
+         const newChat = await prisma.chat.create({
+            data: {
+               members: {
+                  create: [
+                     { user: { connect: { userId } } },
+                     { user: { connect: { userId : friendId } } }
+                  ]
+               }
+            }
+         });
+         console.log(newChat);
+         respond.data = { chatId: newChat.id };
 
    }
    catch (error) 

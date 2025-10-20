@@ -29,7 +29,7 @@ const errorResponse = {
 const friendProfileSchema = {
   type: 'object',
   properties: {
-    id: { type: 'number' },
+    id: { type: 'string' },
     userId: { type: 'number' },
     username: { type: 'string' },
     firstName: { type: 'string' },

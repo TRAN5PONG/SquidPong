@@ -6,7 +6,7 @@ import { redis } from '../integration/redisClient';
 
 export async function verifyFriendship(senderId: string, receiverId: string) 
 {
-  const res = await fetch(`http://user:4001/api/friend/verify/${receiverId}`, {
+  const res = await fetch(`http://user:4002/api/friend/verify/${receiverId}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

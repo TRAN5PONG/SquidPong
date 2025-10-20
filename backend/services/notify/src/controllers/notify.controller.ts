@@ -86,6 +86,7 @@ export async function deleteNotificationHandler(req: FastifyRequest, res: Fastif
   return res.send(respond);
 }
 
+
 export async function deleteAllNotificationsHandler(req: FastifyRequest, res: FastifyReply)
 {
   const respond: ApiResponse<null> = { success: true, message: 'All notifications deleted successfully' };

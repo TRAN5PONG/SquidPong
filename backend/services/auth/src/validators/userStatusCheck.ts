@@ -25,6 +25,7 @@ export async function isUserVerified(email:string , code:string)
   if(!codeRedis)  throw new Error(EmailMessage.VERIFICATION_TOKEN_EXPIRED)
 
   if(codeRedis != code) throw new Error(EmailMessage.INVALID_VERIFICATION_TOKEN)
+  await redis.del(`${VERIFY}:${email}`);
 }
 
 

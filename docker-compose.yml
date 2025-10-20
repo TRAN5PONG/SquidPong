@@ -49,7 +49,7 @@ services:
     restart: always
     command: sh -c "sleep 10 && npm run dev"
     volumes:
-      - ./frontend/src/uploads:/tmp/
+      # - ./frontend/src/uploads:/tmp/
       - ./backend/gateway/src:/gateway/src
     env_file:
       - ./backend/gateway/.env
