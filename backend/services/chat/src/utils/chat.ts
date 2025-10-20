@@ -39,6 +39,7 @@ export async function checkChatMembershipAndGetOthers(chatId: number, userId: nu
     },
   });
 
+  console.log('Chat fetched:', chat);
   if (!chat) throw new Error(`Chat not found: ${chatId}`);
 
   const isMember = chat.members.some((m: any) => m.userId === String(userId));

@@ -54,10 +54,14 @@ export enum MessageType
 
 export async function CreateMessageRecord(chatId : number , senderId : string  ,  content  : string )
 {
-
-  await prisma.message.create({ data: {chatId , content, senderId} });
-
-  return {content};
+  await prisma.message.create({
+    data: {
+      chatId,
+      content,
+      senderId
+    },
+  });
+  return { content };
 }
 
 

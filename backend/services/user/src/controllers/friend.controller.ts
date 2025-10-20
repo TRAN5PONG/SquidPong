@@ -21,7 +21,7 @@ const {PENDING, ACCEPTED} = FriendshipStatus;
 
 export async function getFriendsListHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<Profile[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
+  const respond: ApiResponse<any[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
 
@@ -39,7 +39,9 @@ export async function getFriendsListHandler(req: FastifyRequest, res: FastifyRep
     const friendIds = friendships.map((f:any) => f.senderId === userId ? f.receiverId : f.senderId);
     const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
     
+    console.log('profiles from DB:', profiles);
     const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
+    console.log('merged profiles:', mergedProfiles);
     respond.data = mergedProfiles;
   } 
   catch (error) {
