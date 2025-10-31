@@ -1,7 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import auth2 from '@fastify/oauth2';
-import session from '@fastify/session';
 import jwt from '@fastify/jwt';
 
 
@@ -25,15 +24,6 @@ const auth2_config:any = {
 }
   
 
-const session_option = {
-    secret: 'this_is_a_very_long_secret_key_that_is_secure',
-    cookie: {
-    secure: false, // Set to false for HTTP development
-    maxAge: 1000 * 60 * 10,
-    },
-    saveUninitialized: false,
-  }
-
 
   
 const jwt_config:any = {
@@ -46,7 +36,6 @@ const jwt_config:any = {
   export default async function registerPlugins(app: FastifyInstance) {
 
      app.register(cookie);
-     app.register(session, session_option);
      app.register(jwt, jwt_config);
      app.register(auth2, auth2_config);
   }

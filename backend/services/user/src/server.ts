@@ -27,7 +27,7 @@ async function start()
     
     fastifyserver();
     await initRabbitMQ();
-    await receiveFromQueue("friends");
+    // await receiveFromQueue("friends");
 }
 
 start();
