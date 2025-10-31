@@ -3,8 +3,8 @@ import prisma from '../db/database';
 import { ApiResponse, sendError } from '../utils/errorHandler';
 import { Profile } from '../utils/types';
 import { getProfile } from '../utils/utils';
-import { sendDataToQueue } from '../integration/rabbitmqClient';
-import { redis } from '../integration/redis';
+import { sendDataToQueue } from '../integration/rabbitmq.integration';
+import { redis } from '../integration/redis.integration';
 import { FriendMessages , ProfileMessages } from '../utils/responseMessages';
 import { isCheck  , mergeProfileWithRedis} from '../utils/utils';
 

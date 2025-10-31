@@ -1,7 +1,7 @@
 
 import prisma from "../db/database";
-import { sendDataToQueue } from "../integration/rabbitmqClient";
-import redis from "../integration/redisClient";
+import { sendDataToQueue } from "../integration/rabbitmq.integration";
+import redis from "../integration/redis.integration";
 import { VerifyPassword } from "../utils/hashedPassword";
 import { UserProfileMessage ,EmailMessage ,PasswordMessage } from "../utils/messages";
 

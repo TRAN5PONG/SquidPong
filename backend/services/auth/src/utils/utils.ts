@@ -1,5 +1,5 @@
 import prisma from '../db/database';
-import { sendToService } from '../integration/api_calls';
+import { sendToService } from '../integration/restfullApi.integration';
 
 
 

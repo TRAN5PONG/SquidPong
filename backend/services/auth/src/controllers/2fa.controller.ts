@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../db/database';
-import redis from '../integration/redisClient';
+import redis from '../integration/redis.integration';
 import { TwoFA  , UserProfileMessage ,  TwoFaEmaiL } from '../utils/messages';
 import { ApiResponse, sendError } from '../utils/errorHandler';
 import { setJwtTokens } from '../validators/2faValidator';

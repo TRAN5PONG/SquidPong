@@ -1,5 +1,3 @@
-
-
 export async function sendToService( url: string, method: string , id:any = null , body: any = null): Promise<object> 
 {
 
@@ -19,5 +17,3 @@ export async function sendToService( url: string, method: string , id:any = null
   const res = await fetch(url, options);
   return (await res.json());
 }
-
-

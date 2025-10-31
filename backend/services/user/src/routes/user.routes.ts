@@ -32,7 +32,6 @@ import {
 } from '../schemas/block.schemas';
 
 
-
 type Route = {
     method  : 'GET' | 'POST' | 'DELETE' | 'PATCH' | 'PUT';
     url     : string;
@@ -81,7 +80,6 @@ const friendRoutes: Route[] = [
   { method: 'DELETE', url: '/api/blocked/:blockId', handler: blockController.unblockUserHandler, schema: unblockUserSchema },
 
 ];
-
 
 
 export  {friendRoutes , userRoutes};

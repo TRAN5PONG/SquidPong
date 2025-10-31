@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../db/database';
 import { ApiResponse, sendError } from '../utils/errorHandler';
 import { Profile } from '../utils/types';
-import { redis } from '../integration/redis';
+import { redis } from '../integration/redis.integration';
 import { ProfileMessages, GeneralMessages } from '../utils/responseMessages';
 import { checkSecretToken } from '../utils/utils';
 import { sendServiceRequest , getPromotedRank , isReadyExists } from '../utils/utils';
@@ -11,6 +11,13 @@ import { convertParsedMultipartToJson } from '../utils/utils';
 import { purchaseItem } from '../utils/utils';
 import { sendServiceRequestSimple } from '../utils/utils';
 import { buyVerified } from '../utils/utils';
+
+
+
+
+
+
+
 
 export async function createProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {

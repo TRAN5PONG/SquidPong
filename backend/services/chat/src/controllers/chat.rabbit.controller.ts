@@ -1,6 +1,6 @@
 import prisma from "../db/database";
-import { channel } from "../integration/rabbitmqClient";
-import { sendDataToQueue } from "../integration/rabbitmqClient";
+import { channel } from "../integration/rabbitmq.integration";
+import { sendDataToQueue } from "../integration/rabbitmq.integration";
 import { checkChatMembershipAndGetOthers } from "../utils/chat";
 
 // import { handleMessage } from "../utils/process.message";

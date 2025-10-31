@@ -1,5 +1,5 @@
 import prisma from "../db/database";
-import { sendDataToQueue } from "../integration/rabbitmqClient";
+import { sendDataToQueue } from "../integration/rabbitmq.integration";
 
 
 export enum NotificationType {

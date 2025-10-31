@@ -2,7 +2,7 @@ import { fastify, FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import registerPlugins from './plugins/plugins';
 import { errorHandler } from './utils/errorHandler';
 
-import {chatRoutes , groupRoutes , pollRoutes , reactionRoutes } from './routes/chat';
+import {chatRoutes , groupRoutes , pollRoutes , reactionRoutes } from './routes/chat.routes';
 
 
 const app: FastifyInstance = fastify({

@@ -3,7 +3,7 @@ import fs from 'fs';
 import { pipeline } from 'stream/promises';
 import { FastifyRequest } from 'fastify';
 import prisma from '../db/database';
-import { redis } from '../integration/redis';
+import { redis } from '../integration/redis.integration';
 import { ProfileMessages } from './responseMessages';
 
 

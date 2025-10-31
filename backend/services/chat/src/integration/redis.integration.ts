@@ -51,7 +51,8 @@ export async function get(key: string)
   const data = await rediss.call("JSON.GET", key, "$");
   if (data) 
   {
-    const parsed = JSON.parse(data as string);
+    // Ensure we operate on a string (avoid casting Promise/unknown -> string)
+    const parsed = JSON.parse(String(data));
     return parsed && parsed.length > 0 ? parsed[0] : null;
   }
 
@@ -77,7 +78,8 @@ export async function mergeObject(key: string, path: string, newData: Record<str
     key,
     path.startsWith("$") ? path : `$.${path}`
   );
-  const currentObj = current ? JSON.parse(current as string)[0] : {};
+  // JSON.GET can return unknown; coerce to string before parsing
+  const currentObj = current ? JSON.parse(String(current))[0] : {};
   const merged = { ...currentObj, ...newData };
   return rediss.call(
     "JSON.SET",
@@ -118,7 +120,8 @@ export async function arrayUniqueMerge(key: string, path: string, values: any | 
     key,
     path.startsWith("$") ? path : `$.${path}`
   );
-  const currentArr = current ? JSON.parse(current as string)[0] : [];
+  // JSON.GET can return unknown; coerce to string before parsing
+  const currentArr = current ? JSON.parse(String(current))[0] : [];
   const merged = Array.from(new Set([...currentArr, ...arr]));
   return rediss.call(
     "JSON.SET",
