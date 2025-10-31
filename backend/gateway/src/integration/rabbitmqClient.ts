@@ -9,6 +9,7 @@ let channel: any;
 
 
 
+
 export async function initRabbitMQ() 
 {
   connection = await amqp.connect("amqp://rabbitmq:5672");

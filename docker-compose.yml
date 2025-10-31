@@ -9,10 +9,12 @@ services:
       - "8080:80"
       - "4000:4000"
     environment:
-      - PORT_BACKEND=4000
-      - PORT_FRONTEND=8080
       - LOCAL_IP=localhost
       - DYNAMIC_IP=10.14.9.1
+      - BACKEND_SERVICE=gateway
+      - BACKEND_PORT=4000
+      - FRONTEND_SERVICE=frontend
+      - FRONTEND_PORT=5173
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./squid-toolkit/squid-docs:/usr/share/caddy/squid-docs:ro
@@ -44,12 +46,6 @@ services:
     container_name: rabbitmq
     networks:
       - web
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "status"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 5s
   
 
   gateway:
@@ -57,15 +53,12 @@ services:
     image: gateway-image
     container_name: gateway
     restart: always
-    command: sh -c "sleep 10 && npm run dev"
+    command: sh -c "sleep 15 && npm run dev"
     volumes:
       - ./frontend/src/uploads:/tmp/
       - ./backend/gateway/src:/gateway/src
     env_file:
       - ./backend/gateway/.env
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     networks:
       - web
 
@@ -83,9 +76,6 @@ services:
       - ./uploads/user/:/auth/uploads/
       - ./backend/services/auth/src:/auth/src
       - ./backend/services/auth/prisma:/auth/prisma
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     networks:
       - web
 
@@ -103,9 +93,6 @@ services:
       - ./uploads/user/:/user/uploads
       - ./backend/services/user/src:/user/src
       - ./backend/services/user/prisma:/user/prisma
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     networks:
       - web
 
@@ -122,9 +109,6 @@ services:
     volumes:
       - ./backend/services/notify/src:/notify/src
       - ./backend/services/notify/prisma:/notify/prisma
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     networks: 
       - web
 
@@ -143,9 +127,6 @@ services:
       - ./uploads/chat/:/chat/uploads
       - ./backend/services/chat/src:/chat/src
       - ./backend/services/chat/prisma:/chat/prisma
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     networks: 
       - web
 

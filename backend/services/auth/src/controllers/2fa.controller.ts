@@ -13,6 +13,8 @@ import { setupAuthenticatorApp  , setupEmail2FA  ,verifyAuthenticatorCode , veri
 
 
 
+
+
 export async function setupTwoFAHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<{ twoFAQRCode: string; twoFAKey: string } | null> = { success: true, message: TwoFA.TWO_FA_SETUP_SUCCESS};
