@@ -1,5 +1,5 @@
 import { fastify, FastifyInstance } from 'fastify';
-import { authRoutes , twofaRoutes } from './routes/auth';
+import { authRoutes , twofaRoutes } from './routes/auth.routes';
 import { errorHandler } from './utils/errorHandler';
 import registerPlugins from './plugins/plugins';
 

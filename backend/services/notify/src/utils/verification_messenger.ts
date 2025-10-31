@@ -1,4 +1,4 @@
-import redis from "../integration/redisClient";
+import redis from "../integration/redis.integration";
 
 import { sendEmail } from "./sendEmail";
 

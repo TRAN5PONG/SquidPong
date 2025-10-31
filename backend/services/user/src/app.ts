@@ -1,5 +1,5 @@
 import {fastify , FastifyInstance} from 'fastify';
-import {userRoutes , friendRoutes} from './routes/user';
+import {userRoutes , friendRoutes} from './routes/user.routes';
 import { errorHandler } from './utils/errorHandler';
 import registerPlugins from './plugins/plugins'
 import prisma from './db/database'

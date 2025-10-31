@@ -1,6 +1,6 @@
-import redis from "../integration/redisClient";
+import redis from "../integration/redis.integration";
 import { hashPassword } from "./hashedPassword";
-import { sendDataToQueue } from "../integration/rabbitmqClient";
+import { sendDataToQueue } from "../integration/rabbitmq.integration";
 
 
 

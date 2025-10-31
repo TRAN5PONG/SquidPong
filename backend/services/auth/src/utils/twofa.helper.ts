@@ -1,5 +1,5 @@
 import prisma from '../db/database';
-import redis from '../integration/redisClient';
+import redis from '../integration/redis.integration';
 import QRCode from "qrcode";
 import { setJwtTokens } from '../validators/2faValidator';
 import { authenticator } from "otplib";

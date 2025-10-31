@@ -16,6 +16,7 @@ export async function initRabbitMQ()
 }
 
 
+
 export async function sendDataToQueue(data: any, queue: string) 
 {
   try 
@@ -50,4 +51,3 @@ export async function receiveFromQueue()
     console.error('RabbitMQ error:', err.message);
   }
 }
-

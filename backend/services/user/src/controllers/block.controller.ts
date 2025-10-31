@@ -5,7 +5,7 @@ import { ApiResponse, sendError } from '../utils/errorHandler';
 import { getProfile } from '../utils/utils';
 import { isCheck } from '../utils/utils';
 import { BlockMessages , FriendMessages } from '../utils/responseMessages';
-import { redis } from '../integration/redis';
+import { redis } from '../integration/redis.integration';
 import { mergeProfileWithRedis } from '../utils/utils';
 
 

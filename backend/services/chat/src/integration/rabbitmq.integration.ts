@@ -1,7 +1,7 @@
 import amqp from "amqplib";
-
+import { processChatMessageFromRabbitMQ } from "../controllers/chat.rabbit.controller";
 let connection: any;
-let channel: any;
+export let channel: any;
 
 
 export async function initRabbitMQ() 
@@ -9,7 +9,9 @@ export async function initRabbitMQ()
   connection = await amqp.connect("amqp://rabbitmq:5672");
   channel = await connection.createChannel();
 
-  console.log("RabbitMQ connected");
+  await channel.assertQueue("chat");
+  
+  console.log("chat service connected to RabbitMQ");
 }
 
 
@@ -28,30 +30,8 @@ export async function sendDataToQueue(data: any, queue: string)
 
 
 
-
-export async function receiveFromQueue(queue: string) 
+export async function receiveFromQueue() 
 {
-  channel.consume(queue, receiveAndDeliver);
-}
-
-
-
-
-function receiveAndDeliver(msg: any) 
-{
-
-  if (msg !== null) 
-    {
-    sendWsMessage(msg); 
-    channel.ack(msg);
-    }
-}
-
-
-
-
-function sendWsMessage(msg: any) 
-{
-    const data = JSON.parse(msg.content.toString());
-
+  const queue = "chat";
+  channel.consume(queue, processChatMessageFromRabbitMQ);
 }

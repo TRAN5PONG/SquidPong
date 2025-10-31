@@ -1,6 +1,6 @@
 import app from './app'
 import dotenv from 'dotenv'
-import { initRabbitMQ } from './integration/rabbitmqClient'
+import { initRabbitMQ } from './integration/rabbitmq.integration'
 
 
 dotenv.config()

@@ -1,5 +1,5 @@
 import {fastify , FastifyInstance} from 'fastify';
-import notifyRoutes from './routes/notify';
+import notifyRoutes from './routes/notify.routes';
 import { errorHandler } from './utils/errorHandler';
 import registerPlugins from './plugins/plugins'
 import prisma from './db/database'

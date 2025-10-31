@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import app from './app'
-import { initRabbitMQ , receiveFromQueue } from './integration/rabbitmqClient';
+import { initRabbitMQ , receiveFromQueue } from './integration/rabbitmq.integration';
 dotenv.config();
 
 const port = Number(process.env.USER_SERVICE_PORT);

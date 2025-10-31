@@ -1,8 +1,8 @@
 import {FastifyReply } from "fastify";
 import app from "../app";
 import prisma from "../db/database";
-import { sendDataToQueue } from "../integration/rabbitmqClient";
-import redis from "../integration/redisClient";
+import { sendDataToQueue } from "../integration/rabbitmq.integration";
+import redis from "../integration/redis.integration";
 import { ApiResponse } from "../utils/errorHandler";
 
 

@@ -55,7 +55,6 @@ type Route = {
 };
 
 
-
 // ------------------- Chat Endpoints -------------------
 export const chatRoutes : Route[] = [
   { method: 'POST',   url: '/api/chat/user/create',            handler: createUser },          
@@ -96,7 +95,7 @@ export const groupRoutes: Route[] = [
   { method: 'POST',   url: '/api/group/:groupId/invite',                 handler: inviteUserToGroup, schema: inviteUserToGroupSchema },
   { method: 'GET',    url: '/api/group/:groupId/messages',     handler: getGroupMessages, schema: getGroupMessagesSchema },
 
-];
+]
 
 // ------------------- Poll REST Endpoints -------------------
 export const pollRoutes: Route[] = [
@@ -107,7 +106,6 @@ export const pollRoutes: Route[] = [
   { method: 'POST', url: '/api/polls/:pollId/votes', handler: votePollOption, schema: votePollOptionSchema },
   { method: 'DELETE', url: '/api/polls/:pollId', handler: removePoll, schema: removePollSchema },
 ];
-
 
 
 

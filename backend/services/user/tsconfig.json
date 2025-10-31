@@ -9,5 +9,5 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "include": ["src", "../chat/src/integration/redis.ts"]
+  "include": ["src", "../chat/src/integration/redis.integration.ts"]
 }

@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import fs from 'fs';
 import { pipeline } from 'stream/promises';
 import prisma from '../db/database';
-import { redis } from '../integration/redisClient';
+import { redis } from '../integration/redis.integration';
 
 export async function verifyFriendship(senderId: string, receiverId: string) 
 {
