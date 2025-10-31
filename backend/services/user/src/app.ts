@@ -19,10 +19,9 @@ const routes = [...userRoutes , ...friendRoutes]
 
 // Health check route
 app.get('/api/user/health', async (req:any, res:any) => {
-  
-  
   return res.send({ status: 'User service is healthy' });
 });
+
 
 
 app.register(async () => {routes.forEach(route => app.route(route))});
