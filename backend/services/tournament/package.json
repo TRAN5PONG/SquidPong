@@ -1,0 +1,36 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon --watch src -e ts --exec ts-node --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fastify": "^5.3.2",
+    "@prisma/client": "^6.8.2",
+    "nodemailer": "^7.0.4",
+    "sqlite3": "^5.1.7",
+    "dotenv": "^16.3.1",
+    "ioredis": "^5.3.2",
+    "amqplib": "^0.10.3"
+  },
+  "devDependencies": {
+    "prisma": "^6.8.2",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.4.5",
+    "ts-node-dev": "^2.0.0",
+    "@types/node": "^20.11.0",
+    "@types/ioredis": "^4.28.3"
+
+  }
+}

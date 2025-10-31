@@ -1,29 +1,39 @@
-http://localhost:4000 {
-  reverse_proxy gateway:4000
+# ===================================
+# Backend proxy (localhost)
+# ===================================
+http://{$LOCAL_IP}:{$BACKEND_PORT} {
+    reverse_proxy {$BACKEND_SERVICE}:{$BACKEND_PORT}
 }
 
-http://localhost:80 {
-  handle /squid-docs* {
-    root * /usr/share/caddy
-    file_server
-  }
-  
-  reverse_proxy frontend:5173
+# ===================================
+# Frontend proxy + docs (localhost)
+# ===================================
+http://{$LOCAL_IP}:80 {
+    handle /squid-docs* {
+        root * /usr/share/caddy
+        file_server
+    }
+
+    reverse_proxy {$FRONTEND_SERVICE}:{$FRONTEND_PORT}
 }
 
-
-
-
-http://10.14.9.1:4000 {
-  reverse_proxy gateway:4000
+# ===================================
+# Backend proxy (dynamic IP)
+# ===================================
+http://{$DYNAMIC_IP}:{$BACKEND_PORT} {
+    reverse_proxy {$BACKEND_SERVICE}:{$BACKEND_PORT}
 }
 
-http://10.14.9.1:80 {
-  handle /squid-docs* {
-    root * /usr/share/caddy
-    file_server
-  }
-  
-  reverse_proxy frontend:5173
+# ===================================
+# Frontend proxy + docs (dynamic IP)
+# ===================================
+http://{$DYNAMIC_IP}:80 {
+    handle /squid-docs* {
+        root * /usr/share/caddy
+        file_server
+    }
+
+    reverse_proxy {$FRONTEND_SERVICE}:{$FRONTEND_PORT}
 }
+
 

@@ -8,24 +8,29 @@ services:
     ports:
       - "8080:80"
       - "4000:4000"
+    environment:
+      - PORT_BACKEND=4000
+      - PORT_FRONTEND=8080
+      - LOCAL_IP=localhost
+      - DYNAMIC_IP=10.14.9.1
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./squid-toolkit/squid-docs:/usr/share/caddy/squid-docs:ro
     networks:
       - web
 
-  # frontend:
-  #   image: frontend:latest
-  #   build: ./frontend
-  #   container_name: frontend
-  #   restart: always
-  #   env_file:
-  #     - ./frontend/.env
-  #   volumes:
-  #     - ./frontend:/frontend
-  #     - /frontend/node_modules
-  #   networks:
-  #     - web
+  frontend:
+    image: frontend:latest
+    build: ./frontend
+    container_name: frontend
+    restart: always
+    env_file:
+      - ./frontend/.env
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
+    networks:
+      - web
 
   redis:
     image: redis/redis-stack-server:latest
@@ -37,9 +42,14 @@ services:
   rabbitmq:
     image: rabbitmq
     container_name: rabbitmq
-    restart: always
     networks:
       - web
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 5s
   
 
   gateway:
@@ -49,15 +59,13 @@ services:
     restart: always
     command: sh -c "sleep 10 && npm run dev"
     volumes:
-      # - ./frontend/src/uploads:/tmp/
+      - ./frontend/src/uploads:/tmp/
       - ./backend/gateway/src:/gateway/src
     env_file:
       - ./backend/gateway/.env
     depends_on:
-      - auth
-      - user
-      # - chat
-      # - notify
+      rabbitmq:
+        condition: service_healthy
     networks:
       - web
 
@@ -66,12 +74,7 @@ services:
     image: auth-image
     container_name: auth
     restart: always
-    command: >
-      sh -c "
-      sleep 6 &&
-      npx prisma migrate dev --name init &&
-      npm run dev
-      "
+    command: sh -c "sleep 15 && npx prisma db push  && npx prisma studio  & npm run dev"
     env_file:
       - ./backend/services/auth/.env
     ports:
@@ -80,6 +83,9 @@ services:
       - ./uploads/user/:/auth/uploads/
       - ./backend/services/auth/src:/auth/src
       - ./backend/services/auth/prisma:/auth/prisma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks:
       - web
 
@@ -88,12 +94,7 @@ services:
     image: user-image
     container_name: user
     restart: always
-    command: >
-      sh -c "
-      sleep 6 &&
-      npx prisma migrate dev --name init &&
-      npm run dev
-      "
+    command: sh -c "sleep 15 && npx prisma db push  && npx prisma studio  & npm run dev"
     env_file:
       - ./backend/services/user/.env
     ports:
@@ -102,6 +103,9 @@ services:
       - ./uploads/user/:/user/uploads
       - ./backend/services/user/src:/user/src
       - ./backend/services/user/prisma:/user/prisma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks:
       - web
 
@@ -110,12 +114,7 @@ services:
     image: notify-image
     container_name: notify
     restart: always
-    command: >
-      sh -c "
-      sleep 6 &&
-      npx prisma migrate dev --name init &&
-      npm run dev
-      "
+    command: sh -c "sleep 15 && npx prisma db push  && npx prisma studio  & npm run dev"
     env_file:
       - ./backend/services/notify/.env
     ports:
@@ -123,6 +122,9 @@ services:
     volumes:
       - ./backend/services/notify/src:/notify/src
       - ./backend/services/notify/prisma:/notify/prisma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks: 
       - web
 
@@ -131,12 +133,8 @@ services:
     image: chat-image
     container_name: chat
     restart: always
-    command: >
-      sh -c "
-      sleep 6 &&
-      npx prisma migrate dev --name init &&
-      npm run dev
-      "
+    command: sh -c "sleep 15 && npx prisma db push  && npx prisma studio  & npm run dev"
+
     env_file:
       - ./backend/services/chat/.env
     ports:
@@ -145,30 +143,49 @@ services:
       - ./uploads/chat/:/chat/uploads
       - ./backend/services/chat/src:/chat/src
       - ./backend/services/chat/prisma:/chat/prisma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks: 
       - web
 
-  # game:
-  #   build: ./backend/services/game
-  #   image: game-image
-  #   container_name: game
-  #   restart: always
-  #   command: >
-  #     sh -c "
-  #     sleep 6 &&
-  #     npx prisma migrate dev --name init &&
-  #     npm run dev
-  #     "
-  #   env_file:
-  #     - ./backend/services/game/.env
-  #   ports:
-  #     - "4005:4005"
-  #     - "5005:5555"
-  #   volumes:
-  #     - ./backend/services/game/src:/game/src
-  #     - ./backend/services/game/prisma:/game/prisma
-  #   networks: 
-  #     - web
+  game:
+    build: ./backend/services/game
+    image: game-image
+    container_name: game
+    restart: always
+    command: sh -c "sleep 15 && npx prisma db push  && npx prisma studio  & npm run dev"
+    env_file:
+      - ./backend/services/game/.env
+    ports:
+      - "4005:4005"
+      - "5005:5555"
+    volumes:
+      - ./backend/services/game/src:/game/src
+      - ./backend/services/game/prisma:/game/prisma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: 
+      - web
+  tournament:
+    build: ./backend/services/tournament
+    image: tournament-image
+    container_name: tournament
+    restart: always
+    command: sh -c "sleep 15 && npx prisma db push  && npx prisma studio  & npm run dev"
+    env_file:
+      - ./backend/services/tournament/.env
+    ports:
+      - "5006:5555"
+    volumes:
+      - ./backend/services/tournament/src:/tournament/src
+      - ./backend/services/tournament/prisma:/tournament/prisma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: 
+      - web
 
 networks:
   web:
