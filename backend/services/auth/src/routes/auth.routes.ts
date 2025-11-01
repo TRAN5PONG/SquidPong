@@ -39,64 +39,64 @@ const authRoutes: Route[] = [
     method: "POST",
     url: "/api/auth/signup",
     handler: authController.postSignupHandler,
-    schema: signupSchema,
+    // schema: signupSchema,
   },
   {
     method: "POST",
     url: "/api/auth/login",
     handler: authController.postLoginHandler,
-    schema: loginSchema,
+    // schema: loginSchema,
   },
   {
     method: "POST",
     url: "/api/auth/logout",
     handler: authController.postLogoutHandler,
-    schema: logoutSchema,
+    // schema: logoutSchema,
   },
   // email verification
   {
     method: "POST",
     url: "/api/auth/verify-email",
     handler: authController.verifyEmailHandler,
-    schema: verifyEmailSchema,
+    // schema: verifyEmailSchema,
   },
   // password management
   {
     method: "POST",
     url: "/api/auth/forgot-password",
     handler: authController.postForgotPasswordHandler,
-    schema: forgotPasswordSchema,
+    // schema: forgotPasswordSchema,
   },
   {
     method: "POST",
     url: "/api/auth/reset-password",
     handler: authController.postResetPasswordHandler,
-    schema: resetPasswordSchema,
+    // schema: resetPasswordSchema,
   },
   {
     method: "POST",
     url: "/api/auth/change-password",
     handler: authController.postChangePasswordHandler,
-    schema: changePasswordSchema,
+    // schema: changePasswordSchema,
   },
   // OAuth routes
   {
     method: "GET",
     url: "/api/auth/google/callback",
     handler: authController.getGooglCallbackehandler,
-    schema: googleCallbackSchema,
+    // schema: googleCallbackSchema,
   },
   {
     method: "GET",
     url: "/api/auth/intra",
     handler: authController.getIntrahandler,
-    schema: intraSchema,
+    // schema: intraSchema,
   },
   {
     method: "GET",
     url: "/api/auth/intra/callback",
     handler: authController.getIntracallbackhandler,
-    schema: intraCallbackSchema,
+    // schema: intraCallbackSchema,
   },
 
   // token refresh and account deletion
@@ -104,13 +104,13 @@ const authRoutes: Route[] = [
     method: "POST",
     url: "/api/auth/refresh",
     handler: authController.postRefreshTokenHandler,
-    schema: refreshTokenSchema,
+    // schema: refreshTokenSchema,
   },
   {
     method: "DELETE",
     url: "/api/auth/delete-account",
     handler: authController.deleteAccountHandler,
-    schema: deleteAccountSchema,
+    // schema: deleteAccountSchema,
   },
   {
     method: "POST",
@@ -128,35 +128,35 @@ const twofaRoutes: Route[] = [
     method: "GET",
     url: "/api/2fa/:method/setup",
     handler: twofaController.setupTwoFAHandler,
-    schema: setup2FASchema,
+    // schema: setup2FASchema,
   },
 
   {
     method: "POST",
     url: "/api/2fa/:method/verify",
     handler: twofaController.verifyTwoFAHandler,
-    schema: verify2FASchema,
+    // schema: verify2FASchema,
   },
 
   {
     method: "POST",
     url: "/api/2fa/:method/enable",
     handler: twofaController.enableTwoFAHandler,
-    schema: enable2FASchema,
+    // schema: enable2FASchema,
   },
 
   {
     method: "POST",
     url: "/api/2fa/:method/disable",
     handler: twofaController.disableTwoFAHandler,
-    schema: disable2FASchema,
+    // schema: disable2FASchema,
   },
 
   {
     method: "GET",
     url: "/api/2fa/:method/status",
     handler: twofaController.statusTwoFAHandler,
-    schema: status2FASchema,
+    // schema: status2FASchema,
   },
 ];
 
