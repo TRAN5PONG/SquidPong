@@ -13,6 +13,7 @@ import { useAppContext } from "@/contexts/AppProviders";
 import { MatchPhase, MatchState } from "./network/GameState";
 import { Network } from "./network/network";
 import { Game } from "./Scenes/GameScene";
+import { db } from "@/db";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -113,29 +114,41 @@ const GameContiner = () => {
   const [winnerId, setWinnerId] = useState<string | null>(null);
 
   // == Get Match
-  useEffect(() => {
-    if (!matchId) return;
+  // useEffect(() => {
+  //   if (!matchId) return;
 
-    const getMatch = async () => {
-      try {
-        const res = await getMatchById(matchId);
-        if (res) {
-          setMatch(res.data);
-        } else setNotFound(true);
-      } catch (err) {
-        setNotFound(true);
-        console.error(err);
-      }
-    };
+  //   const getMatch = async () => {
+  //     try {
+  //       const res = await getMatchById(matchId);
+  //       if (res) {
+  //         setMatch(res.data);
+  //       } else setNotFound(true);
+  //     } catch (err) {
+  //       setNotFound(true);
+  //       console.error(err);
+  //     }
+  //   };
 
-    getMatch();
-  }, [matchId]);
+  //   getMatch();
+  // }, [matchId]);
 
   // == Init Game
   useEffect(() => {
-    if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
+    // if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
 
-    gameRef.current = new Game(canvasRef.current, match, user.id);
+    if (!canvasRef.current)
+        return;
+    gameRef.current = new Game(canvasRef.current, {
+      createdAt : new Date(),
+      id : "match_123",
+      opponent1 : db.MatchPlayer1,
+      opponent2 : db.MatchPlayer2,
+      duration : 300,
+      mode : "1vsAI",
+      roomId : "room_123",
+      status : "IN_PROGRESS",
+
+    }, "user_123");
     gameRef.current.start();
     netRef.current = gameRef.current.net;
 
@@ -146,12 +159,12 @@ const GameContiner = () => {
   }, [match, user?.id, canvasRef.current]);
 
   // == Network Listeners
-  useEffect(() => {
-    if (!netRef.current) return;
-    netRef.current.on("phase:changed", setMatchPhase);
-    netRef.current.on("winner:declared", setWinnerId);
-    netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
-  }, [gameRef.current]);
+  // useEffect(() => {
+  //   if (!netRef.current) return;
+  //   netRef.current.on("phase:changed", setMatchPhase);
+  //   netRef.current.on("winner:declared", setWinnerId);
+  //   netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
+  // }, [gameRef.current]);
 
   const onPause = () => {
     if (!netRef.current) return;
