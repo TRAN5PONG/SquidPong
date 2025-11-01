@@ -25,7 +25,9 @@ app.register(async () => {groupRoutes.forEach(route => app.route(route))});
 app.register(async () => {pollRoutes.forEach(route => app.route(route))});
 app.register(async () => {reactionRoutes.forEach(route => app.route(route))});
 
-
+app.get('/api/chat/health', async (req:any, res:any) => {
+  return { status: 'auth service is healthy' };
+})
 
 // Add Swagger JSON documentation endpoint
 app.get('/api/chat/docs', async (request: FastifyRequest, reply: FastifyReply) => {

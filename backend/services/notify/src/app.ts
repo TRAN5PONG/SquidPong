@@ -21,5 +21,7 @@ routes.forEach(route => {app.route(route)})
 app.setErrorHandler(errorHandler)
 
 
-
+app.get('/api/notify/health', async (req:any, res:any) => {
+  return { status: 'auth service is healthy' };
+})
 

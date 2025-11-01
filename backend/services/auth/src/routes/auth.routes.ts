@@ -39,26 +39,26 @@ const authRoutes: Route[] = [
     method: "POST",
     url: "/api/auth/signup",
     handler: authController.postSignupHandler,
-    schema: signupSchema,
+    // schema: signupSchema,
   },
   {
     method: "POST",
     url: "/api/auth/login",
     handler: authController.postLoginHandler,
-    schema: loginSchema,
+    // schema: loginSchema,
   },
   {
     method: "POST",
     url: "/api/auth/logout",
     handler: authController.postLogoutHandler,
-    schema: logoutSchema,
+    // schema: logoutSchema,
   },
   // email verification
   {
     method: "POST",
     url: "/api/auth/verify-email",
     handler: authController.verifyEmailHandler,
-    schema: verifyEmailSchema,
+    // schema: verifyEmailSchema,
   },
   // password management
   {

@@ -5,14 +5,23 @@ import { createNotification , updateNotification , deleteNotification } from "..
 let connection: any;
 let channel: any;
 
+const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://rabbitmq:5672";
+
 export async function initRabbitMQ() 
 {
-  connection = await amqp.connect("amqp://rabbitmq:5672");
-  channel = await connection.createChannel();
-  
-  await channel.assertQueue("notification");
+  try 
+  {
+    connection = await amqp.connect(rabbitmqUrl);
+    channel = await connection.createChannel();
 
-  console.log("Connected to RabbitMQ");
+    await channel.assertQueue("notification");
+
+    console.log("notify service connected to RabbitMQ");
+  } 
+  catch (err) {
+    console.error("Failed to connect to RabbitMQ, retrying in 5s:", err);
+    setTimeout(() => { initRabbitMQ()}, 5000);
+  }
 }
 
 

@@ -156,19 +156,19 @@ const App = () => {
   const { modal, setUser } = useAppContext();
 
   useEffect(() => {
-    setUser(db.users[0]);
-    // const initializeAuth = async () => {
-    //   try {
-    //     const userData = await getUserProfile();
-    //     // console.log("User data:", userData);
-    //     setUser(userData.data!);
-    //   } catch (error) {
-    //     console.log("No valid session found");
-    //   }
-    // };
-    // socketManager.connect("ws://10.13.5.8:4000/chat-notification");
+    // setUser(db.users[0]);
+    const initializeAuth = async () => {
+      try {
+        const userData = await getUserProfile();
+        // console.log("User data:", userData);
+        setUser(userData.data!);
+      } catch (error) {
+        console.log("No valid session found");
+      }
+    };
+    socketManager.connect("ws://10.13.5.8:4000/chat-notification");
 
-    // initializeAuth();
+    initializeAuth();
   }, []);
 
   return (

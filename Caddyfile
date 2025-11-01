@@ -1,39 +1,39 @@
 # ===================================
 # Backend proxy (localhost)
 # ===================================
-http://{$LOCAL_IP}:{$BACKEND_PORT} {
-    reverse_proxy {$BACKEND_SERVICE}:{$BACKEND_PORT}
+http://{$HOST_LOCAL}:{$BACKEND_PORT} {
+    reverse_proxy {$BACKEND_HOST}:{$BACKEND_PORT}
 }
 
 # ===================================
 # Frontend proxy + docs (localhost)
 # ===================================
-http://{$LOCAL_IP}:80 {
+http://{$HOST_LOCAL}:80 {
     handle /squid-docs* {
         root * /usr/share/caddy
         file_server
     }
 
-    reverse_proxy {$FRONTEND_SERVICE}:{$FRONTEND_PORT}
+    reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
 }
 
 # ===================================
 # Backend proxy (dynamic IP)
 # ===================================
-http://{$DYNAMIC_IP}:{$BACKEND_PORT} {
-    reverse_proxy {$BACKEND_SERVICE}:{$BACKEND_PORT}
+http://{$HOST_EXTERNAL}:{$BACKEND_PORT} {
+    reverse_proxy {$BACKEND_HOST}:{$BACKEND_PORT}
 }
 
 # ===================================
 # Frontend proxy + docs (dynamic IP)
 # ===================================
-http://{$DYNAMIC_IP}:80 {
+http://{$HOST_EXTERNAL}:80 {
     handle /squid-docs* {
         root * /usr/share/caddy
         file_server
     }
 
-    reverse_proxy {$FRONTEND_SERVICE}:{$FRONTEND_PORT}
+    reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
 }
 
 

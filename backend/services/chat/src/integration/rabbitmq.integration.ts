@@ -6,13 +6,27 @@ export let channel: any;
 
 export async function initRabbitMQ() 
 {
-  connection = await amqp.connect("amqp://rabbitmq:5672");
-  channel = await connection.createChannel();
+  const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://rabbitmq:5672";
 
-  await channel.assertQueue("chat");
-  
-  console.log("chat service connected to RabbitMQ");
+  try 
+  {
+    connection = await amqp.connect(rabbitmqUrl);
+    channel = await connection.createChannel();
+
+    await channel.assertQueue("chat");
+    await channel.assertQueue("broadcastData");
+
+    console.log("Chat service connected to RabbitMQ");
+  } 
+  catch (err) 
+  {
+    console.error("Failed to connect to RabbitMQ, retrying in 5s:", err);
+    setTimeout(() => { initRabbitMQ()}, 5000);
+  }
+
 }
+
+
 
 
 export async function sendDataToQueue(data: any, queue: string) 

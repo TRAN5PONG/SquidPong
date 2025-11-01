@@ -15,6 +15,7 @@ import {fetchAvatarImagePipeline} from '../utils/oauthHelpers';
 
 
 
+
 import app from '../app';
 
 declare module 'fastify' {
@@ -51,6 +52,7 @@ export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
   const respond : ApiResponse<null > = {success : true  , message : EmailMessage.EMAIL_VERIFIED_SUCCESSFULLY}
   const {email , code} = req.body as {email : string , code : string};
 
+  console.log("verifyEmailHandler called with email:", email, "and code:", code);
     try 
     {
       await isUserVerified(email  , code);
@@ -58,6 +60,7 @@ export async function verifyEmailHandler(req:FastifyRequest , res:FastifyReply)
       if(!data) throw new Error(AuthError.VALIDATION_ERROR)
       
       const parsed = JSON.parse(data);
+      console.log("Data retrieved from Redis for email verification:", parsed);
       await createAccount(parsed);
     }
     catch (error) 
@@ -189,7 +192,8 @@ export async function getGooglCallbackehandler(req: FastifyRequest, res: Fastify
 export async function getIntrahandler(req:FastifyRequest , res:FastifyReply) 
 {
   const client_id = process.env.INTRA_CLIENT_ID;
-  const redirect_uri = encodeURIComponent('http://localhost:4000/api/auth/intra/callback');
+  const BACKEND_URL = process.env.BACKEND_URL;
+  const redirect_uri = encodeURIComponent(`${BACKEND_URL}/api/auth/intra/callback`);
   const URL = `https://api.intra.42.fr/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=code`;
   return res.redirect(URL);
 }
