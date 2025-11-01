@@ -9,11 +9,6 @@ http://{$HOST_LOCAL}:{$BACKEND_PORT} {
 # Frontend proxy + docs (localhost)
 # ===================================
 http://{$HOST_LOCAL}:80 {
-    handle /squid-docs* {
-        root * /usr/share/caddy
-        file_server
-    }
-
     reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
 }
 
@@ -28,11 +23,6 @@ http://{$HOST_EXTERNAL}:{$BACKEND_PORT} {
 # Frontend proxy + docs (dynamic IP)
 # ===================================
 http://{$HOST_EXTERNAL}:80 {
-    handle /squid-docs* {
-        root * /usr/share/caddy
-        file_server
-    }
-
     reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
 }
 
