@@ -10,7 +10,7 @@ let channel: any;
 
 export async function initRabbitMQ() {
   try {
-    const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://rabbitmq:5672";
+  const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://rabbitmq:5672";
     connection = await amqp.connect(rabbitmqUrl);
     channel = await connection.createChannel();
 
@@ -29,8 +29,11 @@ export async function initRabbitMQ() {
 
     console.log("✅ Game Service connected to RabbitMQ");
   } catch (error) {
-    console.error("❌ Failed to connect to RabbitMQ:", error);
-    throw error;
+    console.error("❌ Failed to connect to RabbitMQ, retrying in 5s:", error);
+    setTimeout(() => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      initRabbitMQ();
+    }, 5000);
   }
 }
 

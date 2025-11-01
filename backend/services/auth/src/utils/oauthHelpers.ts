@@ -49,7 +49,7 @@ export async function fetchIntraUser(access_token: string): Promise<any>
 
 export function sendResponseToFrontend(res: FastifyReply, respond: any)
 {
-  const FRONTEND_URL = 'http://localhost:8080/';
+  const FRONTEND_URL = process.env.FRONTEND_URL;
   const newRespond = { ...respond, type: 'google-auth-success' };
 
   res.type('text/html').send(`

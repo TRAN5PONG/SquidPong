@@ -18,5 +18,9 @@ registerPlugins(app);
 
 app.setErrorHandler(errorHandler);
 
+app.get('/api/auth/health', async (req:any, res:any) => {
+  return { status: 'auth service is healthy' };
+})
+
 app.register(async () => {authRoutes.forEach(route => app.route(route))});
 app.register(async () => { twofaRoutes.forEach(route => app.route(route)); });
