@@ -59,7 +59,7 @@ export class Game {
       throw new Error("Canvas not found before initializing Game!");
     }
     this.canvas = canvas;
-    this.match = match;
+    this.match = match ;
 
     this.userId = userId;
     this.hostId = match?.opponent1.isHost
@@ -83,8 +83,8 @@ export class Game {
   private async Init() {
     try {
       // Physics
-      this.physics = new Physics();
-      this.physics.init();
+      // this.physics = new Physics();
+      // this.physics.init();
 
       // Camera
       this.camera = new GameCamera(
@@ -94,13 +94,13 @@ export class Game {
       this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network("ws://10.13.5.8:3000", this.match);
-      this.room = await this.net.join(this.userId);
+      // this.net = new Network("ws://10.13.5.8:3000", this.match);
+      // this.room = await this.net.join(this.userId);
 
       // Entities
-      this.arena = new Arena(this.scene);
       this.ball = new Ball(this.scene);
       this.light = new Light(this.scene);
+      this.arena = new Arena(this.scene, this.light);
 
       // Paddles setup
       this.hostPaddle = new Paddle(
@@ -129,19 +129,21 @@ export class Game {
         this.userId === this.hostId ? this.guestPaddle : this.hostPaddle;
 
       // Controller
-      this.controller = new GameController(
-        this.localPaddle,
-        this.opponentPaddle,
-        this.ball,
-        this.physics,
-        this.net,
-        this.scene
-      );
+      // this.controller = new GameController(
+      //   this.localPaddle,
+      //   this.opponentPaddle,
+      //   this.ball,
+      //   this.physics,
+      //   this.net,
+      //   this.scene
+      // );
+
 
       // Debugging tools
       this.debug = new Debug(this.scene, this.engine);
-      this.debug.ShowAxisLines();
-      this.debug.ShowGroundGrid();
+      // this.debug.ShowDebuger();
+      // this.debug.ShowAxisLines();
+      // this.debug.ShowGroundGrid();
 
       // Load assets
       await Promise.all([
@@ -160,26 +162,26 @@ export class Game {
    * Start the render/update loop.
    */
   private startRenderLoop() {
-    const FIXED_DT = 1 / 60; // Physics timestep: 60Hz
-    let accumulator = 0;
-    let lastTime = performance.now();
+    // const FIXED_DT = 1 / 60; // Physics timestep: 60Hz
+    // let accumulator = 0;
+    // let lastTime = performance.now();
 
     this.engine.runRenderLoop(() => {
-      const now = performance.now();
-      const frameTime = (now - lastTime) / 1000; // convert ms → seconds
-      lastTime = now;
+      // const now = performance.now();
+      // const frameTime = (now - lastTime) / 1000; // convert ms → seconds
+      // lastTime = now;
 
-      accumulator += frameTime;
+      // accumulator += frameTime;
 
-      // --- Fixed-step physics loop ---
-      while (accumulator >= FIXED_DT) {
-        this.controller.fixedUpdate();
-        accumulator -= FIXED_DT;
-      }
-      // --- Compute interpolation factor for visuals ---
-      const alpha = accumulator / FIXED_DT;
-      // Update visuals using interpolation
-      this.controller.updateVisuals(alpha);
+      // // --- Fixed-step physics loop ---
+      // while (accumulator >= FIXED_DT) {
+      //   this.controller.fixedUpdate();
+      //   accumulator -= FIXED_DT;
+      // }
+      // // --- Compute interpolation factor for visuals ---
+      // const alpha = accumulator / FIXED_DT;
+      // // Update visuals using interpolation
+      // this.controller.updateVisuals(alpha);
 
       this.scene.render();
     });

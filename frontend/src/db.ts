@@ -55,7 +55,7 @@ const User1: User = {
   bio: "Just a gamer enjoying life!",
   createdAt: new Date(),
   updatedAt: new Date(),
-  rankDivision: "MASTER",
+  rankDivision: "DIAMOND",
   rankTier: "II",
   level: 13.66,
   isVerified: true,
@@ -772,4 +772,6 @@ export const db = {
   fakeConversationDetails: FakeConversationsDetails,
   fakeNotificationsForEachType: FakeNotificationsForEachType,
   FakeTournaments,
+  MatchPlayer1,
+  MatchPlayer2,
 };
