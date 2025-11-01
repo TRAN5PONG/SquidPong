@@ -45,14 +45,12 @@ if [ $found -eq 0 ]; then
 fi
 
 if [ -f docker-compose.yml ]; then
-  echo "Updating docker-compose.yml HOST_EXTERNAL"
   sed -i.tmp -E "s|^([[:space:]]*-?[[:space:]]*HOST_EXTERNAL[[:space:]]*=).*|\1${IP}|" docker-compose.yml && rm -f docker-compose.yml.tmp
-  echo "Updated docker-compose.yml HOST_EXTERNAL -> ${IP} (backup: docker-compose.yml.bak)"
 else
   echo "docker-compose.yml not found; skipped updating HOST_EXTERNAL"
 fi
 
+echo "backend URL : http://${IP}:4000"
 echo "frontend URL: http://${IP}:8080"
-echo "backend URL: http://${IP}:4000"
 
 exit 0
