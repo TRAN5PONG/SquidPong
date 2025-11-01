@@ -20,7 +20,6 @@ services:
       - FRONTEND_PORT=5173
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./squid-toolkit/squid-docs:/usr/share/caddy/squid-docs:ro
     networks:
       - web
 
