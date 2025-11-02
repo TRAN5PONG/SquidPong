@@ -30,8 +30,8 @@ export async function login(
   return await response.json();
 }
 export async function signUp(
-  fname: string,
-  lname: string,
+  firstName: string,
+  lastName: string,
   username: string,
   email: string,
   password: string
@@ -43,8 +43,8 @@ export async function signUp(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      fname,
-      lname,
+      firstName,
+      lastName,
       username,
       email,
       password,
@@ -58,12 +58,9 @@ export async function signUp(
   return await response.json();
 }
 export async function logout(): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/logout`, {
+  const response = await fetch(`${API_BASE_URL}/auth/logout`, {
     method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
   if (!response.ok) {
     throw new Error(`Logout failed: ${response.statusText}`);
@@ -114,7 +111,7 @@ export async function resendVerificationEmail(
 export async function requestPasswordReset(
   email: string
 ): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+  const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -133,15 +130,14 @@ export async function resetPassword(
   email: string,
   code: string,
   newPassword: string,
-  confirmPassword: string // HHHHHHHH
 ): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/reset-password`, {
+  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
     method: "POST",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ email, code, newPassword, confirmPassword }),
+    body: JSON.stringify({ email, code, newPassword }),
   });
 
   if (!response.ok) {

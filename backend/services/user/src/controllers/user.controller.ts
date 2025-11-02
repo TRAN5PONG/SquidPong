@@ -28,6 +28,7 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
   try 
   {
     checkSecretToken(req);
+    // console.log(body);
     await prisma.profile.create({
       data: {
         ...body,

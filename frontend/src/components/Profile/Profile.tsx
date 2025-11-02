@@ -17,12 +17,13 @@ import { useRouteParam } from "@/hooks/useParam";
 import NotFound from "../NotFound/NotFound";
 import Tournament from "../Tournament/Tournament";
 import GameHistoryItem from "./GameHistoryItem";
-import { Match, Rank, RANKS } from "@/types/game/game";
+import { Match } from "@/types/game/game";
 import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 import { useAppContext } from "@/contexts/AppProviders";
 import Toast from "../Toast/Toast";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { getRankMetaData } from "@/utils/game";
+import { getUserById } from "@/api/user";
 
 const StyledProfileModal = styled("div")`
   height: 100%;
@@ -388,6 +389,7 @@ const StyledProfileModal = styled("div")`
 `;
 const Profile = () => {
   const [profileData, setProfileData] = Zeroact.useState<User | null>(null);
+  const [profileStats, setProfileStats] = Zeroact.useState<any>(null);
   const [isUserNotFound, setIsUserNotFound] = Zeroact.useState(false);
   const [showConfirmationModal, setShowConfirmationModal] =
     Zeroact.useState(false);
@@ -421,15 +423,31 @@ const Profile = () => {
         }
       });
   };
-
+  const setUser = async (id: string) => {
+    const user = await getUserById(id);
+    if (user.success && user.data) {
+      setProfileData(user.data);
+    } else {
+      setIsUserNotFound(true);
+    }
+  };
+  const getStats = async (id: string) => {
+    const fakeUserStats = {
+      gamesPlayed: 120,
+      gamesWon: 75,
+      gamesLost: 45,
+      winStreak: 5,
+      loseStreak: 0,
+      rank: 250,
+      tournamentsPlayed: 20,
+      tournamentsWon: 12,
+    }
+    setProfileStats(fakeUserStats);
+  }
   Zeroact.useEffect(() => {
     if (userId != null) {
-      const user = db.users.find((user) => user.id === userId);
-      if (user) {
-        setProfileData(user);
-      } else {
-        setIsUserNotFound(true);
-      }
+      setUser(userId);
+      getStats(userId);
     }
   }, [userId]);
 
@@ -496,32 +514,32 @@ const Profile = () => {
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">Games</span>
               <span className="StatElValue">
-                {profileData.playerStats.gamesPlayed}
+                {profileStats.gamesPlayed}
               </span>
             </div>
 
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">won</span>
               <span className="StatElValue">
-                {profileData.playerStats.gamesWon}
+                {profileStats.gamesWon}
               </span>
             </div>
 
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">lost</span>
               <span className="StatElValue">
-                {profileData.playerStats.gamesLost}
+                {profileStats.gamesLost}
               </span>
             </div>
 
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">Win rates</span>
               <span className="StatElValue">
-                {profileData.playerStats.gamesWon > 0
+                {profileStats.gamesWon > 0
                   ? (
-                      (profileData.playerStats.gamesWon /
-                        (profileData.playerStats.gamesWon +
-                          profileData.playerStats.gamesLost)) *
+                      (profileStats.gamesWon /
+                        (profileStats.gamesWon +
+                          profileStats.gamesLost)) *
                       100
                     ).toFixed(2) + "%"
                   : "0%"}
@@ -531,9 +549,9 @@ const Profile = () => {
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">streak</span>
               <span className="StatElValue">
-                {profileData.playerStats.winStreak > 0
-                  ? profileData.playerStats.winStreak + " wins"
-                  : profileData.playerStats.loseStreak + " losses"}
+                {profileStats.winStreak > 0
+                  ? profileStats.winStreak + " wins"
+                  : profileStats.loseStreak + " losses"}
               </span>
             </div>
 
@@ -545,7 +563,7 @@ const Profile = () => {
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">Rank</span>
               <span className="StatElValue">
-                #{profileData.playerStats.rank}
+                #{profileStats.rank}
               </span>
             </div>
           </div>
@@ -557,8 +575,8 @@ const Profile = () => {
               <h2>1 vs 1</h2>
               <WinLossDonut
                 winRate={
-                  (profileData.playerStats.gamesWon /
-                    (profileData.playerStats.gamesPlayed || 1)) *
+                  (profileStats.gamesWon /
+                    (profileStats.gamesPlayed || 1)) *
                   100
                 }
               />
@@ -572,8 +590,8 @@ const Profile = () => {
               <h2>Tournament</h2>
               <WinLossDonut
                 winRate={
-                  (profileData.playerStats.tournamentsWon /
-                    (profileData.playerStats.tournamentsPlayed || 1)) *
+                  (profileStats.tournamentsWon /
+                    (profileStats.tournamentsPlayed || 1)) *
                   100
                 }
               />

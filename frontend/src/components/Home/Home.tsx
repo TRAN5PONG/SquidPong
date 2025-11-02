@@ -20,6 +20,8 @@ import {
   API_BASE_URL,
   googleAuth,
   login,
+  requestPasswordReset,
+  resetPassword,
   signUp,
   verifyEmail,
 } from "@/api/auth";
@@ -157,8 +159,7 @@ const Home = () => {
   const [showModal, setShowModal] = Zeroact.useState(true);
   const [isHoveredOnBtn, setIsHoveredOnBtn] = Zeroact.useState(false);
 
-  const { backgroundSound } =
-    useSounds();
+  const { backgroundSound } = useSounds();
 
   useEffect(() => {
     // FloatBounce(ImgRef);
@@ -470,7 +471,12 @@ const StyledCTAModal = styled("div")`
   }
 `;
 
-type CTAModalType = "login" | "signup" | "resetPassword" | "verifyEmail";
+type CTAModalType =
+  | "login"
+  | "signup"
+  | "resetPassword"
+  | "verifyEmail"
+  | "changePassword";
 
 const CTAModal = ({ onClose }: { onClose: () => void }) => {
   const [currentMode, setCurrentMode] = Zeroact.useState<CTAModalType>("login");
@@ -520,12 +526,38 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  const handleChangePassword = async (e: any) => {
+    e.preventDefault();
+    const resp = await resetPassword(email, verificationCode, password);
+    if (resp.success) {
+      toasts.addToastToQueue({
+        type: "success",
+        message: "Password changed successfully!",
+      });
+      OnModalModeChange("login");
+    } else {
+      toasts.addToastToQueue({
+        type: "error",
+        message: resp.message,
+      });
+    }
+  };
   const handleLogin = async (e: any) => {
     e.preventDefault();
     try {
       const resp = await login(email, password);
-      console.log("Login response:", resp);
-      toasts.addToastToQueue({ type: "success", message: "Login successful!" });
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Login successful!",
+        });
+        const userData = await getUserProfile();
+        if (userData.success)
+          setTimeout(() => {
+            setUser(userData.data!);
+            navigate("/lobby");
+          }, 500);
+      }
     } catch (error: any) {
       console.error("Login error:", error);
       toasts.addToastToQueue({ type: "error", message: error.message });
@@ -579,7 +611,17 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
       toasts.addToastToQueue({ type: "error", message: error.message });
     }
   };
-  const handleResetPassword = async (e: any) => {};
+  const handleResetPassword = async (e: any) => {
+    e.preventDefault();
+    const resp = await requestPasswordReset(email);
+    if (resp.success) {
+      toasts.addToastToQueue({
+        type: "success",
+        message: "change pass",
+      });
+      setCurrentMode("changePassword");
+    }
+  };
   const handleGoogleAuth = async () => {
     const popup = window.open(
       `${API_BASE_URL}/auth/google`,
@@ -836,8 +878,8 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
                 type="text"
                 placeholder="Email"
                 required
-                value={firstName}
-                onChange={(e: any) => setFirstName(e.target.value)}
+                value={email}
+                onChange={(e: any) => setEmail(e.target.value)}
               />
             </div>
             <button>Reset</button>
@@ -865,7 +907,37 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
           </div>
         </div>
       ) : (
-        ""
+        <div>
+          <h1>CHANGE PASS</h1>
+
+          <div className="FormGroup" key="email">
+            <input
+              type="text"
+              maxLength={6}
+              placeholder="XXXXXX"
+              value={verificationCode}
+              onChange={(e: any) => setVerificationCode(e.target.value)}
+              required
+              key="verificationCode"
+            />
+          </div>
+          <div className="FormGroup" key="password">
+            <PasswordIcon
+              size={25}
+              stroke="rgba(255,255,255, 0.5)"
+              className="FormGroupIcon PasswordIcon"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              required
+              value={password}
+              onChange={(e: any) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <button onClick={handleChangePassword}>Change Password</button>
+        </div>
       )}
     </StyledCTAModal>
   );

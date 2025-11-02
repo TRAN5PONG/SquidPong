@@ -28,7 +28,9 @@ export function updateDom(
 
   // Handle only if dom is an Element (skip Text nodes)
   if (dom instanceof Element) {
-    // Remove old properties that are no longer present
+    //
+    // 🧹 Remove old properties
+    //
     Object.keys(prevProps)
       .filter(isProperty)
       .filter((key) => !(key in nextProps))
@@ -36,14 +38,15 @@ export function updateDom(
         if (name === "className") {
           dom.removeAttribute("class");
         } else if (name === "style") {
-          // Clear all inline styles when style prop is removed
           (dom as HTMLElement).style.cssText = "";
         } else {
           dom.removeAttribute(name);
         }
       });
 
-    // Set new or changed properties
+    //
+    // 🧩 Set new or changed properties
+    //
     Object.keys(nextProps)
       .filter(isProperty)
       .filter((key) => prevProps[key] !== nextProps[key])
@@ -55,10 +58,9 @@ export function updateDom(
         } 
         else if (name === "style") {
           if (typeof value === "object" && value !== null) {
-            // Handle style object
             const htmlElement = dom as HTMLElement;
-            
-            // Clear previous styles that are no longer present
+
+            // Remove old styles not in new style
             if (prevProps.style && typeof prevProps.style === "object") {
               Object.keys(prevProps.style).forEach((styleName) => {
                 if (!(styleName in value)) {
@@ -66,34 +68,27 @@ export function updateDom(
                 }
               });
             }
-            
-            // Set new styles
+
+            // Apply new styles
             Object.keys(value).forEach((styleName) => {
               const styleValue = value[styleName];
               if (styleValue !== undefined && styleValue !== null) {
-                // Convert camelCase to kebab-case for CSS properties if needed
-                // Most modern browsers handle camelCase directly, but this ensures compatibility
                 htmlElement.style[styleName as any] = String(styleValue);
               } else {
                 htmlElement.style[styleName as any] = "";
               }
             });
           } else if (typeof value === "string") {
-            // Handle style string
             (dom as HTMLElement).style.cssText = value;
           } else {
-            // Clear styles if value is null/undefined
             (dom as HTMLElement).style.cssText = "";
           }
-        }       
+        } 
         else if (BOOLEAN_ATTRIBUTES.has(name)) {
-          if (value) {
-            dom.setAttribute(name, "");
-          } else {
-            dom.removeAttribute(name);
-          }
-        } else {
-          // Handle other attributes
+          if (value) dom.setAttribute(name, "");
+          else dom.removeAttribute(name);
+        } 
+        else {
           if (value === null || value === undefined || value === false) {
             dom.removeAttribute(name);
           } else {
@@ -102,29 +97,49 @@ export function updateDom(
         }
       });
 
-    // Handle event listeners
+    //
+    // ⚙️ Handle event listeners (React-style)
+    //
+    const getEventType = (name: string): string => {
+      let eventType = name.toLowerCase().substring(2);
+
+      // React-style mapping: onChange → input for text fields
+      if (
+        eventType === "change" &&
+        (dom instanceof HTMLInputElement || dom instanceof HTMLTextAreaElement)
+      ) {
+        eventType = "input";
+      }
+
+      return eventType;
+    };
+
+    // Remove old or changed event listeners
     Object.keys(prevProps)
       .filter(isEvent)
       .filter((key) => !(key in nextProps) || prevProps[key] !== nextProps[key])
       .forEach((name) => {
-        const eventType = name.toLowerCase().substring(2);
+        const eventType = getEventType(name);
         if (prevProps[name]) {
           dom.removeEventListener(eventType, prevProps[name]);
         }
       });
 
+    // Add new or updated event listeners
     Object.keys(nextProps)
       .filter(isEvent)
       .filter((key) => prevProps[key] !== nextProps[key])
       .forEach((name) => {
-        const eventType = name.toLowerCase().substring(2);
+        const eventType = getEventType(name);
         if (nextProps[name]) {
           dom.addEventListener(eventType, nextProps[name]);
         }
       });
   }
 
-  // Handle refs
+  //
+  // 🪞 Handle refs
+  //
   const prevRef = prevProps?.ref;
   const nextRef = nextProps?.ref;
 
@@ -133,22 +148,24 @@ export function updateDom(
     if (prevRef) {
       if (typeof prevRef === "function") {
         prevRef(null);
-      } else if (typeof prevRef === "object" && prevRef !== null && "current" in prevRef) {
+      } else if (typeof prevRef === "object" && "current" in prevRef) {
         prevRef.current = null;
       }
     }
 
-    // Set the new ref
+    // Set new ref
     if (nextRef) {
       if (typeof nextRef === "function") {
         nextRef(dom);
-      } else if (typeof nextRef === "object" && nextRef !== null && "current" in nextRef) {
+      } else if (typeof nextRef === "object" && "current" in nextRef) {
         nextRef.current = dom;
       }
     }
   }
 
-  // Handle text content separately
+  //
+  // 🧵 Handle text content
+  //
   if (dom instanceof Text && nextProps?.nodeValue !== undefined) {
     dom.nodeValue = nextProps.nodeValue;
   }

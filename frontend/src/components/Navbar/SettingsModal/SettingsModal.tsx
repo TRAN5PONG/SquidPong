@@ -9,6 +9,7 @@ import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { UserPreferences, UserStatus } from "@/types/user";
 import Status from "../Status";
+import { logout } from "@/api/auth";
 
 const StyledSettingsModal = styled("div")`
   width: 200px;
@@ -90,6 +91,11 @@ const SettingsModal = (props: SettingsModalProps) => {
     props.setShowStatusModal(!props.showStatusModal);
   };
 
+  const onSignOut = async () => {
+    await logout();
+    navigate("/");
+  }
+
   return (
     <StyledSettingsModal
       className="GlassMorphism"
@@ -153,7 +159,7 @@ const SettingsModal = (props: SettingsModalProps) => {
         <Status isVisible={props.showStatusModal} />
       </div>
 
-      <div className="ProfileElement SignOutElement">
+      <div className="ProfileElement SignOutElement" onClick={onSignOut}>
         <SignOutIcon
           size={20}
           fill="rgba(73, 91, 134, 0.9)"
