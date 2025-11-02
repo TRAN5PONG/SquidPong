@@ -22,15 +22,21 @@ echo "Using IP: $IP"
 set_urls_in_file() {
   local file="$1"
 
+  echo "Updating URLs in $file"
+
+ 
+  # Replace BACKEND_URL if it exists, otherwise add it
+  if grep -q -E '^\s*VITE_API_BASE_URL\s*=' "$file"; then
+    sed -i "s|^\s*VITE_API_BASE_URL\s*=.*|VITE_API_BASE_URL=http://${IP}:4000/api|" "$file"
+  fi
+
   if grep -q -E '^\s*BACKEND_URL\s*=' "$file"; then
     sed -i "s|^\s*BACKEND_URL\s*=.*|BACKEND_URL=\"http://${IP}:4000\"|" "$file"
-  else
-    echo "BACKEND_URL=\"http://${IP}:4000\"" >> "$file"
   fi
 
   # Replace FRONTEND_URL if it exists
   if grep -q -E '^\s*FRONTEND_URL\s*=' "$file"; then
-    sed -i "s|^\s*FRONTEND_URL\s*=.*|FRONTEND_URL=\"http://${IP}:5173\"|" "$file"
+    sed -i "s|^\s*FRONTEND_URL\s*=.*|FRONTEND_URL=\"http://${IP}:8080\"|" "$file"
   fi
 }
 
@@ -39,6 +45,12 @@ while IFS= read -r -d $'\0' envfile; do
   found=1
   set_urls_in_file "$envfile"
 done < <(find ./backend -type f -name "*.env" -print0)
+
+while IFS= read -r -d $'\0' envfile; do
+  found=1
+  set_urls_in_file "$envfile"
+done < <(find ./frontend -type f -name "*.env" -print0)
+
 
 if [ $found -eq 0 ]; then
   echo "No .env files found under ./backend." >&2
@@ -49,6 +61,9 @@ if [ -f docker-compose.yml ]; then
 else
   echo "docker-compose.yml not found; skipped updating HOST_EXTERNAL"
 fi
+
+
+
 
 echo "backend URL : http://${IP}:4000"
 echo "frontend URL: http://${IP}:8080"
