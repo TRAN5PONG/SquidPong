@@ -114,23 +114,23 @@ const GameContiner = () => {
   const [winnerId, setWinnerId] = useState<string | null>(null);
 
   // == Get Match
-  // useEffect(() => {
-  //   if (!matchId) return;
+  useEffect(() => {
+    if (!matchId) return;
 
-  //   const getMatch = async () => {
-  //     try {
-  //       const res = await getMatchById(matchId);
-  //       if (res) {
-  //         setMatch(res.data);
-  //       } else setNotFound(true);
-  //     } catch (err) {
-  //       setNotFound(true);
-  //       console.error(err);
-  //     }
-  //   };
+    const getMatch = async () => {
+      try {
+        const res = await getMatchById(matchId);
+        if (res) {
+          setMatch(res.data);
+        } else setNotFound(true);
+      } catch (err) {
+        setNotFound(true);
+        console.error(err);
+      }
+    };
 
-  //   getMatch();
-  // }, [matchId]);
+    getMatch();
+  }, [matchId]);
 
   // == Init Game
   useEffect(() => {

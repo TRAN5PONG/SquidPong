@@ -168,6 +168,7 @@ const Navbar = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   // stats
   const [user, setUser] = useState<User | null>(null);
+  const [query, setQuery] = useState("");
 
   // contexts
   const { currentPath } = useContext(RouterContext);
@@ -201,6 +202,10 @@ const Navbar = () => {
           className="GlassMorphism"
           placeholder="Search a player, tournament..."
           onFocus={() => setShowSearchModal(true)}
+          value={query}
+          onChange={(e: any) => {
+            setQuery(e.target.value);
+          }}
         />
         <SearchIcon size={20} stroke="white" className="SearchIconSvg" />
         {ShowSearchModal && (
@@ -208,6 +213,7 @@ const Navbar = () => {
             onClose={() => {
               setShowSearchModal(false);
             }}
+            query={query}
           />
         )}
       </div>

@@ -15,6 +15,19 @@ export async function getUserProfile(): Promise<ApiResponse<User>> {
   }
   return await response.json();
 }
+export async function getUserById(Id: string): Promise<ApiResponse<User>> {
+  const response = await fetch(`${API_BASE_URL}/user/${Id}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch user by ID: ${response.statusText}`);
+  }
+  return await response.json();
+}
 
 // friends
 export async function sendFriendRequest(
@@ -165,6 +178,21 @@ export async function unblockUser(userId: number): Promise<ApiResponse> {
   });
   if (!response.ok) {
     throw new Error(`Failed to unblock user: ${response.statusText}`);
+  }
+  return await response.json();
+}
+
+// Search
+export async function SearchUsers(query: string): Promise<ApiResponse<User[]>> {
+  const response = await fetch(`${API_BASE_URL}/user/search?query=${encodeURIComponent(query)}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to search users: ${response.statusText}`);
   }
   return await response.json();
 }
