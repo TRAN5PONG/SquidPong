@@ -261,7 +261,7 @@ const Tournament = () => {
       const getTournamentData = async () => {
         try {
           const tournamentData = await fetch(
-            "http://10.13.5.8:3000/tournaments/cmelfxhu40000sprrzs1rqif0",
+            "http://${API_BASE_URL}:3000/tournaments/cmelfxhu40000sprrzs1rqif0",
             {
               method: "GET",
               headers: {
