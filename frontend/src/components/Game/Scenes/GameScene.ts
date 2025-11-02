@@ -94,7 +94,7 @@ export class Game {
       this.camera.attach(this.canvas);
 
       // Network
-      // this.net = new Network("ws://10.13.5.8:3000", this.match);
+      // this.net = new Network("ws://${API_BASE_URL}:3000", this.match);
       // this.room = await this.net.join(this.userId);
 
       // Entities
