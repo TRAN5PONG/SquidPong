@@ -12,11 +12,11 @@ export async function sendVerificationEmail(data: any)
   data.password = await hashPassword(data.password);
   
   await redis.set(email, JSON.stringify(data), "EX", "300");
-  await sendDataToQueue({type : 'emailhub' , data : {email , type}}, "notification");
+  await sendDataToQueue({type : 'emailhub' , data : {email , type}}, "emailhub");
 }
 
 
 export async function sendCodeToEmail(email: string , type : string)
 {
-  await sendDataToQueue({type : 'emailhub' , data : {email , type}}, "notification");
+  await sendDataToQueue({type : 'emailhub' , data : {email , type}}, "emailhub");
 }

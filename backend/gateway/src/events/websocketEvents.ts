@@ -1,7 +1,7 @@
-import { sendDataToQueue  } from '../integration/rabbitmqClient'
+import { sendDataToQueue  } from '../integration/rabbitmq.integration'
 import { FastifyRequest } from "fastify";
 import { WebSocket } from "ws";
-import redis from '../integration/redisClient';
+import redis from '../integration/redis.integration';
 import { ws } from '../server';
 import app from '../app';
 

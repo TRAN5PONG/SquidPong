@@ -13,7 +13,7 @@ services:
       - "4000:4000"
     environment:
       - HOST_LOCAL=localhost
-      - HOST_EXTERNAL=10.13.2.6
+      - HOST_EXTERNAL=10.13.249.173
       - BACKEND_HOST=gateway
       - BACKEND_PORT=4000
       - FRONTEND_HOST=frontend
@@ -22,17 +22,6 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     networks:
       - web
-
-  # swagger-ui:
-  #   image: swaggerapi/swagger-ui:latest
-  #   container_name: swagger-ui
-  #   restart: always
-  #   ports:
-  #     - "8081:8080"
-  #   environment:
-  #     - SWAGGER_JSON=/swagger/swagger.yaml
-  #   networks:
-  #     - web
   redis:
     image: redis/redis-stack-server:latest
     container_name: redis

@@ -3,10 +3,11 @@ import prisma from '../db/database';
 import { Profile } from '../utils/types';
 import { ApiResponse, sendError } from '../utils/errorHandler';
 import { getProfile } from '../utils/utils';
-import { isCheck } from '../utils/utils';
+import { iSameUser } from '../utils/utils';
 import { BlockMessages , FriendMessages } from '../utils/responseMessages';
 import { redis } from '../integration/redis.integration';
 import { mergeProfileWithRedis } from '../utils/utils';
+import { blockUserInChat , unblockUserInChat } from '../integration/chat.restapi';
 
 
 
@@ -34,7 +35,7 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
   console.log("userId:", userId, "blockId:", blockId);
   try 
   {
-    await isCheck(userId , blockId);
+    await iSameUser(userId , blockId);
 
     const existingFriendship = await prisma.friendship.findFirst({
       where: {
@@ -55,7 +56,8 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
       data: { senderId: userId, receiverId: blockId, status: BLOCKED},
     });
 
-    
+    // Block user in chat service
+    await blockUserInChat(userId, blockId);
   } 
   catch (error) {
     sendError(res, error);
@@ -77,7 +79,7 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
 
   try 
   {
-    await isCheck(userId , blockId);
+    await iSameUser(userId , blockId);
     const existingFriendship = await prisma.friendship.findFirst({
       where: {
         senderId: userId, receiverId: blockId,
@@ -92,6 +94,14 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
       data: { status: ACCEPTED },
     });
 
+    // Unblock user in chat service
+    try {
+      await unblockUserInChat(userId, blockId);
+      console.log(`Successfully unblocked user ${blockId} in chat for user ${userId}`);
+    } catch (chatError) {
+      console.error('Failed to unblock user in chat service:', chatError);
+      // Continue even if chat service fails - user is already unblocked in DB
+    }
   } 
   catch (error) {
     sendError(res, error);

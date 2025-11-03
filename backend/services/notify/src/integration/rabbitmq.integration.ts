@@ -1,9 +1,10 @@
 import amqp from "amqplib";
-
+import { processNotificationFromRabbitMQ } from "../controllers/notify.rabbitmq.controller";
 import { sendEmailMessage } from "../utils/verification_messenger";
-import { createNotification , updateNotification , deleteNotification } from "../utils/helps";
+
+
 let connection: any;
-let channel: any;
+export let channel: any;
 
 const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://rabbitmq:5672";
 
@@ -14,7 +15,8 @@ export async function initRabbitMQ()
     connection = await amqp.connect(rabbitmqUrl);
     channel = await connection.createChannel();
 
-    await channel.assertQueue("notification");
+    await channel.assertQueue("emailhub" );
+    await channel.assertQueue("eventhub" );
 
     console.log("notify service connected to RabbitMQ");
   } 
@@ -41,19 +43,16 @@ export async function sendDataToQueue(data: any, queue: string)
 
 // Consumer function for RabbitMQ
 
-export async function receiveFromQueue() 
+export async function receiveFromQueue(queue: string) 
 {
-  const queue = "notification";
+
   try 
   {
-    channel.consume(queue, async (msg: any) => {
-    if (!msg) return;
-    const data = JSON.parse(msg.content.toString());
-    channel.ack(msg);
-    if(data.type == 'emailhub')
-      sendEmailMessage(data.data);
+    if(queue == "eventhub")
+      channel.consume(queue , processNotificationFromRabbitMQ)
+    else if(queue == "emailhub")
+      channel.consume(queue , sendEmailMessage);
     
-    });
   }
   catch (err: any) 
   {

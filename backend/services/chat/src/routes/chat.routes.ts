@@ -1,6 +1,6 @@
 import { RouteHandlerMethod , FastifySchema  } from 'fastify';
 
-import {  createChat , removeChat   , getChatById, getRecentChats } from '../controllers/chat.controller';
+import {blockUserHandler, unblockUserHandler, removeUserHandler, deleteAccountHandler, createChat , removeChat   , getChatById, getRecentChats } from '../controllers/chat.controller';
 import { createUser, updateUser } from '../controllers/user.controller';
 import {
   createGroup, updateGroupInfo, removeGroup, getGroupById, getGoupes,
@@ -64,9 +64,13 @@ export const chatRoutes : Route[] = [
 
   { method: 'POST',   url: '/api/chat/new',                handler: createChat , schema: newCreateChatSchema },          
   { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat , schema: newRemoveChatSchema },          
-  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById , schema: newGetChatByIdSchema },    
-];
+  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById , schema: newGetChatByIdSchema },
 
+  { method: 'POST',   url: '/api/chat/block/:friendId',    handler: blockUserHandler  },
+  { method: 'POST',   url: '/api/chat/unblock/:friendId',  handler: unblockUserHandler  },
+  { method: 'DELETE', url: '/api/chat/user/:friendId',     handler: removeUserHandler },
+  { method: 'DELETE', url: '/api/chat/account/delete',     handler: deleteAccountHandler },
+];
 
 
 // ------------------- Group Endpoints -------------------

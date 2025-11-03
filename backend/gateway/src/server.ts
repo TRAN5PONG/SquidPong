@@ -2,7 +2,7 @@ import app from './app'
 import { WebSocket } from "ws";
 import dotenv from 'dotenv'
 import { handleWsConnect  , handleHttpUpgrade} from './events/websocketEvents';
-import { receiveFromQueue , initRabbitMQ } from './integration/rabbitmqClient'
+import { receiveFromQueue , initRabbitMQ } from './integration/rabbitmq.integration'
 
 
 dotenv.config()

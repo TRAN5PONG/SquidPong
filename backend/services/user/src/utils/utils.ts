@@ -146,7 +146,7 @@ export function checkSecretToken(req: FastifyRequest)
 
 
 
-export async function isCheck(userId: number, friendId: number)
+export async function iSameUser(userId: number, friendId: number)
 {
   if(userId === friendId)
     throw new Error('You cannot perform this action on yourself.');
