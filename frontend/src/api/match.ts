@@ -1,6 +1,8 @@
+import { API_BASE_URL } from "./auth";
+
 export async function getUserCurrentMatch(userId: string) {
   const response = await fetch(
-    `http://${API_BASE_URL}/game/match/current/${userId}`,
+    `${API_BASE_URL}/game/match/current/${userId}`,
     {
       method: "GET",
       credentials: "include",
@@ -20,7 +22,7 @@ export async function getUserCurrentMatch(userId: string) {
 
 export async function getMatchById(matchId: string) {
   const response = await fetch(
-    `http://${API_BASE_URL}/game/match/${matchId}`,
+    `${API_BASE_URL}/game/match/${matchId}`,
     {
       method: "GET",
       credentials: "include",

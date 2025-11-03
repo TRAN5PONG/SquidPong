@@ -13,7 +13,7 @@ services:
       - "4000:4000"
     environment:
       - HOST_LOCAL=localhost
-      - HOST_EXTERNAL=10.13.249.173
+      - HOST_EXTERNAL=10.13.4.3
       - BACKEND_HOST=gateway
       - BACKEND_PORT=4000
       - FRONTEND_HOST=frontend
@@ -155,25 +155,25 @@ services:
     networks: 
       - web
 
-  # game:
-  #   build: ./backend/services/game
-  #   image: game-image
-  #   container_name: game
-  #   restart: always
-  #   command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
-  #   env_file:
-  #     - ./backend/services/game/.env
-  #   ports:
-  #     - "4005:4005"
-  #     - "5005:5555"
-  #   volumes:
-  #     - ./backend/services/game/src:/game/src
-  #     - ./backend/services/game/prisma:/game/prisma
-  #   depends_on:
-  #     rabbitmq:
-  #       condition: service_healthy
-  #   networks: 
-  #     - web
+  game:
+    build: ./backend/services/game
+    image: game-image
+    container_name: game
+    restart: always
+    command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
+    env_file:
+      - ./backend/services/game/.env
+    ports:
+      - "4005:4005"
+      - "5005:5555"
+    volumes:
+      - ./backend/services/game/src:/game/src
+      - ./backend/services/game/prisma:/game/prisma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: 
+      - web
   # tournament:
   #   build: ./backend/services/tournament
   #   image: tournament-image

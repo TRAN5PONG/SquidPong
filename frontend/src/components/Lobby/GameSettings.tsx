@@ -435,7 +435,6 @@ const GameSettings = (props: GameSettingsProps) => {
       if (!prev) return prev;
       return { ...prev, isReady: !prev.isReady };
     });
-
     if (match.currentMatch?.opponent1.userId === user?.id) {
       socketManager.sendMessage({
         type: "game",

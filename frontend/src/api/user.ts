@@ -16,7 +16,7 @@ export async function getUserProfile(): Promise<ApiResponse<User>> {
   return await response.json();
 }
 export async function getUserById(Id: string): Promise<ApiResponse<User>> {
-  const response = await fetch(`${API_BASE_URL}/user/${Id}`, {
+  const response = await fetch(`${API_BASE_URL}/user/username/${Id}`, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -31,7 +31,7 @@ export async function getUserById(Id: string): Promise<ApiResponse<User>> {
 
 // friends
 export async function sendFriendRequest(
-  friendId: number
+  receiverId: string
 ): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/friend/request`, {
     method: "POST",
@@ -39,7 +39,7 @@ export async function sendFriendRequest(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ friendId }),
+    body: JSON.stringify({ receiverId : Number(receiverId) }),
   });
 
   if (!response.ok) {

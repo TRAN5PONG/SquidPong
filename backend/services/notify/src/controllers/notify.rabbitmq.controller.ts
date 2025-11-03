@@ -80,7 +80,8 @@ export async function processFriendNotification(data: NotificationData)
         select: { notificationSettings: { select: {friendRequests: true }} }
         });
 
-  if(setting && !setting.notificationSettings.friendRequests) return;
+  if(!setting || !setting.notificationSettings) return;
+  if(!setting.notificationSettings.friendRequests) return;
 
   await sendDataToQueue({
     targetId: data.targetId.toString(),

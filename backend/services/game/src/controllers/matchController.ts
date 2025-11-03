@@ -135,7 +135,7 @@ export async function createMatchPlayer(
   tx: Prisma.TransactionClient = prisma
 ): Promise<MatchPlayer> {
   // Fetch user info from user service
-  const res = await fetch(`http://user:4001/api/user/${remoteUserId}`);
+  const res = await fetch(`http://user:4002/api/user/id/${remoteUserId}`);
   if (!res.ok) throw new Error("Failed to fetch user data");
   const Resp = await res.json();
   const userData = Resp.data as User;
@@ -323,13 +323,13 @@ export async function toggleReadyStatus(matchId: string, playerId: string) {
     if (opponent?.gmUserId) {
       await sendDataToQueue(
         {
-          to: opponent?.gmUserId,
+          targetId: opponent?.gmUserId,
           event: "match-player-update",
           data: {
             matchPlayer: updatedMatchPlayer,
           },
         },
-        "test"
+        "broadcastData"
       );
     }
   } catch (error) {
@@ -396,14 +396,14 @@ export async function giveUp(matchId: string, playerId: string) {
     if (opponent?.gmUserId) {
       await sendDataToQueue(
         {
-          to: opponent.gmUserId,
+          targetId: opponent.gmUserId,
           event: "match-update",
           data: {
             match: updatedMatch,
             reason: "opponent_gave_up",
           },
         },
-        "test"
+        "broadcastData"
       );
     }
   } catch (err) {
@@ -465,14 +465,14 @@ export async function startGame(matchId: string, playerId: string) {
     if (opponent?.gmUserId) {
       await sendDataToQueue(
         {
-          to: opponent.gmUserId,
+          targetId: opponent.gmUserId,
           event: "match-update",
           data: {
             match: updatedMatch,
             reason: "match_started",
           },
         },
-        "test"
+        "broadcastData"
       );
     }
 
