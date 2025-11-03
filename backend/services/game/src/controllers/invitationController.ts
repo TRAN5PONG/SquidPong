@@ -42,7 +42,7 @@ export async function createInvitation(
   try {
     // validate user data
     const userId = Number(request.headers["x-user-id"]);
-    const res = await fetch(`http://user:4001/api/user/${userId}`);
+    const res = await fetch(`http://user:4002/api/user/id/${userId}`);
     if (!res.ok) return reply.status(404).send({ error: "Sender not found" });
 
     const Resp = await res.json();
@@ -62,7 +62,7 @@ export async function createInvitation(
         .send({ error: "You cannot send an invitation to yourself." });
     }
     if (receiverId) {
-      const res = await fetch(`http://user:4001/api/user/${receiverId}`);
+      const res = await fetch(`http://user:4002/api/user/id/${receiverId}`);
       if (!res.ok)
         return reply.status(404).send({ error: "Receiver not found" });
 
@@ -159,13 +159,13 @@ export async function createInvitation(
         try {
           await sendDataToQueue(
             {
-              to: String(receiverData.userId),
+              targetId: String(receiverData.userId),
               event: "game-invitation",
               data: {
                 invitation: invitation,
               },
             },
-            "test"
+            "broadcastData"
           );
         } catch (error) {
           console.error("Error sending invitation notification:", error);
@@ -243,7 +243,7 @@ export async function AcceptInvitation(
   // validate user data
   const userId = Number(request.headers["x-user-id"]);
 
-  const res = await fetch(`http://user:4001/api/user/${userId}`);
+  const res = await fetch(`http://user:4002/api/user/id/${userId}`);
 
   if (!res.ok) return reply.status(404).send({ error: "User not found" });
 
@@ -306,14 +306,14 @@ export async function AcceptInvitation(
     try {
       await sendDataToQueue(
         {
-          to: String(acceptedInvitation.sender?.userId),
+          targetId: String(acceptedInvitation.sender?.userId),
           event: "game-invitation",
           data: {
             invitation: acceptedInvitation,
             match,
           },
         },
-        "test"
+        "broadcastData"
       );
     } catch (err) {
       console.error("Error sending match notification:", err);
@@ -343,7 +343,7 @@ export async function DeclineInvitation(
 
   // validate user data
   const userId = Number(request.headers["x-user-id"]);
-  const res = await fetch(`http://user:4001/api/user/${userId}`);
+  const res = await fetch(`http://user:4002/api/user/id/${userId}`);
   if (!res.ok) return reply.status(404).send({ error: "Sender not found" });
 
   const Resp = await res.json();
@@ -390,13 +390,13 @@ export async function DeclineInvitation(
     try {
       await sendDataToQueue(
         {
-          to: String(declinedInvitation.sender?.userId),
+          targetId: String(declinedInvitation.sender?.userId),
           event: "game-invitation",
           data: {
             invitation: declinedInvitation,
           },
         },
-        "test"
+        "broadcastData"
       );
     } catch (error) {
       console.error("Error sending decline notification:", error);
@@ -437,7 +437,7 @@ export async function CancelInvitation(
 
     // validate user data
     const userId = Number(request.headers["x-user-id"]);
-    const res = await fetch(`http://user:4001/api/user/${userId}`);
+    const res = await fetch(`http://user:4002/api/user/id/${userId}`);
 
     if (!res.ok) return reply.status(404).send({ error: "Sender not found" });
 
@@ -461,13 +461,13 @@ export async function CancelInvitation(
       try {
         await sendDataToQueue(
           {
-            to: String(cancelledInvitation.receiver?.userId),
+            targetId: String(cancelledInvitation.receiver?.userId),
             event: "game-invitation",
             data: {
               invitation: cancelledInvitation,
             },
           },
-          "test"
+          "broadcastData"
         );
       } catch (error) {
         console.error("Error sending cancellation notification:", error);

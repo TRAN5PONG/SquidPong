@@ -37,15 +37,15 @@ export class Light {
     this.directionalLight.specular = new Color3(0.3, 0.3, 0.3); // Subtle specular highlights
 
     // Create shadow generator
-    this.shadowGenerator = new ShadowGenerator(2048, this.directionalLight);
+    // this.shadowGenerator = new ShadowGenerator(2048, this.directionalLight);
     // Shadow quality settings for realistic look
-    this.shadowGenerator.useBlurExponentialShadowMap = true;
-    this.shadowGenerator.useKernelBlur = true;
-    this.shadowGenerator.blurKernel = 64; // Higher = softer shadows
-    this.shadowGenerator.darkness = 0.5; // Shadow opacity (0-1)
-    // Optional: Better shadow quality
-    this.shadowGenerator.bias = 0.00001;
-    this.shadowGenerator.setDarkness(0.6);
+    // this.shadowGenerator.useBlurExponentialShadowMap = true;
+    // this.shadowGenerator.useKernelBlur = true;
+    // this.shadowGenerator.blurKernel = 64; // Higher = softer shadows
+    // this.shadowGenerator.darkness = 0.5; // Shadow opacity (0-1)
+    // // Optional: Better shadow quality
+    // this.shadowGenerator.bias = 0.00001;
+    // this.shadowGenerator.setDarkness(0.6);
   }
 
   // Add method to control which meshes cast/receive shadows

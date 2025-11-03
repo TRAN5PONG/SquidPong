@@ -1,5 +1,6 @@
-import { SearchUsers } from "@/api/user";
+import { SearchUsers, sendFriendRequest } from "@/api/user";
 import { AddFriendIcon, TrophyIcon, VerifiedIcon } from "@/components/Svg/Svg";
+import { useAppContext } from "@/contexts/AppProviders";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { db } from "@/db";
 import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
@@ -138,22 +139,31 @@ const StyledSearchTournamentBox = styled("div")`
 const SearchModal = (props: { onClose: () => void; query: string }) => {
   const ModalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { user } = useAppContext();
   // Stats
-  const [users, setUsers] = Zeroact.useState<User[]>([]);
+  const [players, setPlayers] = Zeroact.useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const Search = async (query: string) => {
     const Users = await SearchUsers(query);
     if (Users.data) {
-      console.log(Users.data);
-      setUsers(Users.data);
+      setPlayers(Users.data);
     }
   };
+
+  const sendFriendRequest_ = async(recieverId: string) => {
+    const resp = await sendFriendRequest(recieverId);
+    if (resp.success) {
+      console.log("Friend request sent successfully.");
+    } else {
+      console.error("Failed to send friend request:", resp.message);
+    }
+  }
 
   useEffect(() => {
     if (props.query.trim() === "") {
       setIsLoading(false);
-      return setUsers([]);
+      return setPlayers([]);
     }
     setIsLoading(true);
     const delayDebounceFn = setTimeout(() => {
@@ -183,36 +193,34 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
       <div className="SearchCatgContainer">
         {isLoading ? (
           <span>Loading...</span>
-        ) : users.length === 0 ? (
+        ) : players.length === 0 ? (
           <span>No players found.</span>
         ) : (
-          users.map((user: User) => {
+          players.map((player: User) => {
             return (
               <StyledSearchPlayerBox
-                avatar={user.avatar}
-                onClick={() => {
-                  navigate(`/user/${user.username}`);
-                  props.onClose();
-                }}
+                avatar={player.avatar}
+                // onClick={() => {
+                //   navigate(`/player/${player.username}`);
+                //   props.onClose();
+                // }}
               >
                 <div className="Avatar" />
                 <div className="SearchPlayerInfos">
                   <span className="SearchPlayerInfosFullName">
-                    {user.firstName + " " + user.lastName}
-                    {user.isVerified && (
+                    {player.firstName + " " + player.lastName}
+                    {player.isVerified && (
                       <VerifiedIcon fill="var(--main_color)" size={15} />
                     )}
                   </span>
                   <span className="SearchPlayerInfosUserName">
-                    {"@" + user.username}
+                    {"@" + player.username}
                   </span>
                 </div>
-                <div className="ActionsBtns">
-                  <AddFriendIcon
-                    size={20}
-                    fill="white"
-                    className="AddFriendIcon"
-                  />
+                <div className="ActionsBtns" onClick={sendFriendRequest_(player.id)}>
+                  {player.id !== user?.id && (
+                    <AddFriendIcon fill="white" size={20} className="AddFriendIcon"/>
+                  )}
                 </div>
               </StyledSearchPlayerBox>
             );

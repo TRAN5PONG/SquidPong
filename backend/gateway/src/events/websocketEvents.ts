@@ -98,6 +98,7 @@ async function onChatNotificationMessage(this:any , message: any)
     const incomingSocketData = JSON.parse(message.toString());
     if (!incomingSocketData.type) throw new Error('Message type is required');
 
+    console.log("Received message of type:", incomingSocketData);
     if (!allowedTypes.includes(incomingSocketData.type))
       throw new Error(`Invalid message type. Allowed types: ${allowedTypes.join(', ')}`);
 

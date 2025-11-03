@@ -16,7 +16,7 @@ export async function initRabbitMQ() {
 
     // Assert queues that this service will use
     await channel.assertQueue("game");
-    // await channel.assertQueue("test", { durable: true }); // Gateway queue
+    // await channel.assertQueue("broadcastData", { durable: true }); // Gateway queue
 
     // Add connection error handling
     connection.on("error", (err: any) => {
@@ -92,9 +92,12 @@ export async function receiveFromQueue(queue: string) {
 function recieveHandler(msg: any) {
   if (msg === null) return;
 
-  try {
+  try 
+  {
+
     const data = JSON.parse(msg.content.toString());
-    const response = processMacthMessage(data.data);
+    console.log("========================", data);
+    const response = processMacthMessage(data);
 
     channel.ack(msg);
   } catch (error) {
@@ -120,25 +123,25 @@ async function processMacthMessage(data: any) {
 
         sendDataToQueue(
           {
-            to: [
+            targetId: [
               updatedMatch.opponent1.gmUserId,
               updatedMatch.opponent2?.gmUserId,
             ], // send only to the starter
             event: "match-started",
             data: { match: updatedMatch },
           },
-          "test"
+          "broadcastData"
         );
       } catch (error) {
         sendDataToQueue(
           {
-            to: data.senderGMid, // send back only to the starter
+            targetId: data.senderGMid, // send back only to the starter
             event: "match-error",
             data: {
               message: (error as Error).message || "Failed to start match",
             },
           },
-          "test"
+          "broadcastData"
         );
       }
       break;

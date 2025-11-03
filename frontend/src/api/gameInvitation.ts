@@ -6,7 +6,7 @@ export async function getUserGameInvitations(
   userId: string
 ): Promise<GameInvitation[]> {
   const response = await fetch(
-    `http://${API_BASE_URL}/game/invitations/user/${userId}`,
+    `${API_BASE_URL}/game/invitations/user/${userId}`,
     {
       method: "GET",
       credentials: "include",
@@ -25,7 +25,7 @@ export async function getInvitationByCode(
   code: string
 ): Promise<GameInvitation> {
   const response = await fetch(
-    `http://${API_BASE_URL}/game/invitations/code/${code}`,
+    `${API_BASE_URL}/game/invitations/code/${code}`,
     {
       method: "GET",
       credentials: "include",
@@ -50,7 +50,7 @@ export async function createInvite(
   expiresAt: Date | null,
   message?: string
 ) {
-  const response = await fetch(`http://${API_BASE_URL}/game/invitations`, {
+  const response = await fetch(`${API_BASE_URL}/game/invitations`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -77,7 +77,7 @@ export async function createInvite(
 }
 export async function cancelInvite(inviteId: string) {
   const response = await fetch(
-    `http://${API_BASE_URL}/game/invitations/${inviteId}/cancel`,
+    `${API_BASE_URL}/game/invitations/${inviteId}/cancel`,
     {
       method: "POST",
       credentials: "include",
@@ -96,7 +96,7 @@ export async function cancelInvite(inviteId: string) {
 }
 export async function AcceptInvite(inviteId: string) {
   const response = await fetch(
-    `http://${API_BASE_URL}/game/invitations/${inviteId}/accept`,
+    `${API_BASE_URL}/game/invitations/${inviteId}/accept`,
     {
       method: "POST",
       credentials: "include",
@@ -116,7 +116,7 @@ export async function AcceptInvite(inviteId: string) {
 export async function AcceptPrivateInvite(code: string) {
   console.log("Accepting private invite with code:", code);
   const response = await fetch(
-    `http://${API_BASE_URL}/game/invitations/code/${code}/accept`,
+    `${API_BASE_URL}/game/invitations/code/${code}/accept`,
     {
       method: "POST",
       credentials: "include",
@@ -135,7 +135,7 @@ export async function AcceptPrivateInvite(code: string) {
 }
 export async function DeclineInvite(inviteId: string) {
   const response = await fetch(
-    `http://${API_BASE_URL}/game/invitations/${inviteId}/decline`,
+    `${API_BASE_URL}/game/invitations/${inviteId}/decline`,
     {
       method: "POST",
       credentials: "include",
