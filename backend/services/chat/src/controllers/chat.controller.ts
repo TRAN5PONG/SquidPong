@@ -58,8 +58,6 @@ export async function createChat(req: FastifyRequest, res: FastifyReply)
    return res.send(respond);
 }
 
-
-
 export async function removeChat(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<null> = { success: true, message: chatMessages.DELETE_SUCCESS };
@@ -229,6 +227,128 @@ export async function getRecentChats(req: FastifyRequest, res: FastifyReply)
       respond.data = { recentChats: formattedChats, total: formattedChats.length};
 
    } 
+   catch (error) 
+   {
+      sendError(res, error);
+   }
+
+   return res.send(respond);
+}
+
+
+export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
+{
+   const respond: ApiResponse<null> = { success: true, message: 'User blocked successfully' };
+   const headers = req.headers as { 'x-user-id': string };
+   const userId = headers['x-user-id'];
+
+   const { friendId } = req.params as { friendId: string };
+
+   try 
+   {
+      checkSecretToken(req);
+      const chatId = await findChatBetweenUsers(Number(userId), Number(friendId));
+      if (!chatId) throw new Error('Chat not found between users');
+
+      await prisma.chat.update({
+         where: { id: Number(chatId) },
+         data: {
+            members: {
+               updateMany: {
+                  where: { userId: friendId },
+                  data: { isBlocked: true }
+               }
+            }
+         }
+      });
+   }
+   catch (error) 
+   {
+      sendError(res, error);
+   }
+
+   return res.send(respond);
+}
+
+
+export async function removeUserHandler(req: FastifyRequest, res: FastifyReply)
+{
+   const respond: ApiResponse<null> = { success: true, message: chatMessages.DELETE_SUCCESS };
+   const headers = req.headers as { 'x-user-id': string };
+   const userId = headers['x-user-id'];
+
+   const { friendId } = req.params as { friendId: string };
+
+   try 
+   {
+      checkSecretToken(req);
+      const chatId = await findChatBetweenUsers(Number(userId), Number(friendId));
+      if (!chatId) throw new Error('Chat not found between users');
+
+      await prisma.chat.delete({ where: { id: Number(chatId) }});
+   }
+   catch (error) 
+   {
+      sendError(res, error);
+   }
+
+   return res.send(respond);
+}
+
+
+export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
+{
+   const respond: ApiResponse<null> = { success: true, message: 'User unblocked successfully' };
+   const headers = req.headers as { 'x-user-id': string };
+   const userId = headers['x-user-id'];
+
+   const { friendId } = req.params as { friendId: string };
+
+   try 
+   {
+      checkSecretToken(req);
+      const chatId = await findChatBetweenUsers(Number(userId), Number(friendId));
+      if (!chatId) throw new Error('Chat not found between users');
+
+      await prisma.chat.update({
+         where: { id: Number(chatId) },
+         data: {
+            members: {
+               updateMany: {
+                  where: { userId: friendId },
+                  data: { isBlocked: false }
+               }
+            }
+         }
+      });
+   }
+   catch (error) 
+   {
+      sendError(res, error);
+   }
+
+   return res.send(respond);
+}
+
+
+
+export async function deleteAccountHandler(req: FastifyRequest, res: FastifyReply)
+{
+   const respond: ApiResponse<null> = { success: true, message: 'Account deleted successfully' };
+   const headers = req.headers as { 'x-user-id': string };
+   const userId = headers['x-user-id'];
+
+   try 
+   {
+      checkSecretToken(req);
+      
+      await prisma.user.update({
+         where: { userId },
+         data: { isDeleted: true }
+      });
+
+      console.log(`User ${userId} marked as deleted in chat service`);
+   }
    catch (error) 
    {
       sendError(res, error);

@@ -6,7 +6,8 @@ import { getProfile } from '../utils/utils';
 import { sendDataToQueue } from '../integration/rabbitmq.integration';
 import { redis } from '../integration/redis.integration';
 import { FriendMessages , ProfileMessages } from '../utils/responseMessages';
-import { isCheck  , mergeProfileWithRedis} from '../utils/utils';
+import { iSameUser  , mergeProfileWithRedis} from '../utils/utils';
+import { removeFriendFromChat } from '../integration/chat.restapi';
 
 enum FriendshipStatus {
   PENDING = "PENDING",
@@ -98,20 +99,18 @@ export async function sendFriendRequestHandler(req: FastifyRequest, res: Fastify
 
   try 
   {
-    await isCheck(senderId , receiverId);
+    await iSameUser(senderId , receiverId);
 
     const exists = await prisma.friendship.findUnique({
       where: { senderId_receiverId: { senderId, receiverId } }
     });
     if (exists) throw new Error(`this frindship is ${exists.status}`);
     
-    await prisma.friendship.create({
-      data: { senderId, receiverId, status: PENDING },
-    });
+    await prisma.friendship.create({ data: { senderId, receiverId, status: PENDING }});
     
-    // const profile = await getProfile(senderId);
-    // const dataToSend = { type: 'friend_request', profile : { userId : profile.userId , username : profile.username , avatarUrl : profile.avatarUrl , status : profile.status }};
-    // await sendDataToQueue({...dataToSend , targetId : Number(receiverId)} , 'broadcastData');
+    const dataToSend = { type: 'friend-request',  targetId : receiverId };
+    await sendDataToQueue(dataToSend , 'eventhub');
+    
   }
   catch (error) {
     return sendError(res, error);
@@ -132,8 +131,7 @@ export async function acceptFriendRequestHandler(req: FastifyRequest, res: Fasti
 
   try 
   {
-    
-    await isCheck(receiverId , senderId);
+    await iSameUser(receiverId , senderId);
     const friendship = await prisma.friendship.findUnique({
       where: { senderId_receiverId: { senderId, receiverId } , status: PENDING }
     });
@@ -143,10 +141,9 @@ export async function acceptFriendRequestHandler(req: FastifyRequest, res: Fasti
       where: {senderId_receiverId: { senderId, receiverId }},
       data: { status: ACCEPTED },
     });
-
-    // const profile = await getProfile(receiverId);
-    // const dataToSend = { type: 'friend_accept', profile : { userId : profile.userId , username : profile.username , avatarUrl : profile.avatarUrl , status : profile.status }};
-    // await sendDataToQueue({...dataToSend , targetId : Number(senderId)} , 'broadcastData');
+    const dataToSend = { type: 'friend-accepted',  targetId : senderId };
+    await sendDataToQueue(dataToSend , 'eventhub');
+    
   } 
   catch (error) {
     sendError(res, error);
@@ -167,7 +164,7 @@ export async function rejectFriendRequestHandler(req: FastifyRequest, res: Fasti
   
   try 
   {
-    await isCheck(receiverId , senderId);
+    await iSameUser(receiverId , senderId);
     const friendship = await prisma.friendship.findUnique({
       where: { senderId_receiverId: { senderId, receiverId } , status: PENDING }
     });
@@ -194,7 +191,7 @@ export async function removeFriendHandler(req: FastifyRequest, res: FastifyReply
   try 
   {
 
-    await isCheck(userId , Number(friendId));
+    await iSameUser(userId , Number(friendId));
     const friendship = await prisma.friendship.findFirst({
       where: {
         status: ACCEPTED,
@@ -207,6 +204,9 @@ export async function removeFriendHandler(req: FastifyRequest, res: FastifyReply
 
     if (!friendship) throw new Error(FriendMessages.REMOVE_NOT_FOUND);
     await prisma.friendship.delete({ where: { id: friendship.id } });
+
+    // Remove friend from chat service
+    await removeFriendFromChat(userId, Number(friendId));
   } 
   catch (error) {
     sendError(res, error);
@@ -233,7 +233,7 @@ export async function verifyFriendshipHandler(req: FastifyRequest, res: FastifyR
     if (secretToken != process.env.SECRET_TOKEN)
       throw new Error('Unauthorized');
 
-    await isCheck(userId , Number(friendId));
+    await iSameUser(userId , Number(friendId));
 
 
     const friendship = await prisma.friendship.findFirst({

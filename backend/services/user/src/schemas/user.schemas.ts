@@ -320,12 +320,12 @@ export const getUserByUserNameSchema: FastifySchema = {
   params: {
     type: 'object',
     properties: {
-      Username: {
+      username: {
         type: 'string',
         description: 'User ID (digits only)'
       }
     },
-    required: ['Username']
+    required: ['username']
   },
   response: {
     200: {

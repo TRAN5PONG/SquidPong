@@ -11,9 +11,11 @@ import { convertParsedMultipartToJson } from '../utils/utils';
 import { purchaseItem } from '../utils/utils';
 import { sendServiceRequestSimple } from '../utils/utils';
 import { buyVerified } from '../utils/utils';
+import { removeFriendFromChat } from '../integration/chat.restapi';
 
 
-
+import { deleteAccountInChat } from '../integration/chat.restapi';
+import { deleteAccountInNotify } from '../integration/notify.restapi';
 
 
 
@@ -187,8 +189,10 @@ export async function deleteProfileHandler(req: FastifyRequest, res: FastifyRepl
     await prisma.profile.update({ where: { userId }, data: { isDeleted: true , username : deletedUsername } });
     await redis.del(cacheKey);
 
-    await sendServiceRequestSimple('chat', userId, 'PUT', {username : deletedUsername } )
-    await sendServiceRequestSimple('notify', userId, 'PUT', {username : deletedUsername } )
+    // Notify other services about account deletion
+    await deleteAccountInChat(userId);
+    await deleteAccountInNotify(userId);
+    
   }
   catch (error) {
     return sendError(res, error);
@@ -241,11 +245,11 @@ export async function getUserByIdHandler(req: FastifyRequest, res: FastifyReply)
 export async function getUserByUserNameHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
-  const { Username } = req.params as { Username: string };
+  const { username } = req.params as { username: string };
 
   try 
   {
-    const profile = await prisma.profile.findUnique({ where: { username: Username } });
+    const profile = await prisma.profile.findUnique({ where: { username } });
     if (!profile) throw new Error(GeneralMessages.NOT_FOUND);
     respond.data = await mergeProfileWithRedis(profile);
   } 
@@ -387,6 +391,34 @@ export async function getShopItemsHandler(req: FastifyRequest, res: FastifyReply
       ownedPaddles: existingPaddles
     };
 
+  } catch (error) {
+    return sendError(res, error);
+  }
+
+  return res.send(response);
+}
+
+
+export async function sendNotificationHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const response: ApiResponse<any> = { success: true, message: 'Notification sent successfully' };
+  const headers = req.headers as any;
+  const senderId = Number(headers['x-user-id']);
+
+  try {
+    const body = req.body as any;
+    const { userId, message, type } = body;
+
+    if (!userId || !message) {
+      throw new Error('userId and message are required');
+    }
+
+    const { createNotificationInNotify } = await import('../integration/notify.restapi');
+    
+    const notification = await createNotificationInNotify(Number(userId), message, type || 'INFO');
+    response.data = notification;
+
+    console.log(`User ${senderId} sent notification to user ${userId}: ${message}`);
   } catch (error) {
     return sendError(res, error);
   }

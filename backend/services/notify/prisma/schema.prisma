@@ -20,9 +20,7 @@ enum NotificationStatus {
 enum NotificationType {
   INFO         
   SUCCESS      
-  WARNING      
   ERROR        
-  ALERT        
   FRIEND       
   TOURNAMENT   
   CHAT         
@@ -51,6 +49,8 @@ model User {
   isVerified  Boolean  @default(false)
   avatar      String   @default("")
 
+  isDeleted   Boolean  @default(false)
+
   notifications Notification[]
   notificationSettings   NotificationSettings?
   createdAt   DateTime @default(now())
@@ -76,7 +76,6 @@ model Notification {
   id        Int      @id @default(autoincrement())
 
   userId    String       
-  message   String
 
   type      NotificationType   @default(INFO)
   isRead    Boolean            @default(false)

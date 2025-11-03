@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import app from '../app';
 import { ApiResponse } from '../utils/errorHandler';
-import redis from '../integration/redisClient';
+import redis from '../integration/redis.integration';
 
 
 export async function authenticateUser(req: FastifyRequest, res: FastifyReply) 

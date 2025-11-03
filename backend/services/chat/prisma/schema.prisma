@@ -68,6 +68,8 @@ model User {
   isVerified Boolean  @default(false)
   avatar      String  
 
+  isDeleted   Boolean  @default(false)
+
   chatMembers  ChatMember[]
   messages     Message[]
   pollVotes    PollVote[]
@@ -96,6 +98,7 @@ model ChatMember {
   chatId  Int
   userId  String
 
+  isBlocked Boolean @default(false)
   chat    Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
   user    User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
 

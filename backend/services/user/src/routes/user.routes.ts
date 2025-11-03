@@ -49,10 +49,13 @@ const userRoutes: Route[] = [
   { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler, schema: deleteProfileSchema },
   
   { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler, schema: getCurrentUserSchema },
-  // { method: 'GET', url: '/api/user/:Username', handler: userController.getUserByUserNameHandler  , schema: getUserByUserNameSchema },
-  { method: 'GET', url: '/api/user/:id', handler: userController.getUserByIdHandler, schema: getUserByIdSchema },
+  { method: 'GET', url: '/api/user/username/:username', handler: userController.getUserByUserNameHandler  , schema: getUserByUserNameSchema },
+  { method: 'GET', url: '/api/user/id/:id', handler: userController.getUserByIdHandler, schema: getUserByIdSchema },
   { method: 'GET', url: '/api/user/all', handler: userController.getAllUserHandler, schema: getAllUsersSchema },
   { method: 'GET', url: '/api/user/search', handler: userController.searchUsersHandler, schema: searchUsersSchema },
+  
+  // Notification routes
+  { method: 'POST', url: '/api/user/notification/send', handler: userController.sendNotificationHandler },
   
   // Shop routes
   // { method: 'POST', url: '/api/user/purchase', handler: userController.purchaseItemHandler, schema: purchaseItemSchema },

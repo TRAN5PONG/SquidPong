@@ -1,7 +1,7 @@
 import redis from "../integration/redis.integration";
 
 import { sendEmail } from "./sendEmail";
-
+import { channel } from "../integration/rabbitmq.integration";
 
 
 async function generate6DigitCode(): Promise<string> 
@@ -14,8 +14,9 @@ async function generate6DigitCode(): Promise<string>
 
 
 
-export async function sendEmailMessage(data: { email: string; type: string })
+export async function sendEmailMessage(msg : any)
 {
+  const data = JSON.parse(msg.content.toString());
   const {type , email} = data;
   const code: string = await generate6DigitCode();
   let time;
@@ -30,6 +31,7 @@ export async function sendEmailMessage(data: { email: string; type: string })
   
   const key = `${type}:${email}`;
   await redis.set(key, code, "EX", time);
+  channel.ack(msg);
   // await sendEmail(); // send email function
 }
 
