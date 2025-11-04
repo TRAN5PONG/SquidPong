@@ -3,8 +3,10 @@ import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { User, UserPreferences } from "@/types/user";
 import {
+  BackIcon,
   DeleteIcon,
   EditIcon,
+  FriendsIcon,
   PasswordIcon,
   PersonIcon,
   PreferencesIcon,
@@ -17,6 +19,12 @@ import { LoaderSpinner } from "../Loader/Loader";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { useAppContext } from "@/contexts/AppProviders";
 import TwoFAModal from "./twoFA";
+import {
+  acceptFriendRequest,
+  MiniUser,
+  getPendingFriendRequests,
+  rejectFriendRequest,
+} from "@/api/user";
 
 const StyledSettings = styled("div")`
   width: 100%;
@@ -362,11 +370,161 @@ const StyledSettings = styled("div")`
       }
     }
   }
+  .FriendRequests_container {
+    display: flex;
+    flex-direction: column;
+
+    .RequestsFilter {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 0 10px;
+      .FilterItem {
+        padding: 10px 15px;
+        border-radius: 5px;
+        background-color: var(--bg_color_super_light);
+        color: rgba(255, 255, 255, 0.6);
+        font-family: var(--main_font);
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+
+        svg {
+        }
+
+        &.active {
+          background-color: rgba(255, 255, 255, 0.1);
+          color: white;
+        }
+
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.05);
+          color: white;
+        }
+      }
+      .FilterItem:nth-child(1) {
+        svg {
+          transform: rotate(180deg);
+          transform: scaleX(-1);
+        }
+      }
+    }
+    .friendRequestsList {
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding: 10px;
+        .NoElsSpan {
+          color: rgba(255, 255, 255, 0.6);
+          font-family: var(--main_font);
+          font-size: 1rem;
+        }
+
+        .friendRequestItem {
+          width: 100%;
+          height: 50px;
+          background-color: var(--bg_color_super_light);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          padding-left: 2px;
+          justify-content: flex-start;
+          .userAvatar {
+            width: 45px;
+            height: 45px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            background-position: center;
+            background-size: cover;
+          }
+          span {
+            color: rgba(255, 255, 255, 0.8);
+            font-family: var(--main_font);
+            font-size: 1rem;
+            margin-left: 10px;
+          }
+          .cancelRequestBtn {
+            margin-left: auto;
+            margin-right: 5px;
+            width: 140px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            outline: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-family: var(--main_font);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-radius: 4px;
+
+            &:hover {
+              color: white;
+            }
+          }
+          .rejectRequestBtn {
+            margin-left: auto;
+            width: 100px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            outline: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-family: var(--main_font);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-radius: 4px;
+            margin-right: 5px;
+
+            &:hover {
+              color: white;
+            }
+          }
+          .acceptRequestBtn {
+            width: 100px;
+            height: 40px;
+            background-color: rgba(116, 218, 116, 0.2);
+            border: none;
+            outline: none;
+            color: rgba(116, 218, 116, 0.6);
+            font-family: var(--main_font);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-radius: 4px;
+            margin-right: 5px;
+
+            &:hover {
+              background-color: rgba(116, 218, 116, 0.3);
+              color: white;
+            }
+          }
+        }
+      }
+    }
+  }
 `;
 
 type SettingsMod =
   | "account"
   | "preferences"
+  | "friendRequests"
   | "privacy"
   | "BlockedUsers"
   | "404";
@@ -375,6 +533,15 @@ const Settings = () => {
   const [currentMod, setCurrentMod] = Zeroact.useState<SettingsMod | null>(
     null
   );
+  const [currentCurrentFRMod, setCurrentFRMod] = Zeroact.useState<
+    "sent" | "received"
+  >("sent");
+  const [sentFriendRequests, setSentFriendRequests] = Zeroact.useState<
+    MiniUser[]
+  >([]);
+  const [receivedFriendRequests, setReceivedFriendRequests] = Zeroact.useState<
+    MiniUser[]
+  >([]);
   const [Preferences, setPreferences] = Zeroact.useState<UserPreferences>(
     db.FakeUserPreferences
   );
@@ -393,6 +560,9 @@ const Settings = () => {
       setCurrentMod("preferences");
     } else if (modName === "privacy") {
       setCurrentMod("privacy");
+    } else if (modName === "friendRequests") {
+      setCurrentMod("friendRequests");
+      fetchFriendRequests();
     } else if (modName === "blocked_users") {
       setCurrentMod("BlockedUsers");
     } else {
@@ -443,8 +613,58 @@ const Settings = () => {
   };
   const onTwoFAToggle = () => {
     if (Preferences.twoFactorEnabled) {
+      toasts.addToastToQueue({
+        type: "success",
+        message: "Two-factor already enabled.",
+      });
     } else {
       setShowTwoFAModal(true);
+    }
+  };
+
+  // Fetches
+  const fetchFriendRequests = async () => {
+    const resp = await getPendingFriendRequests();
+
+    if (resp.success && resp.data) {
+      if (resp.data.received.length > 0) {
+        setReceivedFriendRequests(resp.data.received);
+      } else setReceivedFriendRequests([]);
+      if (resp.data.sent.length > 0) {
+        setSentFriendRequests(resp.data.sent);
+      } else setSentFriendRequests([]);
+    }
+  };
+  const handleAcceptFriendRequest = async (friendId: number) => {
+    const resp = await acceptFriendRequest(friendId);
+
+    if (resp.success) {
+      toasts.addToastToQueue({
+        type: "success",
+        message: "Friend request accepted!",
+      });
+      fetchFriendRequests();
+    } else {
+      toasts.addToastToQueue({
+        type: "error",
+        message: resp.message || "Failed to accept friend request.",
+      });
+    }
+  };
+  const handleRejectFriendRequest = async (friendId: number) => {
+    const resp = await rejectFriendRequest(friendId);
+
+    if (resp.success) {
+      toasts.addToastToQueue({
+        type: "success",
+        message: "Friend request rejected!",
+      });
+      fetchFriendRequests();
+    } else {
+      toasts.addToastToQueue({
+        type: "error",
+        message: resp.message || "Failed to reject friend request.",
+      });
     }
   };
 
@@ -488,6 +708,15 @@ const Settings = () => {
           >
             <PersonIcon size={20} fill="rgba(255, 255, 255, 0.5)" />
             <span>Blocked users</span>
+          </div>
+          <div
+            className={`Item ${
+              currentMod === "friendRequests" ? "active" : ""
+            }`}
+            onClick={() => navigate("/settings/friendRequests")}
+          >
+            <FriendsIcon size={20} fill="rgba(255, 255, 255, 0.5)" />
+            <span>Friend Requests</span>
           </div>
           <div
             className={`Item ${currentMod === "preferences" ? "active" : ""}`}
@@ -651,6 +880,89 @@ const Settings = () => {
                   ))
                 ) : (
                   <span>No blocked users</span>
+                )}
+              </div>
+            </div>
+          ) : currentMod === "friendRequests" ? (
+            <div className="FriendRequests_container" key="friendRequests">
+              <span className="Spliter">Friend Requests :</span>
+              <div className="RequestsFilter">
+                <div
+                  className={`FilterItem ${
+                    currentCurrentFRMod === "sent" ? "active" : ""
+                  }`}
+                  onClick={() => setCurrentFRMod("sent")}
+                >
+                  <BackIcon size={25} fill="rgba(255, 255, 255, 0.5)" />
+                  Sent requests
+                </div>
+                <div
+                  className={`FilterItem ${
+                    currentCurrentFRMod === "received" ? "active" : ""
+                  }`}
+                  onClick={() => setCurrentFRMod("received")}
+                >
+                  <BackIcon size={25} fill="rgba(255, 255, 255, 0.5)" />
+                  Received requests
+                </div>
+              </div>
+              <div className="friendRequestsList">
+                {currentCurrentFRMod === "sent" ? (
+                  <div className="sentRequests list">
+                    {sentFriendRequests.length > 0 ? (
+                      sentFriendRequests.map((user) => (
+                        <div className="friendRequestItem" key={user.id}>
+                          <div
+                            className="userAvatar"
+                            style={{ backgroundImage: `url(${user.avatar})` }}
+                          />
+                          <span>{user.username}</span>
+                          <button
+                            className="cancelRequestBtn"
+                            onClick={() => {}}
+                          >
+                            Cancel Request
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="NoElsSpan">No sent friend requests</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="receivedRequests list">
+                    {receivedFriendRequests.length > 0 ? (
+                      receivedFriendRequests.map((user) => (
+                        <div className="friendRequestItem" key={user.id}>
+                          <div
+                            className="userAvatar"
+                            style={{ backgroundImage: `url(${user.avatar})` }}
+                          />
+                          <span>{user.username}</span>
+                          <button
+                            className="rejectRequestBtn"
+                            onClick={() => {
+                              handleRejectFriendRequest(user.userId);
+                            }}
+                          >
+                            Reject
+                          </button>
+                          <button
+                            className="acceptRequestBtn"
+                            onClick={() => {
+                              handleAcceptFriendRequest(user.userId);
+                            }}
+                          >
+                            Accept
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="NoElsSpan">
+                        No received friend requests
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
