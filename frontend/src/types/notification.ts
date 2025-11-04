@@ -29,7 +29,7 @@ export interface NotificationEl {
     friendRequest?: {
       id: string;
       status: "pending" | "accepted" | "declined";
-	  message?: string; // Optional message with the friend request
+	    message?: string; // Optional message with the friend request
     };
 
 	gameId?: string;

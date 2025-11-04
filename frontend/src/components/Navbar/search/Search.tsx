@@ -217,10 +217,10 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
             return (
               <StyledSearchPlayerBox
                 avatar={player.avatar}
-                // onClick={() => {
-                //   navigate(`/player/${player.username}`);
-                //   props.onClose();
-                // }}
+                onClick={() => {
+                  navigate(`/user/${player.username}`);
+                  props.onClose();
+                }}
               >
                 <div className="Avatar" />
                 <div className="SearchPlayerInfos">
