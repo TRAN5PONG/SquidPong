@@ -19,6 +19,9 @@ import { MatchState } from "../network/GameState";
 import { Room } from "colyseus.js";
 import { paddleColors, paddleTextures } from "@/types/game/paddle";
 
+// Environment variable
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export class Game {
   // Game data
   match!: Match;
@@ -59,7 +62,7 @@ export class Game {
       throw new Error("Canvas not found before initializing Game!");
     }
     this.canvas = canvas;
-    this.match = match ;
+    this.match = match;
 
     this.userId = userId;
     this.hostId = match?.opponent1.isHost
@@ -83,19 +86,20 @@ export class Game {
   private async Init() {
     try {
       // Physics
-      // this.physics = new Physics();
-      // this.physics.init();
+      this.physics = new Physics();
+      this.physics.init();
 
       // Camera
       this.camera = new GameCamera(
         this.scene,
-        this.userId === this.hostId ? 1 : -1
+        this.userId === this.hostId ? 1 : -1,
       );
       this.camera.attach(this.canvas);
 
       // Network
-      // this.net = new Network("ws://${API_BASE_URL}:3000", this.match);
-      // this.room = await this.net.join(this.userId);
+      this.net = new Network(`ws://10.13.8.3:4005`, this.match);
+
+      this.room = await this.net.join(this.userId);
 
       // Entities
       this.ball = new Ball(this.scene);
@@ -111,7 +115,7 @@ export class Game {
         {
           color: paddleColors[0],
           texture: paddleTextures[1],
-        }
+        },
       );
       this.guestPaddle = new Paddle(
         this.scene,
@@ -120,7 +124,7 @@ export class Game {
         this.userId === this.hostId ? this.physics.paddle : null,
         {
           color: paddleColors[1],
-        }
+        },
       );
 
       this.localPaddle =
@@ -129,15 +133,14 @@ export class Game {
         this.userId === this.hostId ? this.guestPaddle : this.hostPaddle;
 
       // Controller
-      // this.controller = new GameController(
-      //   this.localPaddle,
-      //   this.opponentPaddle,
-      //   this.ball,
-      //   this.physics,
-      //   this.net,
-      //   this.scene
-      // );
-
+      this.controller = new GameController(
+        this.localPaddle,
+        this.opponentPaddle,
+        this.ball,
+        this.physics,
+        this.net,
+        this.scene,
+      );
 
       // Debugging tools
       this.debug = new Debug(this.scene, this.engine);
@@ -147,7 +150,10 @@ export class Game {
 
       // Load assets
       await Promise.all([
-        this.arena.Load(),
+        this.arena.Load().then(() => {
+          // console.log("Arena loaded.", this.arena.getPhysicsInfo());
+        }),
+
         this.hostPaddle.Load(),
         this.guestPaddle.Load(),
         this.ball.Load(),
@@ -158,30 +164,30 @@ export class Game {
     }
   }
 
-  /*****
+  /*****DORA Adventures
    * Start the render/update loop.
    */
   private startRenderLoop() {
-    // const FIXED_DT = 1 / 60; // Physics timestep: 60Hz
-    // let accumulator = 0;
-    // let lastTime = performance.now();
+    const FIXED_DT = 1 / 60; // Physics timestep: 60Hz
+    let accumulator = 0;
+    let lastTime = performance.now();
 
     this.engine.runRenderLoop(() => {
-      // const now = performance.now();
-      // const frameTime = (now - lastTime) / 1000; // convert ms → seconds
-      // lastTime = now;
+      const now = performance.now();
+      const frameTime = (now - lastTime) / 1000; // convert ms → seconds
+      lastTime = now;
 
-      // accumulator += frameTime;
+      accumulator += frameTime;
 
-      // // --- Fixed-step physics loop ---
-      // while (accumulator >= FIXED_DT) {
-      //   this.controller.fixedUpdate();
-      //   accumulator -= FIXED_DT;
-      // }
-      // // --- Compute interpolation factor for visuals ---
-      // const alpha = accumulator / FIXED_DT;
-      // // Update visuals using interpolation
-      // this.controller.updateVisuals(alpha);
+      // --- Fixed-step physics loop ---
+      while (accumulator >= FIXED_DT) {
+        this.controller.fixedUpdate();
+        accumulator -= FIXED_DT;
+      }
+      // --- Compute interpolation factor for visuals ---
+      const alpha = accumulator / FIXED_DT;
+      // Update visuals using interpolation
+      this.controller.updateVisuals(alpha);
 
       this.scene.render();
     });

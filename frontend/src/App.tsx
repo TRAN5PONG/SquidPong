@@ -19,8 +19,6 @@ import Tournament from "./components/Tournament/Tournament";
 import SelectCharacter from "./components/SelectCharacter/SelectCharacter";
 import Toast, { ToastContainer } from "./components/Toast/Toast";
 
-
-
 // Redux
 import { store } from "@/store";
 import { userActions } from "./store/user/actions";
@@ -119,7 +117,7 @@ function RouterSwitch({ routes }: { routes: Route[] }) {
 
   // Stats
   const [delayedRoute, setdelayedRoute] = useState<Route | null>(
-    findMatchingRoute(currentPath)
+    findMatchingRoute(currentPath),
   );
   const [showLoader, setShowLoader] = useState<boolean>(false);
 
@@ -146,7 +144,7 @@ function RouterSwitch({ routes }: { routes: Route[] }) {
 
   return (
     <div className="route-container">
-      <Loader show={showLoader} onFinish={() => {}} nextRoute={currentPath} />
+      <Loader show={showLoader} onFinish={() => { }} nextRoute={currentPath} />
       <RouteComponent />
     </div>
   );
@@ -166,7 +164,8 @@ const App = () => {
         console.log("No valid session found");
       }
     };
-    socketManager.connect("ws://10.13.4.3:4000/events");
+    // TODO: Take Ip from .env file
+    socketManager.connect("ws://10.13.8.3:4000/events");
 
     initializeAuth();
   }, []);

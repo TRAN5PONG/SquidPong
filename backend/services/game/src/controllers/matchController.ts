@@ -8,7 +8,7 @@ import { matchMaker } from "colyseus";
 
 export async function createMatch(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const body = request.body as CreateMatchBody;
 
@@ -38,7 +38,7 @@ export async function createMatch(
   }
 }
 export async function OneVsOneMatch(
-  body: Extract<CreateMatchBody, { mode: "ONE_VS_ONE" }>
+  body: Extract<CreateMatchBody, { mode: "ONE_VS_ONE" }>,
 ) {
   // create match players
   // create match
@@ -68,7 +68,7 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
         invitation.sender.id, // local UUID
         true,
         false,
-        tx
+        tx,
       );
 
       const guestPlayer = await createMatchPlayer(
@@ -76,7 +76,7 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
         invitation.receiver.id,
         false,
         false,
-        tx
+        tx,
       );
 
       const match = await tx.match.create({
@@ -102,11 +102,11 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
           allowPowerUps: allowPowerUps ?? true,
           requiredCurrency: requiredCurrency ?? 0,
         },
-        tx
+        tx,
       );
 
       return { match, hostPlayer, guestPlayer };
-    }
+    },
   );
 
   // 2️⃣ Create Colyseus room after transaction committed
@@ -116,6 +116,10 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
     players: [hostPlayer.userId, guestPlayer.userId],
     spectator: [],
   });
+
+  console.log(
+    `✅ Created Colyseus room for match  ============================================ ${match.id}: ${room.roomId}`,
+  );
 
   // 3️⃣ Update match with roomId
   const updatedMatch = await prisma.match.update({
@@ -132,7 +136,7 @@ export async function createMatchPlayer(
   localUserId: string, // from game DB
   isHost: boolean,
   isAI: boolean,
-  tx: Prisma.TransactionClient = prisma
+  tx: Prisma.TransactionClient = prisma,
 ): Promise<MatchPlayer> {
   // Fetch user info from user service
   const res = await fetch(`http://user:4002/api/user/id/${remoteUserId}`);
@@ -166,7 +170,7 @@ export async function createMatchSetting(
     requiredCurrency: number;
     difficulty?: "EASY" | "MEDIUM" | "HARD";
   },
-  tx: Prisma.TransactionClient = prisma
+  tx: Prisma.TransactionClient = prisma,
 ) {
   if (mode === "ONE_VS_ONE") {
     return tx.matchSetting.create({
@@ -200,7 +204,7 @@ export async function createMatchSetting(
 }
 export async function getMatch(
   request: FastifyRequest<{ Params: { matchId: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { matchId } = request.params;
 
@@ -229,7 +233,7 @@ export async function getMatch(
 }
 export async function getCurrenMatch(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const params = request.params as { userId: string };
 
@@ -300,8 +304,8 @@ export async function toggleReadyStatus(matchId: string, playerId: string) {
       match.opponent1.id === playerId
         ? match.opponent1
         : match.opponent2?.id === playerId
-        ? match.opponent2
-        : null;
+          ? match.opponent2
+          : null;
 
     if (!player) {
       throw new Error("Player not found in this match");
@@ -329,7 +333,7 @@ export async function toggleReadyStatus(matchId: string, playerId: string) {
             matchPlayer: updatedMatchPlayer,
           },
         },
-        "broadcastData"
+        "broadcastData",
       );
     }
   } catch (error) {
@@ -359,8 +363,8 @@ export async function giveUp(matchId: string, playerId: string) {
       match.opponent1.id === playerId
         ? match.opponent1
         : match.opponent2?.id === playerId
-        ? match.opponent2
-        : null;
+          ? match.opponent2
+          : null;
     if (!player) {
       throw new Error("Player not found in this match");
     }
@@ -403,7 +407,7 @@ export async function giveUp(matchId: string, playerId: string) {
             reason: "opponent_gave_up",
           },
         },
-        "broadcastData"
+        "broadcastData",
       );
     }
   } catch (err) {
@@ -433,8 +437,8 @@ export async function startGame(matchId: string, playerId: string) {
       match.opponent1.userId === playerId
         ? match.opponent1
         : match.opponent2?.userId === playerId
-        ? match.opponent2
-        : null;
+          ? match.opponent2
+          : null;
 
     if (!player) {
       throw new Error("Player not found in this match");
@@ -472,7 +476,7 @@ export async function startGame(matchId: string, playerId: string) {
             reason: "match_started",
           },
         },
-        "broadcastData"
+        "broadcastData",
       );
     }
 

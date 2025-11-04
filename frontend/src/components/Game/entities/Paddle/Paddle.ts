@@ -22,7 +22,7 @@ export class BasePaddle {
     try {
       const container = await LoadAssetContainerAsync(
         "/models/paddle.glb",
-        this.scene
+        this.scene,
       );
       if (!container || !container.meshes) {
         throw new Error("Failed to load paddle model");
@@ -48,6 +48,9 @@ export class BasePaddle {
       }
 
       this.mesh = group;
+
+      // custom scaling (size adjustment)
+      // this.mesh.scaling.scaleInPlace(1.2);
     } catch (err) {
       console.error("Error loading paddle model:", err);
     }
@@ -55,7 +58,7 @@ export class BasePaddle {
 
   setColor(HexColor: string) {
     if (!this.mainMesh) return;
-    const color : Color3 = this.hextoColor3(HexColor);
+    const color: Color3 = this.hextoColor3(HexColor);
 
     let mat = this.mainMesh.material as StandardMaterial;
     if (!mat || !(mat instanceof StandardMaterial)) {
@@ -67,17 +70,17 @@ export class BasePaddle {
   }
   setTexture(url: string | null) {
     if (!this.mainMesh) return;
-  
+
     // Remove any previous texture mesh
     if (this.textureMesh) {
       this.textureMesh.dispose();
       this.textureMesh = null;
     }
-  
+
     // Get current base color
     const baseMat = this.mainMesh.material as StandardMaterial;
     const color = baseMat?.diffuseColor || new Color3(0.949, 0.173, 0.173);
-  
+
     // Restore base color only (no texture)
     if (!url) {
       const colorMat = new StandardMaterial("paddleColorMat", this.scene);
@@ -86,42 +89,46 @@ export class BasePaddle {
       this.mainMesh.material = colorMat;
       return;
     }
-  
+
     // Set the base mesh to pure solid color (no texture)
     const colorMat = new StandardMaterial("paddleColorMat", this.scene);
     colorMat.diffuseColor = color.clone();
     colorMat.specularColor = new Color3(0, 0, 0);
     this.mainMesh.material = colorMat;
-  
+
     // Clone the mesh for texture overlay
-    this.textureMesh = this.mainMesh.clone("faces", this.mainMesh.parent, false);
+    this.textureMesh = this.mainMesh.clone(
+      "faces",
+      this.mainMesh.parent,
+      false,
+    );
     this.textureMesh.parent = this.mainMesh.parent;
-    
+
     // Position slightly in front to avoid z-fighting
     this.textureMesh.position.z = 0.001; // Tiny offset
-    
+
     // Create texture-only material
     const textureMat = new StandardMaterial("paddleTextureMat", this.scene);
     textureMat.diffuseTexture = new Texture(url, this.scene);
     textureMat.diffuseTexture.hasAlpha = true;
     textureMat.useAlphaFromDiffuseTexture = true;
-    
+
     // Make the base color white so texture shows as-is
     textureMat.diffuseColor = new Color3(1, 1, 1);
     textureMat.specularColor = new Color3(0, 0, 0);
     textureMat.backFaceCulling = false;
-    
+
     // Enable transparency blending
     textureMat.alpha = 1.0;
-    
+
     this.textureMesh.material = textureMat;
-    
+
     // Ensure proper rendering order (texture on top of color)
     this.mainMesh.renderingGroupId = 0;
     this.textureMesh.renderingGroupId = 0;
     this.textureMesh.alphaIndex = 1; // Render after base mesh
   }
-  
+
   getMesh(): AbstractMesh | null {
     return this.mainMesh ?? null;
   }

@@ -167,7 +167,7 @@ export class MatchRoom extends Room<MatchState> {
   onAuth(client: Client, options: any) {
     const _client = client as any;
     const { players, spectators } = this.metadata;
-
+    console.log("====================AUTH++++++++++++++++++++++++++++")
     if (players.includes(options.userId)) {
       _client.meta = { role: "player", userId: options.userId };
       return true;

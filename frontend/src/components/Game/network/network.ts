@@ -15,9 +15,9 @@ interface NetworkEvents {
   "game:pause-tick": (data: { by: string; remainingPauseTime: number }) => void;
   "game:ended": (data: { winnerId: string }) => void;
   "game:started": (data: { startTime: number }) => void;
-  "gameStartAt": (startAt: number) => void;
+  gameStartAt: (startAt: number) => void;
   "opponent:paddle": (data: any) => void;
-  "BallHitMessage": (data: BallHitMessage) => void;
+  BallHitMessage: (data: BallHitMessage) => void;
 }
 
 export class Network {
@@ -88,7 +88,7 @@ export class Network {
             else this.emit("player:disconnected", playerId);
           }
         });
-      }
+      },
     );
     $(this.room.state as any).players.onChange(
       (_: MatchPlayer, playerId: string) => {
@@ -99,7 +99,7 @@ export class Network {
           this.players[playerId].pauseRequests = 0;
           this.emit("player:disconnected", playerId);
         }
-      }
+      },
     );
     // P
     // Match States
@@ -112,7 +112,7 @@ export class Network {
       (newWinnerId: string | null) => {
         this.winnerId = newWinnerId;
         this.emit("winner:declared", newWinnerId);
-      }
+      },
     );
     $(this.room.state as any).listen("countdown", (countdown: number) => {
       this.countdown =
@@ -153,7 +153,7 @@ export class Network {
     });
     this.room.onMessage("BallHitMessage", (data: BallHitMessage) => {
       this.emit("BallHitMessage", data);
-    })
+    });
   }
 
   // Send message to server
