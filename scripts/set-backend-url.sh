@@ -71,6 +71,11 @@ else
 fi
 
 
+for file in $(find . -type f -name "*.env"); do
+  echo "Processing: $file"
+  set_urls_in_file $file
+done
+
 
 
 echo "backend URL : http://${IP}:4000"
