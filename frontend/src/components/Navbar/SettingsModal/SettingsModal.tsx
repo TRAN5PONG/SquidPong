@@ -10,6 +10,7 @@ import { styled } from "@/lib/Zerostyle";
 import { UserPreferences, UserStatus } from "@/types/user";
 import Status from "../Status";
 import { logout } from "@/api/auth";
+import { useAppContext } from "@/contexts/AppProviders";
 
 const StyledSettingsModal = styled("div")`
   width: 200px;
@@ -71,6 +72,7 @@ interface SettingsModalProps {
 const SettingsModal = (props: SettingsModalProps) => {
   const ModalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const {user} = useAppContext();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -105,7 +107,7 @@ const SettingsModal = (props: SettingsModalProps) => {
       <div
         className="ProfileElement BorderBottomEffect"
         onClick={() => {
-          navigate("/user/0");
+          navigate(`/user/${user?.username}`);
           props.onClose();
         }}
       >

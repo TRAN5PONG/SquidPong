@@ -17,7 +17,7 @@ export type NotificationType =
 export interface NotificationEl {
   id: string;
   type: NotificationType;
-  by?: User; // User who triggered the notification
+  by: User; // User who triggered the notification
   createdAt: Date;
   isRead: boolean;
 

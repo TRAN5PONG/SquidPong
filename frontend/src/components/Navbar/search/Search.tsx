@@ -139,7 +139,7 @@ const StyledSearchTournamentBox = styled("div")`
 const SearchModal = (props: { onClose: () => void; query: string }) => {
   const ModalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { user } = useAppContext();
+  const { user, toasts } = useAppContext();
   // Stats
   const [players, setPlayers] = Zeroact.useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -151,14 +151,31 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
     }
   };
 
-  const sendFriendRequest_ = async(recieverId: string) => {
-    const resp = await sendFriendRequest(recieverId);
-    if (resp.success) {
-      console.log("Friend request sent successfully.");
-    } else {
-      console.error("Failed to send friend request:", resp.message);
+  const sendFriendRequest_ = async (receiverId: string) => {
+    try {
+      const resp = await sendFriendRequest(Number(receiverId));
+
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "info",
+          message: "Friend request sent successfully.",
+          duration: 3000,
+        });
+      } else {
+        toasts.addToastToQueue({
+          type: "warning",
+          message: resp.message || "Failed to send friend request.",
+          duration: 3000,
+        });
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "An unexpected error occurred.",
+        duration: 3000,
+      });
     }
-  }
+  };
 
   useEffect(() => {
     if (props.query.trim() === "") {
@@ -217,9 +234,19 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
                     {"@" + player.username}
                   </span>
                 </div>
-                <div className="ActionsBtns" onClick={sendFriendRequest_(player.id)}>
+                <div className="ActionsBtns">
                   {player.id !== user?.id && (
-                    <AddFriendIcon fill="white" size={20} className="AddFriendIcon"/>
+                    <a
+                      onClick={() =>
+                        sendFriendRequest_(player.userId.toString())
+                      }
+                    >
+                      <AddFriendIcon
+                        fill="white"
+                        size={20}
+                        className="AddFriendIcon"
+                      />
+                    </a>
                   )}
                 </div>
               </StyledSearchPlayerBox>

@@ -1,7 +1,6 @@
 import { User } from "@/types/user";
 import { API_BASE_URL, ApiResponse } from "./auth";
 
-
 export async function getUserProfile(): Promise<ApiResponse<User>> {
   const response = await fetch(`${API_BASE_URL}/user/me`, {
     method: "GET",
@@ -23,15 +22,13 @@ export async function getUserById(Id: string): Promise<ApiResponse<User>> {
       "Content-Type": "application/json",
     },
   });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch user by ID: ${response.statusText}`);
-  }
+
   return await response.json();
 }
 
 // friends
 export async function sendFriendRequest(
-  receiverId: string
+  receiverId: number
 ): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/friend/request`, {
     method: "POST",
@@ -39,17 +36,13 @@ export async function sendFriendRequest(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ receiverId : Number(receiverId) }),
+    body: JSON.stringify({ receiverId }),
   });
-
-  if (!response.ok) {
-    throw new Error(`Login failed: ${response.statusText}`);
-  }
 
   return await response.json();
 }
 export async function acceptFriendRequest(
-  friendId: number
+  senderId: number
 ): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/friend/accept`, {
     method: "POST",
@@ -57,17 +50,13 @@ export async function acceptFriendRequest(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ friendId }),
+    body: JSON.stringify({ senderId }),
   });
-
-  if (!response.ok) {
-    throw new Error(`Login failed: ${response.statusText}`);
-  }
 
   return await response.json();
 }
 export async function rejectFriendRequest(
-  friendId: number
+  senderId: number
 ): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/friend/reject`, {
     method: "POST",
@@ -75,43 +64,44 @@ export async function rejectFriendRequest(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ friendId }),
+    body: JSON.stringify({ senderId }),
   });
-
-  if (!response.ok) {
-    throw new Error(`Login failed: ${response.statusText}`);
-  }
 
   return await response.json();
 }
-export async function pendingFriendRequests(): Promise<ApiResponse<User[]>> {
+
+export interface MiniUser {
+  id: string;
+  userId: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  avatar: string;
+  status: string;
+  isVerified: boolean;
+}
+interface PendingFriendRequestsData {
+  received: MiniUser[];
+  sent: MiniUser[];
+}
+export async function getPendingFriendRequests(): Promise<
+  ApiResponse<PendingFriendRequestsData>
+> {
   // endpoint: /friend/pending
-  // method: "GET"
+  // method: GET"
   const response = await fetch(`${API_BASE_URL}/friend/pending`, {
     method: "GET",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch pending friend requests: ${response.statusText}`
-    );
-  }
+
   return await response.json();
 }
-export async function user_friends(): Promise<ApiResponse<User[]>> {
-  const response = await fetch(`${API_BASE_URL}/friend`, {
+
+export async function getUserFriends(): Promise<ApiResponse<MiniUser[]>> {
+  const response = await fetch(`${API_BASE_URL}/friend/all`, {
     method: "GET",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch friends: ${response.statusText}`);
-  }
   return await response.json();
 }
 export async function blockedFriends(): Promise<ApiResponse<User[]>> {
@@ -142,7 +132,7 @@ export async function removeFriend(userId: number): Promise<ApiResponse> {
 }
 
 // users
-export async function getUsers() : Promise<ApiResponse<User[]>> {
+export async function getUsers(): Promise<ApiResponse<User[]>> {
   const response = await fetch(`${API_BASE_URL}/user`, {
     method: "GET",
     credentials: "include",
@@ -184,13 +174,16 @@ export async function unblockUser(userId: number): Promise<ApiResponse> {
 
 // Search
 export async function SearchUsers(query: string): Promise<ApiResponse<User[]>> {
-  const response = await fetch(`${API_BASE_URL}/user/search?query=${encodeURIComponent(query)}`, {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/user/search?query=${encodeURIComponent(query)}`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
   if (!response.ok) {
     throw new Error(`Failed to search users: ${response.statusText}`);
   }

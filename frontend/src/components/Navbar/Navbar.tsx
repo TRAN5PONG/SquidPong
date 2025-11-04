@@ -4,6 +4,7 @@ import Notification from "./Notifications/Notification";
 import {
   ChatIcon,
   CoinIcon,
+  FriendsIcon,
   NotificationIcon,
   SearchIcon,
   SettingsIcon,

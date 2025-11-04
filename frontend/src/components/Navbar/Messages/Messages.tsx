@@ -213,7 +213,7 @@ interface ChatModalProps {
 type ChatModalView = "chats" | "newChat";
 
 const ChatModal = (props: ChatModalProps) => {
-  const [currentView, setCurrentView] = useState<ChatModalView>("newChat");
+  const [currentView, setCurrentView] = useState<ChatModalView>("chats");
   const [isLoadingConversations, setIsLoadingConversations] =
     useState<boolean>(true);
   const [Conversations, setConversations] = useState<Conversation[] | null>(

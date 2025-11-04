@@ -1,4 +1,4 @@
-import Zeroact from "@/lib/Zeroact";
+import Zeroact, { useEffect } from "@/lib/Zeroact";
 import { User, UserStatus } from "@/types/user";
 import { styled } from "@/lib/Zerostyle";
 import {
@@ -23,7 +23,8 @@ import { useAppContext } from "@/contexts/AppProviders";
 import Toast from "../Toast/Toast";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { getRankMetaData } from "@/utils/game";
-import { getUserById } from "@/api/user";
+import { getUserById, getUserFriends, MiniUser } from "@/api/user";
+import Skeleton from "../Skeleton/Skeleton";
 
 const StyledProfileModal = styled("div")`
   height: 100%;
@@ -270,6 +271,12 @@ const StyledProfileModal = styled("div")`
             &:hover {
             }
           }
+          .NoFriendsText {
+            font-family: var(--main_font);
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+          }
         }
       }
     }
@@ -390,6 +397,7 @@ const StyledProfileModal = styled("div")`
 const Profile = () => {
   const [profileData, setProfileData] = Zeroact.useState<User | null>(null);
   const [profileStats, setProfileStats] = Zeroact.useState<any>(null);
+  const [profileFriends, setProfileFriends] = Zeroact.useState<MiniUser[]>([]);
   const [isUserNotFound, setIsUserNotFound] = Zeroact.useState(false);
   const [showConfirmationModal, setShowConfirmationModal] =
     Zeroact.useState(false);
@@ -424,6 +432,7 @@ const Profile = () => {
       });
   };
   const setUser = async (id: string) => {
+    console.log("reachs");
     const user = await getUserById(id);
     if (user.success && user.data) {
       setProfileData(user.data);
@@ -441,18 +450,52 @@ const Profile = () => {
       rank: 250,
       tournamentsPlayed: 20,
       tournamentsWon: 12,
-    }
+    };
     setProfileStats(fakeUserStats);
-  }
+  };
+  const getFriends = async () => {
+    const resp = await getUserFriends();
+    if (resp.success && resp.data) {
+      setProfileFriends(resp.data);
+    }
+  };
   Zeroact.useEffect(() => {
     if (userId != null) {
       setUser(userId);
       getStats(userId);
+      getFriends();
     }
   }, [userId]);
 
-  if (isUserNotFound) return <NotFound />;
-  if (!profileData) return <ProfileSkeleton />;
+  if (isUserNotFound) {
+    console.log("User not found");
+    return <NotFound />;
+  }
+  if (!profileData)
+    return (
+      <ProfileSkeleton>
+        <Skeleton
+          width="1200px"
+          height="300px"
+          borderRadius={5}
+          animation="Shine"
+        />
+        <div className="Container">
+          <Skeleton
+            width="100%"
+            height="100%"
+            borderRadius={10}
+            animation="Wave"
+          />
+          <Skeleton
+            width="800px"
+            height="100%"
+            borderRadius={10}
+            animation="hybrid"
+          />
+        </div>
+      </ProfileSkeleton>
+    );
 
   const rankMetadata = getRankMetaData(
     profileData.rankDivision,
@@ -513,23 +556,17 @@ const Profile = () => {
 
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">Games</span>
-              <span className="StatElValue">
-                {profileStats.gamesPlayed}
-              </span>
+              <span className="StatElValue">{profileStats.gamesPlayed}</span>
             </div>
 
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">won</span>
-              <span className="StatElValue">
-                {profileStats.gamesWon}
-              </span>
+              <span className="StatElValue">{profileStats.gamesWon}</span>
             </div>
 
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">lost</span>
-              <span className="StatElValue">
-                {profileStats.gamesLost}
-              </span>
+              <span className="StatElValue">{profileStats.gamesLost}</span>
             </div>
 
             <div className="StatEl BorderBottomEffect">
@@ -538,8 +575,7 @@ const Profile = () => {
                 {profileStats.gamesWon > 0
                   ? (
                       (profileStats.gamesWon /
-                        (profileStats.gamesWon +
-                          profileStats.gamesLost)) *
+                        (profileStats.gamesWon + profileStats.gamesLost)) *
                       100
                     ).toFixed(2) + "%"
                   : "0%"}
@@ -562,9 +598,7 @@ const Profile = () => {
 
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">Rank</span>
-              <span className="StatElValue">
-                #{profileStats.rank}
-              </span>
+              <span className="StatElValue">#{profileStats.rank}</span>
             </div>
           </div>
 
@@ -575,8 +609,7 @@ const Profile = () => {
               <h2>1 vs 1</h2>
               <WinLossDonut
                 winRate={
-                  (profileStats.gamesWon /
-                    (profileStats.gamesPlayed || 1)) *
+                  (profileStats.gamesWon / (profileStats.gamesPlayed || 1)) *
                   100
                 }
               />
@@ -645,16 +678,21 @@ const Profile = () => {
           <div className="Friends">
             <h1 className="ProfileHeadline">Friends</h1>
             <div className="FriendsList">
-              {db.users.map((friend: User) => {
-                return (
-                  <div
-                    className="FriendItem"
-                    style={{ backgroundImage: `url(${friend.avatar})` }}
-                    key={friend.id}
-                    onClick={() => navigate(`/user/${friend.id}`)}
-                  ></div>
-                );
-              })}
+              {profileFriends.length > 0 ? (
+                profileFriends.map((friend) => {
+                  return (
+                    <div
+                      className="FriendItem"
+                      style={{ backgroundImage: `url(${friend.avatar})` }}
+                      key={friend.id}
+                      onClick={() => navigate(`/user/${friend.username}`)}
+                      title={friend.username}
+                    ></div>
+                  );
+                })
+              ) : (
+                <span className="NoFriendsText">No friends to show</span>
+              )}
             </div>
           </div>
         </div>
@@ -703,9 +741,19 @@ export function WinLossDonut({ winRate }: { winRate: number }) {
 }
 
 const ProfileSkeleton = styled("div")`
-  width: 1000px;
-  height: 100px;
-  background-color: white;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 55px;
+  gap: 10px;
+  .Container {
+    width: 1200px;
+    height: 100%;
+    display: flex;
+    gap: 20px;
+  }
 `;
 
 export default Profile;
