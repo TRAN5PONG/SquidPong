@@ -5,31 +5,43 @@ import { FastifyRequest } from 'fastify';
 import prisma from '../db/database';
 import { redis } from '../integration/redis.integration';
 import { ProfileMessages } from './responseMessages';
+import path from 'path';
+import crypto from 'crypto';
 
 
-
-
-export async function convertParsedMultipartToJson(req: FastifyRequest): Promise<any> 
+export async function convertParsedMultipartToJson(req: FastifyRequest): Promise<string> 
 {
   const rawBody = req.body as any;
-  const data: Record<string, any> = {};
-  let filePath: string | undefined;
+  let file : string  = "";
+  
+  const uploadDir = path.join(process.cwd(),'uploads' , 'avatar');
+  if (!fs.existsSync(uploadDir))
+    fs.mkdirSync(uploadDir, { recursive: true });
 
   for (const key in rawBody) 
   {
     const field = rawBody[key];
 
     if (field?.type === 'file') 
-    {
-      filePath = `/tmp/images/${Date.now()}-${field.filename}`;
+      {
+      const ext = path.extname(field.filename) || '.png';
+
+      let randomName: string;
+      let filePath: string;
+
+      do {
+        randomName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+        filePath = path.join(uploadDir, randomName);
+      } while (fs.existsSync(filePath)); // ensure unique name
+
       await pipeline(field.file, fs.createWriteStream(filePath));
-        data[key] = `${process.env.BACKEND_URL}${filePath}`;
-    }
+
+      file = `/uploads/user/avatar/${randomName}`;
+    } 
   }
 
-  return { ...data };
+  return file;
 }
-
 
 
 

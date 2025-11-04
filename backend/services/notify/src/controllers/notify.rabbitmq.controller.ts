@@ -2,44 +2,18 @@ import prisma from "../db/database";
 import { channel, sendDataToQueue } from "../integration/rabbitmq.integration";
 
 
-
-
-
-export enum NotificationType {
-  // Game notifications
-  GAME_INVITE       = "game-invite",
-  GAME_START        = "game-start",
-  GAME_END          = "game-end",
-  GAME_WIN          = "game-win",
-  GAME_LOSE         = "game-lose",
-  
-  test = "friend_request",
-  // Friend notifications  
-  FRIEND_REQUEST    = "friend-request",
-  FRIEND_ACCEPTED   = "friend-accepted",
-  FRIEND_ONLINE     = "friend-online",
-  FRIEND_OFFLINE    = "friend-offline",
-  
-  // Chat notifications
-  NEW_MESSAGE       = "new-message",
-  NEW_GROUP_MESSAGE = "new-group-message",
-  MENTION           = "mention",
-  
-  // Tournament notifications
-  TOURNAMENT_START  = "tournament-start",
-  TOURNAMENT_END    = "tournament-end",
-  TOURNAMENT_WIN    = "tournament-win",
-  TOURNAMENT_INVITE = "tournament-invite",
-  
-  // System notifications
-  SYSTEM_UPDATE     = "system-update",
-  MAINTENANCE       = "maintenance",
-  ACHIEVEMENT       = "achievement",
-  
-  // General
-  INFO              = "info",
-  WARNING           = "warning",
-  ERROR             = "error"
+export const enum NotificationType {
+  INFO = "info",
+  WARNING = "warning",
+  FRIEND_REQUEST = "friendRequest",
+  FRIEND_REQUEST_ACCEPTED = "friendRequestAccepted",
+  GAME_INVITE = "gameInvite",
+  TOURNAMENT_INVITE = "tournamentInvite",
+  TOURNAMENT_CANCELLED = "tournamentCancelled",
+  COIN_GIFT_RECEIVED = "coinGiftReceived",
+  ACHIEVEMENT_UNLOCKED = "achievementUnlocked",
+  SPECTATE_INVITE = "spectateInvite",
+  PREDICTION_WON = "predictionWon",
 }
 
 export enum NotificationPriority {
@@ -66,22 +40,41 @@ export async function processFriendNotification(data: NotificationData)
   console.log("Processing friend notification:", data);
   if(data.type === NotificationType.FRIEND_REQUEST)
   {
-    console.log("Processing FRIEND_REQUEST notification");
     const notification = await prisma.notification.create({
       data: {
         userId: data.targetId.toString(),
-        type: 'FRIEND',
+        type: 'FRIEND_REQUEST',
       }});
   }
   
 
+  // const setting = await prisma.user.findUnique({
+  //       where: { userId: data.targetId.toString() },
+  //       select: { notificationSettings: { select: {friendRequests: true }} }
+  //       });
+
+  // if(!setting || !setting.notificationSettings) return;
+  // if(!setting.notificationSettings.friendRequests) return;
+
+  // await sendDataToQueue({
+  //   targetId: data.targetId.toString(),
+  //   type: data.type,
+  //   timestamp: new Date().toISOString()
+  // }, 'broadcastData');
+
+}
+
+
+
+export async function processGameNotification(data: NotificationData)
+{
   const setting = await prisma.user.findUnique({
         where: { userId: data.targetId.toString() },
-        select: { notificationSettings: { select: {friendRequests: true }} }
+        select: { notificationSettings: { select: {gameInvites : true} } }
         });
 
   if(!setting || !setting.notificationSettings) return;
-  if(!setting.notificationSettings.friendRequests) return;
+  if(!setting.notificationSettings.gameInvites) return;
 
   await sendDataToQueue({
     targetId: data.targetId.toString(),
@@ -89,28 +82,57 @@ export async function processFriendNotification(data: NotificationData)
     timestamp: new Date().toISOString()
   }, 'broadcastData');
 
-  console.log(`Friend notification processed for user ${data.targetId}: ${data.type}`);
+
 }
 
-export async function processGameNotification(data: NotificationData)
-{
-  console.log("Processing game notification:", data.type);
-}
 
 export async function processChatNotification(data: NotificationData) 
 {
-  console.log("Processing chat notification:", data.type);
+  const setting = await prisma.user.findUnique({
+        where: { userId: data.targetId.toString() },
+        select: { notificationSettings: { select: {chatMessages : true} } }
+        });
+  if(!setting || !setting.notificationSettings) return;
+  if(!setting.notificationSettings.chatMessages) return;
+  
+  await sendDataToQueue({
+    targetId: data.targetId.toString(),
+    type: data.type,
+    timestamp: new Date().toISOString()
+  }, 'broadcastData');
+
 }
 
 export async function processTournamentNotification(data: NotificationData) 
 {
-  console.log("Processing tournament notification:", data.type);
+  const setting = await prisma.user.findUnique({
+        where: { userId: data.targetId.toString() },
+        select: { notificationSettings: { select: {tournamentUpdates : true} } }
+        });
+  if(!setting || !setting.notificationSettings) return;
+  if(!setting.notificationSettings.tournamentUpdates) return;
+  
+  await sendDataToQueue({
+    targetId: data.targetId.toString(),
+    type: data.type,
+    timestamp: new Date().toISOString()
+  }, 'broadcastData');
+
 }
 
-export async function processSystemNotification(data: NotificationData) 
-{
- console.log("Processing system notification:", data.type);
-}
+
+  // | "info"
+  // | "warning"
+  // | "friendRequest"
+  // | "friendRequestAccepted"
+  // | "gameInvite"
+  // | "tournamentInvite"
+  // | "tournamentCancelled"
+  // | "CoinGiftReceived" // a coin gift has been received
+  // | "AchievementUnlocked" // an achievement has been unlocked
+  // | "coinGiftReceived"
+  // | "spectateInvite" // a friend invites you to spectate a game
+  // | "predictionWon"; // a prediction you made has been won
 
 
 export async function processNotificationFromRabbitMQ(msg: any) 
@@ -126,44 +148,26 @@ export async function processNotificationFromRabbitMQ(msg: any)
     switch (data.type) {
       // Game notifications
       case NotificationType.GAME_INVITE:
-      case NotificationType.GAME_START:
-      case NotificationType.GAME_END:
-      case NotificationType.GAME_WIN:
-      case NotificationType.GAME_LOSE:
         await processGameNotification(data);
         break;
         
       // Friend notifications
       case NotificationType.FRIEND_REQUEST:
-      case NotificationType.FRIEND_ACCEPTED:
-      case NotificationType.FRIEND_ONLINE:
-      case NotificationType.FRIEND_OFFLINE:
+      case NotificationType.FRIEND_REQUEST_ACCEPTED:
         await processFriendNotification(data);
         break;
         
       // Chat notifications
-      case NotificationType.NEW_MESSAGE:
-      case NotificationType.NEW_GROUP_MESSAGE:
-      case NotificationType.MENTION:
-        await processChatNotification(data);
-        break;
+      // case NotificationType.NEW_MESSAGE:
+      // case NotificationType.NEW_GROUP_MESSAGE:
+      // case NotificationType.MENTION:
+      //   await processChatNotification(data);
+      //   break;
         
       // Tournament notifications
-      case NotificationType.TOURNAMENT_START:
-      case NotificationType.TOURNAMENT_END:
-      case NotificationType.TOURNAMENT_WIN:
+
       case NotificationType.TOURNAMENT_INVITE:
         await processTournamentNotification(data);
-        break;
-        
-      // System notifications
-      case NotificationType.SYSTEM_UPDATE:
-      case NotificationType.MAINTENANCE:
-      case NotificationType.ACHIEVEMENT:
-      case NotificationType.INFO:
-      case NotificationType.WARNING:
-      case NotificationType.ERROR:
-        await processSystemNotification(data);
         break;
         
       default:

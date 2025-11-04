@@ -14,6 +14,7 @@ export type NotificationType =
   | "spectateInvite" // a friend invites you to spectate a game
   | "predictionWon"; // a prediction you made has been won
 
+
 export interface NotificationEl {
   id: string;
   type: NotificationType;
