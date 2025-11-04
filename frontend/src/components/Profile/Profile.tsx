@@ -142,7 +142,7 @@ const StyledProfileModal = styled("div")`
         color: rgba(255, 255, 255, 0.7);
         font-size: 1rem;
         cursor: pointer;
-        background-color: #505e7f;
+        background-color: var(--bg_color);
         border: none;
         outline: none;
         transition: 0.2s ease-in-out;
@@ -154,7 +154,7 @@ const StyledProfileModal = styled("div")`
           transition: 0.2s ease-in-out;
         }
         &:hover {
-          background-color: #7086bb;
+          background-color: rgba(0, 0, 0, 0.7);
           color: white;
           svg {
             fill: white;
@@ -166,12 +166,8 @@ const StyledProfileModal = styled("div")`
         padding: 8px 15px;
         font-weight: 600;
         font-size: 1.1rem;
-        background-color: #505e7f;
         gap: 10px;
         clip-path: path("M 0,0 L 200,0 L 200,200 L 15,45 L 0,35 L 0,0 Z");
-        &:hover {
-          background-color: #7086bb;
-        }
       }
     }
     .BlockIcon {
