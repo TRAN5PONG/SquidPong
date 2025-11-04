@@ -33,9 +33,16 @@ export class Ball {
           this.mesh = mesh;
         }
       });
-      
+
       // ✅ Add Trail
-      const trail = new TrailMesh("ballTrail", this.mesh, this.scene, 0.03, 10, true);
+      const trail = new TrailMesh(
+        "ballTrail",
+        this.mesh,
+        this.scene,
+        0.03,
+        10,
+        true,
+      );
       const trailMat = new StandardMaterial("trailMat", this.scene);
       trailMat.emissiveColor = new Color3(1, 1, 1); // white glow
       trail.material = trailMat;
@@ -44,6 +51,8 @@ export class Ball {
       glow.intensity = 0;
 
       this.meshGroup = group;
+
+      this.mesh.scaling.scaleInPlace(1.8);
     } catch (error) {
       console.error("Error loading ball model:", error);
     }
@@ -62,3 +71,4 @@ export class Ball {
     this.setMeshPosition(Vector3.Zero());
   }
 }
+

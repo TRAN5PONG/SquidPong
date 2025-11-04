@@ -3,19 +3,19 @@ type Size3D = { width: number; height: number; length: number };
 
 export const constants = {
   TABLE: {
-    position: { x: 0, y: 1.5176739692687988, z: 0 } as Vector3,
+    position: { x: 0, y: 2.2, z: 0 } as Vector3,
     size: {
-      width: 3.0399999618530273,
-      height: 0.06905269622802734,
-      length: 5.480000019073486,
+      width: 4.53740119934082,
+      height: 0.10306572914123535,
+      length: 8.179262161254883,
     } as Size3D,
   },
   AIR_DENSITY: 1.225, // kg/m^3
   BALL: {
     position: { x: 0, y: 4, z: 2 } as Vector3,
-    radius: 0.12 / 2,
+    radius: 0.2 / 2,
 
-    diameter: 0.12
+    diameter: 0.2,
   },
   FLOOR: {
     position: { x: 0, y: 0.1, z: 0 } as Vector3,
@@ -40,5 +40,6 @@ export const constants = {
     x: 0,
     y: -9.81,
     z: 0,
-  } as Vector3
+  } as Vector3,
 };
+

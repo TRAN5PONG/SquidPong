@@ -27,7 +27,7 @@ export function generateInviteCode(): string {
 // Create an invitation
 export async function createInvitation(
   request: FastifyRequest<{ Body: CreateInvitationBody }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const {
     receiverId,
@@ -165,7 +165,7 @@ export async function createInvitation(
                 invitation: invitation,
               },
             },
-            "broadcastData"
+            "broadcastData",
           );
         } catch (error) {
           console.error("Error sending invitation notification:", error);
@@ -185,7 +185,7 @@ export async function createInvitation(
 // Get an invitation by ID
 export async function getInvitation(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { id } = request.params;
 
@@ -210,7 +210,7 @@ export async function getInvitation(
 // Get an invitation by code
 export async function getInvitationByCode(
   request: FastifyRequest<{ Params: { code: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { code } = request.params;
 
@@ -236,13 +236,13 @@ export async function getInvitationByCode(
 // Accept an invitation
 export async function AcceptInvitation(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { id } = request.params;
 
   // validate user data
   const userId = Number(request.headers["x-user-id"]);
-
+  console.log("id : ", userId);
   const res = await fetch(`http://user:4002/api/user/id/${userId}`);
 
   if (!res.ok) return reply.status(404).send({ error: "User not found" });
@@ -313,7 +313,7 @@ export async function AcceptInvitation(
             match,
           },
         },
-        "broadcastData"
+        "broadcastData",
       );
     } catch (err) {
       console.error("Error sending match notification:", err);
@@ -322,7 +322,7 @@ export async function AcceptInvitation(
     return reply.status(200).send({
       message: "Invitation accepted and match created successfully",
       data: {
-        invitation : acceptedInvitation,
+        invitation: acceptedInvitation,
         match,
       },
     });
@@ -337,7 +337,7 @@ export async function AcceptInvitation(
 // Decline an invitation by ID
 export async function DeclineInvitation(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { id } = request.params;
 
@@ -396,7 +396,7 @@ export async function DeclineInvitation(
             invitation: declinedInvitation,
           },
         },
-        "broadcastData"
+        "broadcastData",
       );
     } catch (error) {
       console.error("Error sending decline notification:", error);
@@ -416,7 +416,7 @@ export async function DeclineInvitation(
 // Cancel an invitation by ID (sender only)
 export async function CancelInvitation(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { id } = request.params;
 
@@ -467,7 +467,7 @@ export async function CancelInvitation(
               invitation: cancelledInvitation,
             },
           },
-          "broadcastData"
+          "broadcastData",
         );
       } catch (error) {
         console.error("Error sending cancellation notification:", error);
@@ -486,7 +486,7 @@ export async function CancelInvitation(
 // List all invitations for a user
 export async function listInvitations(
   request: FastifyRequest<{ Params: { userId: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { userId } = request.params;
 
@@ -518,7 +518,7 @@ export async function listInvitations(
 // Delete an invitation by ID (admin only)
 export async function deleteInvitation(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { id } = request.params;
 
