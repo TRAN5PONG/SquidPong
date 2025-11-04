@@ -18,23 +18,17 @@ enum NotificationStatus {
 
 
 enum NotificationType {
-  INFO         
-  SUCCESS      
-  ERROR        
-  FRIEND       
-  TOURNAMENT   
-  CHAT         
-}
-
-enum NotificationTitle {
-  FRIEND_REQUEST        
-  FRIEND_ACCEPTED       
-  CHAT_MESSAGE          
-  TOURNAMENT_REGISTERED 
-  TOURNAMENT_STARTED    
-  TOURNAMENT_FINISHED   
-  MATCH_STARTED         
-  MATCH_FINISHED        
+  INFO
+  WARNING
+  FRIEND_REQUEST
+  FRIEND_REQUEST_ACCEPTED
+  GAME_INVITE
+  TOURNAMENT_INVITE
+  TOURNAMENT_CANCELLED
+  COIN_GIFT_RECEIVED
+  ACHIEVEMENT_UNLOCKED
+  SPECTATE_INVITE
+  PREDICTION_WON
 }
 
 
@@ -81,7 +75,6 @@ model Notification {
   isRead    Boolean            @default(false)
 
   user      User         @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

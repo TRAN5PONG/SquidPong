@@ -85,6 +85,43 @@ export async function updateNotificationHandler(req: FastifyRequest, res: Fastif
 }
 
 
+
+
+// export interface NotificationEl {
+//   id: string;
+//   type: NotificationType;
+//   by: User; // User who triggered the notification
+//   createdAt: Date;
+//   isRead: boolean;
+
+//   payload?: {
+//     info?: string;
+//     warning?: string;
+
+//     friendRequest?: {
+//       id: string;
+//       status: "pending" | "accepted" | "declined";
+// 	  message?: string; // Optional message with the friend request
+//     };
+
+// 	gameId?: string;
+
+//     tournamentName?: string;
+//     tournamentId?: string;
+
+// 	achievementId?: string;
+// 	achievementName?: string;
+
+//     coinAmount?: number;
+//     spectateGameId?: string;
+
+//     predictionId?: string;
+// 	winningsAmount?: number; // Amount won from the prediction
+//   };
+// }
+
+
+
 export async function getNotificationHistoryHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const headers = req.headers as any;
