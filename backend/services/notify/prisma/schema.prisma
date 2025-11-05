@@ -45,7 +45,8 @@ model User {
 
   isDeleted   Boolean  @default(false)
 
-  notifications Notification[]
+  notificationsReceived Notification[] @relation("NotificationTarget")
+  
   notificationSettings   NotificationSettings?
   createdAt   DateTime @default(now())
 }
@@ -66,15 +67,70 @@ model NotificationSettings {
 
 
 
+model FriendRequest {
+  id          String   @id @default(cuid())
+  requestId   String   // The actual friend request ID
+  status      String   // "pending" | "accepted" | "declined"
+  message     String?  // Optional message with the friend request
+
+  payload     Payload  @relation(fields: [payloadId], references: [id], onDelete: Cascade)
+  payloadId   Int      @unique
+
+  createdAt   DateTime @default(now())
+}
+
+
+
+model Payload {
+  id                Int       @id @default(autoincrement())
+
+  // General messages
+  info              String?
+  warning           String?
+
+  // Friend request relation
+  friendRequest     FriendRequest?
+
+  // Game related
+  gameId            String?
+
+  // Tournament related
+  tournamentName    String?
+  tournamentId      String?
+
+  // Achievement related
+  achievementId     String?
+  achievementName   String?
+
+  // Coin related
+  coinAmount        Int?
+
+  // Spectate related
+  spectateGameId    String?
+
+  // Prediction related
+  predictionId      String?
+  winningsAmount    Int?
+
+  notificationId    Int          @unique
+  notification      Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime     @default(now())
+}
+
+
+
 model Notification {
   id        Int      @id @default(autoincrement())
 
-  userId    String       
+  targetId    String       
+  by      User    @relation("NotificationTarget", fields: [targetId], references: [userId], onDelete: Cascade)
 
   type      NotificationType   @default(INFO)
   isRead    Boolean            @default(false)
-
-  user      User         @relation(fields: [userId], references: [userId], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  payload   Payload?
+
   updatedAt DateTime @updatedAt
 }

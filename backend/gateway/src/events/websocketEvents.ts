@@ -155,8 +155,6 @@ async function onClientDisconnect(ws: any)
 
 
 
-
-
 export function handleHttpUpgrade(req: any, socket: any, head: any) 
 {
   const includesURL = ['/events'];

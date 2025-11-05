@@ -17,7 +17,7 @@ export async function initRabbitMQ()
     connection = await amqp.connect(rabbitmqUrl);
     channel = await connection.createChannel();
 
-    // await channel.assertQueue("broadcastData");
+    await channel.assertQueue("broadcastData");
 
     console.log("gateway connected to RabbitMQ");
   } 
