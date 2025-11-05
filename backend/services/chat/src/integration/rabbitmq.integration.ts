@@ -14,7 +14,6 @@ export async function initRabbitMQ()
     channel = await connection.createChannel();
 
     await channel.assertQueue("chat");
-    await channel.assertQueue("broadcastData");
 
     console.log("Chat service connected to RabbitMQ");
   } 
