@@ -5,88 +5,6 @@ import { ApiResponse } from '../utils/errorHandler';
 
 
 
-export async function createNotificationHandler(req: FastifyRequest, res: FastifyReply) 
-{
-  const respond: ApiResponse<any> = { success: true, message: 'Notification created successfully' };
-
-  try 
-  {
-    // Check for secret token for inter-service communication
-    const secretToken = req.headers['x-secret-token'];
-    const expectedToken = process.env.SECRET_TOKEN || 'SquidPong_InterService_9f8e7d6c5b4a3928f6e5d4c3b2a19876543210abcdef';
-    
-    if (secretToken !== expectedToken) {
-      throw new Error('Unauthorized: Invalid secret token');
-    }
-
-    const body = req.body as any;
-    const { userId, message, type } = body;
-
-    if (!userId || !message) {
-      throw new Error('userId and message are required');
-    }
-
-    const notification = await prisma.notification.create({
-      data: {
-        userId: String(userId),
-        type: type || 'INFO',
-        isRead: false
-      }
-    });
-
-    respond.data = notification;
-    console.log(`Notification created for user ${userId}: ${message}`);
-  } 
-  catch (error) 
-  {
-    respond.success = false;
-    if (error instanceof Error) respond.message = error.message;
-    return res.status(400).send(respond);
-  }
-
-  return res.send(respond);
-}
-
-
-export async function updateNotificationHandler(req: FastifyRequest, res: FastifyReply)
-{
-  const respond: ApiResponse<null> = { success: true, message: 'Notification updated successfully' };
-  
-  const headers = req.headers as any;
-  const userId = String(headers['x-user-id']);
-  const { notifyId } = req.params as { notifyId: string };
-
-  try 
-  {
-    const body = req.body as any;
-    const { message, type, isRead } = body;
-
-    const updateData: any = {};
-    if (message !== undefined) updateData.message = message;
-    if (type !== undefined) updateData.type = type;
-    if (isRead !== undefined) updateData.isRead = isRead;
-
-    await prisma.notification.update({
-      where: { 
-        id: Number(notifyId),
-        userId: userId 
-      },
-      data: updateData
-    });
-  } 
-  catch (error) 
-  {
-    respond.success = false;
-    if (error instanceof Error) respond.message = error.message;
-    return res.status(400).send(respond);
-  }
-
-  return res.send(respond);
-}
-
-
-
-
 // export interface NotificationEl {
 //   id: string;
 //   type: NotificationType;
@@ -131,19 +49,8 @@ export async function getNotificationHistoryHandler(req: FastifyRequest, res: Fa
   try 
   {
     const notifications = await prisma.notification.findMany({
-      where: { userId },
-      include: {
-        user: {
-          select: {
-            userId: true,
-            username: true,
-            firstName: true,
-            lastName: true,
-            avatar: true,
-            isVerified: true
-          }
-        }
-      },
+      where: { targetId : userId },
+      include: { by: true , payload: { include: { friendRequest: true }}},
       orderBy: { createdAt: 'desc' },
     });
     respond.data = notifications;
@@ -210,7 +117,7 @@ export async function deleteAllNotificationsHandler(req: FastifyRequest, res: Fa
 
   try 
   {
-    await prisma.notification.deleteMany({ where: { userId } });
+    await prisma.notification.deleteMany({ where: { targetId : userId } });
   } 
   catch (error) 
   {

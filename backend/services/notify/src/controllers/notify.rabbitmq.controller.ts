@@ -23,50 +23,98 @@ export enum NotificationPriority {
   URGENT = "URGENT"
 }
 
-interface NotificationData {
-  type: NotificationType;
-  targetId: string;
-  title?: string;
-  message?: string;
-  priority?: NotificationPriority;
-  metadata?: any;
-  sendRealTime?: boolean;
-}
+// interface any {
+//   type: NotificationType;
+//   targetId: string;
+//   payload?: any;
+//   createdAt?: string;
+// }
 
 
 
-export async function processFriendNotification(data: NotificationData) 
+export async function processFriendNotification(data: any) 
 {
-  console.log("Processing friend notification:", data);
+
+  let notification;
   if(data.type === NotificationType.FRIEND_REQUEST)
   {
-    const notification = await prisma.notification.create({
+    notification = await prisma.notification.create({
       data: {
-        userId: data.targetId.toString(),
+        targetId: data.targetId.toString(),
         type: 'FRIEND_REQUEST',
-      }});
+        payload: {
+          create: {
+            friendRequest: {
+              create: {
+                requestId: data.fromId.toString(),
+                status: "pending",
+                message: data.payload?.message,
+              },
+            },
+          },
+        },
+      },
+      include: { payload: { include: { friendRequest: true } }}
+    });
   }
-  
+  else if(data.type === NotificationType.FRIEND_REQUEST_ACCEPTED)
+  {
+    const notification = await prisma.notification.findFirst({
+      where: {
+        targetId: data.fromId.toString(),
+        type: 'FRIEND_REQUEST',
+        payload: {
+          friendRequest: {
+            requestId: data.targetId.toString(),
+            status: "pending",
+          },
+        },
+      },
+      include: { payload: { include: { friendRequest: true}}},
+    });
 
-  // const setting = await prisma.user.findUnique({
-  //       where: { userId: data.targetId.toString() },
-  //       select: { notificationSettings: { select: {friendRequests: true }} }
-  //       });
 
-  // if(!setting || !setting.notificationSettings) return;
-  // if(!setting.notificationSettings.friendRequests) return;
 
-  // await sendDataToQueue({
-  //   targetId: data.targetId.toString(),
-  //   type: data.type,
-  //   timestamp: new Date().toISOString()
-  // }, 'broadcastData');
+    if (notification?.payload?.friendRequest) 
+      {
+      await prisma.friendRequest.update({
+        where: { id: notification.payload.friendRequest.id},
+        data: { status: "accepted"},
+      });
+
+      // Update the notification type
+      await prisma.notification.update({
+        where: {id: notification.id},
+        data: { type: 'FRIEND_REQUEST_ACCEPTED'},
+      });
+
+      notification.type = 'FRIEND_REQUEST_ACCEPTED';
+      notification.payload.friendRequest.status = "accepted";
+
+    }
+
+    console.log("Friend request accepted notification processed:", notification);
+  }
+
+
+  const setting = await prisma.user.findUnique({
+        where: { userId: data.targetId.toString() },
+        select: { notificationSettings: { select: {friendRequests: true }} }
+        });
+
+  if(!setting || !setting.notificationSettings) return;
+  if(!setting.notificationSettings.friendRequests) return;
+
+  await sendDataToQueue({
+    targetId: data.targetId.toString(),
+    data : notification
+  }, 'broadcastData');
 
 }
 
 
 
-export async function processGameNotification(data: NotificationData)
+export async function processGameNotification(data: any)
 {
   const setting = await prisma.user.findUnique({
         where: { userId: data.targetId.toString() },
@@ -86,7 +134,7 @@ export async function processGameNotification(data: NotificationData)
 }
 
 
-export async function processChatNotification(data: NotificationData) 
+export async function processChatNotification(data: any) 
 {
   const setting = await prisma.user.findUnique({
         where: { userId: data.targetId.toString() },
@@ -103,7 +151,8 @@ export async function processChatNotification(data: NotificationData)
 
 }
 
-export async function processTournamentNotification(data: NotificationData) 
+
+export async function processTournamentNotification(data: any) 
 {
   const setting = await prisma.user.findUnique({
         where: { userId: data.targetId.toString() },
@@ -139,7 +188,7 @@ export async function processNotificationFromRabbitMQ(msg: any)
 {
   try 
   {
-    const data = JSON.parse(msg.content.toString()) as NotificationData;
+    const data = JSON.parse(msg.content.toString()) as any;
     
     if (!data || !data.type)
       throw new Error("Invalid notification data received from RabbitMQ");

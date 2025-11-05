@@ -14,10 +14,6 @@ export async function initRabbitMQ() {
     connection = await amqp.connect(rabbitmqUrl);
     channel = await connection.createChannel();
 
-    // Assert queues that this service will use
-    await channel.assertQueue("game");
-    // await channel.assertQueue("broadcastData", { durable: true }); // Gateway queue
-
     // Add connection error handling
     connection.on("error", (err: any) => {
       console.error("RabbitMQ connection error:", err);

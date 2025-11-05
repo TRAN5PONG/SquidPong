@@ -108,7 +108,7 @@ export async function sendFriendRequestHandler(req: FastifyRequest, res: Fastify
     
     await prisma.friendship.create({ data: { senderId, receiverId, status: PENDING }});
     
-    const dataToSend = { type: 'friendRequest',  targetId : receiverId };
+    const dataToSend = { type: 'friendRequest',  targetId : receiverId , fromId : senderId };
     await sendDataToQueue(dataToSend , 'eventhub');
     
   }
@@ -141,7 +141,7 @@ export async function acceptFriendRequestHandler(req: FastifyRequest, res: Fasti
       where: {senderId_receiverId: { senderId, receiverId }},
       data: { status: ACCEPTED },
     });
-    const dataToSend = { type: 'FRIEND_REQUEST',  targetId : senderId };
+    const dataToSend = { type: 'friendRequestAccepted',  targetId : senderId , fromId : receiverId};
     await sendDataToQueue(dataToSend , 'eventhub');
     
   } 
@@ -151,7 +151,6 @@ export async function acceptFriendRequestHandler(req: FastifyRequest, res: Fasti
 
   return res.send(respond);
 }
-
 
 
 // ----------------- REJECT FRIEND REQUEST -----------------
