@@ -50,7 +50,7 @@ export class BasePaddle {
       this.mesh = group;
 
       // custom scaling (size adjustment)
-      // this.mesh.scaling.scaleInPlace(1.2);
+      this.mesh.scaling.scaleInPlace(1.2);
     } catch (err) {
       console.error("Error loading paddle model:", err);
     }

@@ -15,14 +15,15 @@ interface NetworkEvents {
   "game:pause-tick": (data: { by: string; remainingPauseTime: number }) => void;
   "game:ended": (data: { winnerId: string }) => void;
   "game:started": (data: { startTime: number }) => void;
-  gameStartAt: (startAt: number) => void;
   "opponent:paddle": (data: any) => void;
-  BallHitMessage: (data: BallHitMessage) => void;
+  "Ball:HitMessage": (data: BallHitMessage) => void;
+  "game:StartAt": (startAt: number) => void;
+  "Ball:Serve": (data: BallHitMessage) => void;
 }
 
 export class Network {
   private client: Client;
-  private room: Room<MatchState> | null = null;
+  public room: Room<MatchState> | null = null;
   private roomIsReady: boolean = false;
   private match: Match | null = null;
   private readonly serverUrl: string;
@@ -119,8 +120,8 @@ export class Network {
         this.room?.state.phase === "countdown" ? countdown : null;
       this.emit("countdown:updated", this.countdown);
     });
-    $(this.room.state as any).listen("gameStartAt", (startAt: number) => {
-      this.emit("gameStartAt", startAt);
+    $(this.room.state as any).listen("game:StartAt", (startAt: number) => {
+      this.emit("game:StartAt", startAt);
     });
 
     this.room.onMessage("game:paused", (data) => {
@@ -151,8 +152,12 @@ export class Network {
       this.emit("opponent:paddle", data);
       // console.log("Opponent Paddle Data:", data);
     });
-    this.room.onMessage("BallHitMessage", (data: BallHitMessage) => {
-      this.emit("BallHitMessage", data);
+    this.room.onMessage("Ball:HitMessage", (data: BallHitMessage) => {
+      this.emit("Ball:HitMessage", data);
+    });
+
+    this.room.onMessage("Ball:Serve", (data: BallHitMessage) => {
+      this.emit("Ball:Serve", data);
     });
   }
 
@@ -172,6 +177,17 @@ export class Network {
   getPlayers() {
     return this.players;
   }
+
+  // debugging
+  getPlayerIds(): string[] {
+    if (!this.room || !this.room.state || !this.room.state.players) {
+      console.warn("⚠️ Room or state not initialized yet");
+      return [];
+    }
+
+    return Array.from(this.room.state.players.keys());
+  }
+
   getSpectators() {
     return this.spectators;
   }

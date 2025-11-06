@@ -121,7 +121,7 @@ export class Game {
         this.scene,
         "LEFT",
         this.userId === this.guestId,
-        this.userId === this.hostId ? this.physics.paddle : null,
+        this.userId === this.guestId ? this.physics.paddle : null,
         {
           color: paddleColors[1],
         },

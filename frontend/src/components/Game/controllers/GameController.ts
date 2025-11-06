@@ -9,6 +9,9 @@ import { BallHitMessage, PaddleState } from "@/types/network";
 import { Scene } from "@babylonjs/core";
 import { PointerEventTypes } from "@babylonjs/core";
 
+// debug paddle
+import { DebugMeshManager } from "../../Game/DebugMeshManager.ts";
+
 export enum GameState {
   WAITING_FOR_SERVE,
   IN_PLAY,
@@ -33,7 +36,10 @@ export class GameController {
 
   private bufferOppPaddleStates: Array<{ time: number; data: PaddleState }> =
     [];
-  private readonly MAX_SIZE: number = 20;
+  private readonly MAX_SIZE: number = 6;
+
+  // Debug
+  private debugMeshes: DebugMeshManager;
   constructor(
     localPaddle: Paddle,
     opponentPaddle: Paddle,
@@ -51,16 +57,19 @@ export class GameController {
     this.setCallbacks();
     this.scene = scene;
 
+    // Debug
+    this.debugMeshes = new DebugMeshManager(this.scene);
+    this.debugMeshes.createMeshes();
+
     // For now, right paddle always serves first just for testing
-    this.MyTurnToServe = this.localPaddle.side === "RIGHT" ? true : false;
+    this.MyTurnToServe = this.localPaddle.side === "LEFT" ? true : false;
 
     // Listen for opponent paddle updates
     this.net.on("opponent:paddle", (data) => {
       this.onOpponentPaddleState(data);
     });
     // Listen for ball hit updates
-    this.net.on("BallHitMessage", (data: BallHitMessage) => {
-      this.gameState = GameState.IN_PLAY;
+    this.net.on("Ball:HitMessage", (data: BallHitMessage) => {
       const syncInfo = this.rollbackManager.analyzeSync(
         data.tick,
         this.currentTick,
@@ -74,7 +83,23 @@ export class GameController {
         data.applySpin,
       );
     });
+    // Listen for ball serve updates
+    this.net.on("Ball:Serve", (data: BallHitMessage) => {
+      this.gameState = GameState.IN_PLAY;
+      this.physics.setBallFrozen(false);
+      const syncInfo = this.rollbackManager.analyzeSync(
+        data.tick,
+        this.currentTick,
+      );
 
+      this.rollbackManager.applyNetworkState(
+        syncInfo,
+        data.position,
+        data.velocity,
+        data.spin,
+        data.applySpin,
+      );
+    });
     // Listen for mouse click to serve
     this.scene.onPointerObservable.add((pointerInfo) => {
       if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
@@ -97,6 +122,11 @@ export class GameController {
     if (!this.localPaddle) return;
 
     this.localPaddle.update();
+
+    // dubeg
+    const position = this.localPaddle.getMeshPosition();
+    const rotation = this.localPaddle.getMeshRotation();
+    // this.debugMeshes.updatePaddle(position, rotation);
   }
 
   // ================= Visual interpolation =================
@@ -128,12 +158,15 @@ export class GameController {
       );
       this.ball.setMeshPosition(renderPos);
     }
+
+    // debug
+    const ballPos = this.ball.getMeshPosition();
+    this.debugMeshes.updateBall(ballPos);
   }
 
   public getInterpolated(time: number): PaddleState | null {
     if (this.bufferOppPaddleStates.length < 2) return null;
 
-    // find two states that bracket the target time
     for (let i = 0; i < this.bufferOppPaddleStates.length - 1; i++) {
       const a = this.bufferOppPaddleStates[i];
       const b = this.bufferOppPaddleStates[i + 1];
@@ -268,6 +301,7 @@ export class GameController {
         paddle.linvel().y,
         paddle.linvel().z,
       );
+
       const paddleSpeed = paddleVelocity.length();
 
       if (
@@ -287,17 +321,20 @@ export class GameController {
       // this.physics!.setBallSpin(0, spinY, 0);
       // this.physics!.setApplySpin(spinCalc.applySpin);
 
-      const targetVel = this.physics!.calculateTargetZYVelocity(
+      const ballVel = this.physics!.calculateTargetZYVelocity(
         ball.translation(),
         paddle.translation(),
       );
 
       const currentVel = ball.linvel();
       const mass = ball.mass();
+
+      // is For applying impulse to change ball velocity on hit
+      // Impulse = mass * change in velocity (ivnitial - final)
       const impulse = new Vector3(
-        (targetVel.x - currentVel.x) * mass,
-        (targetVel.y - currentVel.y) * mass,
-        (targetVel.z - currentVel.z) * mass,
+        (ballVel.x - currentVel.x) * mass,
+        (ballVel.y - currentVel.y) * mass,
+        (ballVel.z - currentVel.z) * mass,
       );
       this.physics!.ball.body.applyImpulse(impulse, true);
 
@@ -317,7 +354,7 @@ export class GameController {
         applySpin: this.physics!.getApplySpin(),
         tick: this.currentTick,
       };
-      this.net.sendMessage("ball:hit", hitMsg);
+      this.net.sendMessage("Ball:HitMessage", hitMsg);
     };
     this.physics.onBallFloorCollision = (ball, floor) => {
       // this.resetGame();
@@ -390,7 +427,7 @@ export class GameController {
       applySpin: false,
       tick: this.currentTick,
     };
-    this.net.sendMessage("ball:hit", serveMsg);
+    this.net.sendMessage("Ball:Serve", serveMsg);
   }
 
   // ==================== Main update methods =================
@@ -405,6 +442,12 @@ export class GameController {
     // if (this.serveState === GameState.IN_PLAY)
     this.rollbackManager?.recordState(this.currentTick);
     this.incrementTick();
+
+    // console.log(`Current Tick: ${this.currentTick}`);
+    // const timeMin = Math.floor(this.currentTick / 60);
+    // const timeSec = this.currentTick % 60;
+    // console.log(`Time Elapsed: ${timeMin}m ${timeSec}s`);
+
     this.startPaddleSync();
   }
 }
