@@ -48,7 +48,6 @@ export async function processFriendNotification(data: any)
               create: {
                 requestId: data.fromId.toString(),
                 status: "pending",
-                message: data.payload?.message,
               },
             },
           },
@@ -59,7 +58,7 @@ export async function processFriendNotification(data: any)
   }
   else if(data.type === NotificationType.FRIEND_REQUEST_ACCEPTED)
   {
-    const notification = await prisma.notification.findFirst({
+    const existNotification = await prisma.notification.findFirst({
       where: {
         targetId: data.fromId.toString(),
         type: 'FRIEND_REQUEST',
@@ -75,22 +74,32 @@ export async function processFriendNotification(data: any)
 
 
 
-    if (notification?.payload?.friendRequest) 
+    if (existNotification?.payload?.friendRequest) 
       {
       await prisma.friendRequest.update({
-        where: { id: notification.payload.friendRequest.id},
+        where: { id: existNotification.payload.friendRequest.id},
         data: { status: "accepted"},
       });
 
-      // Update the notification type
-      await prisma.notification.update({
-        where: {id: notification.id},
-        data: { type: 'FRIEND_REQUEST_ACCEPTED'},
-      });
 
-      notification.type = 'FRIEND_REQUEST_ACCEPTED';
-      notification.payload.friendRequest.status = "accepted";
-
+    notification = await prisma.notification.create({
+      data: {
+        targetId: data.targetId.toString(),
+        type: 'FRIEND_REQUEST_ACCEPTED',
+        payload: {
+          create: {
+            friendRequest: {
+              create: {
+                requestId: data.fromId.toString(),
+                status: "accepted",
+              },
+            },
+          },
+        },
+      },
+      include: { payload: { include: { friendRequest: true } }}
+    });
+    
     }
 
     console.log("Friend request accepted notification processed:", notification);

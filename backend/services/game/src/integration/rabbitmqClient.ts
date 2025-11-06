@@ -14,6 +14,7 @@ export async function initRabbitMQ() {
     connection = await amqp.connect(rabbitmqUrl);
     channel = await connection.createChannel();
 
+    await channel.assertQueue("game");
     // Add connection error handling
     connection.on("error", (err: any) => {
       console.error("RabbitMQ connection error:", err);
