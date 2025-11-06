@@ -6,13 +6,12 @@ import {
   Texture,
   AbstractMesh,
   Plane,
-  Scalar
+  Scalar,
 } from "@babylonjs/core";
 import { Vec3 } from "@/types/network";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { PaddleColor, PaddleTexture } from "@/types/game/paddle";
 import { Paddle as PaddlePhy } from "@/components/Game/physics/Paddle";
-
 
 type PaddleSide = "LEFT" | "RIGHT";
 
@@ -94,7 +93,7 @@ export class Paddle extends BasePaddle {
   private setupInitialPosition() {
     if (!this.mesh) return;
     const zPos = this.side === "LEFT" ? -2.8 : 2.8;
-    this.mesh.position.set(0, 2.6, zPos);
+    this.mesh.position.set(0, 2.8, zPos);
     this.mesh.rotation.set(0, 0, 0);
   }
 
@@ -106,35 +105,55 @@ export class Paddle extends BasePaddle {
       const pointerY = this.scene.pointerY;
       if (pointerX === undefined || pointerY === undefined) return;
 
-      const ray = this.scene.createPickingRay(pointerX, pointerY, null, this.scene.activeCamera);
+      const ray = this.scene.createPickingRay(
+        pointerX,
+        pointerY,
+        null,
+        this.scene.activeCamera,
+      );
       const distance = ray.intersectsPlane(this.paddlePlane);
       if (distance === null) return;
 
       const boundaries = this.getBoundaries();
       const point = ray.origin.add(ray.direction.scale(distance));
 
-      this.clampedX = Math.max(boundaries.x.min, Math.min(boundaries.x.max, point.x));
-      this.clampedZ = Math.max(boundaries.z.min, Math.min(boundaries.z.max, point.z));
-
+      this.clampedX = Math.max(
+        boundaries.x.min,
+        Math.min(boundaries.x.max, point.x),
+      );
+      this.clampedZ = Math.max(
+        boundaries.z.min,
+        Math.min(boundaries.z.max, point.z),
+      );
     });
   }
 
   public update() {
     if (!this.mesh) return;
 
-    const targetPos = new Vector3(this.clampedX, this.mesh.position.y, this.clampedZ);
+    const targetPos = new Vector3(
+      this.clampedX,
+      this.mesh.position.y,
+      this.clampedZ,
+    );
     const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.6);
     this.mesh.position.copyFrom(interpolated);
 
     // Smooth rotation
     const boundaries = this.getBoundaries();
-    const pct = (interpolated.x - boundaries.x.min) / (boundaries.x.max - boundaries.x.min);
+    const pct =
+      (interpolated.x - boundaries.x.min) /
+      (boundaries.x.max - boundaries.x.min);
     const centered = pct * 2 - 1;
     const targetRot = centered * -(Math.PI / 2);
     this.mesh.rotation.z = Scalar.Lerp(this.mesh.rotation.z, targetRot, 0.2);
 
     // Sync with physics
-    this.paddle_physics?.setPaddleTargetPosition(interpolated.x, interpolated.y, interpolated.z);
+    this.paddle_physics?.setPaddleTargetPosition(
+      interpolated.x,
+      interpolated.y,
+      interpolated.z,
+    );
   }
 
   private getBoundaries() {
@@ -155,12 +174,12 @@ export class Paddle extends BasePaddle {
     const interpolated = Vector3.Lerp(
       this.mesh.position,
       new Vector3(this.clampedX, this.mesh.position.y, this.clampedZ),
-      0.5
+      0.5,
     );
     this.mesh.position.copyFromFloats(
       interpolated.x,
       interpolated.y,
-      interpolated.z
+      interpolated.z,
     );
   }
   getMeshRotation() {
@@ -177,7 +196,7 @@ export class Paddle extends BasePaddle {
     this.prev_pos = new Vector3(
       this.mesh.position.x,
       this.mesh.position.y,
-      this.mesh.position.z
+      this.mesh.position.z,
     );
   }
 
