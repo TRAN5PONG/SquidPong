@@ -29,7 +29,8 @@ export enum NotificationPriority {
 //   createdAt?: string;
 // }
 
-export async function processFriendNotification(data: any) {
+export async function processFriendNotification(data: any) 
+{
   const setting = await prisma.user.findUnique({
     where: { userId: data.targetId.toString() },
     select: { notificationSettings: { select: { friendRequests: true } } },
@@ -69,7 +70,9 @@ export async function processFriendNotification(data: any) {
       },
       "broadcastData"
     );
-  } else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
+  } 
+  else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) 
+    {
     const existNotification = await prisma.notification.findFirst({
       where: {
         targetId: data.fromId.toString(),
@@ -112,13 +115,16 @@ export async function processFriendNotification(data: any) {
     await sendDataToQueue(
       {
         targetId: data.targetId.toString(),
-        type: "notification",
-        message: `${notification?.by?.username} accepted your friend request.`,
+        event: "notification",
+        data : {
+          message: `${notification?.by?.username} accepted your friend request.`,
+        }
       },
       "broadcastData"
     );
   }
 }
+
 
 export async function processGameNotification(data: any) {
   const setting = await prisma.user.findUnique({
