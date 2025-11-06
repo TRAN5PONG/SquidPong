@@ -30,7 +30,6 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
   try 
   {
     checkSecretToken(req);
-    // console.log(body);
     await prisma.profile.create({
       data: {
         ...body,
@@ -104,7 +103,6 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
       ...(body.isVerified && { isVerified : body.isVerified }),
     }
 
-    console.log("notify test" , body.preferences.notificationSettings)
 
     await sendServiceRequestSimple('chat', userId, 'PUT', dataSend )
     await sendServiceRequestSimple('notify', userId, 'PUT', {...dataSend , notificationSettings : 
@@ -268,22 +266,12 @@ export async function updateProfileImageHandler(req: FastifyRequest, res: Fastif
 
   try 
   {
-    // parse multipart fields and file (avatar) if present
     const parsed = await convertParsedMultipartToJson(req) as any;
+    const updated = await prisma.profile.update({ where: { userId }, data: { avatar: parsed } });
 
-    const { avatar } = parsed;
-
-    const existingProfile = await prisma.profile.findUnique({ where: { userId } });
-    if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
-
-    const updated = await prisma.profile.update({ where: { userId }, data: { ...(avatar && { avatar }) } });
-
-    // change later
-    // const redisKey = `profile:${userId}`;
-    // if (await redis.exists(redisKey)) 
-    // {
-    //   await redis.update(redisKey, '$', updateBody);
-    // }
+    const redisKey = `profile:${userId}`;
+    if (await redis.exists(redisKey)) 
+      await redis.update(redisKey, '$', { avatar: parsed });
 
     respond.data = updated;
   }
@@ -293,7 +281,6 @@ export async function updateProfileImageHandler(req: FastifyRequest, res: Fastif
 
   return res.send(respond);
 }
-
 
 
 

@@ -46,6 +46,8 @@ const StyledUserBanner = styled("div")`
     background-size: cover;
     background-position: center;
     clip-path: path("M 0,0 L 68,0 L 68,50 L 50,68 L 0,68 L 0,0 Z");
+    cursor: pointer; 
+    z-index: 2;
   }
   .player-details {
     height: 100%;
@@ -55,6 +57,7 @@ const StyledUserBanner = styled("div")`
     flex-direction: column;
     align-items: flex-start;
     position: relative;
+    cursor: pointer;
 
     h1 {
       color: white;
@@ -178,9 +181,12 @@ const UserBanner = (user: User | null) => {
       secondaryColor={rankMetadata?.secondaryColor}
       prog={(user.level % 1) * 100}
     >
-      <div className="player-avatar"></div>
+      <div
+        className="player-avatar"
+        onClick={() => navigate("/user/" + user.username)}
+      ></div>
       <div className="player-details">
-        <h1>{user.firstName + " " + user.lastName}</h1>
+        <h1 onClick={() => navigate("/user/" + user.username)}>{user.firstName + " " + user.lastName}</h1>
         <span>@{user.username}</span>
         <span className="user-level">{user.level}</span>
         <div className="progLevel">

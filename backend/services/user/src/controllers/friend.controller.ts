@@ -23,21 +23,22 @@ const {PENDING, ACCEPTED} = FriendshipStatus;
 export async function getFriendsListHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
-  const headers = req.headers as any;
-  const userId = Number(headers['x-user-id']);
-
+  const { username } = req.params as { username: string };
   try 
   {
+    const profile = await prisma.profile.findUnique({ where: { username }, select: { userId: true } });
+    if (!profile) throw new Error(ProfileMessages.NOT_FOUND);
+    const userId = profile.userId;
     const friendships = await prisma.friendship.findMany({
       where: {
         status: ACCEPTED,
         OR: [
-          { senderId: userId },
-          { receiverId: userId }
+          { senderId: Number(userId) },
+          { receiverId: Number(userId) }
         ]
       }
     });
-    const friendIds = friendships.map((f:any) => f.senderId === userId ? f.receiverId : f.senderId);
+    const friendIds = friendships.map((f:any) => f.senderId === Number(userId) ? f.receiverId : f.senderId);
     const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
     
     console.log('profiles from DB:', profiles);
@@ -50,6 +51,7 @@ export async function getFriendsListHandler(req: FastifyRequest, res: FastifyRep
   }
   return res.send(respond);
 }
+
 
 export async function getPendingRequestsHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -108,7 +110,7 @@ export async function sendFriendRequestHandler(req: FastifyRequest, res: Fastify
     
     await prisma.friendship.create({ data: { senderId, receiverId, status: PENDING }});
     
-    const dataToSend = { type: 'friend-request',  targetId : receiverId };
+    const dataToSend = { type: 'friendRequest',  targetId : receiverId , fromId : senderId };
     await sendDataToQueue(dataToSend , 'eventhub');
     
   }
@@ -141,7 +143,7 @@ export async function acceptFriendRequestHandler(req: FastifyRequest, res: Fasti
       where: {senderId_receiverId: { senderId, receiverId }},
       data: { status: ACCEPTED },
     });
-    const dataToSend = { type: 'friend-accepted',  targetId : senderId };
+    const dataToSend = { type: 'friendRequestAccepted',  targetId : senderId , fromId : receiverId};
     await sendDataToQueue(dataToSend , 'eventhub');
     
   } 
@@ -215,6 +217,32 @@ export async function removeFriendHandler(req: FastifyRequest, res: FastifyReply
   return res.send(respond);
 }
 
+export async function cancelFriendRequestHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<null> = { success: true, message: FriendMessages.CANCEL_SUCCESS };
+  const headers = req.headers as any;
+  const senderId = Number(headers['x-user-id']);
+
+  const { receiverId } = req.body as { receiverId: number };
+
+  try 
+  {
+    await iSameUser(senderId , receiverId);
+
+    const friendship = await prisma.friendship.findUnique({
+      where: { senderId_receiverId: { senderId, receiverId } , status: PENDING }
+    });
+    if (!friendship) throw new Error(FriendMessages.CANCEL_NOT_FOUND);
+    
+    await prisma.friendship.delete({ where: { id: friendship.id }});
+    
+  }
+  catch (error) {
+    return sendError(res, error);
+  }
+
+  return res.send(respond);
+}
 
 
 // ----------------- VERIFY FRIENDSHIP -----------------
@@ -252,5 +280,35 @@ export async function verifyFriendshipHandler(req: FastifyRequest, res: FastifyR
     return sendError(res, error);
   }
 
+  return res.send(respond);
+}
+
+
+export async function getAllFriendsOfUserHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<Profile[]> = { success: true, message: FriendMessages.FETCH_SUCCESS, data: [] };
+  const { userId } = req.params as { userId: string };
+
+  try 
+  {
+    const friendships = await prisma.friendship.findMany({
+      where: {
+        status: ACCEPTED,
+        OR: [
+          { senderId: Number(userId) },
+          { receiverId: Number(userId) }
+        ]
+      }
+    });
+    console.log('friendships:', friendships);
+    const friendIds = friendships.map((f:any) => f.senderId === Number(userId) ? f.receiverId : f.senderId);
+    const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
+    
+    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
+    respond.data = mergedProfiles;
+  } 
+  catch (error) {
+    return sendError(res, error);
+  }
   return res.send(respond);
 }

@@ -153,6 +153,7 @@ export class Network {
       // console.log("Opponent Paddle Data:", data);
     });
     this.room.onMessage("Ball:HitMessage", (data: BallHitMessage) => {
+      // this.gameState = GameState.IN_PLAY; // TODO: should be set by serve only
       this.emit("Ball:HitMessage", data);
     });
 

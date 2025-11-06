@@ -44,7 +44,7 @@ export async function deleteAccountInNotify(userId: number)
     const notifyServiceUrl = getNotifyServiceUrl();
     const secretToken = getSecretToken();
         
-    const response = await fetch(`${notifyServiceUrl}/api/notify/account/delete`, {
+    const response = await fetch(`${notifyServiceUrl}/api/notify/user/delete`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -55,17 +55,4 @@ export async function deleteAccountInNotify(userId: number)
 
     if (!response.ok)
         console.error('Failed to delete account in notify service:', await response.text());
-}
-
-
-export async function isNotifyServiceAvailable(): Promise<boolean>
-{
-    try {
-        const notifyServiceUrl = getNotifyServiceUrl();
-        const response = await fetch(`${notifyServiceUrl}/health`, { method: 'GET' });
-        return response.ok;
-    } catch (error) {
-        console.error('Notify service is not available:', error);
-        return false;
-    }
 }

@@ -78,7 +78,7 @@ export async function deleteAccountInChat(userId: number)
     const chatServiceUrl = getChatServiceUrl();
     const secretToken = getSecretToken();
         
-    const response = await fetch(`${chatServiceUrl}/api/chat/account/delete`, {
+    const response = await fetch(`${chatServiceUrl}/api/chat/user/delete`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

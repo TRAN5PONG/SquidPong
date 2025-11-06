@@ -8,10 +8,10 @@ async function postSendNotificationHandler(req:FastifyRequest , res:FastifyReply
 }
 
 
-
 // post method controllers
 async function getNotificationHistoryHandler(req:FastifyRequest , res:FastifyReply)
 {
+    // const 
     return res.send(req.body)
 }
 

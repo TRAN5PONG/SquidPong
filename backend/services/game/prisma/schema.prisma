@@ -149,6 +149,7 @@ model User {
   bets                Bet[]
   invitationsSent     Invitation[]     @relation("InvitationSender")
   invitationsReceived Invitation[]     @relation("InvitationReceiver")
+  stats               UserStats?
 }
 
 model Invitation {
@@ -193,4 +194,49 @@ model Bet {
   userId  String
   match   Match  @relation(fields: [matchId], references: [id])
   matchId String
+}
+
+/**
+ * Stats
+ */
+model UserStats {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  score Int @default(0)
+
+  totalMatches Int @default(0)
+
+  // 1v1 Stats
+  played1v1 Int @default(0)
+  won1v1    Int @default(0)
+  lost1v1   Int @default(0)
+
+  // Tournament Stats
+  playedTournament Int @default(0)
+  wonTournament    Int @default(0)
+  lostTournament   Int @default(0)
+
+  // vs AI Stats
+  playedVsAI   Int @default(0)
+  easyPlayed   Int @default(0)
+  easyWins     Int @default(0)
+  easyLosses   Int @default(0)
+  mediumPlayed Int @default(0)
+  mediumWins   Int @default(0)
+  mediumLosses Int @default(0)
+  hardPlayed   Int @default(0)
+  hardWins     Int @default(0)
+  hardLosses   Int @default(0)
+
+  // Streak Stats
+  winStreak        Int @default(0)
+  loseStreak       Int @default(0)
+  longestWinStreak Int @default(0)
+
+  // Performance
+  averageGameDuration Int @default(0)
+  totalPlayTime       Int @default(0)
+
+  user User @relation(fields: [userId], references: [id])
 }
