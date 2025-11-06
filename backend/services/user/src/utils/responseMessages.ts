@@ -3,6 +3,7 @@
 
 
 export enum ProfileMessages {
+  NOT_FOUND = 'Profile not found.',
   READY_EXISTS = 'The username is already taken.',
   SAME_USERNAME = 'The new username is the same as the current one.',
   FETCH_SUCCESS = 'Profile fetched successfully.',

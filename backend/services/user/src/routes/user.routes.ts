@@ -71,8 +71,7 @@ const friendRoutes: Route[] = [
   { method: 'POST', url: '/api/friend/reject', handler: friendController.rejectFriendRequestHandler, schema: rejectFriendRequestSchema },
   { method: 'PUT' , url: '/api/friend/cancel', handler: friendController.cancelFriendRequestHandler },
   { method: 'GET', url: '/api/friend/pending', handler: friendController.getPendingRequestsHandler, schema: getPendingRequestsSchema },
-  { method: 'GET', url: '/api/friend/all-friends/:userId', handler: friendController.getFriendsListHandler },
-  // { method: 'GET', url: '/api/friend/all-friends/:userId', handler: friendController.getFriendsListHandler },
+  { method: 'GET', url: '/api/friend/all-friends/:username', handler: friendController.getFriendsListHandler },
   { method: 'DELETE', url: '/api/friend/:friendId', handler: friendController.removeFriendHandler, schema: removeFriendSchema },
   
   { method: 'GET', url: '/api/friend/verify/:friendId', handler: friendController.verifyFriendshipHandler, schema: verifyFriendshipSchema },
