@@ -23,21 +23,19 @@ const {PENDING, ACCEPTED} = FriendshipStatus;
 export async function getFriendsListHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
-  const headers = req.headers as any;
-  const userId = Number(headers['x-user-id']);
-
+  const { userId } = req.params as { userId: string };
   try 
   {
     const friendships = await prisma.friendship.findMany({
       where: {
         status: ACCEPTED,
         OR: [
-          { senderId: userId },
-          { receiverId: userId }
+          { senderId: Number(userId) },
+          { receiverId: Number(userId) }
         ]
       }
     });
-    const friendIds = friendships.map((f:any) => f.senderId === userId ? f.receiverId : f.senderId);
+    const friendIds = friendships.map((f:any) => f.senderId === Number(userId) ? f.receiverId : f.senderId);
     const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
     
     console.log('profiles from DB:', profiles);
@@ -299,6 +297,7 @@ export async function getAllFriendsOfUserHandler(req: FastifyRequest, res: Fasti
         ]
       }
     });
+    console.log('friendships:', friendships);
     const friendIds = friendships.map((f:any) => f.senderId === Number(userId) ? f.receiverId : f.senderId);
     const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
     
