@@ -116,6 +116,7 @@ export async function createInvitation(
         create: {
           id: userData.id,
           userId: userData.userId,
+          stats: { create: {} },
         },
       });
 
@@ -129,6 +130,7 @@ export async function createInvitation(
           create: {
             id: receiverData.id,
             userId: receiverData.userId,
+            stats: { create: {} },
           },
         });
       }
@@ -285,6 +287,7 @@ export async function AcceptInvitation(
     create: {
       id: userData.id,
       userId: userData.userId,
+      stats: { create: {} },
     },
   });
 
@@ -322,7 +325,7 @@ export async function AcceptInvitation(
     return reply.status(200).send({
       message: "Invitation accepted and match created successfully",
       data: {
-        invitation : acceptedInvitation,
+        invitation: acceptedInvitation,
         match,
       },
     });

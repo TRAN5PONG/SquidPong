@@ -16,6 +16,7 @@ import {
 } from "@/components/Svg/Svg";
 import { acceptFriendRequest } from "@/api/user";
 import { useAppContext } from "@/contexts/AppProviders";
+import { markNotificationAsRead } from "@/api/notification";
 
 const StyledModal = styled("div")`
   width: 350px;
@@ -116,6 +117,7 @@ const StyledModal = styled("div")`
 `;
 interface NotificationProps {
   onClose: () => void;
+  notifications: NotificationEl[];
 }
 const Notification = (props: NotificationProps) => {
   const ModalRef = useRef<HTMLDivElement>(null);
@@ -166,9 +168,13 @@ const Notification = (props: NotificationProps) => {
           <span>Friend Requests</span>
         </div>
       </div>
-      {db.fakeNotificationsForEachType.map((Notification: NotificationEl) => {
-        return <NotificationItem {...Notification} />;
-      })}
+      {props.notifications.length > 0 ? (
+        props.notifications.map((Notification: NotificationEl) => {
+          return <NotificationItem {...Notification} />;
+        })
+      ) : (
+        <span>No notifications</span>
+      )}
       <span className="NotsEnd">no more notifications</span>
     </StyledModal>
   );
@@ -191,44 +197,56 @@ const NotificationItem = (props: NotificationEl) => {
         duration: 3000,
       });
   };
+  const markasRead = async () => {
+    try {
+      const resp = await markNotificationAsRead(props.id);
+    } catch (error) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: `Failed to mark notification as read.`,
+        duration: 3000,
+      });
+    }
+  };
   return (
     <StyledNotificationItem
       avatar={props.by?.avatar || ""}
       isRead={props.isRead}
+      onClick={markasRead}
     >
       <div className="NotificationBy">
         <div className="NotificationType">
-          {props.type === "CoinGiftReceived" ? (
+          {props.type === "COIN_GIFT_RECEIVED" ? (
             <GiftIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "spectateInvite" ? (
+          ) : props.type === "SPECTATE_INVITE" ? (
             <LiveIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "friendRequest" ? (
+          ) : props.type === "FRIEND_REQUEST" ? (
             <PersonIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "friendRequestAccepted" ? (
+          ) : props.type === "FRIEND_REQUEST_ACCEPTED" ? (
             <PersonIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "warning" ? (
+          ) : props.type === "WARNING" ? (
             <WarningIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "predictionWon" ? (
+          ) : props.type === "PREDICTION_WON" ? (
             <GoalIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
@@ -247,42 +265,64 @@ const NotificationItem = (props: NotificationEl) => {
         <h1>
           {props.by?.username ? `${props.by.username} ` : "unknown"}
           <span>
-            {props.type === "info"
+            {props.type === "INFO"
               ? props.payload?.info
-              : props.type === "warning"
+              : props.type === "WARNING"
               ? props.payload?.warning
-              : props.type === "friendRequest"
+              : props.type === "FRIEND_REQUEST"
               ? props.payload?.friendRequest?.message ||
                 "has sent you a friend request"
-              : props.type === "friendRequestAccepted"
+              : props.type === "FRIEND_REQUEST_ACCEPTED"
               ? "has accepted your friend request"
-              : props.type === "gameInvite"
+              : props.type === "GAME_INVITE"
               ? `invited you to play a game`
-              : props.type === "tournamentInvite"
+              : props.type === "TOURNAMENT_INVITE"
               ? `has invited you to join the tournament ${props.payload?.tournamentName}`
-              : props.type === "tournamentCancelled"
+              : props.type === "TOURNAMENT_CANCELLED"
               ? `The tournament ${props.payload?.tournamentName} has been cancelled`
-              : props.type === "CoinGiftReceived"
+              : props.type === "COIN_GIFT_RECEIVED"
               ? `has sent you a coin gift of ${props.payload?.coinAmount} coins`
-              : props.type === "AchievementUnlocked"
+              : props.type === "ACHIEVEMENT_UNLOCKED"
               ? `Achievement Unlocked: ${props.payload?.achievementName}`
-              : props.type === "spectateInvite"
+              : props.type === "SPECTATE_INVITE"
               ? `has invited you to spectate the game with ID ${props.payload?.spectateGameId}`
-              : props.type === "predictionWon"
+              : props.type === "PREDICTION_WON"
               ? `You won the prediction! Winnings: ${props.payload?.winningsAmount} coins`
               : "Notification"}{" "}
           </span>
         </h1>
-        {props.type === "friendRequest" ? (
+        {props.type === "FRIEND_REQUEST" ? (
           <div className="ActionsBtns">
-            <button className="ActionBtn AcceptBtn">
+            <button
+              className="ActionBtn AcceptBtn"
+              disabled={props.payload?.friendRequest?.status !== "pending"}
+            >
               <CheckIcon2
                 size={16}
                 fill="white"
                 className="ActionBtnIcon AcceptIcon"
               />
-              Accept
+              {props.payload?.friendRequest?.status === "accepted"
+                ? "Accepted"
+                : "Accept"}
             </button>
+            <button
+              className="ActionBtn DeclineBtn"
+              disabled={props.payload?.friendRequest?.status !== "pending"}
+            >
+              <CloseIcon
+                size={16}
+                fill="white"
+                className="ActionBtnIcon DeclineIcon"
+              />
+              {props.payload?.friendRequest?.status === "declined"
+                ? "Declined"
+                : "Decline"}
+            </button>
+          </div>
+        ) : props.type === "TOURNAMENT_INVITE" ? (
+          <div className="ActionsBtns">
+            <button className="ActionBtn AcceptBtn">Join</button>
             <button className="ActionBtn DeclineBtn">
               <CloseIcon
                 size={16}
@@ -292,25 +332,9 @@ const NotificationItem = (props: NotificationEl) => {
               Decline
             </button>
           </div>
-        ) : props.type === "tournamentInvite" ? (
+        ) : props.type === "SPECTATE_INVITE" ? (
           <div className="ActionsBtns">
-            <button className="ActionBtn AcceptBtn">
-              Join
-            </button>
-            <button className="ActionBtn DeclineBtn">
-              <CloseIcon
-                size={16}
-                fill="white"
-                className="ActionBtnIcon DeclineIcon"
-              />
-              Decline
-            </button>
-          </div>
-        ) : props.type === "spectateInvite" ? (
-          <div className="ActionsBtns">
-            <button className="ActionBtn AcceptBtn">
-              Spectate
-            </button>
+            <button className="ActionBtn AcceptBtn">Spectate</button>
             <button className="ActionBtn DeclineBtn">
               <CloseIcon
                 size={16}
@@ -416,6 +440,10 @@ const StyledNotificationItem = styled("div")`
         transition: 0.2s ease-in-out;
         background-color: transparent;
         border: 1px solid rgba(255, 255, 255, 0.1);
+        &:disabled {
+          cursor: not-allowed;
+          opacity: 0.3;
+        }
       }
       .ActionBtnIcon {
         transition: 0.2s ease-in-out;
