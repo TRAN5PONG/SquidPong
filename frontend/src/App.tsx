@@ -20,6 +20,8 @@ import SelectCharacter from "./components/SelectCharacter/SelectCharacter";
 import Toast, { ToastContainer } from "./components/Toast/Toast";
 
 
+import.meta.env.VITE_IP;
+
 
 // Redux
 import { store } from "@/store";
@@ -166,7 +168,7 @@ const App = () => {
         console.log("No valid session found");
       }
     };
-    socketManager.connect("ws://10.13.2.7:4000/events");
+    socketManager.connect(`ws://${import.meta.env.VITE_IP}:4000/events`);
 
     initializeAuth();
   }, []);
