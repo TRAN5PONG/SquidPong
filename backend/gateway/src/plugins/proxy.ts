@@ -18,6 +18,7 @@ const services : ServiceConfig[]  =
     { name: 'chat',  prefix: '/api/chat', upstream: 'http://chat:4003' },
     { name: 'group',  prefix: '/api/group', upstream: 'http://chat:4003' },
     { name: 'game', prefix: '/api/game', upstream: 'http://game:4005' },
+    { name: 'notify', prefix: '/api/notify', upstream: 'http://notify:4004' },
     // { name: 'room', prefix: '/api/room', upstream: 'http://game:4005' }
 ];
 

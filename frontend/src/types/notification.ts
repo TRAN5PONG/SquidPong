@@ -1,18 +1,17 @@
 import { User } from "./user";
 
 export type NotificationType =
-  | "info"
-  | "warning"
-  | "friendRequest"
-  | "friendRequestAccepted"
-  | "gameInvite"
-  | "tournamentInvite"
-  | "tournamentCancelled"
-  | "CoinGiftReceived" // a coin gift has been received
-  | "AchievementUnlocked" // an achievement has been unlocked
-  | "coinGiftReceived"
-  | "spectateInvite" // a friend invites you to spectate a game
-  | "predictionWon"; // a prediction you made has been won
+  | "INFO"
+  | "WARNING"
+  | "FRIEND_REQUEST"
+  | "FRIEND_REQUEST_ACCEPTED"
+  | "GAME_INVITE"
+  | "TOURNAMENT_INVITE"
+  | "TOURNAMENT_CANCELLED"
+  | "COIN_GIFT_RECEIVED"
+  | "ACHIEVEMENT_UNLOCKED"
+  | "SPECTATE_INVITE"
+  | "PREDICTION_WON";
 
 export interface NotificationEl {
   id: string;
@@ -28,21 +27,21 @@ export interface NotificationEl {
     friendRequest?: {
       id: string;
       status: "pending" | "accepted" | "declined";
-	  message?: string; // Optional message with the friend request
+      message?: string; // Optional message with the friend request
     };
 
-	gameId?: string;
+    gameId?: string;
 
     tournamentName?: string;
     tournamentId?: string;
 
-	achievementId?: string;
-	achievementName?: string;
+    achievementId?: string;
+    achievementName?: string;
 
     coinAmount?: number;
     spectateGameId?: string;
 
     predictionId?: string;
-	winningsAmount?: number; // Amount won from the prediction
+    winningsAmount?: number; // Amount won from the prediction
   };
 }

@@ -1,5 +1,5 @@
 import { RouteHandlerMethod , FastifySchema } from 'fastify';
-import { createNotificationHandler, updateNotificationHandler, getNotificationHistoryHandler, markNotificationAsReadHandler, deleteNotificationHandler, deleteAllNotificationsHandler, deleteAccountHandler } from '../controllers/notify.controller';
+import { markNotificationAsReadAllHandler , getNotificationHistoryHandler, markNotificationAsReadHandler, deleteNotificationHandler, deleteAllNotificationsHandler, deleteAccountHandler } from '../controllers/notify.controller';
 import { createUser, updateUser } from '../controllers/user.controller';
 
 type Route = {
@@ -14,15 +14,15 @@ const notifyRoutes: Route[] = [
   // User Management Routes (Internal)
   { method: 'POST', url: '/api/notify/user/create', handler: createUser, },
   { method: 'PUT', url: '/api/notify/user/update', handler: updateUser, },
+  { method: 'DELETE', url: '/api/notify/user/delete', handler: deleteAccountHandler },
   
   // Notification Routes
-  { method: 'POST', url: '/api/notify/create', handler: createNotificationHandler },
-  { method: 'PUT', url: '/api/notify/update/:notifyId', handler: updateNotificationHandler },
   { method: 'GET', url: '/api/notify/history', handler: getNotificationHistoryHandler },
+  
   { method: 'PATCH', url: '/api/notify/read/:notifyId', handler: markNotificationAsReadHandler },
+  { method: 'PATCH', url: '/api/notify/read-all', handler: markNotificationAsReadAllHandler },
   { method: 'DELETE', url: '/api/notify/:notifyId', handler: deleteNotificationHandler },
   { method: 'DELETE', url: '/api/notify/all', handler: deleteAllNotificationsHandler },
-  { method: 'DELETE', url: '/api/notify/account/delete', handler: deleteAccountHandler },
 ];
 
 export default notifyRoutes;

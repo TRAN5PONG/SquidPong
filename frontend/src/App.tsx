@@ -19,6 +19,10 @@ import Tournament from "./components/Tournament/Tournament";
 import SelectCharacter from "./components/SelectCharacter/SelectCharacter";
 import Toast, { ToastContainer } from "./components/Toast/Toast";
 
+
+import.meta.env.VITE_IP;
+
+
 // Redux
 import { store } from "@/store";
 import { userActions } from "./store/user/actions";
@@ -164,8 +168,7 @@ const App = () => {
         console.log("No valid session found");
       }
     };
-    // TODO: Take Ip from .env file
-    socketManager.connect("ws://10.13.8.3:4000/events");
+    socketManager.connect(`ws://${import.meta.env.VITE_IP}:4000/events`);
 
     initializeAuth();
   }, []);

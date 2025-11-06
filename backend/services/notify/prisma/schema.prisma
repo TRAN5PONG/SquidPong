@@ -18,23 +18,17 @@ enum NotificationStatus {
 
 
 enum NotificationType {
-  INFO         
-  SUCCESS      
-  ERROR        
-  FRIEND       
-  TOURNAMENT   
-  CHAT         
-}
-
-enum NotificationTitle {
-  FRIEND_REQUEST        
-  FRIEND_ACCEPTED       
-  CHAT_MESSAGE          
-  TOURNAMENT_REGISTERED 
-  TOURNAMENT_STARTED    
-  TOURNAMENT_FINISHED   
-  MATCH_STARTED         
-  MATCH_FINISHED        
+  INFO
+  WARNING
+  FRIEND_REQUEST
+  FRIEND_REQUEST_ACCEPTED
+  GAME_INVITE
+  TOURNAMENT_INVITE
+  TOURNAMENT_CANCELLED
+  COIN_GIFT_RECEIVED
+  ACHIEVEMENT_UNLOCKED
+  SPECTATE_INVITE
+  PREDICTION_WON
 }
 
 
@@ -51,7 +45,8 @@ model User {
 
   isDeleted   Boolean  @default(false)
 
-  notifications Notification[]
+  notificationsBy Notification[] @relation("NotificationBy")
+  
   notificationSettings   NotificationSettings?
   createdAt   DateTime @default(now())
 }
@@ -72,16 +67,75 @@ model NotificationSettings {
 
 
 
+
+model FriendRequest {
+  id          String   @id @default(cuid())
+
+  requestId   String
+  
+  status      String
+  message     String?
+
+  payload     Payload  @relation(fields: [payloadId], references: [id], onDelete: Cascade)
+  payloadId   Int      @unique
+
+  createdAt   DateTime @default(now())
+}
+
+
+
+model Payload {
+  id                Int       @id @default(autoincrement())
+
+  // General messages
+  info              String?
+  warning           String?
+
+  // Friend request relation
+  friendRequest     FriendRequest?
+
+  // Game related
+  gameId            String?
+
+  // Tournament related
+  tournamentName    String?
+  tournamentId      String?
+
+  // Achievement related
+  achievementId     String?
+  achievementName   String?
+
+  // Coin related
+  coinAmount        Int?
+
+  // Spectate related
+  spectateGameId    String?
+
+  // Prediction related
+  predictionId      String?
+  winningsAmount    Int?
+
+  notificationId    Int          @unique
+  notification      Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime     @default(now())
+}
+
+
+
 model Notification {
   id        Int      @id @default(autoincrement())
 
-  userId    String       
+  targetId    String
+  
+  byId      String       
+  by      User    @relation("NotificationBy", fields: [byId], references: [userId], onDelete: Cascade)
 
   type      NotificationType   @default(INFO)
   isRead    Boolean            @default(false)
-
-  user      User         @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
   createdAt DateTime @default(now())
+
+  payload   Payload?
+
   updatedAt DateTime @updatedAt
 }

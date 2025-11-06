@@ -45,7 +45,7 @@ const userRoutes: Route[] = [
   { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler, schema: createProfileSchema },
   { method: 'PUT', url: '/api/user/db', handler: userController.updateProfileHandlerDB },
   { method: 'PUT', url: '/api/user/realtime', handler: userController.updateProfileHandler },
-  { method: 'POST', url: '/api/user/profile-image', handler: userController.updateProfileImageHandler, schema: updateProfileIntraSchema },
+  { method: 'PUT', url: '/api/user/profile-image', handler: userController.updateProfileImageHandler },
   { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler, schema: deleteProfileSchema },
   
   { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler, schema: getCurrentUserSchema },
@@ -69,10 +69,9 @@ const friendRoutes: Route[] = [
   { method: 'POST', url: '/api/friend/request', handler: friendController.sendFriendRequestHandler, schema: sendFriendRequestSchema },
   { method: 'POST', url: '/api/friend/accept', handler: friendController.acceptFriendRequestHandler, schema: acceptFriendRequestSchema },
   { method: 'POST', url: '/api/friend/reject', handler: friendController.rejectFriendRequestHandler, schema: rejectFriendRequestSchema },
-
+  { method: 'PUT' , url: '/api/friend/cancel', handler: friendController.cancelFriendRequestHandler },
   { method: 'GET', url: '/api/friend/pending', handler: friendController.getPendingRequestsHandler, schema: getPendingRequestsSchema },
-  { method: 'GET', url: '/api/friend/all', handler: friendController.getFriendsListHandler, schema: getFriendsListSchema },
-  
+  { method: 'GET', url: '/api/friend/all-friends/:username', handler: friendController.getFriendsListHandler },
   { method: 'DELETE', url: '/api/friend/:friendId', handler: friendController.removeFriendHandler, schema: removeFriendSchema },
   
   { method: 'GET', url: '/api/friend/verify/:friendId', handler: friendController.verifyFriendshipHandler, schema: verifyFriendshipSchema },

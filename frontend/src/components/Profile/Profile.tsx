@@ -46,6 +46,11 @@ const StyledProfileModal = styled("div")`
     color: white;
     text-align: left;
     opacity: 0.7;
+    .ProfileHeadlineSpn {
+      font-size: 1rem;
+      opacity: 0.5;
+      font-family: var(--main_font);
+    }
   }
 
   .Banner {
@@ -142,7 +147,7 @@ const StyledProfileModal = styled("div")`
         color: rgba(255, 255, 255, 0.7);
         font-size: 1rem;
         cursor: pointer;
-        background-color: #505e7f;
+        background-color: var(--bg_color);
         border: none;
         outline: none;
         transition: 0.2s ease-in-out;
@@ -154,7 +159,7 @@ const StyledProfileModal = styled("div")`
           transition: 0.2s ease-in-out;
         }
         &:hover {
-          background-color: #7086bb;
+          background-color: rgba(0, 0, 0, 0.7);
           color: white;
           svg {
             fill: white;
@@ -166,12 +171,8 @@ const StyledProfileModal = styled("div")`
         padding: 8px 15px;
         font-weight: 600;
         font-size: 1.1rem;
-        background-color: #505e7f;
         gap: 10px;
         clip-path: path("M 0,0 L 200,0 L 200,200 L 15,45 L 0,35 L 0,0 Z");
-        &:hover {
-          background-color: #7086bb;
-        }
       }
     }
     .BlockIcon {
@@ -402,7 +403,7 @@ const Profile = () => {
   const [showConfirmationModal, setShowConfirmationModal] =
     Zeroact.useState(false);
   const userId = useRouteParam("/user/:id", "id");
-  const { modal, toasts } = useAppContext();
+  const { modal, toasts, user } = useAppContext();
   const navigate = useNavigate();
 
   const handleBlockUser = () => {
@@ -432,13 +433,15 @@ const Profile = () => {
       });
   };
   const setUser = async (id: string) => {
-    console.log("reachs");
-    const user = await getUserById(id);
-    if (user.success && user.data) {
-      setProfileData(user.data);
-    } else {
-      setIsUserNotFound(true);
-    }
+    setProfileData(null);
+    setTimeout(async () => {
+      const user = await getUserById(id);
+      if (user.success && user.data) {
+        setProfileData(user.data);
+      } else {
+        setIsUserNotFound(true);
+      }
+    }, 1000);
   };
   const getStats = async (id: string) => {
     const fakeUserStats = {
@@ -453,8 +456,8 @@ const Profile = () => {
     };
     setProfileStats(fakeUserStats);
   };
-  const getFriends = async () => {
-    const resp = await getUserFriends();
+  const getFriends = async (userId: string) => {
+    const resp = await getUserFriends(userId);
     if (resp.success && resp.data) {
       setProfileFriends(resp.data);
     }
@@ -463,12 +466,11 @@ const Profile = () => {
     if (userId != null) {
       setUser(userId);
       getStats(userId);
-      getFriends();
+      getFriends(userId);
     }
   }, [userId]);
 
   if (isUserNotFound) {
-    console.log("User not found");
     return <NotFound />;
   }
   if (!profileData)
@@ -526,18 +528,26 @@ const Profile = () => {
           <p className="userName">@{profileData.username}</p>
         </div>
 
-        <div className="ActionBtns">
-          <button className="actionBtn AddFriendBtn">
-            Add friend
-            <AddFriendIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
-          </button>
-          <button className="actionBtn">
-            <MessageIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
-          </button>
-          <button className="actionBtn">
-            <ChallengeIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
-          </button>
-        </div>
+        {user?.username === profileData.username ? (
+          <div className="ActionBtns">
+            <button className="actionBtn AddFriendBtn">
+              Settings
+            </button>
+          </div>
+        ) : (
+          <div className="ActionBtns">
+            <button className="actionBtn AddFriendBtn">
+              Add friend
+              <AddFriendIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+            </button>
+            <button className="actionBtn">
+              <MessageIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+            </button>
+            <button className="actionBtn">
+              <ChallengeIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="ProfileContainer">
@@ -676,7 +686,12 @@ const Profile = () => {
             </div>
           </div>
           <div className="Friends">
-            <h1 className="ProfileHeadline">Friends</h1>
+            <h1 className="ProfileHeadline">
+              Friends -{" "}
+              <span className="ProfileHeadlineSpn">
+                {profileFriends.length}
+              </span>
+            </h1>
             <div className="FriendsList">
               {profileFriends.length > 0 ? (
                 profileFriends.map((friend) => {
