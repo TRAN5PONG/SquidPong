@@ -208,43 +208,122 @@ export const updateProfileIntraSchema: FastifySchema = {
 };
 
 export const updateProfileDBSchema: FastifySchema = {
-  description: 'Sync profile from Redis to database (internal call)',
+  description: 'Update user profile in database',
   tags: ['Profile Management'],
-  summary: 'Sync Profile to Database',
+  summary: 'Update Profile to Database',
   headers: {
     type: 'object',
     properties: {
       'x-user-id': {
         type: 'string',
         description: 'User ID from authentication token'
-      },
-      'x-secret-token': {
-        type: 'string',
-        description: 'Internal service authentication token'
       }
     },
-    required: ['x-user-id', 'x-secret-token']
+    required: ['x-user-id']
   },
   body: {
     type: 'object',
     properties: {
-      status: {
+      firstName: {
         type: 'string',
-        enum: ['ONLINE', 'OFFLINE'],
-        description: 'User status update'
+        minLength: 1,
+        maxLength: 50,
+        description: 'First name'
+      },
+      lastName: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 50,
+        description: 'Last name'
+      },
+      username: {
+        type: 'string',
+        minLength: 3,
+        maxLength: 30,
+        description: 'Username'
+      },
+      bio: {
+        type: 'string',
+        maxLength: 500,
+        description: 'User biography'
+      },
+      banner: {
+        type: 'string',
+        description: 'Banner image URL'
+      },
+      playerCharacters: {
+        type: 'string',
+        enum: ['Zero', 'Taizen', 'Kira', 'Ryu', 'Akira', 'Sora_F2', 'Sora_M3', 'Sora_F3'],
+        description: 'Player character to purchase/select'
+      },
+      playerPaddles: {
+        type: 'string',
+        enum: ['Boss', 'Survivor', 'Guard', 'Army'],
+        description: 'Player paddle to purchase/select'
+      },
+      isVerified: {
+        type: 'boolean',
+        description: 'Verification status'
+      },
+      preferences: {
+        type: 'object',
+        properties: {
+          soundEnabled: {
+            type: 'boolean',
+            description: 'Sound enabled preference'
+          },
+          musicEnabled: {
+            type: 'boolean',
+            description: 'Music enabled preference'
+          },
+          twoFactorEnabled: {
+            type: 'boolean',
+            description: 'Two-factor authentication enabled'
+          },
+          notifications: {
+            type: 'object',
+            properties: {
+              friendRequests: {
+                type: 'boolean',
+                description: 'Friend requests notifications'
+              },
+              gameInvites: {
+                type: 'boolean',
+                description: 'Game invites notifications'
+              },
+              tournamentUpdates: {
+                type: 'boolean',
+                description: 'Tournament updates notifications'
+              },
+              chatMessages: {
+                type: 'boolean',
+                description: 'Chat messages notifications'
+              }
+            },
+            additionalProperties: false
+          }
+        },
+        additionalProperties: false
       }
     },
-    required: ['status'],
     additionalProperties: false
   },
   response: {
     200: {
       ...successResponse,
-      description: 'Profile synced successfully'
+      description: 'Profile updated successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Invalid input data'
     },
     401: {
       ...errorResponse,
       description: 'Unauthorized'
+    },
+    404: {
+      ...errorResponse,
+      description: 'Profile not found'
     }
   }
 };

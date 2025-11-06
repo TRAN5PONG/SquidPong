@@ -55,10 +55,11 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
 
 export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
+  const respond: ApiResponse<null> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
 
+  let newData: { isVerified?: boolean , walletBalance?: number } = {};
   let body = req.body as any;
   try
   {
@@ -70,11 +71,12 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
 
     body.playerCharacters = await purchaseItem(existingProfile ,'playerCharacters' ,  body.playerCharacters);
     body.playerPaddles = await purchaseItem(existingProfile ,'playerPaddles' ,  body.playerPaddles);
-    body['walletBalance'] = existingProfile.walletBalance;
+    
     if(body.isVerified === true)
-      body['isVerified'] = buyVerified(existingProfile);
+      newData = await buyVerified(existingProfile);
   
-  const updatedProfile = await prisma.profile.update({
+    body = { ...body , ...newData };
+    const updatedProfile = await prisma.profile.update({
           where: { userId },
           data: {
             ...body,
@@ -83,9 +85,7 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
                 update: {
                   ...body.preferences,
                   ...(body.preferences.notifications && {
-                    notifications: {
-                      update: { ...body.preferences.notifications }
-                    }
+                    notifications: { update: { ...body.preferences.notifications }}
                   })
                 }
               }
@@ -93,6 +93,7 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
           }
         });
 
+    // another services update 
     if(body.username)
       await sendServiceRequestSimple('chat', userId, 'PUT',{username : body.username } )
 
@@ -103,7 +104,6 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
       ...(body.isVerified && { isVerified : body.isVerified }),
     }
 
-
     await sendServiceRequestSimple('chat', userId, 'PUT', dataSend )
     await sendServiceRequestSimple('notify', userId, 'PUT', {...dataSend , notificationSettings : 
     {...(body.preferences.notifications && { ...body.preferences.notifications })}
@@ -111,8 +111,9 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
    
     const redisKey = `profile:${userId}`;
     if(await redis.exists(redisKey))
-      await redis.update(redisKey, '$', dataSend); 
-    respond.data = { ...updatedProfile };
+      await redis.update(redisKey, '$', dataSend);
+  
+    // end another services update
   }
   catch (error) {
     return sendError(res, error);
@@ -124,21 +125,44 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
 export async function updateProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
+  
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
   const Token = headers['x-secret-token'];
-  const body = req.body as { level?: number };
-  const cacheKey = `profile:${userId}`;
+  const cacheKey = `profile:${userId}`; 
 
+  const body = req.body as { level?: number , status?: string };
+  let profile;
+  
   try 
   {
     if (Token !== process.env.SECRET_TOKEN) throw new Error(GeneralMessages.UNAUTHORIZED);
-    const profileRedis = await redis.get(cacheKey);
+
+    if(body.status !== undefined && body.status === 'OFFLINE')
+    {
+      profile = await redis.get(cacheKey);
+      if(!profile) profile = {status : "OFFLINE"}
     
-    const new_level = body.level !== undefined ? profileRedis.level + body.level : Number(profileRedis.level);
-    const { newRankTier, newRankDivision , newLevel } = getPromotedRank(profileRedis, new_level);
+      profile.status = 'OFFLINE';
+      await prisma.profile.update({ where: { userId }, data: profile });
+      await redis.del(cacheKey);
+      return res.send(respond);
+    }
+
+    if(await redis.exists(cacheKey) == false)
+    {
+      profile = await prisma.profile.findUnique({ where: { userId } });
+        if(!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
+      await redis.set(cacheKey, {status: profile.status, level: profile.level, rankTier: profile.rankTier, rankDivision: profile.rankDivision});
+    }
+    else
+      profile = await redis.get(cacheKey);
     
+    const new_level = body.level !== undefined ? profile.level + body.level : Number(profile.level);
+    const { newRankTier, newRankDivision , newLevel } = getPromotedRank(profile, new_level);
+
     await redis.update(cacheKey, '$', {
+      ...(body.status && { status: body.status }),
       level: newLevel,
       rankTier: newRankTier,
       rankDivision: newRankDivision
@@ -211,6 +235,7 @@ export async function getCurrentUserHandler(req: FastifyRequest, res: FastifyRep
       include: { preferences: true },
     });
     if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
+    
     respond.data = await mergeProfileWithRedis(profile);
   }
   catch (error) {
@@ -264,9 +289,11 @@ export async function updateProfileImageHandler(req: FastifyRequest, res: Fastif
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
 
+  console.log("Updating profile image for userId:", userId);
   try 
   {
     const parsed = await convertParsedMultipartToJson(req) as any;
+    console.log("Parsed image data:", parsed);
     const updated = await prisma.profile.update({ where: { userId }, data: { avatar: parsed } });
 
     const redisKey = `profile:${userId}`;

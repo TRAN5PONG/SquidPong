@@ -50,7 +50,6 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
     const cookie = req.headers.cookie;
     if (!cookie) throw new Error("Not allowed");
 
-    console.log(`Cookie found: ${cookie}`);
     const tokenCookie = cookie.split('; ').find((c:string) => c.startsWith('accessToken='));
     if (!tokenCookie) throw new Error("Not allowed");
     

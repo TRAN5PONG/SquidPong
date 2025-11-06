@@ -8,55 +8,18 @@ import app from '../app';
 
 export const onlineUsers = new Map<string, WebSocket>();
 
-
-
-// helper function to send a single field in multipart/form-data format
-
-async function sendSingleMultipartVoid(url: string, fieldName: string, value: string | File | Blob , userId : string )
+async function updatestatus(userId: string , status: string)
 {
-  const formData = new FormData();
-  formData.append(fieldName, value);
-
-  try 
-  {
-    await fetch(url, { method: "PUT", body: formData , headers: { "x-user-id": userId}});
-  }
-  catch (err) 
-  {
-    console.error(`Failed to send status update to ${url}:`, err);
-  }
-
-}
-
-
-
-async function updatestatus(userId: number )
-{
-  await fetch(`http://user:4002/api/user/me`, { headers: { "x-user-id": `userId` }});
-
-
-  await sendSingleMultipartVoid(
-    'http://user:4002/api/user/live',
-    "status",
-    "ONLINE",
-    userId.toString()
-    );
-
-  await fetch(`http://user:4002/api/user/sync`, {
-    method: "POST",
+  await fetch(`http://user:4002/api/user/realtime`, { 
+    method: "PUT", 
     headers: {
+      'x-user-id' : `${userId}`,
       'x-secret-token': process.env.SECRET_TOKEN || '',
-      "Content-Type": "application/json",
-      "x-user-id": userId.toString(),
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({status : "ONLINE"}),
+    body: JSON.stringify({ status : status})
     });
-    
 }
-
-// end helper function
-
-
 
 
 
@@ -75,8 +38,8 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
     ws.on("close", () => onClientDisconnect(ws));
     
     
-    console.log(`Client connected: ${userId}`);
-    await updatestatus(userId);
+    console.log(` Client connected: ${userId}`);
+    await updatestatus(userId , "ONLINE");
     
   }
   catch (error) 
@@ -132,19 +95,7 @@ async function onClientDisconnect(ws: any)
     await redis.srem('online_users', userId);
 
     console.log(`Client disconnected: ${userId}`);
-    
-
-    await sendSingleMultipartVoid('http://user:4002/api/user/live', "status", "OFFLINE", userId);
-    await fetch(`http://user:4002/api/user/sync`, {
-    method: "POST",
-    headers: {
-      'x-secret-token': process.env.SECRET_TOKEN || '',
-      "Content-Type": "application/json",
-      "x-user-id": userId.toString(),
-    },
-    body: JSON.stringify({status : "OFFLINE"}),
-    });
-
+    await updatestatus(userId , "OFFLINE");
 
   }
   catch (error) 
@@ -179,14 +130,6 @@ export function handleHttpUpgrade(req: any, socket: any, head: any)
     socket.destroy();
   }
 }
-
-
-
-
-
-
-
-
 
 
 
