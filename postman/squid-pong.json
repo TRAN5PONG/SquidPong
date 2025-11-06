@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "dc263df3-cd7e-46e4-85fb-dcbb2e3b1b97",
+		"_postman_id": "7f287b67-d11f-4145-b5c8-be2fa033d8db",
 		"name": "SquidPong - Services (auth,user,chat,notify)",
 		"description": "Automatically generated collection of service endpoints (auth, user, chat, notify). Example request bodies were created from Fastify schemas present in backend/services/*/src/schemas/*.ts",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -22,7 +22,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"user1@squid-pong.com\",\n  \"password\": \"aaaaaa\",\n  \"username\": \"user1\",\n  \"firstName\": \"User\",\n  \"lastName\": \"One\"\n}",
+							"raw": "{\n  \"email\": \"abquaoub@squid-pong.com\",\n  \"password\": \"aaaaaa\",\n  \"username\": \"abquaoub\",\n  \"firstName\": \"abquaoub\",\n  \"lastName\": \"abquaoub\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -55,7 +55,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"user1@squid-pong.com\",\n  \"password\": \"aaaaaa\"\n}",
+							"raw": "{\n  \"email\": \"abquaoub@squid-pong.com\",\n  \"password\": \"aaaaaa\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -112,7 +112,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"user1@squid-pong.com\",\n  \"code\": \"999999\"\n}",
+							"raw": "{\n  \"email\": \"abquaoub@squid-pong.com\",\n  \"code\": \"999999\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -469,13 +469,14 @@
 								"value": "123"
 							},
 							{
-								"key": "x-secret-token",
-								"value": "secret-token-example"
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}",
+								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"status\": \"ONLINE\"\n}",
+							"raw": "{\n  \"firstName\" : \"user12\",\n  \"lastName\" : \"user1\",\n  \"playerCharacters\": \"Zero\",\n  \"playerPaddles\" : \"Boss\",\n  \"isVerified\" : true,\n  \"preferences\" : {\n    \"soundEnabled\" : false,\n    \"musicEnabled\" : false,\n    \"twoFactorEnabled\" : true,\n    \"notifications\" : {\n        \"friendRequests\" : false,\n        \"gameInvites\" : false,\n        \"tournamentUpdates\" : false,\n        \"chatMessages\" : false\n    }\n  }\n\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -500,7 +501,27 @@
 					"name": "PUT /api/user/realtime (multipart form not modeled)",
 					"request": {
 						"method": "PUT",
-						"header": [],
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}",
+								"type": "text"
+							},
+							{
+								"key": "x-secret-token",
+								"value": "SquidPong_InterService_9f8e7d6c5b4a3928f6e5d4c3b2a19876543210abcdef",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\" : \"ONLINE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
 							"raw": "{{baseUrl}}/api/user/realtime",
 							"host": [
@@ -518,31 +539,27 @@
 				{
 					"name": "POST /api/user/profile-image (Intra)",
 					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "123"
-							}
-						],
+						"method": "PUT",
+						"header": [],
 						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"username\": \"user1\",\n  \"firstName\": \"User\",\n  \"lastName\": \"One\",\n  \"avatar\": \"avatar_from_intra.png\"\n}\n",
-							"options": {
-								"raw": {
-									"language": "json"
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "test",
+									"type": "file",
+									"src": "postman-cloud:///1f0bb534-3b8c-4e70-8bc7-eaf87cc00314"
 								}
-							}
+							]
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/user/profile-image",
+							"raw": "{{baseUrl}}/api/user/avatar",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"user",
-								"profile-image"
+								"avatar"
 							]
 						}
 					},
@@ -556,6 +573,11 @@
 							{
 								"key": "x-user-id",
 								"value": "123"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}",
+								"type": "text"
 							}
 						],
 						"url": {
@@ -654,11 +676,16 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER2}}",
+								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"receiverId\": 456\n}",
+							"raw": "{\n  \"receiverId\": 1\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -685,17 +712,18 @@
 						"method": "POST",
 						"header": [
 							{
-								"key": "x-user-id",
-								"value": "123"
-							},
-							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}",
+								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"senderId\": 456\n}",
+							"raw": "{\n  \"senderId\": 2\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -809,17 +837,22 @@
 							{
 								"key": "x-user-id",
 								"value": "123"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER2}}",
+								"type": "text"
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/friend/456",
+							"raw": "{{baseUrl}}/api/friend/1",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"friend",
-								"456"
+								"1"
 							]
 						}
 					},
@@ -1309,78 +1342,16 @@
 			"name": "Notify",
 			"item": [
 				{
-					"name": "POST /api/notify/user/create",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/notify/user/create",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"notify",
-								"user",
-								"create"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "PUT /api/notify/user/update",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/notify/user/update",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"notify",
-								"user",
-								"update"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "GET /api/notify/history",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER2}}",
+								"type": "text"
+							}
+						],
 						"url": {
 							"raw": "{{baseUrl}}/api/notify/history",
 							"host": [
@@ -1459,7 +1430,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://10.13.8.3:4000"
+			"value": "http://10.13.249.173:4000"
 		}
 	]
 }

@@ -282,7 +282,6 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
   return res.send(respond);
 }
 
-
 export async function updateProfileImageHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
