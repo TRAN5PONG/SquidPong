@@ -107,6 +107,32 @@ export async function markNotificationAsReadHandler(req: FastifyRequest, res: Fa
   return res.send(respond);
 }
 
+
+export async function markNotificationAsReadAllHandler(req: FastifyRequest, res: FastifyReply)
+{
+  const respond: ApiResponse<null> = { success: true, message: 'All notifications marked as read successfully' };
+  const headers = req.headers as any;
+  const userId = String(headers['x-user-id']);
+
+  try 
+  {
+    await prisma.notification.updateMany({
+      where: { targetId : userId , isRead : false },
+      data: { isRead : true }
+    });
+  } 
+  catch (error) 
+  {
+    respond.success = false;
+    if (error instanceof Error) respond.message = error.message;
+    return res.status(400).send(respond);
+  }
+
+  return res.send(respond);
+}
+
+
+
 export async function deleteNotificationHandler(req: FastifyRequest, res: FastifyReply)
 {
   const respond: ApiResponse<null> = { success: true, message: 'Notification deleted successfully' };

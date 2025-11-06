@@ -35,6 +35,16 @@ export enum NotificationPriority {
 export async function processFriendNotification(data: any) 
 {
 
+
+  const setting = await prisma.user.findUnique({
+        where: { userId: data.targetId.toString() },
+        select: { notificationSettings: { select: {friendRequests: true }} }
+        });
+            
+  if(!setting || !setting.notificationSettings) return;
+  if(!setting.notificationSettings.friendRequests) return;
+  
+  
   let notification;
   if(data.type === NotificationType.FRIEND_REQUEST)
   {
@@ -54,8 +64,15 @@ export async function processFriendNotification(data: any)
           },
         },
       },
-      include: { payload: { include: { friendRequest: true } }}
+      include: { by : true , payload: { include: { friendRequest: true } }}
     });
+
+    await sendDataToQueue({
+      targetId: data.targetId.toString(),
+      type: 'notification',
+      message : `${notification?.by?.username} sent you a friend request.`,
+    }, 'broadcastData');
+
   }
   else if(data.type === NotificationType.FRIEND_REQUEST_ACCEPTED)
   {
@@ -94,28 +111,20 @@ export async function processFriendNotification(data: any)
               },
             },
           },
+          
         },
       },
-      include: { payload: { include: { friendRequest: true } }}
+      include: {by : true ,  payload: { include: { friendRequest: true } }}
     });
     
     }
+    await sendDataToQueue({
+      targetId: data.targetId.toString(),
+      type: 'notification',
+      message : `${notification?.by?.username} accepted your friend request.`,
+    }, 'broadcastData');
   }
 
-
-
-  // const setting = await prisma.user.findUnique({
-  //       where: { userId: data.targetId.toString() },
-  //       select: { notificationSettings: { select: {friendRequests: true }} }
-  //       });
-
-  // if(!setting || !setting.notificationSettings) return;
-  // if(!setting.notificationSettings.friendRequests) return;
-
-  // await sendDataToQueue({
-  //   targetId: data.targetId.toString(),
-  //   data : notification
-  // }, 'broadcastData');
 
 }
 
@@ -133,10 +142,9 @@ export async function processGameNotification(data: any)
 
   await sendDataToQueue({
     targetId: data.targetId.toString(),
-    type: data.type,
-    timestamp: new Date().toISOString()
+    type: 'notification',
+    message : `You have a new game invite from ${data.byUsername}.`,
   }, 'broadcastData');
-
 
 }
 

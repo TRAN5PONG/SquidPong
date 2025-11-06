@@ -215,6 +215,32 @@ export async function removeFriendHandler(req: FastifyRequest, res: FastifyReply
   return res.send(respond);
 }
 
+export async function cancelFriendRequestHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<null> = { success: true, message: FriendMessages.CANCEL_SUCCESS };
+  const headers = req.headers as any;
+  const senderId = Number(headers['x-user-id']);
+
+  const { receiverId } = req.body as { receiverId: number };
+
+  try 
+  {
+    await iSameUser(senderId , receiverId);
+
+    const friendship = await prisma.friendship.findUnique({
+      where: { senderId_receiverId: { senderId, receiverId } , status: PENDING }
+    });
+    if (!friendship) throw new Error(FriendMessages.CANCEL_NOT_FOUND);
+    
+    await prisma.friendship.delete({ where: { id: friendship.id }});
+    
+  }
+  catch (error) {
+    return sendError(res, error);
+  }
+
+  return res.send(respond);
+}
 
 
 // ----------------- VERIFY FRIENDSHIP -----------------
