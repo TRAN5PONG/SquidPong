@@ -207,17 +207,21 @@ const Navbar = () => {
   };
 
   useEffect(() => {
-    getNotifs();
-
     socketManager.subscribe("notification", (data: any) => {
       toasts.addToastToQueue({
         type: "info",
         message: data.message,
         duration: 5000,
       });
-      console.log(data.message);
       getNotifs();
     });
+    return () => {
+      socketManager.unsubscribe("notification", () => {});
+    };
+  }, []);
+
+  useEffect(() => {
+    getNotifs();
   }, [user]);
 
   if (!user || currentPath === "/" || currentPath.startsWith("/game"))

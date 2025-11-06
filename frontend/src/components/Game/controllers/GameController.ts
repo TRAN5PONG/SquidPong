@@ -5,13 +5,16 @@ import { Paddle } from "../entities/Paddle/GamePaddle";
 import { Ball } from "../entities/Ball";
 import { Physics } from "../physics";
 import { RollbackManager } from "./RollbackManager";
-import { BallHitMessage } from "@/types/network";
+import { BallHitMessage, PaddleState } from "@/types/network";
 import { Scene } from "@babylonjs/core";
 import { PointerEventTypes } from "@babylonjs/core";
 
+// debug paddle
+import { DebugMeshManager } from "../../Game/DebugMeshManager.ts";
+
 export enum GameState {
   WAITING_FOR_SERVE,
-  IN_PLAY
+  IN_PLAY,
 }
 
 export class GameController {
@@ -31,13 +34,19 @@ export class GameController {
   // GameState
   public gameState: GameState = GameState.WAITING_FOR_SERVE;
 
+  private bufferOppPaddleStates: Array<{ time: number; data: PaddleState }> =
+    [];
+  private readonly MAX_SIZE: number = 6;
+
+  // Debug
+  private debugMeshes: DebugMeshManager;
   constructor(
     localPaddle: Paddle,
     opponentPaddle: Paddle,
     ball: Ball,
     physics: Physics,
     net: Network,
-    scene: Scene
+    scene: Scene,
   ) {
     this.localPaddle = localPaddle;
     this.opponentPaddle = opponentPaddle;
@@ -48,26 +57,59 @@ export class GameController {
     this.setCallbacks();
     this.scene = scene;
 
+    // Debug
+    this.debugMeshes = new DebugMeshManager(this.scene);
+    this.debugMeshes.createMeshes();
+
     // For now, right paddle always serves first just for testing
-    this.MyTurnToServe = this.localPaddle.side === "RIGHT" ? true : false;
+    this.MyTurnToServe = this.localPaddle.side === "LEFT" ? true : false;
 
     // Listen for opponent paddle updates
     this.net.on("opponent:paddle", (data) => {
       this.onOpponentPaddleState(data);
     });
     // Listen for ball hit updates
-    this.net.on("BallHitMessage", (data: BallHitMessage) => {
-      this.gameState = GameState.IN_PLAY;
-      const syncInfo = this.rollbackManager.analyzeSync(data.tick, this.currentTick);
+    this.net.on("Ball:HitMessage", (data: BallHitMessage) => {
+      const syncInfo = this.rollbackManager.analyzeSync(
+        data.tick,
+        this.currentTick,
+      );
 
-      this.rollbackManager.applyNetworkState(syncInfo, data.position, data.velocity, data.spin, data.applySpin);
+      this.rollbackManager.applyNetworkState(
+        syncInfo,
+        data.position,
+        data.velocity,
+        data.spin,
+        data.applySpin,
+      );
     });
+    // Listen for ball serve updates
+    this.net.on("Ball:Serve", (data: BallHitMessage) => {
+      this.gameState = GameState.IN_PLAY;
+      this.physics.setBallFrozen(false);
+      const syncInfo = this.rollbackManager.analyzeSync(
+        data.tick,
+        this.currentTick,
+      );
 
+      this.rollbackManager.applyNetworkState(
+        syncInfo,
+        data.position,
+        data.velocity,
+        data.spin,
+        data.applySpin,
+      );
+    });
     // Listen for mouse click to serve
     this.scene.onPointerObservable.add((pointerInfo) => {
       if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
         const event = pointerInfo.event as PointerEvent;
-        if (event.button === 0 && (this.MyTurnToServe && this.gameState == GameState.WAITING_FOR_SERVE)) { // left click
+        if (
+          event.button === 0 &&
+          this.MyTurnToServe &&
+          this.gameState == GameState.WAITING_FOR_SERVE
+        ) {
+          // left click
           console.log("Pointer down event detected");
           this.BallServe();
           this.gameState = GameState.IN_PLAY;
@@ -80,17 +122,22 @@ export class GameController {
     if (!this.localPaddle) return;
 
     this.localPaddle.update();
+
+    // dubeg
+    const position = this.localPaddle.getMeshPosition();
+    const rotation = this.localPaddle.getMeshRotation();
+    // this.debugMeshes.updatePaddle(position, rotation);
   }
 
   // ================= Visual interpolation =================
   public updateVisuals(alpha: number): void {
-    this.updateVisualsOpponentPaddle(alpha);
+    this.updateVisualsOpponentPaddle();
     this.updateVisualsBall(alpha);
   }
   /*
-  * if GameState is WAITING_FOR_SERVE, position the ball in front of the local paddle
-  * else, interpolate the ball position between previous and current physics positions
-  */
+   * if GameState is WAITING_FOR_SERVE, position the ball in front of the local paddle
+   * else, interpolate the ball position between previous and current physics positions
+   */
   private updateVisualsBall(alpha: number): void {
     if (!this.ball || !this.physics) return;
 
@@ -104,26 +151,68 @@ export class GameController {
       const currentPos = this.physics.getBallPosition();
       this.ball.setMeshPosition(currentPos);
     } else {
-      const renderPos = Vector3.Lerp(this.physics.ball.getPrevPosition(), this.physics.ball.getCurrentPosition(), alpha);
+      const renderPos = Vector3.Lerp(
+        this.physics.ball.getPrevPosition(),
+        this.physics.ball.getCurrentPosition(),
+        alpha,
+      );
       this.ball.setMeshPosition(renderPos);
     }
+
+    // debug
+    const ballPos = this.ball.getMeshPosition();
+    this.debugMeshes.updateBall(ballPos);
   }
 
-  public updateVisualsOpponentPaddle(alpha: number): void {
+  public getInterpolated(time: number): PaddleState | null {
+    if (this.bufferOppPaddleStates.length < 2) return null;
+
+    for (let i = 0; i < this.bufferOppPaddleStates.length - 1; i++) {
+      const a = this.bufferOppPaddleStates[i];
+      const b = this.bufferOppPaddleStates[i + 1];
+      if (time >= a.time && time <= b.time) {
+        const t = (time - a.time) / (b.time - a.time);
+
+        const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+        return {
+          position: {
+            x: lerp(a.data.position.x, b.data.position.x, t),
+            y: lerp(a.data.position.y, b.data.position.y, t),
+            z: lerp(a.data.position.z, b.data.position.z, t),
+          },
+          rotation: {
+            x: lerp(a.data.rotation.x, b.data.rotation.x, t),
+            y: lerp(a.data.rotation.y, b.data.rotation.y, t),
+            z: lerp(a.data.rotation.z, b.data.rotation.z, t),
+          },
+          velocity: {
+            x: lerp(a.data.velocity.x, b.data.velocity.x, t),
+            y: lerp(a.data.velocity.y, b.data.velocity.y, t),
+            z: lerp(a.data.velocity.z, b.data.velocity.z, t),
+          },
+        };
+      }
+    }
+
+    // if time is newer than the latest buffered state, return the last one
+    return this.bufferOppPaddleStates[this.bufferOppPaddleStates.length - 1]
+      .data;
+  }
+
+  public updateVisualsOpponentPaddle(): void {
     if (!this.opponentPaddle) return;
 
-    const interpolatedPos = Vector3.Lerp(
-      this.opponentPaddle.getPrevPosition(),
-      this.opponentPaddle.getTarget().pos,
-      alpha
-    );
+    const renderTime = performance.now() - 50; // 100ms latency compensation
+    const interpState = this.getInterpolated(renderTime);
+    if (!interpState) return;
 
-    const interpolatedRot = Vector3.Lerp(
-      this.opponentPaddle.getPrevRotation(),
-      this.opponentPaddle.getTarget().rot,
-      alpha
+    const interpolatedPos = new Vector3(
+      interpState.position.x,
+      interpState.position.y,
+      interpState.position.z,
     );
-
+    const interpolatedRot = new Vector3(0, 0, interpState.rotation.z);
     this.opponentPaddle.mesh.position.copyFrom(interpolatedPos);
     this.opponentPaddle.mesh.rotation.copyFrom(interpolatedRot);
   }
@@ -143,7 +232,7 @@ export class GameController {
     const interpolated = Vector3.Lerp(
       this.ball.getMeshPosition(),
       newBallPos,
-      0.4
+      0.4,
     );
     this.ball.setMeshPosition(interpolated);
 
@@ -152,30 +241,31 @@ export class GameController {
     // this.physics.setBallPosition(newBallPos.x, newBallPos.y, newBallPos.z);
   }
 
-
   // ================= Network =================
   /*
-  * Handle incoming opponent paddle state that was received over the network
-  */
-  private onOpponentPaddleState(data: {
-    position: { x: number; y: number; z: number };
-    rotation: { x: number; y: number; z: number };
-    velocity: { x: number; y: number; z: number };
-  }): void {
+   * Handle incoming opponent paddle state that was received over the network
+   */
+  private onOpponentPaddleState(data: PaddleState): void {
     if (!this.opponentPaddle) return;
+
+    this.bufferOppPaddleStates.push({ time: performance.now(), data });
+    if (this.bufferOppPaddleStates.length > this.MAX_SIZE) {
+      this.bufferOppPaddleStates.shift();
+    }
+
     this.opponentPaddle.setPrevPosition();
     this.opponentPaddle.setPrevRotation();
 
     this.opponentPaddle.setTarget(
       { x: data.position.x, y: data.position.y, z: data.position.z },
-      data.rotation.z
+      data.rotation.z,
     );
   }
 
   /*
-  * Start sending of local paddle state to the opponent over the network
-  * at a fixed interval (30 times per second)
-  */
+   * Start sending of local paddle state to the opponent over the network
+   * at a fixed interval (30 times per second)
+   */
   private startPaddleSync(): void {
     if (this.paddleSyncTimer) return; // avoid multiple intervals
 
@@ -201,7 +291,6 @@ export class GameController {
     }
   }
 
-
   // ================= collision callbacks =================
   setCallbacks() {
     if (!this.physics) return;
@@ -210,8 +299,9 @@ export class GameController {
       const paddleVelocity = new Vector3(
         paddle.linvel().x,
         paddle.linvel().y,
-        paddle.linvel().z
+        paddle.linvel().z,
       );
+
       const paddleSpeed = paddleVelocity.length();
 
       if (
@@ -231,17 +321,20 @@ export class GameController {
       // this.physics!.setBallSpin(0, spinY, 0);
       // this.physics!.setApplySpin(spinCalc.applySpin);
 
-      const targetVel = this.physics!.calculateTargetZYVelocity(
+      const ballVel = this.physics!.calculateTargetZYVelocity(
         ball.translation(),
-        paddle.translation()
+        paddle.translation(),
       );
 
       const currentVel = ball.linvel();
       const mass = ball.mass();
+
+      // is For applying impulse to change ball velocity on hit
+      // Impulse = mass * change in velocity (ivnitial - final)
       const impulse = new Vector3(
-        (targetVel.x - currentVel.x) * mass,
-        (targetVel.y - currentVel.y) * mass,
-        (targetVel.z - currentVel.z) * mass
+        (ballVel.x - currentVel.x) * mass,
+        (ballVel.y - currentVel.y) * mass,
+        (ballVel.z - currentVel.z) * mass,
       );
       this.physics!.ball.body.applyImpulse(impulse, true);
 
@@ -261,7 +354,7 @@ export class GameController {
         applySpin: this.physics!.getApplySpin(),
         tick: this.currentTick,
       };
-      this.net.sendMessage("ball:hit", hitMsg);
+      this.net.sendMessage("Ball:HitMessage", hitMsg);
     };
     this.physics.onBallFloorCollision = (ball, floor) => {
       // this.resetGame();
@@ -274,7 +367,7 @@ export class GameController {
   private calculateMagnusSpin(
     paddleSpeed: number,
     paddleVelocityX: number,
-    paddleSide: number
+    paddleSide: number,
   ): { spinY: number; applySpin: boolean } {
     let spinY = 0;
     let applySpin = false;
@@ -297,7 +390,6 @@ export class GameController {
     return { spinY, applySpin };
   }
 
-
   // ==================== Game loop methods =================
   public incrementTick(): void {
     this.currentTick++;
@@ -312,8 +404,7 @@ export class GameController {
     this.startPaddleSync();
   }
 
-  public resetGame(): void {
-  }
+  public resetGame(): void { }
 
   // ==================== Serve methods =================
   public BallServe(): void {
@@ -322,7 +413,11 @@ export class GameController {
     const ballPos = this.ball.getMeshPosition();
 
     this.physics.setBallPosition(ballPos.x, ballPos.y, ballPos.z);
-    this.physics.setBallVelocity(serveVelocity.x, serveVelocity.y, serveVelocity.z);
+    this.physics.setBallVelocity(
+      serveVelocity.x,
+      serveVelocity.y,
+      serveVelocity.z,
+    );
 
     // Sync serve to opponent
     const serveMsg: BallHitMessage = {
@@ -332,7 +427,7 @@ export class GameController {
       applySpin: false,
       tick: this.currentTick,
     };
-    this.net.sendMessage("ball:hit", serveMsg);
+    this.net.sendMessage("Ball:Serve", serveMsg);
   }
 
   // ==================== Main update methods =================
@@ -347,6 +442,12 @@ export class GameController {
     // if (this.serveState === GameState.IN_PLAY)
     this.rollbackManager?.recordState(this.currentTick);
     this.incrementTick();
+
+    // console.log(`Current Tick: ${this.currentTick}`);
+    // const timeMin = Math.floor(this.currentTick / 60);
+    // const timeSec = this.currentTick % 60;
+    // console.log(`Time Elapsed: ${timeMin}m ${timeSec}s`);
+
     this.startPaddleSync();
   }
 }

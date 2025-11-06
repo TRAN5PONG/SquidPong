@@ -11,6 +11,7 @@ class SocketManager {
 
       try {
         parsedData = JSON.parse(event.data);
+
         if (parsedData.data && parsedData.event) {
           const handlers = this.listeners[parsedData.event];
 

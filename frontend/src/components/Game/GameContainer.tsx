@@ -134,21 +134,9 @@ const GameContiner = () => {
 
   // == Init Game
   useEffect(() => {
-    // if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
+    if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
 
-    if (!canvasRef.current)
-        return;
-    gameRef.current = new Game(canvasRef.current, {
-      createdAt : new Date(),
-      id : "match_123",
-      opponent1 : db.MatchPlayer1,
-      opponent2 : db.MatchPlayer2,
-      duration : 300,
-      mode : "1vsAI",
-      roomId : "room_123",
-      status : "IN_PROGRESS",
-
-    }, "user_123");
+    gameRef.current = new Game(canvasRef.current, match, user.id);
     gameRef.current.start();
     netRef.current = gameRef.current.net;
 
@@ -157,14 +145,14 @@ const GameContiner = () => {
       netRef.current = null;
     };
   }, [match, user?.id, canvasRef.current]);
-
   // == Network Listeners
-  // useEffect(() => {
-  //   if (!netRef.current) return;
-  //   netRef.current.on("phase:changed", setMatchPhase);
-  //   netRef.current.on("winner:declared", setWinnerId);
-  //   netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
-  // }, [gameRef.current]);
+  useEffect(() => {
+    if (!netRef.current) return;
+    netRef.current.on("phase:changed", setMatchPhase);
+    netRef.current.on("winner:declared", setWinnerId);
+    netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
+  }, [gameRef.current]);
+
 
   const onPause = () => {
     if (!netRef.current) return;
@@ -199,8 +187,8 @@ const GameContiner = () => {
       <ScoreBoard
         net={netRef.current}
         match={match}
-        startCinematicCamera={() => {}}
-        resetCamera={() => {}}
+        startCinematicCamera={() => { }}
+        resetCamera={() => { }}
       />
       <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
         <button onClick={onReady}>Ready</button>
@@ -219,8 +207,8 @@ const GameContiner = () => {
       </h1>
       <div className="GameSettings">
         {matchPhase === "playing" ||
-        matchPhase === "paused" ||
-        matchPhase === "waiting" ? (
+          matchPhase === "paused" ||
+          matchPhase === "waiting" ? (
           <button className="GiveUpButton BtnSecondary" onClick={onGiveUp}>
             <GiveUpIcon size={20} fill="var(--main_color)" />
             Give up

@@ -47,7 +47,7 @@ export class Arena {
       "boardTexture",
       { width: 1024, height: 512 }, // Adjust based on your board size
       this.scene,
-      false // Don't generate mipmaps for sharper text
+      false, // Don't generate mipmaps for sharper text
     );
 
     // Create or get material
@@ -102,7 +102,7 @@ export class Arena {
   async Load() {
     const Container = await LoadAssetContainerAsync(
       "/models/Lobby.glb",
-      this.scene
+      this.scene,
     );
     Container.addAllToScene();
 
