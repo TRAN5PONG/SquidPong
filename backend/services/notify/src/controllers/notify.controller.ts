@@ -50,7 +50,13 @@ export async function getNotificationHistoryHandler(req: FastifyRequest, res: Fa
   {
     const notifications = await prisma.notification.findMany({
       where: { targetId : userId },
-      include: { by: true , payload: { include: { friendRequest: true }}},
+      select: {
+        id: true,
+        type: true,
+        isRead: true,
+        createdAt: true,
+        by : { select : { userId: true, username: true  , firstName : true , lastName : true , isVerified : true , avatar : true } },
+        payload: { select: { friendRequest: { select: { status: true}}}}},
       orderBy: { createdAt: 'desc' },
     });
     respond.data = notifications;
@@ -66,6 +72,8 @@ export async function getNotificationHistoryHandler(req: FastifyRequest, res: Fa
 }
 
 
+
+
 export async function markNotificationAsReadHandler(req: FastifyRequest, res: FastifyReply)
 {
   const respond: ApiResponse<null> = { success: true, message: 'Notification marked as read successfully' };
@@ -73,10 +81,21 @@ export async function markNotificationAsReadHandler(req: FastifyRequest, res: Fa
   const headers = req.headers as any;
   const userId = String(headers['x-user-id']);
   
-  const { notifyId } = req.params as { notifyId: string };
+  const { notifyId } = req.params as { notifyId: number };
 
+  console.log('Marking notification as read:', notifyId, 'for user:', userId);
   try 
   {
+    const notification = await prisma.notification.findUnique({
+      where: { id: Number(notifyId) },
+    });
+
+    if (!notification) throw new Error('Notification not found');
+
+    await prisma.notification.update({
+      where: { id: Number(notifyId) , targetId : userId },
+      data: { isRead : true }
+    });
   } 
   catch (error) 
   {
@@ -91,12 +110,22 @@ export async function markNotificationAsReadHandler(req: FastifyRequest, res: Fa
 export async function deleteNotificationHandler(req: FastifyRequest, res: FastifyReply)
 {
   const respond: ApiResponse<null> = { success: true, message: 'Notification deleted successfully' };
-  const { notifyId } = req.params as { notifyId: string };
+  const { notifyId } = req.params as { notifyId: number };
   const headers = req.headers as any;
   const userId = String(headers['x-user-id']);
 
   try 
   {
+    const notification = await prisma.notification.findUnique({
+      where: { id: Number(notifyId) , targetId : userId },
+    });
+
+    if (!notification)
+      throw new Error('Notification not found');
+
+    await prisma.notification.delete({
+      where: { id: Number(notifyId) , targetId : userId },
+    });
   } 
   catch (error) 
   {

@@ -45,7 +45,7 @@ model User {
 
   isDeleted   Boolean  @default(false)
 
-  notificationsReceived Notification[] @relation("NotificationTarget")
+  notificationsBy Notification[] @relation("NotificationBy")
   
   notificationSettings   NotificationSettings?
   createdAt   DateTime @default(now())
@@ -67,11 +67,14 @@ model NotificationSettings {
 
 
 
+
 model FriendRequest {
   id          String   @id @default(cuid())
-  requestId   String   // The actual friend request ID
-  status      String   // "pending" | "accepted" | "declined"
-  message     String?  // Optional message with the friend request
+
+  requestId   String
+  
+  status      String
+  message     String?
 
   payload     Payload  @relation(fields: [payloadId], references: [id], onDelete: Cascade)
   payloadId   Int      @unique
@@ -123,8 +126,10 @@ model Payload {
 model Notification {
   id        Int      @id @default(autoincrement())
 
-  targetId    String       
-  by      User    @relation("NotificationTarget", fields: [targetId], references: [userId], onDelete: Cascade)
+  targetId    String
+  
+  byId      String       
+  by      User    @relation("NotificationBy", fields: [byId], references: [userId], onDelete: Cascade)
 
   type      NotificationType   @default(INFO)
   isRead    Boolean            @default(false)
