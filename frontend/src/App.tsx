@@ -121,7 +121,7 @@ function RouterSwitch({ routes }: { routes: Route[] }) {
 
   // Stats
   const [delayedRoute, setdelayedRoute] = useState<Route | null>(
-    findMatchingRoute(currentPath)
+    findMatchingRoute(currentPath),
   );
   const [showLoader, setShowLoader] = useState<boolean>(false);
 
@@ -148,7 +148,7 @@ function RouterSwitch({ routes }: { routes: Route[] }) {
 
   return (
     <div className="route-container">
-      <Loader show={showLoader} onFinish={() => {}} nextRoute={currentPath} />
+      <Loader show={showLoader} onFinish={() => { }} nextRoute={currentPath} />
       <RouteComponent />
     </div>
   );
