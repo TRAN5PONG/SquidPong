@@ -97,8 +97,8 @@ export async function getPendingFriendRequests(): Promise<
   return await response.json();
 }
 
-export async function getUserFriends(): Promise<ApiResponse<MiniUser[]>> {
-  const response = await fetch(`${API_BASE_URL}/friend/all`, {
+export async function getUserFriends(userid: string): Promise<ApiResponse<MiniUser[]>> {
+  const response = await fetch(`${API_BASE_URL}/friend/all-friends/${userid}`, {
     method: "GET",
     credentials: "include",
   });

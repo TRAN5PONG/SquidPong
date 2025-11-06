@@ -14,7 +14,7 @@ import {
   TrophyIcon,
   WarningIcon,
 } from "@/components/Svg/Svg";
-import { acceptFriendRequest } from "@/api/user";
+import { acceptFriendRequest, rejectFriendRequest } from "@/api/user";
 import { useAppContext } from "@/contexts/AppProviders";
 import { markNotificationAsRead } from "@/api/notification";
 
@@ -183,19 +183,50 @@ const Notification = (props: NotificationProps) => {
 const NotificationItem = (props: NotificationEl) => {
   const { toasts } = useAppContext();
   const handleAcceptFriendRequest = async () => {
-    const resp = await acceptFriendRequest(Number(props.by.id));
-    if (resp.success)
-      toasts.addToastToQueue({
-        type: "success",
-        message: "Friend request accepted.",
-        duration: 3000,
-      });
-    else
+    try {
+      const resp = await acceptFriendRequest(Number(props.by.userId));
+      if (resp.success)
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Friend request accepted.",
+          duration: 3000,
+        });
+      else
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Failed to accept friend request: ${resp.message}`,
+          duration: 3000,
+        });
+    } catch (error) {
       toasts.addToastToQueue({
         type: "error",
-        message: `Failed to accept friend request: ${resp.message}`,
+        message: `Failed to accept friend request.`,
         duration: 3000,
       });
+    }
+  };
+  const handleDeclineFriendRequest = async () => {
+    try {
+      const resp = await rejectFriendRequest(Number(props.by.userId));
+      if (resp.success)
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Friend request declined.",
+          duration: 3000,
+        });
+      else
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Failed to decline friend request: ${resp.message}`,
+          duration: 3000,
+        });
+    } catch (error) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: `Failed to decline friend request.`,
+        duration: 3000,
+      });
+    }
   };
   const markasRead = async () => {
     try {
@@ -296,6 +327,7 @@ const NotificationItem = (props: NotificationEl) => {
             <button
               className="ActionBtn AcceptBtn"
               disabled={props.payload?.friendRequest?.status !== "pending"}
+              onClick={handleAcceptFriendRequest}
             >
               <CheckIcon2
                 size={16}
@@ -309,6 +341,7 @@ const NotificationItem = (props: NotificationEl) => {
             <button
               className="ActionBtn DeclineBtn"
               disabled={props.payload?.friendRequest?.status !== "pending"}
+              onClick={handleDeclineFriendRequest}
             >
               <CloseIcon
                 size={16}

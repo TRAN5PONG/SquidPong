@@ -46,7 +46,7 @@ const StyledProfileModal = styled("div")`
     color: white;
     text-align: left;
     opacity: 0.7;
-    .ProfileHeadlineSpn{
+    .ProfileHeadlineSpn {
       font-size: 1rem;
       opacity: 0.5;
       font-family: var(--main_font);
@@ -403,7 +403,7 @@ const Profile = () => {
   const [showConfirmationModal, setShowConfirmationModal] =
     Zeroact.useState(false);
   const userId = useRouteParam("/user/:id", "id");
-  const { modal, toasts } = useAppContext();
+  const { modal, toasts, user } = useAppContext();
   const navigate = useNavigate();
 
   const handleBlockUser = () => {
@@ -433,13 +433,15 @@ const Profile = () => {
       });
   };
   const setUser = async (id: string) => {
-    console.log("reachs");
-    const user = await getUserById(id);
-    if (user.success && user.data) {
-      setProfileData(user.data);
-    } else {
-      setIsUserNotFound(true);
-    }
+    setProfileData(null);
+    setTimeout(async () => {
+      const user = await getUserById(id);
+      if (user.success && user.data) {
+        setProfileData(user.data);
+      } else {
+        setIsUserNotFound(true);
+      }
+    }, 1000);
   };
   const getStats = async (id: string) => {
     const fakeUserStats = {
@@ -454,8 +456,8 @@ const Profile = () => {
     };
     setProfileStats(fakeUserStats);
   };
-  const getFriends = async () => {
-    const resp = await getUserFriends();
+  const getFriends = async (userId: string) => {
+    const resp = await getUserFriends(userId);
     if (resp.success && resp.data) {
       setProfileFriends(resp.data);
     }
@@ -464,12 +466,11 @@ const Profile = () => {
     if (userId != null) {
       setUser(userId);
       getStats(userId);
-      getFriends();
+      getFriends(userId);
     }
   }, [userId]);
 
   if (isUserNotFound) {
-    console.log("User not found");
     return <NotFound />;
   }
   if (!profileData)
@@ -527,18 +528,26 @@ const Profile = () => {
           <p className="userName">@{profileData.username}</p>
         </div>
 
-        <div className="ActionBtns">
-          <button className="actionBtn AddFriendBtn">
-            Add friend
-            <AddFriendIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
-          </button>
-          <button className="actionBtn">
-            <MessageIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
-          </button>
-          <button className="actionBtn">
-            <ChallengeIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
-          </button>
-        </div>
+        {user?.username === profileData.username ? (
+          <div className="ActionBtns">
+            <button className="actionBtn AddFriendBtn">
+              Settings
+            </button>
+          </div>
+        ) : (
+          <div className="ActionBtns">
+            <button className="actionBtn AddFriendBtn">
+              Add friend
+              <AddFriendIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+            </button>
+            <button className="actionBtn">
+              <MessageIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+            </button>
+            <button className="actionBtn">
+              <ChallengeIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="ProfileContainer">
@@ -677,7 +686,12 @@ const Profile = () => {
             </div>
           </div>
           <div className="Friends">
-            <h1 className="ProfileHeadline">Friends - <span className="ProfileHeadlineSpn">{profileFriends.length}</span></h1>
+            <h1 className="ProfileHeadline">
+              Friends -{" "}
+              <span className="ProfileHeadlineSpn">
+                {profileFriends.length}
+              </span>
+            </h1>
             <div className="FriendsList">
               {profileFriends.length > 0 ? (
                 profileFriends.map((friend) => {
