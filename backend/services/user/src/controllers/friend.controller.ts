@@ -51,6 +51,7 @@ export async function getFriendsListHandler(req: FastifyRequest, res: FastifyRep
   return res.send(respond);
 }
 
+
 export async function getPendingRequestsHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<{ sent: Profile[]; received: Profile[] }> = {  success: true,   message: FriendMessages.PENDING_FETCH_SUCCESS,  data: { sent: [], received: [] }};
@@ -278,5 +279,34 @@ export async function verifyFriendshipHandler(req: FastifyRequest, res: FastifyR
     return sendError(res, error);
   }
 
+  return res.send(respond);
+}
+
+
+export async function getAllFriendsOfUserHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<Profile[]> = { success: true, message: FriendMessages.FETCH_SUCCESS, data: [] };
+  const { userId } = req.params as { userId: string };
+
+  try 
+  {
+    const friendships = await prisma.friendship.findMany({
+      where: {
+        status: ACCEPTED,
+        OR: [
+          { senderId: Number(userId) },
+          { receiverId: Number(userId) }
+        ]
+      }
+    });
+    const friendIds = friendships.map((f:any) => f.senderId === Number(userId) ? f.receiverId : f.senderId);
+    const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
+    
+    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
+    respond.data = mergedProfiles;
+  } 
+  catch (error) {
+    return sendError(res, error);
+  }
   return res.send(respond);
 }
