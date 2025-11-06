@@ -23,9 +23,12 @@ const {PENDING, ACCEPTED} = FriendshipStatus;
 export async function getFriendsListHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
-  const { userId } = req.params as { userId: string };
+  const { username } = req.params as { username: string };
   try 
   {
+    const profile = await prisma.profile.findUnique({ where: { username }, select: { userId: true } });
+    if (!profile) throw new Error(ProfileMessages.NOT_FOUND);
+    const userId = profile.userId;
     const friendships = await prisma.friendship.findMany({
       where: {
         status: ACCEPTED,
