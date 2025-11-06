@@ -87,7 +87,7 @@ const start = async () => {
     // Recreate rooms for existing matches (dev mode)
     if (process.env.NODE_ENV === "development") {
       console.log("🔧 Development mode: Recreating active rooms");
-      // await recreateActiveRooms();
+      await recreateActiveRooms();
     } else {
       console.log("⚠️ Skipping room recreation in production mode");
     }
