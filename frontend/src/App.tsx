@@ -166,7 +166,7 @@ const App = () => {
         console.log("No valid session found");
       }
     };
-    socketManager.connect("ws://10.13.9.1:4000/events");
+    socketManager.connect("ws://10.13.2.7:4000/events");
 
     initializeAuth();
   }, []);

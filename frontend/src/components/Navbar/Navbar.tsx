@@ -19,6 +19,10 @@ import UserBanner from "./UserBanner";
 import SearchModal from "./search/Search";
 import SettingsModal from "./SettingsModal/SettingsModal";
 import TwoFAModal from "../Settings/twoFA";
+import { getNotifications } from "@/api/notification";
+import { NotificationEl } from "@/types/notification";
+import { socketManager } from "@/utils/socket";
+import Toast from "../Toast/Toast";
 
 const StyledNav = styled("div")`
   width: 100%;
@@ -102,13 +106,6 @@ const StyledNav = styled("div")`
       position: relative;
 
       .NotificationON {
-        width: 10px;
-        height: 10px;
-        background-color: rgba(95, 119, 177, 0.9);
-        border-radius: 50%;
-        position: absolute;
-        top: -2px;
-        right: -2px;
       }
     }
     .RightEl.NotificationON {
@@ -126,6 +123,17 @@ const StyledNav = styled("div")`
         .RightElIcon {
           fill: rgba(73, 91, 134, 1);
         }
+      }
+      &:after {
+        position: absolute;
+        content: "";
+        width: 10px;
+        height: 10px;
+        background-color: rgba(95, 119, 177, 0.9);
+        border-radius: 50%;
+        position: absolute;
+        top: -2px;
+        right: -2px;
       }
     }
     .Wallet {
@@ -168,12 +176,12 @@ const Navbar = () => {
   const [ShowSearchModal, setShowSearchModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   // stats
-  const [user, setUser] = useState<User | null>(null);
   const [query, setQuery] = useState("");
+  const [notifications, setNotifications] = useState<NotificationEl[]>([]);
 
   // contexts
   const { currentPath } = useContext(RouterContext);
-  const appCTX = useAppContext();
+  const { user, toasts } = useAppContext();
 
   // Toggles
   const toggleChatModal = () => {
@@ -186,9 +194,31 @@ const Navbar = () => {
     setShowNotificationModal(!ShowNotificationModal);
   };
 
+  // Fetchs
+  const getNotifs = async () => {
+    try {
+      const res = await getNotifications();
+      if (res.success && res.data) {
+        setNotifications(res.data);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
   useEffect(() => {
-    setUser(appCTX.user);
-  }, [appCTX.user]);
+    getNotifs();
+
+    socketManager.subscribe("notification", (data: any) => {
+      toasts.addToastToQueue({
+        type: "info",
+        message: data.message,
+        duration: 5000,
+      });
+      console.log(data.message);
+      getNotifs();
+    });
+  }, [user]);
 
   if (!user || currentPath === "/" || currentPath.startsWith("/game"))
     return null;
@@ -221,10 +251,12 @@ const Navbar = () => {
 
       <div className="Right">
         <div
-          className="RightEl NotificationON"
+          className={`RightEl ${
+            notifications.some((notif) => !notif.isRead) ? "NotificationON" : ""
+          }`}
           onClick={toggleNotificationModal}
         >
-          <div className="NotificationON" />
+          {/* <div className="NotificationON" /> */}
           <NotificationIcon
             size={20}
             fill="rgba(73, 91, 134, 0.9)"
@@ -232,7 +264,6 @@ const Navbar = () => {
           />
         </div>
         <div className="RightEl" onClick={toggleChatModal}>
-          <div className="NotificationON" />
           <ChatIcon size={20} fill="rgba(73, 91, 134, 0.9)" />
         </div>
         <div className="RightEl" onClick={toggleProfileModel}>
@@ -249,6 +280,7 @@ const Navbar = () => {
           onClose={() => {
             setShowNotificationModal(false);
           }}
+          notifications={notifications}
         />
       ) : null}
       {showSettingsModal ? (

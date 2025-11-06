@@ -46,6 +46,11 @@ const StyledProfileModal = styled("div")`
     color: white;
     text-align: left;
     opacity: 0.7;
+    .ProfileHeadlineSpn{
+      font-size: 1rem;
+      opacity: 0.5;
+      font-family: var(--main_font);
+    }
   }
 
   .Banner {
@@ -672,7 +677,7 @@ const Profile = () => {
             </div>
           </div>
           <div className="Friends">
-            <h1 className="ProfileHeadline">Friends</h1>
+            <h1 className="ProfileHeadline">Friends - <span className="ProfileHeadlineSpn">{profileFriends.length}</span></h1>
             <div className="FriendsList">
               {profileFriends.length > 0 ? (
                 profileFriends.map((friend) => {
