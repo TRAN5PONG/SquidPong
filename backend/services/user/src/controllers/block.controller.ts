@@ -77,6 +77,7 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
   const userId = Number(headers['x-user-id']);
   const blockId = Number((req.params as any).blockId);
 
+  
   try 
   {
     await iSameUser(userId , blockId);

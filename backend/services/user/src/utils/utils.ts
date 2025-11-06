@@ -32,11 +32,11 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
       do {
         randomName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
         filePath = path.join(uploadDir, randomName);
-      } while (fs.existsSync(filePath)); // ensure unique name
+      } while (fs.existsSync(filePath));
 
       await pipeline(field.file, fs.createWriteStream(filePath));
 
-      file = `/uploads/user/avatar/${randomName}`;
+      file = `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/user/avatars/${randomName}`;
     } 
   }
 
@@ -367,16 +367,19 @@ export async function purchaseItem(user : any, itemType: 'playerCharacters' | 'p
  * Deducts coins and sets isVerified=true if enough balance.
  * Throws error if insufficient balance or already verified.
  */
-export async function buyVerified(user: any)
+export async function buyVerified(user: any) : Promise<{isVerified: boolean , walletBalance: number}>
 {
   const userKey = `profile:${user.userId}`;
   
-  if(user.isVerified) return true;
-  if(user.walletBalance < 500)  return false;
+  if(user.isVerified == true) throw new Error('User is already verified.');
+  if(user.walletBalance < 500) throw new Error('Insufficient wallet balance to buy verified status.');
   
-  user.walletBalance -= 500;
+  const newWalletBalance = user.walletBalance - 500;
+  user.walletBalance = newWalletBalance;
 
   if (await redis.exists(userKey)) 
     await redis.update(userKey, '$', { isVerified: true });
+
+  return { isVerified: true , walletBalance: newWalletBalance };
 }
 

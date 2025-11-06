@@ -69,12 +69,6 @@ enum MatchResult {
 }
 
 
-enum TournamentStatus {
-  REGISTRATION
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
 
 
 enum PlayerCharacter {
