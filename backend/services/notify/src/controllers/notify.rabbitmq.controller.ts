@@ -41,6 +41,7 @@ export async function processFriendNotification(data: any)
     notification = await prisma.notification.create({
       data: {
         targetId: data.targetId.toString(),
+        byId: data.fromId.toString(),
         type: 'FRIEND_REQUEST',
         payload: {
           create: {
@@ -72,8 +73,6 @@ export async function processFriendNotification(data: any)
       include: { payload: { include: { friendRequest: true}}},
     });
 
-
-
     if (existNotification?.payload?.friendRequest) 
       {
       await prisma.friendRequest.update({
@@ -81,10 +80,10 @@ export async function processFriendNotification(data: any)
         data: { status: "accepted"},
       });
 
-
     notification = await prisma.notification.create({
       data: {
         targetId: data.targetId.toString(),
+        byId: data.fromId.toString(),
         type: 'FRIEND_REQUEST_ACCEPTED',
         payload: {
           create: {
@@ -101,23 +100,22 @@ export async function processFriendNotification(data: any)
     });
     
     }
-
-    console.log("Friend request accepted notification processed:", notification);
   }
 
 
-  const setting = await prisma.user.findUnique({
-        where: { userId: data.targetId.toString() },
-        select: { notificationSettings: { select: {friendRequests: true }} }
-        });
 
-  if(!setting || !setting.notificationSettings) return;
-  if(!setting.notificationSettings.friendRequests) return;
+  // const setting = await prisma.user.findUnique({
+  //       where: { userId: data.targetId.toString() },
+  //       select: { notificationSettings: { select: {friendRequests: true }} }
+  //       });
 
-  await sendDataToQueue({
-    targetId: data.targetId.toString(),
-    data : notification
-  }, 'broadcastData');
+  // if(!setting || !setting.notificationSettings) return;
+  // if(!setting.notificationSettings.friendRequests) return;
+
+  // await sendDataToQueue({
+  //   targetId: data.targetId.toString(),
+  //   data : notification
+  // }, 'broadcastData');
 
 }
 
