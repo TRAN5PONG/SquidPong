@@ -99,15 +99,23 @@ export class MatchRoom extends Room<MatchState> {
       const _client = client as any;
 
       // Broadcast to everyone except the sender
-      this.broadcast("opponent:paddle", {
-        position: message.position,
-        velocity: message.velocity,
-        rotation: message.rotation,
-      }, { except: client });
+      this.broadcast(
+        "opponent:paddle",
+        {
+          position: message.position,
+          velocity: message.velocity,
+          rotation: message.rotation,
+        },
+        { except: client },
+      );
     });
     // ball hit event from host
-    this.onMessage("ball:hit", (client, message) => {
-      this.broadcast("BallHitMessage", message, { except: client });
+    this.onMessage("Ball:HitMessage", (client, message) => {
+      this.broadcast("Ball:HitMessage", message, { except: client });
+    });
+    // ball serve event from host
+    this.onMessage("Ball:Serve", (client, message) => {
+      this.broadcast("Ball:Serve", message, { except: client });
     });
 
     // Player give up
@@ -167,7 +175,7 @@ export class MatchRoom extends Room<MatchState> {
   onAuth(client: Client, options: any) {
     const _client = client as any;
     const { players, spectators } = this.metadata;
-    console.log("====================AUTH++++++++++++++++++++++++++++")
+    console.log("====================AUTH++++++++++++++++++++++++++++");
     if (players.includes(options.userId)) {
       _client.meta = { role: "player", userId: options.userId };
       return true;
@@ -331,7 +339,7 @@ export class MatchRoom extends Room<MatchState> {
 
       player.pauseTimeout = setTimeout(
         () => this.forceResume(player),
-        player.remainingPauseTime * 1000
+        player.remainingPauseTime * 1000,
       );
 
       this.startPauseInterval(player);
@@ -352,11 +360,11 @@ export class MatchRoom extends Room<MatchState> {
 
       if (player.pauseStartTime) {
         const pausedDuration = Math.floor(
-          (Date.now() - player.pauseStartTime) / 1000
+          (Date.now() - player.pauseStartTime) / 1000,
         );
         player.remainingPauseTime = Math.max(
           player.remainingPauseTime - pausedDuration,
-          0
+          0,
         );
         player.pauseStartTime = null;
       }

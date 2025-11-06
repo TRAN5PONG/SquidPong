@@ -52,7 +52,7 @@ export class Ball {
 
       this.meshGroup = group;
 
-      this.mesh.scaling.scaleInPlace(1.8);
+      this.mesh.scaling.scaleInPlace(2);
     } catch (error) {
       console.error("Error loading ball model:", error);
     }
@@ -71,4 +71,3 @@ export class Ball {
     this.setMeshPosition(Vector3.Zero());
   }
 }
-

@@ -16,7 +16,7 @@ export enum BallSyncResult {
   ROLLBACK_NEEDED,
   APPLY_IMMEDIATELY,
   FUTURE_TICK_WARNING,
-  SNAP_DIRECTLY
+  SNAP_DIRECTLY,
 }
 
 export interface BallSyncInfo {
@@ -34,7 +34,6 @@ export class RollbackManager {
   private physics: Physics;
   private ball: Ball;
 
-
   constructor(physics: Physics, ball: Ball) {
     this.physics = physics;
     this.ball = ball;
@@ -46,19 +45,19 @@ export class RollbackManager {
       position: [
         this.physics.getBallPosition().x,
         this.physics.getBallPosition().y,
-        this.physics.getBallPosition().z
+        this.physics.getBallPosition().z,
       ],
       velocity: [
         this.physics.getBallVelocity().x,
         this.physics.getBallVelocity().y,
-        this.physics.getBallVelocity().z
+        this.physics.getBallVelocity().z,
       ],
       spin: [
         this.physics.getBallSpin().x,
         this.physics.getBallSpin().y,
-        this.physics.getBallSpin().z
+        this.physics.getBallSpin().z,
       ],
-      tick: currentTick
+      tick: currentTick,
     };
 
     this.ballHistory.push(state);
@@ -94,11 +93,17 @@ export class RollbackManager {
     position: Vec3,
     velocity: Vec3,
     spin?: Vec3,
-    applySpin: boolean = true
+    applySpin: boolean = true,
   ): void {
     switch (syncInfo.result) {
       case BallSyncResult.ROLLBACK_NEEDED:
-        this.rollback(syncInfo.receivedTick, syncInfo.currentTick, position, velocity, spin);
+        this.rollback(
+          syncInfo.receivedTick,
+          syncInfo.currentTick,
+          position,
+          velocity,
+          spin,
+        );
         break;
       case BallSyncResult.APPLY_IMMEDIATELY:
       case BallSyncResult.FUTURE_TICK_WARNING:
@@ -114,32 +119,64 @@ export class RollbackManager {
     currentTick: number,
     position: Vec3,
     velocity: Vec3,
-    spin?: Vec3
+    spin?: Vec3,
   ): void {
-    console.log(`🔄 Rollback from tick ${currentTick} → ${receivedTick}`);
     this.isRollbackInProgress = true;
 
+    const rollbackBase = this.getHistoryAtTick(receivedTick);
+    if (!rollbackBase) {
+      console.warn(`⚠️ Rollback failed: No history for tick ${receivedTick}`);
+      this.applyState(position, velocity, spin);
+      this.clearHistory();
+      this.recordState(currentTick);
+      this.isRollbackInProgress = false;
+      return;
+    }
+    // Restore state
+    this.physics.setBallPosition(...rollbackBase.position);
+    this.physics.setBallVelocity(...rollbackBase.velocity);
+    this.physics.setBallSpin(...rollbackBase.spin);
+
+    // Apply received state
     this.applyState(position, velocity, spin);
+
+    // Clear future history
     this.clearHistoryAfterTick(receivedTick);
+
+    // Resimulate to current tick
     const ticksToResim = currentTick - receivedTick;
     for (let i = 1; i <= ticksToResim; i++) {
       this.physics.Step();
       this.recordState(receivedTick + i);
     }
-    this.ball.setMeshPosition(this.physics.getBallPosition());
+
+    // this.ball.setMeshPosition(this.physics.getBallPosition());
+
+    // TODO: Test this smooth update
+    // Smoothly update the visual mesh
+    const newPos = this.physics.getBallPosition();
+    this.ball.mesh.position = new Vector3(
+      this.ball.mesh.position.x + (newPos.x - this.ball.mesh.position.x) * 0.5,
+      this.ball.mesh.position.y + (newPos.y - this.ball.mesh.position.y) * 0.5,
+      this.ball.mesh.position.z + (newPos.z - this.ball.mesh.position.z) * 0.5,
+    );
+
     this.isRollbackInProgress = false;
   }
 
   /** Apply a state */
-  private applyState(position: Vec3, velocity: Vec3, spin?: Vec3, applySpin = true): void {
+  private applyState(
+    position: Vec3,
+    velocity: Vec3,
+    spin?: Vec3,
+    applySpin = true,
+  ): void {
     this.physics.setBallPosition(position.x, position.y, position.z);
     this.physics.setBallVelocity(velocity.x, velocity.y, velocity.z);
     if (spin) {
       this.physics.setBallSpin(spin.x, spin.y, spin.z);
       this.physics.setApplySpin(applySpin);
-    }
-    else
-      this.physics.setApplySpin(false);
+    } else this.physics.setApplySpin(false);
     this.ball.setMeshPosition(this.physics.getBallPosition());
   }
 
@@ -190,5 +227,4 @@ export class RollbackManager {
   public isInProgress(): boolean {
     return this.isRollbackInProgress;
   }
-
 }
