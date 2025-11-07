@@ -114,7 +114,7 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
 
 export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<Profile[]> = { success: true, message: FriendMessages.FETCH_SUCCESS };
+  const respond: ApiResponse<any> = { success: true, message: FriendMessages.BLOCK_FETCH_SUCCESS , data: null  };
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
   
@@ -123,6 +123,7 @@ export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyRe
     const friendships = await prisma.friendship.findMany({
       where: { senderId: userId, status: BLOCKED }
     });
+
     const friendIds = friendships.map((f:any) => f.receiverId);
     const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
     const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));

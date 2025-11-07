@@ -13,7 +13,7 @@ async function StartServer()
     try 
     {
 
-    app.listen({port  , host } , () => { console.log(`Notify service running at http://notify:${port}`) })
+    await app.listen({port  , host } , () => { console.log(`Notify service running at http://notify:${port}`) })
     await initRabbitMQ();
     await receiveFromQueue("emailhub");
     await receiveFromQueue("eventhub");
