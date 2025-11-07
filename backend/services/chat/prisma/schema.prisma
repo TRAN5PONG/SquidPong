@@ -31,18 +31,14 @@ enum ReactionType {
   SAD       // 😢
   ANGRY     // 😡
   WOW       // 😮
-  FIRE      // 🔥
-  DIAMOND   // 💎
-  MONEY     // 🤑
-  STAR      // ⭐
+  FUCK // 🖕
 }
+
 
 
 enum MessageType {
   TEXT
-  URL
-  POLL
-  IMAGE
+  INVITE
 }
 
 enum ChatType {
@@ -65,6 +61,14 @@ enum MemberStatus {
 
 
 
+enum statusMessage {
+  SENT
+  DELIVERED
+  READ
+}
+
+
+
 model User {
   id          String   @id @default(cuid())
 
@@ -81,12 +85,12 @@ model User {
 
   chatMembers  ChatMember[]
   messages     Message[]
-  pollVotes    PollVote[]
   reactions    Reaction[]
   groupMembers GroupMember[]
 
   createdAt DateTime @default(now())
 }
+
 
 // ------------------- Chat -------------------
 model Chat {
@@ -99,7 +103,7 @@ model Chat {
   group     Group?
 
   createdAt DateTime @default(now())
-}
+} 
 
 
 model ChatMember {
@@ -114,6 +118,7 @@ model ChatMember {
   @@unique([chatId, userId])
 }
 
+
 // ------------------- Message -------------------
 model Message {
   id         Int          @id @default(autoincrement())
@@ -123,13 +128,15 @@ model Message {
 
   type       MessageType  @default(TEXT)
   content    String?
-  reactions  Reaction[]
+  
+  status     statusMessage @default(SENT)
 
+  reactions  Reaction[]
+  
   replyToId  Int?
   replyTo    Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
   replies    Message[]    @relation("MessageReplies")
 
-  poll       Poll?
 
   isEdited   Boolean      @default(false)
 
@@ -138,37 +145,6 @@ model Message {
   timestamp  DateTime     @default(now())
 }
 
-// ------------------- Polls -------------------
-model Poll {
-  id        Int        @id @default(autoincrement())
-  messageId Int        @unique
-  question  String
-  options   PollOption[]
-
-  createdAt DateTime   @default(now())
-  message   Message    @relation(fields: [messageId], references: [id], onDelete: Cascade)
-}
-
-model PollOption {
-  id      Int        @id @default(autoincrement())
-  pollId  Int
-  text    String
-  votes   PollVote[]
-
-  poll    Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
-}
-
-model PollVote {
-  id        Int        @id @default(autoincrement())
-  optionId  Int
-  userId    String
-  votedAt   DateTime   @default(now())
-
-  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
-  user      User       @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
-  @@unique([optionId, userId])
-}
 
 // ------------------- Group -------------------
 model Group {
