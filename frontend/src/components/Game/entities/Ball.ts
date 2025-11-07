@@ -35,17 +35,17 @@ export class Ball {
       });
 
       // ✅ Add Trail
-      const trail = new TrailMesh(
-        "ballTrail",
-        this.mesh,
-        this.scene,
-        0.03,
-        10,
-        true,
-      );
-      const trailMat = new StandardMaterial("trailMat", this.scene);
-      trailMat.emissiveColor = new Color3(1, 1, 1); // white glow
-      trail.material = trailMat;
+      // const trail = new TrailMesh(
+      //   "ballTrail",
+      //   this.mesh,
+      //   this.scene,
+      //   0.03,
+      //   10,
+      //   true,
+      // );
+      // const trailMat = new StandardMaterial("trailMat", this.scene);
+      // trailMat.emissiveColor = new Color3(1, 1, 1); // white glow
+      // trail.material = trailMat;
 
       const glow = new GlowLayer("glow", this.scene);
       glow.intensity = 0;

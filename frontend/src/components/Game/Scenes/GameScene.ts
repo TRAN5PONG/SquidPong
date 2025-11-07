@@ -114,7 +114,7 @@ export class Game {
         this.userId === this.hostId ? this.physics.paddle : null,
         {
           color: paddleColors[0],
-          texture: paddleTextures[1],
+          // texture: paddleTextures[1],
         },
       );
       this.guestPaddle = new Paddle(

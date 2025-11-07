@@ -76,76 +76,60 @@ export class Physics {
   queueBallImpulse(impulse: Vector3) {
     this.Impulse = impulse;
   }
+
   calculateTargetZYVelocity(
-    ballPosition: RAPIER.Vector,
+    ballPos: RAPIER.Vector,
     paddlePos: RAPIER.Vector,
   ): Vector3 {
     const halfLength = constants.TABLE.size.length / 2;
-    let opponentTableStart: number;
-    let opponentTableEnd: number;
+    const halfWidth = constants.TABLE.size.width / 2;
+    const tableSurfaceY =
+      constants.TABLE.position.y + constants.TABLE.size.height / 2;
+    const gravity = Math.abs(constants.Gravity.y); // positive value
 
-    if (paddlePos.z > 0) {
-      opponentTableStart = -halfLength;
-      opponentTableEnd = 0.3;
-    } else {
-      opponentTableStart = 0.3;
-      opponentTableEnd = halfLength;
-    }
-
+    // --- Compute Z target on opponent side ---
     const safeMargin = 0.4;
-    const targetZMin = opponentTableStart + safeMargin;
-    const targetZMax = opponentTableEnd - safeMargin;
-    const paddleSpeed = new Vector3(
-      this.paddle.body.linvel().x,
-      this.paddle.body.linvel().y,
-      this.paddle.body.linvel().z,
-    );
+    const [zMin, zMax] =
+      paddlePos.z > 0
+        ? [-halfLength + safeMargin, 0.3 - safeMargin]
+        : [0.3 + safeMargin, halfLength - safeMargin];
+
     const paddleVelocityZ = this.paddle.body.linvel().z * 0.15;
     const targetZ = this.calculateTargetZFromVelocity(
       paddleVelocityZ,
-      targetZMin,
-      targetZMax,
+      zMin,
+      zMax,
     );
     this.TargetZ = targetZ;
 
-    const tableSurfaceY =
-      constants.TABLE.position.y + constants.TABLE.size.height / 2;
-    const Gravity = constants.Gravity.y * -1;
-
+    // --- Compute Y velocity to reach arc height ---
     const minArcHeight = tableSurfaceY + constants.NET.size.height + 0.2;
-    const currentBasedHeight = ballPosition.y + 0.2;
-    const arcHeight = Math.max(minArcHeight, currentBasedHeight);
+    const arcHeight = Math.max(minArcHeight, ballPos.y + 0.2);
+    const heightGain = Math.max(arcHeight - ballPos.y, 0.3);
 
-    const heightToGain = arcHeight - ballPosition.y;
-
-    const velocityY = Math.sqrt(2 * Gravity * Math.max(heightToGain, 0.3));
-
-    const timeUp = velocityY / Gravity;
-    const timeDown = Math.sqrt((2 * (arcHeight - tableSurfaceY)) / Gravity);
+    const velocityY = Math.sqrt(2 * gravity * heightGain);
+    const timeUp = velocityY / gravity;
+    const timeDown = Math.sqrt((2 * (arcHeight - tableSurfaceY)) / gravity);
     const totalFlightTime = timeUp + timeDown;
 
-    const deltaZ = targetZ - ballPosition.z;
-    const requiredVelocityZ = deltaZ / totalFlightTime;
+    // --- Compute Z velocity to reach target Z ---
+    const velocityZ = (targetZ - ballPos.z) / totalFlightTime;
 
-    const halfWidth = constants.TABLE.size.width / 2;
+    // --- Compute X target and velocity ---
     const minX = -halfWidth + safeMargin;
-    const maxX = +halfWidth - safeMargin;
-
-    let targetX: number;
-    if (!this.appySpin)
-      targetX = paddlePos.x + this.paddle.body.linvel().x * 0.05;
-    else targetX = paddlePos.x;
+    const maxX = halfWidth - safeMargin;
+    let targetX = this.appySpin
+      ? paddlePos.x
+      : paddlePos.x + this.paddle.body.linvel().x * 0.05;
     targetX = Math.max(minX, Math.min(maxX, targetX));
 
-    const deltaX = targetX - ballPosition.x;
-    const velocityX = deltaX / totalFlightTime;
-
+    const velocityX = (targetX - ballPos.x) / totalFlightTime;
     this.TargetX = targetX;
 
-    const newForce = new Vector3(velocityX, velocityY, requiredVelocityZ);
-    return newForce;
+    // --- Return final velocity vector ---
+    return new Vector3(velocityX, velocityY, velocityZ);
   }
-  // Takes paddle velocity and maps it deterministically to a Z target
+
   calculateTargetZFromVelocity(
     paddleVelocityZ: number,
     zMin: number,
@@ -163,11 +147,8 @@ export class Physics {
   Step(dt: number) {
     //TEST:
     this.paddle.update(dt);
-    // this.applyMagnusEffect();
+    this.applyMagnusEffect();
     this.world.step(this.eventQueue);
-
-    // TEST:
-    // this.PaddleMesh.updateFromPhysics();
 
     this.eventQueue.drainCollisionEvents((h1, h2, started) => {
       if (!started) return;
