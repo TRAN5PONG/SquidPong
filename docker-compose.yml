@@ -13,7 +13,7 @@ services:
       - "4000:4000"
     environment:
       - HOST_LOCAL=localhost
-      - HOST_EXTERNAL=10.13.8.3
+      - HOST_EXTERNAL=10.13.249.173
       - BACKEND_HOST=gateway
       - BACKEND_PORT=4000
       - FRONTEND_HOST=frontend
@@ -109,7 +109,7 @@ services:
     ports:
       - "5002:5555"
     volumes:
-      - ./uploads/user/:/user/uploads
+      - ./backend/services/user/uploads:/user/uploads
       - ./backend/services/user/src:/user/src
       - ./backend/services/user/prisma:/user/prisma
     networks:

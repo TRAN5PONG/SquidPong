@@ -3,6 +3,9 @@
 
 
 export enum ProfileMessages {
+  ITEM_NOT_OWNED = 'One or more selected items are not owned by the user.',
+  PLAYER_IS_NOT_OWNED = 'The player skin is not owned by the user.',
+  PADDLE_IS_NOT_OWNED = 'The paddle skin is not owned by the user.',
   NOT_FOUND = 'Profile not found.',
   READY_EXISTS = 'The username is already taken.',
   SAME_USERNAME = 'The new username is the same as the current one.',

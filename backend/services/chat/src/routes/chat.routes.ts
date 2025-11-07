@@ -9,7 +9,6 @@ import {
   getGroupMessages, updateMember, inviteUserToGroup
 } from '../controllers/group.controller';
 
-import { createPoll, getGroupPolls, getPollById, votePollOption, addPollOption, removePoll } from '../controllers/poll.controller';
 import { ReactionsForMessage } from '../controllers/reaction.controller';
 
 
@@ -77,17 +76,17 @@ export const chatRoutes : Route[] = [
 export const groupRoutes: Route[] = [
 
   // Group management
-  { method: 'POST',   url: '/api/group/',                       handler: createGroup, schema: createGroupSchema },                // create new group
-  { method: 'PATCH',  url: '/api/group/:groupId',              handler: updateGroupInfo, schema: updateGroupInfoSchema },            // update group info
-  { method: 'DELETE', url: '/api/group/:groupId',              handler: removeGroup, schema: removeGroupSchema },                // delete group
-  { method: 'GET',    url: '/api/group/:groupId',              handler: getGroupById, schema: getGroupByIdSchema },               // get group by id
-  { method: 'GET',    url: '/api/group',                       handler: getGoupes, schema: getGroupsSchema },                  // list/search group
+  { method: 'POST',   url: '/api/group/',                       handler: createGroup, schema: createGroupSchema },
+  { method: 'PATCH',  url: '/api/group/:groupId',              handler: updateGroupInfo, schema: updateGroupInfoSchema },            
+  { method: 'DELETE', url: '/api/group/:groupId',              handler: removeGroup, schema: removeGroupSchema },                
+  { method: 'GET',    url: '/api/group/:groupId',              handler: getGroupById, schema: getGroupByIdSchema },              
+  { method: 'GET',    url: '/api/group',                       handler: getGoupes, schema: getGroupsSchema },                 
 
   // Members management
-  { method: 'PATCH',  url: '/api/group/:groupId/members', handler: updateMember, schema: updateMemberSchema }, // update role or status (flexible endpoint)
-  { method: 'DELETE', url: '/api/group/:groupId/members', handler: removeGroupMember, schema: removeGroupMemberSchema }, // remove member
-  { method: 'POST',   url: '/api/group/:groupId/members/leave', handler: leaveGroup, schema: leaveGroupSchema },             // leave group voluntarily
-  { method: 'GET',    url: '/api/group/:groupId/members',      handler: listGroupMembers, schema: listGroupMembersSchema },         // list members
+  { method: 'PATCH',  url: '/api/group/:groupId/members', handler: updateMember, schema: updateMemberSchema }, 
+  { method: 'DELETE', url: '/api/group/:groupId/members', handler: removeGroupMember, schema: removeGroupMemberSchema }, 
+  { method: 'POST',   url: '/api/group/:groupId/members/leave', handler: leaveGroup, schema: leaveGroupSchema },            
+  { method: 'GET',    url: '/api/group/:groupId/members',      handler: listGroupMembers, schema: listGroupMembersSchema },    
 
   // Join requests (for private group)
   { method: 'POST',   url: '/api/group/:groupId/join-requests',           handler: requestJoinGroup, schema: requestJoinGroupSchema },
@@ -101,16 +100,7 @@ export const groupRoutes: Route[] = [
 
 ]
 
-// ------------------- Poll REST Endpoints -------------------
-export const pollRoutes: Route[] = [
-  { method: 'POST', url: '/api/group/:groupId/polls', handler: createPoll, schema: createPollSchema },
-  { method: 'GET', url: '/api/group/:groupId/polls', handler: getGroupPolls, schema: getGroupPollsSchema },
-  { method: 'GET', url: '/api/polls/:pollId', handler: getPollById, schema: getPollByIdSchema },
-  { method: 'POST', url: '/api/polls/:pollId/options', handler: addPollOption },
-  { method: 'POST', url: '/api/polls/:pollId/votes', handler: votePollOption, schema: votePollOptionSchema },
-  { method: 'DELETE', url: '/api/polls/:pollId', handler: removePoll, schema: removePollSchema },
-];
-
+// ------------------- Poll REST Endpoints -----------------
 
 
 export const reactionRoutes: Route[] = [
