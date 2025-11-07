@@ -378,25 +378,7 @@ export const getChatByIdSchema: FastifySchema = {
     },
     required: ['chatId']
   },
-  response: {
-    200: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' },
-        data: chatSchema
-      },
-      description: 'Chat retrieved successfully'
-    },
-    403: {
-      ...errorResponse,
-      description: 'Not a member of this chat'
-    },
-    404: {
-      ...errorResponse,
-      description: 'Chat not found'
-    }
-  }
+
 };
 
 export const getRecentChatsSchema: FastifySchema = {
@@ -422,60 +404,5 @@ export const getRecentChatsSchema: FastifySchema = {
       }
     }
   },
-  response: {
-    200: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            recentChats: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  chatId: { type: 'number' },
-                  type: { 
-                    type: 'string',
-                    enum: ['PRIVATE', 'GROUP']
-                  },
-                  user: {
-                    ...chatUserSchema,
-                    description: 'Other user in private chat'
-                  },
-                  group: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'number' },
-                      name: { type: 'string' },
-                      desc: { type: 'string' },
-                      imageUrl: { type: 'string' },
-                      type: { 
-                        type: 'string',
-                        enum: ['PUBLIC', 'PRIVATE']
-                      }
-                    },
-                    description: 'Group information for group chats'
-                  },
-                  lastMessage: messageSchema,
-                  createdAt: { type: 'string', format: 'date-time' }
-                }
-              }
-            },
-            total: {
-              type: 'number',
-              description: 'Total number of recent chats returned'
-            }
-          }
-        }
-      },
-      description: 'Recent chats retrieved successfully'
-    },
-    500: {
-      ...errorResponse,
-      description: 'Internal server error'
-    }
-  }
+  
 };

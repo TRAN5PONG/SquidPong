@@ -11,7 +11,6 @@ export type TournamentStatus = "REGISTRATION" | "IN_PROGRESS" | "COMPLETED" | "C
 
 // Main Profile type
 export type Profile = {
-  id: string;
   userId: number;
   username: string;
   firstName: string;

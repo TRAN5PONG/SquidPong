@@ -13,12 +13,8 @@ export enum ReactionType {
   SAD     = "SAD",      // 😢
   ANGRY   = "ANGRY",    // 😡
   WOW     = "WOW",      // 😮
+  FUCK    = "FUCK",     // 
 
-  // Premium
-  FIRE    = "FIRE",     // 🔥
-  DIAMOND = "DIAMOND",  // 💎
-  MONEY   = "MONEY",    // 🤑
-  STAR    = "STAR"      // ⭐
 }
 
 enum typeofChat {
@@ -30,7 +26,6 @@ const { PRIVATE , GROUP } = typeofChat ;
 
 export enum MessageType 
 {
-
   // --- Persisted ---
   PRIVATE_MESSAGE   = "private-message",
   GROUP_MESSAGE     = "group-message",
@@ -203,26 +198,49 @@ export async function processChatMessageFromRabbitMQ(msg: any)
     const data = JSON.parse(msg.content.toString());
     if (data === null) throw new Error("Received null data from RabbitMQ");
     
-    const { type , chatId , senderId , content , reaction , messageId , isTyping } = data;
-    const {targetId , chat} = await checkChatMembershipAndGetOthers(Number(chatId), Number(senderId));
+    const { type, chatId, senderId, content, reaction, messageId, isTyping } = data;
+    const { targetId, chat } = await checkChatMembershipAndGetOthers(Number(chatId), Number(senderId));
 
-    
+    // Process different message types
+    switch(type) {
+      case MessageType.PRIVATE_MESSAGE:
+      case MessageType.GROUP_MESSAGE:
+        respond = await CreateMessageRecord(Number(chatId), String(senderId), String(content));
+        break;
 
-    if( type === MessageType.PRIVATE_MESSAGE || type === MessageType.GROUP_MESSAGE )
-      respond = await CreateMessageRecord(Number(chatId), String(senderId), String(content) );
-    else if( type === MessageType.ADD_REACTION )
-      respond = await AddORUpdateReactionRecord(chat.messages as any , Number(messageId), reaction as ReactionType , senderId);
-    else if( type === MessageType.REMOVE_REACTION )
-      respond = await RemoveReactionRecord(chat.messages as any , Number(messageId) , senderId);
-    else if( type === MessageType.EDIT_MESSAGE )
-      respond = await editMessageRecord(chat.messages as any , Number(messageId) , content , senderId);
-    else if( type === MessageType.DELETE_MESSAGE )
-      return await deleteMessageRecord(chat.messages as any , Number(messageId) , senderId);
-    else if( type === MessageType.REPLY_MESSAGE )
-      respond = await replyMessageRecord(chat.messages as any , Number(messageId) , content , senderId);
-    else if( type === MessageType.USER_TYPING )
-      respond = await isTypingRecord(Boolean(isTyping));
-    await sendDataToQueue( {...respond , targetId } , "broadcastData" );
+      case MessageType.ADD_REACTION:
+        respond = await AddORUpdateReactionRecord(chat.messages as any, Number(messageId), reaction as ReactionType, senderId);
+        break;
+
+      case MessageType.REMOVE_REACTION:
+        respond = await RemoveReactionRecord(chat.messages as any, Number(messageId), senderId);
+        break;
+
+      case MessageType.EDIT_MESSAGE:
+        respond = await editMessageRecord(chat.messages as any, Number(messageId), content, senderId);
+        break;
+
+      case MessageType.DELETE_MESSAGE:
+        respond = await deleteMessageRecord(chat.messages as any, Number(messageId), senderId);
+        await sendDataToQueue({ ...respond, targetId }, "broadcastData");
+        channel.ack(msg);
+        return;
+
+      case MessageType.REPLY_MESSAGE:
+        respond = await replyMessageRecord(chat.messages as any, Number(messageId), content, senderId);
+        break;
+
+      case MessageType.USER_TYPING:
+        respond = await isTypingRecord(Boolean(isTyping));
+        break;
+
+      default:
+        console.warn(`Unknown message type: ${type}`);
+        channel.ack(msg);
+        return;
+    }
+
+    await sendDataToQueue({ ...respond, targetId }, "broadcastData");
     channel.ack(msg);
   }
   catch (error) 
@@ -230,6 +248,5 @@ export async function processChatMessageFromRabbitMQ(msg: any)
     console.error("Error processing message in chat service:", error);
     channel.nack(msg, false, false); // Discard the message on error
   }
-
 }
 

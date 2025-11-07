@@ -57,7 +57,7 @@ export async function fetchAndEnsureUser(userId: string)
     return await redis.get(key);
 
   user = await prisma.user.findUnique({ where: { userId }});
-  if(!user) throw new Error('User not found in chat service.');
+  if(!user) throw new Error('User not found ');
   return user;
 }
 

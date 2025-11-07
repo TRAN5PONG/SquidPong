@@ -205,12 +205,13 @@ export async function mergeProfileWithRedis(profile: any): Promise<any>
   }
   else
   {
-    await redis.set(cacheKey,{ 
-      level: profile.level , rankTier: profile.rankTier , 
-      status: profile.status , rankDivision : profile.rankDivision ,
-      username : profile.username , avatar : profile.avatar,
-      firstName : profile.firstName , lastName : profile.lastName ,  
-    });
+    //fixed later  missing await
+    // await redis.set(cacheKey,{ 
+    //   level: profile.level , rankTier: profile.rankTier , 
+    //   status: profile.status , rankDivision : profile.rankDivision ,
+    //   username : profile.username , avatar : profile.avatar,
+    //   firstName : profile.firstName , lastName : profile.lastName ,  
+    // });
   }
   return profile;
 }
