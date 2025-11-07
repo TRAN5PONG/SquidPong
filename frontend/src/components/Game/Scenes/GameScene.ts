@@ -132,6 +132,8 @@ export class Game {
       this.opponentPaddle =
         this.userId === this.hostId ? this.guestPaddle : this.hostPaddle;
 
+      // TEST:
+      this.physics.setPaddleMesh(this.localPaddle);
       // Controller
       this.controller = new GameController(
         this.localPaddle,
