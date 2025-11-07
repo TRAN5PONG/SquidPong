@@ -6,7 +6,7 @@ import { Ball } from "../entities/Ball";
 import { Physics } from "../physics";
 import { RollbackManager } from "./RollbackManager";
 import { BallHitMessage, PaddleState } from "@/types/network";
-import { Scene } from "@babylonjs/core";
+import { Scene, Plane } from "@babylonjs/core";
 import { PointerEventTypes } from "@babylonjs/core";
 
 // debug paddle
@@ -38,6 +38,11 @@ export class GameController {
     [];
   private readonly MAX_SIZE: number = 6;
 
+  // TEST: Mouse tracking
+  private clampedX: number = 0;
+  private clampedZ: number = 0;
+  private paddlePlane: Plane | null = null;
+
   // Debug
   private debugMeshes: DebugMeshManager;
   constructor(
@@ -59,7 +64,7 @@ export class GameController {
 
     // Debug
     this.debugMeshes = new DebugMeshManager(this.scene);
-    this.debugMeshes.createMeshes();
+    // this.debugMeshes.createMeshes();
 
     // For now, right paddle always serves first just for testing
     this.MyTurnToServe = this.localPaddle.side === "LEFT" ? true : false;
@@ -116,21 +121,90 @@ export class GameController {
         }
       }
     });
+
+    // TEST:
+    // this.setupPaddlePlane();
+    // this.enableLiveMouseTracking();
+  }
+
+  // TEST:
+  // ================= 2D To 3D ==================
+
+  private screenToWorld(mouseX: number, mouseY: number): Vector3 {
+    const ray = this.scene.createPickingRay(
+      mouseX,
+      mouseY,
+      null,
+      this.scene.activeCamera,
+    );
+
+    const plane = Plane.FromPositionAndNormal(
+      new Vector3(0, 2.8, 0),
+      new Vector3(0, 1, 0),
+    ); // y=2.8 plane
+    const distance = ray.intersectsPlane(plane);
+    if (distance === null) return Vector3.Zero();
+
+    return ray.origin.add(ray.direction.scale(distance));
+  }
+
+  private enableLiveMouseTracking(): void {
+    this.scene.onBeforeRenderObservable.add(() => {
+      if (!this.paddlePlane) return;
+      const pointerX = this.scene.pointerX;
+      const pointerY = this.scene.pointerY;
+      if (pointerX === undefined || pointerY === undefined) return;
+
+      const ray = this.scene.createPickingRay(
+        pointerX,
+        pointerY,
+        null,
+        this.scene.activeCamera,
+      );
+      const distance = ray.intersectsPlane(this.paddlePlane);
+      if (distance === null) return;
+
+      const boundaries = this.localPaddle.getBoundaries();
+      const point = ray.origin.add(ray.direction.scale(distance));
+
+      this.clampedX = Math.max(
+        boundaries.x.min,
+        Math.min(boundaries.x.max, point.x),
+      );
+      this.clampedZ = Math.max(
+        boundaries.z.min,
+        Math.min(boundaries.z.max, point.z),
+      );
+    });
+  }
+
+  private setupPaddlePlane(): void {
+    const planePosition = new Vector3(
+      0,
+      this.localPaddle.getMeshPosition().y,
+      0,
+    );
+    const planeNormal = new Vector3(0, 1, 0);
+    this.paddlePlane = Plane.FromPositionAndNormal(planePosition, planeNormal);
   }
 
   private updateLocalPaddle(): void {
     if (!this.localPaddle) return;
 
-    this.localPaddle.update();
+    // this.localPaddle.update();
 
     // dubeg
-    const position = this.localPaddle.getMeshPosition();
+    const position = this.physics.getPaddlePosition();
     const rotation = this.localPaddle.getMeshRotation();
     // this.debugMeshes.updatePaddle(position, rotation);
+    // this.debugMeshes.paddleMesh!.position.copyFrom(position);
   }
 
   // ================= Visual interpolation =================
   public updateVisuals(alpha: number): void {
+    // TEST:
+    this.localPaddle.updateVisual(alpha);
+
     this.updateVisualsOpponentPaddle();
     this.updateVisualsBall(alpha);
   }
@@ -161,7 +235,7 @@ export class GameController {
 
     // debug
     const ballPos = this.ball.getMeshPosition();
-    this.debugMeshes.updateBall(ballPos);
+    // this.debugMeshes.updateBall(ballPos);
   }
 
   public getInterpolated(time: number): PaddleState | null {
@@ -433,10 +507,18 @@ export class GameController {
   // ==================== Main update methods =================
   public fixedUpdate(): void {
     if (!this.ball || !this.physics) return;
+    // TEST:
+    const pointerX = this.scene.pointerX;
+    const pointerY = this.scene.pointerY;
 
+    const worldPos = this.screenToWorld(pointerX, pointerY);
+    this.physics.paddle.setTarget(worldPos.x, worldPos.y, worldPos.z);
+
+    // TEST:
     this.updateLocalPaddle();
+
     this.physics.ball.setPosition("PREV");
-    this.physics.Step();
+    this.physics.Step(1 / 60);
     this.physics.ball.setPosition("CURR");
 
     // if (this.serveState === GameState.IN_PLAY)

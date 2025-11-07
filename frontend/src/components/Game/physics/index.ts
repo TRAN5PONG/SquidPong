@@ -9,6 +9,8 @@ import { Floor } from "./Floor";
 import { Net } from "./Net";
 import { Table } from "./Table";
 
+// TEST:import { Paddle } from "../entities/Paddle/GamePaddle";
+import { paddle } from "../entities/Paddle/GamePaddle";
 export class Physics {
   private world!: RAPIER.World;
   eventQueue: RAPIER.EventQueue = null!;
@@ -21,6 +23,8 @@ export class Physics {
   private spinDecay: number = 0.98; // Spin decay factor per tick
   private appySpin: boolean = false;
 
+  // TEST:
+  private PaddleMesh: paddle | null = null;
   timestep = 1 / 60;
   // callback
   public onBallPaddleCollision?: (
@@ -51,7 +55,7 @@ export class Physics {
 
     this.world = new RAPIER.World(constants.Gravity);
     this.world.timestep = 1 / 60;
-    this.eventQueue = new RAPIER.EventQueue(false);
+    this.eventQueue = new RAPIER.EventQueue(true);
 
     // Create entities
     new Table(this.world);
@@ -96,7 +100,7 @@ export class Physics {
       this.paddle.body.linvel().y,
       this.paddle.body.linvel().z,
     );
-    const paddleVelocityZ = paddleSpeed.length() * 0.009; // TODO: adjusting
+    const paddleVelocityZ = this.paddle.body.linvel().z * 0.15;
     const targetZ = this.calculateTargetZFromVelocity(
       paddleVelocityZ,
       targetZMin,
@@ -152,9 +156,18 @@ export class Physics {
     return zMin + t * (zMax - zMin); // Map to [zMin, zMax]
   }
 
-  Step() {
+  // TEST:
+  public setPaddleMesh(paddle: paddle) {
+    this.PaddleMesh = paddle;
+  }
+  Step(dt: number) {
+    //TEST:
+    this.paddle.update(dt);
     // this.applyMagnusEffect();
     this.world.step(this.eventQueue);
+
+    // TEST:
+    // this.PaddleMesh.updateFromPhysics();
 
     this.eventQueue.drainCollisionEvents((h1, h2, started) => {
       if (!started) return;
@@ -177,7 +190,6 @@ export class Physics {
       if (now - this.lastCollisioDetectionTime < 150) return;
       this.lastCollisioDetectionTime = now;
 
-      console.log("Ball-Paddle collision detected");
       this.onBallPaddleCollision?.(this.ball.body, this.paddle.body);
       return;
     }
