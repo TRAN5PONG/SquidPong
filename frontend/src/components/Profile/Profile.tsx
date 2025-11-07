@@ -23,7 +23,7 @@ import { useAppContext } from "@/contexts/AppProviders";
 import Toast from "../Toast/Toast";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { getRankMetaData } from "@/utils/game";
-import { getUserById, getUserFriends, MiniUser } from "@/api/user";
+import { blockUser, getUserById, getUserFriends, MiniUser } from "@/api/user";
 import Skeleton from "../Skeleton/Skeleton";
 
 const StyledProfileModal = styled("div")`
@@ -407,21 +407,35 @@ const Profile = () => {
   const navigate = useNavigate();
 
   const handleBlockUser = () => {
-    console.log("Block user clicked");
+    if (!profileData) return;
 
     modal
       .showConfirmationModal(
         "Are you sure you want to block this user?",
         "Block User"
       )
-      .then((confirmed) => {
+      .then(async (confirmed) => {
         if (confirmed) {
-          toasts.addToastToQueue({
-            message: "User has been blocked",
-            type: "success",
-            duration: 3000,
-            key: 12344,
-          });
+          try {
+            console.log(profileData.id);
+            const resp = await blockUser(Number(profileData.userId));
+            if (!resp.success) {
+              throw new Error("Failed to block user");
+            }
+            toasts.addToastToQueue({
+              message: "User has been blocked",
+              type: "success",
+              duration: 3000,
+              key: 12344,
+            });
+          } catch (error) {
+            toasts.addToastToQueue({
+              message: "Failed to block user. Please try again later.",
+              type: "error",
+              duration: 3000,
+              key: 12345,
+            });
+          }
         } else {
           toasts.addToastToQueue({
             message: "User block cancelled",
@@ -530,9 +544,7 @@ const Profile = () => {
 
         {user?.username === profileData.username ? (
           <div className="ActionBtns">
-            <button className="actionBtn AddFriendBtn">
-              Settings
-            </button>
+            <button className="actionBtn AddFriendBtn">Settings</button>
           </div>
         ) : (
           <div className="ActionBtns">
