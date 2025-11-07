@@ -70,6 +70,7 @@ export enum FriendMessages {
   ADD_SELF = 'You cannot send a friend request to yourself.',
   NOT_FRIENDS = 'You can only block existing friends.',
   FETCH_SUCCESS = 'Friends list fetched successfully.',
+  BLOCK_FETCH_SUCCESS = 'Blocked users fetched successfully.',
   FETCH_NOT_FOUND = 'No friends found for the user.',
   PENDING_FETCH_SUCCESS = 'Pending friend requests fetched successfully.',
   ADD_SUCCESS = 'Friend request sent successfully.',

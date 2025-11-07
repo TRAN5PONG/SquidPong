@@ -104,9 +104,14 @@ export async function sendFriendRequestHandler(req: FastifyRequest, res: Fastify
     await iSameUser(senderId , receiverId);
 
     const exists = await prisma.friendship.findUnique({
-      where: { senderId_receiverId: { senderId, receiverId } }
+      where : {
+        OR : [
+          { senderId_receiverId: { senderId, receiverId } },
+          { senderId_receiverId: { senderId: receiverId, receiverId: senderId } }
+        ]
+      }
     });
-    if (exists) throw new Error(`this frindship is ${exists.status}`);
+    if (exists) throw new Error(`${exists.senderId === senderId ? 'Friend request already sent' : 'You are already friends or have a pending request'}`);
     
     await prisma.friendship.create({ data: { senderId, receiverId, status: PENDING }});
     
