@@ -67,7 +67,7 @@ export class GameController {
     // this.debugMeshes.createMeshes();
 
     // For now, right paddle always serves first just for testing
-    this.MyTurnToServe = this.localPaddle.side === "LEFT" ? true : false;
+    this.MyTurnToServe = this.localPaddle.side === "RIGHT" ? true : false;
 
     // Listen for opponent paddle updates
     this.net.on("opponent:paddle", (data) => {
@@ -386,14 +386,14 @@ export class GameController {
       }
 
       this.lastCollisionTick = this.currentTick;
-      // const spinCalc = this.calculateMagnusSpin(
-      //   paddleSpeed,
-      //   paddleVelocity.x,
-      //   this.paddle.side
-      // );
-      // const spinY = spinCalc.spinY;
-      // this.physics!.setBallSpin(0, spinY, 0);
-      // this.physics!.setApplySpin(spinCalc.applySpin);
+      const spinCalc = this.calculateMagnusSpin(
+        paddleSpeed,
+        paddleVelocity.x,
+        this.localPaddle.side === "RIGHT" ? -1 : 1,
+      );
+      const spinY = spinCalc.spinY;
+      this.physics!.setBallSpin(0, spinY, 0);
+      this.physics!.setApplySpin(spinCalc.applySpin);
 
       const ballVel = this.physics!.calculateTargetZYVelocity(
         ball.translation(),

@@ -22,10 +22,10 @@ export const constants = {
     size: { width: 40, height: 0.1, length: 40 } as Size3D,
   },
   PADDLE: {
-    size: { width: 0.6, height: 0.6, length: 0.04 } as Size3D,
+    size: { width: 0.8, height: 0.6, length: 0.2 } as Size3D,
     position: {
-      left: { x: 0, y: 2, z: 4 } as Vector3,
-      right: { x: 0, y: 2, z: 4 } as Vector3,
+      left: { x: 0, y: 3, z: 5 } as Vector3,
+      right: { x: 0, y: 3, z: 5 } as Vector3,
     },
   },
   NET: {

@@ -13,7 +13,11 @@ export class Paddle {
 
   constructor(world: RAPIER.World) {
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-      .setTranslation(0, 0, 0)
+      .setTranslation(
+        constants.PADDLE.position.right.x,
+        constants.PADDLE.position.right.y,
+        constants.PADDLE.position.right.z,
+      )
       .setCcdEnabled(true)
       .lockRotations()
       .setLinearDamping(4);
@@ -26,7 +30,7 @@ export class Paddle {
       constants.PADDLE.size.length / 2,
     )
       .setDensity(4)
-      .setSensor(false); // Set as sensor to avoid physical collisions
+      .setSensor(true); // Set as sensor to avoid physical collisions
 
     this.collider = world.createCollider(colliderDesc, this.body);
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
