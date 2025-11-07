@@ -251,15 +251,30 @@ export const updateProfileDBSchema: FastifySchema = {
         type: 'string',
         description: 'Banner image URL'
       },
+      status: {
+        type: 'string',
+        enum: ['ONLINE', 'IDLE', 'DO_NOT_DISTURB' , 'OFFLINE'],
+        description: 'User status'
+      },
       playerCharacters: {
         type: 'string',
         enum: ['Zero', 'Taizen', 'Kira', 'Ryu', 'Akira', 'Sora_F2', 'Sora_M3', 'Sora_F3'],
         description: 'Player character to purchase/select'
       },
+      playerSelectedCharacter: {
+        type: 'string',
+        enum: ['Zero', 'Taizen', 'Kira', 'Ryu', 'Akira', 'Sora_F2', 'Sora_M3', 'Sora_F3'],
+        description: 'Selected player character'
+      },
       playerPaddles: {
         type: 'string',
         enum: ['Boss', 'Survivor', 'Guard', 'Army'],
         description: 'Player paddle to purchase/select'
+      },
+      playerSelectedPaddle: {
+        type: 'string',
+        enum: ['Boss', 'Survivor', 'Guard', 'Army'],
+        description: 'Selected player paddle'
       },
       isVerified: {
         type: 'boolean',

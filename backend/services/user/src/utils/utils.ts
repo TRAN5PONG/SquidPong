@@ -1,6 +1,5 @@
 
 import fs from 'fs';
-import { pipeline } from 'stream/promises';
 import { FastifyRequest } from 'fastify';
 import prisma from '../db/database';
 import { redis } from '../integration/redis.integration';
@@ -12,9 +11,9 @@ import crypto from 'crypto';
 export async function convertParsedMultipartToJson(req: FastifyRequest): Promise<string> 
 {
   const rawBody = req.body as any;
-  let file : string  = "";
+  let file: string = "";
   
-  const uploadDir = path.join(process.cwd(),'uploads' , 'avatar');
+  const uploadDir = path.join(process.cwd(), 'uploads', 'avatar');
   if (!fs.existsSync(uploadDir))
     fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -23,7 +22,7 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
     const field = rawBody[key];
 
     if (field?.type === 'file') 
-      {
+    {
       const ext = path.extname(field.filename) || '.png';
 
       let randomName: string;
@@ -34,7 +33,9 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
         filePath = path.join(uploadDir, randomName);
       } while (fs.existsSync(filePath));
 
-      await pipeline(field.file, fs.createWriteStream(filePath));
+      
+      const buffer = await field.toBuffer();
+      fs.writeFileSync(filePath, buffer);
 
       file = `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/user/avatars/${randomName}`;
     } 
@@ -43,110 +44,6 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
   return file;
 }
 
-
-
-
-
-export async function updateProfileRedis(body: any, userId: number) 
-{
-  const redisKey = `profile:${userId}`;
-
-  const profile = await redis.get(redisKey);
-  if (!profile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
-
-
-  // Merge JSON array fields directly in Redis
-  const jsonArrayFields: (keyof typeof profile)[] = ["playerCharacters", "playerPaddles"];
-  for (const field of jsonArrayFields) 
-  {
-    if (body[field]) 
-    {
-      const newArray = Array.isArray(body[field]) ? body[field] : [body[field]];
-      await redis.arrayUniqueMerge(redisKey, field as string, newArray);
-    }
-  }
-
-  // if (body.preferences)
-  //   await redis.mergeObject(redisKey, "preferences", body.preferences);
-
-  // for (const [key, value] of Object.entries(body)) 
-  // {
-  //   if (!jsonArrayFields.includes(key as keyof typeof profile) && key !== "preferences")
-  //     await redis.update(redisKey, key, value);
-  // }
-
-  return await redis.get(redisKey);
-}
-
-
-
-
-
-
-
-
-
-export async function syncRedisProfileToDbAppendArrays(userId: number) 
-{
-  const redisKey = `profile:${userId}`;
-
-  const redisProfile = await redis.get(redisKey);
-  if (!redisProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
-
-  const dbProfile = await prisma.profile.findUnique({ where: { userId } });
-
-  console.log('DB Profile:', dbProfile?.status);
-
-  const dbPlayerCharacters = Array.isArray(dbProfile?.playerCharacters) 
-    ? dbProfile.playerCharacters 
-    : (dbProfile?.playerCharacters ? JSON.parse(dbProfile.playerCharacters as string) : []);
-  
-  const dbPlayerPaddles = Array.isArray(dbProfile?.playerPaddles)
-    ? dbProfile.playerPaddles
-    : (dbProfile?.playerPaddles ? JSON.parse(dbProfile.playerPaddles as string) : []);
-
-  const mergedPlayerCharacters = [...new Set([
-    ...dbPlayerCharacters,
-    ...(redisProfile?.playerCharacters ?? []),
-  ])];
-
-  const mergedPlayerPaddles = [...new Set([
-    ...dbPlayerPaddles,
-    ...(redisProfile?.playerPaddles ?? []),
-  ])];
-
-
-
-  const { id, createdAt, updatedAt, preferences, ...cleanRedisProfile } = redisProfile;
-
-  const profile = await prisma.profile.update({
-    where: { userId },
-    data: {
-      ...cleanRedisProfile,
-      // Update preferences as a nested update
-      preferences: {
-        update: {
-          soundEnabled: preferences?.soundEnabled,
-          musicEnabled: preferences?.musicEnabled,
-          twoFactorEnabled: preferences?.twoFactorEnabled,
-        }
-      }
-    }
-  });
-
-  console.log('Updated DB Profile:', profile);
-  
-  await redis.del(redisKey);
-  return profile;
-}
-
-export async function getProfile(userId: number)
-{
-
-  const profile = await prisma.profile.findUnique({ where: { userId }});
-  if (!profile) throw new Error(`Profile not found for userId ${userId}`);
-  return profile;
-}
 
 
 export function checkSecretToken(req: FastifyRequest)
@@ -290,8 +187,6 @@ export function getPromotedRank(profileRedis: any, newLevel: number)
 
 
 
-
-
 export async function mergeProfileWithRedis(profile: any): Promise<any> 
 {
   const cacheKey = `profile:${profile.userId}`;
@@ -299,6 +194,15 @@ export async function mergeProfileWithRedis(profile: any): Promise<any>
   {
     const redisProfile = await redis.get(cacheKey);
     return { ...profile, ...redisProfile };
+  }
+  else
+  {
+    await redis.set(cacheKey,{ 
+      level: profile.level , rankTier: profile.rankTier , 
+      status: profile.status , rankDivision : profile.rankDivision ,
+      username : profile.username , avatar : profile.avatar,
+      firstName : profile.firstName , lastName : profile.lastName ,  
+    });
   }
   return profile;
 }
@@ -308,6 +212,7 @@ export async function mergeProfileWithRedis(profile: any): Promise<any>
 
 export async function purchaseItem(user : any, itemType: 'playerCharacters' | 'playerPaddles', itemName: string) : Promise<any>
 {
+
   const { getCharacterPrice, getPaddlePrice } = await import('../utils/itemPrices');
   const new_data : any = {};
   let itemPrice : number = 0;
@@ -317,28 +222,28 @@ export async function purchaseItem(user : any, itemType: 'playerCharacters' | 'p
   if(itemName === undefined) return;
   if (itemType === 'playerCharacters')
   {
-    if(user.playerCharacters.includes(itemName))
-      return new_data[itemType];
+    if(user.playerCharacters.includes(itemName)) throw new Error(`Character ${itemName} already owned.`);
     itemPrice = getCharacterPrice(itemName);
   } 
   else if (itemType === 'playerPaddles')
   {
-    if(user.playerPaddles.includes(itemName))
-      return new_data[itemType];
+    if(user.playerPaddles.includes(itemName)) throw new Error(`Paddle ${itemName} already owned.`);
     itemPrice = getPaddlePrice(itemName);
-  } 
+  }
 
   let existsInRedis = false;
   const userId = user.userId; 
-  const userKey = `user:${userId}`;
-  let walletBalance : number = 0; 
+  const userKey = `profile:${userId}`;
+  let walletBalance : number = 0;
+
   if (await redis.exists(userKey)) 
   {
     existsInRedis = true;
     walletBalance = (await redis.get(userKey))?.walletBalance;
   } 
   else 
-    walletBalance = user.walletBalance; 
+    walletBalance = user.walletBalance;
+
   if (walletBalance < itemPrice)
     throw new Error(`Insufficient wallet balance. Required: ${itemPrice}, Available: ${walletBalance}`);  
   const newWalletBalance = walletBalance - itemPrice;
@@ -346,9 +251,8 @@ export async function purchaseItem(user : any, itemType: 'playerCharacters' | 'p
     await redis.update( userKey , '$' , {walletBalance : newWalletBalance} );
   else
   {
-
     user.walletBalance = newWalletBalance;
-    // new_data['walletBalance'] = newWalletBalance;
+    new_data['walletBalance'] = newWalletBalance;
   }
 
   new_data[itemType].push(itemName);
@@ -358,15 +262,18 @@ export async function purchaseItem(user : any, itemType: 'playerCharacters' | 'p
 
 
 
+export async function SelectedItemExists(user: any, itemType: 'playerCharacters' | 'playerPaddles', itemName: string) : Promise<boolean>
+{
+  if (itemType === 'playerCharacters')
+    return user.playerCharacters.includes(itemName);
+  else if (itemType === 'playerPaddles')
+    return user.playerPaddles.includes(itemName);
+  return false;
+}
 
 
 
 
-/**
- * Buy verified status for a user for 500 coins.
- * Deducts coins and sets isVerified=true if enough balance.
- * Throws error if insufficient balance or already verified.
- */
 export async function buyVerified(user: any) : Promise<{isVerified: boolean , walletBalance: number}>
 {
   const userKey = `profile:${user.userId}`;

@@ -9,6 +9,13 @@ datasource db {
 
 
 // =============== Enums ===============
+enum UserStatus {
+  ONLINE
+  OFFLINE
+  IDLE
+  DO_NOT_DISTURB
+}
+
 enum NotificationStatus {
   UNREAD
   READ
@@ -42,6 +49,8 @@ model User {
   lastName    String
   isVerified  Boolean  @default(false)
   avatar      String   @default("")
+
+  status      UserStatus   @default(OFFLINE)
 
   isDeleted   Boolean  @default(false)
 
