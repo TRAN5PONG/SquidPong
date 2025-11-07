@@ -1,9 +1,10 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance ,  FastifyRequest, FastifyReply } from 'fastify';
 import multipart from '@fastify/multipart';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
+
 
 
 export default async function registerPlugins(app:FastifyInstance) 
@@ -34,14 +35,10 @@ app.register(fastifySwaggerUi, { routePrefix: '/api/user/docs', });
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
     files: 1,
-    fields: 10,
   },
   attachFieldsToBody: true,
   });
 
-
-
-  
 
   app.register(fastifyStatic, {
     root: path.join(process.cwd(), 'uploads', 'avatar'),

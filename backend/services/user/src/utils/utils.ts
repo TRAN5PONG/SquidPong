@@ -14,8 +14,7 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
   let file: string = "";
   
   const uploadDir = path.join(process.cwd(), 'uploads', 'avatar');
-  if (!fs.existsSync(uploadDir))
-    fs.mkdirSync(uploadDir, { recursive: true });
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
   for (const key in rawBody) 
   {
@@ -25,12 +24,12 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
     {
       const ext = path.extname(field.filename) || '.png';
 
-      let randomName: string;
       let filePath: string;
+      let randomName: string;
 
       do {
-        randomName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
-        filePath = path.join(uploadDir, randomName);
+          randomName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+          filePath = path.join(uploadDir, randomName);
       } while (fs.existsSync(filePath));
 
       
@@ -44,6 +43,15 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
   return file;
 }
 
+
+
+export async function getProfile(userId: number)
+{
+
+  const profile = await prisma.profile.findUnique({ where: { userId }});
+  if (!profile) throw new Error(`Profile not found for userId ${userId}`);
+  return profile;
+}
 
 
 export function checkSecretToken(req: FastifyRequest)

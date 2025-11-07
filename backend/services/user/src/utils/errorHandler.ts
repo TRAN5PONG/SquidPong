@@ -42,24 +42,72 @@ const formatValidationError = (validationErrors: any[]) => {
   return errors.join('; ');
 };
 
-export function errorHandler( error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
-  console.error('Error occurred:', error);
+export function errorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) 
+{
+  if (reply.sent) return
 
-  // If it's a validation error
-  if (error.validation) {
-    const detailedMessage = formatValidationError(error.validation);
+
+  const closeRequestStream = () => {
+    try {
+      if (request.raw?.readableEnded === false) {
+        request.raw.resume() // drain remaining bytes
+      }
+    } catch (err) {
+      console.warn('Failed to drain request stream:', err)
+    }
+  }
+
+  // 🧩 Handle multipart/file upload errors
+  if (error.code === 'FST_FILES_LIMIT' || error.message?.includes('reach files limit')) 
+    {
+    closeRequestStream()
+    return reply.status(400).send({
+      success: false,
+      message: 'Too many files uploaded. Only 1 file is allowed per request.'
+    })
+  }
+
+  if (error.code === 'FST_REQ_FILE_TOO_LARGE' || error.message?.includes('File size limit')) 
+    {
+    closeRequestStream()
+    return reply.status(413).send({
+      success: false,
+      message: 'File size too large. Maximum file size is 5MB.'
+    })
+  }
+
+  if (error.code === 'FST_PARTS_LIMIT' || error.message?.includes('reach parts limit')) 
+  {
+    closeRequestStream()
+    return reply.status(400).send({
+      success: false,
+      message: 'Too many parts in the request. Please reduce the number of fields.'
+    })
+  }
+
+  if (error.code?.startsWith('FST_') || error.name === 'FastifyError') 
+    {
+    closeRequestStream()
+    return reply.status(error.statusCode || 400).send({
+      success: false,
+      message: error.message || 'Bad request'
+    })
+  }
+
+  if ((error as any).validation) 
+  {
+    const detailedMessage = formatValidationError((error as any).validation)
     return reply.status(400).send({
       success: false,
       message: `Validation failed: ${detailedMessage}`,
-      errors: error.validation // Include raw validation errors for debugging
-    });
+      errors: (error as any).validation
+    })
   }
 
-  // If it's a normal error with a message
   return reply.status(error.statusCode || 500).send({
     success: false,
     message: error.message || 'Internal Server Error'
-  });
+  })
 }
 
 

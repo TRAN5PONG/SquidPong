@@ -4,26 +4,17 @@ import { errorHandler } from './utils/errorHandler';
 import registerPlugins from './plugins/plugins'
 import prisma from './db/database'
 
-const app: FastifyInstance = fastify({
-  ajv: {
-    customOptions: {
-      removeAdditional: false // Fix: Don't remove extra properties, throw errors instead
-    }
-  }
-});
+const app: FastifyInstance = fastify();
+
+
 export default app;
 
 registerPlugins(app);
 
 const routes = [...userRoutes , ...friendRoutes]
 
-// Health check route
-app.get('/api/user/health', async (req:any, res:any) => {
-  return res.send({ status: 'User service is healthy' });
+app.register(async (instance : FastifyInstance) => {
+  routes.forEach(route => instance.route(route));
 });
 
-
-
-app.register(async () => {routes.forEach(route => app.route(route))});
-
-app.setErrorHandler(errorHandler)
+app.setErrorHandler(errorHandler);

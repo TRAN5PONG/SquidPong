@@ -13,8 +13,7 @@ import {
   searchUsersSchema,
   deleteProfileSchema,
   getUserByUserNameSchema,
-  purchaseItemSchema,
-  getShopItemsSchema
+  updateAvatarSchema
 } from '../schemas/user.schemas';
 import {
   sendFriendRequestSchema,
@@ -45,7 +44,7 @@ const userRoutes: Route[] = [
   { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler, schema: createProfileSchema },
   { method: 'PUT', url: '/api/user/db', handler: userController.updateProfileHandlerDB, schema: updateProfileDBSchema },
   { method: 'PUT', url: '/api/user/realtime', handler: userController.updateProfileHandler },
-  { method: 'PUT', url: '/api/user/avatar', handler: userController.updateProfileImageHandler },
+  { method: 'PUT', url: '/api/user/avatar', handler: userController.updateProfileImageHandler, schema: updateAvatarSchema },
   { method: 'DELETE', url: '/api/user/me', handler: userController.deleteProfileHandler, schema: deleteProfileSchema },
   
   { method: 'GET', url: '/api/user/me', handler: userController.getCurrentUserHandler, schema: getCurrentUserSchema },
