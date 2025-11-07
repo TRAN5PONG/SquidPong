@@ -462,6 +462,7 @@ export const getAllUsersSchema: FastifySchema = {
   }
 };
 
+
 export const searchUsersSchema: FastifySchema = {
   description: 'Search users by username or first name',
   tags: ['Profile Management'],
@@ -526,81 +527,55 @@ export const deleteProfileSchema: FastifySchema = {
 // PURCHASE SCHEMAS
 // =============================================
 
-export const purchaseItemSchema: FastifySchema = {
-  description: 'Purchase character or paddle with wallet balance',
-  tags: ['Shop'],
-  summary: 'Purchase Item',
+
+
+export const updateAvatarSchema: FastifySchema = {
+  description: 'Upload user avatar image',
+  tags: ['Profile Management'],
+  summary: 'Upload Avatar',
   headers: {
     type: 'object',
     properties: {
       'x-user-id': {
         type: 'string',
-        description: 'User ID for authentication'
+        description: 'User ID from authentication token'
       }
     },
     required: ['x-user-id']
   },
+  consumes: ['multipart/form-data'],
   body: {
     type: 'object',
     properties: {
-      itemType: {
-        type: 'string',
-        enum: ['character', 'paddle'],
-        description: 'Type of item to purchase'
-      },
-      itemName: {
-        type: 'string',
-        description: 'Name of the item to purchase (e.g., "Taizen", "Survivor")'
+      avatar: {
+        description: 'Avatar image file (max 5MB). Field name must be "avatar"',
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['file'] },
+          filename: { type: 'string' },
+          encoding: { type: 'string' },
+          mimetype: { type: 'string', pattern: '^image/' }
+        }
       }
     },
-    required: ['itemType', 'itemName']
+    required: ['avatar']
   },
   response: {
     200: {
       ...successResponse,
-      description: 'Item purchased successfully'
+      description: 'Avatar uploaded successfully. The avatar URL is updated in the database.'
     },
     400: {
       ...errorResponse,
-      description: 'Invalid item type or name'
+      description: 'Invalid file format or missing avatar field'
     },
-    402: {
+    401: {
       ...errorResponse,
-      description: 'Insufficient wallet balance'
+      description: 'Unauthorized - invalid or missing user ID'
     },
-    409: {
+    413: {
       ...errorResponse,
-      description: 'Item already owned'
-    },
-    404: {
-      ...errorResponse,
-      description: 'User not found'
-    }
-  }
-};
-
-export const getShopItemsSchema: FastifySchema = {
-  description: 'Get available shop items and user ownership status',
-  tags: ['Shop'],
-  summary: 'Get Shop Items',
-  headers: {
-    type: 'object',
-    properties: {
-      'x-user-id': {
-        type: 'string',
-        description: 'User ID for authentication'
-      }
-    },
-    required: ['x-user-id']
-  },
-  response: {
-    200: {
-      ...successResponse,
-      description: 'Shop items retrieved successfully'
-    },
-    404: {
-      ...errorResponse,
-      description: 'User not found'
+      description: 'File too large - maximum size is 5MB'
     }
   }
 };
