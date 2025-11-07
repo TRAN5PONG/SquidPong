@@ -2,7 +2,7 @@ import { fastify, FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import registerPlugins from './plugins/plugins';
 import { errorHandler } from './utils/errorHandler';
 
-import {chatRoutes , groupRoutes  , reactionRoutes } from './routes/chat.routes';
+import {chatRoutes , groupRoutes  , reactionRoutes, messageRoutes } from './routes/chat.routes';
 
 
 const app: FastifyInstance = fastify({
@@ -23,6 +23,7 @@ app.setErrorHandler(errorHandler);
 app.register(async () => {chatRoutes.forEach(route => app.route(route))});
 app.register(async () => {groupRoutes.forEach(route => app.route(route))});
 app.register(async () => {reactionRoutes.forEach(route => app.route(route))});
+app.register(async () => {messageRoutes.forEach(route => app.route(route))});
 
 
 app.get('/api/chat/health', async (req:any, res:any) => {
