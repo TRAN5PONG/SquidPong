@@ -27,6 +27,7 @@ import {
   changeAvatar,
   updateProfile,
   getBlockedUsers,
+  unblockUser,
 } from "@/api/user";
 
 const StyledSettings = styled("div")`
@@ -242,7 +243,6 @@ const StyledSettings = styled("div")`
         gap: 5px;
         align-items: center;
         justify-content: center;
-   
       }
 
       .SaveChangesBtn {
@@ -705,14 +705,14 @@ const Settings = () => {
       } else {
         setBlockedUsers([]);
       }
-    }
-    catch(err: any) {
+    } catch (err: any) {
       toasts.addToastToQueue({
         type: "error",
-        message: err.message || "An error occurred while fetching blocked users.",
+        message:
+          err.message || "An error occurred while fetching blocked users.",
       });
     }
-  }
+  };
   const handleAcceptFriendRequest = async (friendId: number) => {
     const resp = await acceptFriendRequest(friendId);
 
@@ -742,6 +742,28 @@ const Settings = () => {
       toasts.addToastToQueue({
         type: "error",
         message: resp.message || "Failed to reject friend request.",
+      });
+    }
+  };
+  const handleUnblockUser = async (userId: number) => {
+    try {
+      const resp = await unblockUser(userId);
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "User unblocked successfully!",
+        });
+        fetchBlockedUsers();
+      } else {
+        toasts.addToastToQueue({
+          type: "error",
+          message: resp.message || "Failed to unblock user.",
+        });
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "An error occurred while unblocking user.",
       });
     }
   };
@@ -1056,7 +1078,10 @@ const Settings = () => {
                       />
                       <span>{user.username}</span>
 
-                      <buttn className="unblockBtn" onClick={() => {}}>
+                      <buttn
+                        className="unblockBtn"
+                        onClick={() => handleUnblockUser(user.userId)}
+                      >
                         unblock
                         <DeleteIcon size={16} fill="rgba(255, 255, 255, 0.5)" />
                       </buttn>

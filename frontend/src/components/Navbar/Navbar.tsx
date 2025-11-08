@@ -19,7 +19,7 @@ import UserBanner from "./UserBanner";
 import SearchModal from "./search/Search";
 import SettingsModal from "./SettingsModal/SettingsModal";
 import TwoFAModal from "../Settings/twoFA";
-import { getNotifications } from "@/api/notification";
+import { getNotifications, markNotificationAsRead } from "@/api/notification";
 import { NotificationEl } from "@/types/notification";
 import { socketManager } from "@/utils/socket";
 import Toast from "../Toast/Toast";
@@ -212,6 +212,12 @@ const Navbar = () => {
         type: "info",
         message: data.message,
         duration: 5000,
+        onClick() {
+          try {
+            console.log("Notification clicked:", data); // TODO
+            markNotificationAsRead(data.id);
+          } catch (error) {}
+        },
       });
       getNotifs();
     });
@@ -285,6 +291,7 @@ const Navbar = () => {
             setShowNotificationModal(false);
           }}
           notifications={notifications}
+          refetchNotifs={getNotifs}
         />
       ) : null}
       {showSettingsModal ? (

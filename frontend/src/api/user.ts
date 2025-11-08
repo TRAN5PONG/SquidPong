@@ -115,9 +115,6 @@ export async function removeFriend(userId: number): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/friend/${userId}`, {
     method: "DELETE",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
   if (!response.ok) {
     throw new Error(`Failed to remove friend: ${response.statusText}`);
@@ -154,9 +151,6 @@ export async function unblockUser(userId: number): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/blocked/${userId}`, {
     method: "DELETE",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
   if (!response.ok) {
     throw new Error(`Failed to unblock user: ${response.statusText}`);
