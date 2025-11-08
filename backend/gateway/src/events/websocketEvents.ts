@@ -6,6 +6,7 @@ import { ws } from '../server';
 import app from '../app';
 
 
+
 export const onlineUsers = new Map<string, WebSocket>();
 
 async function updatestatus(userId: string , status: string)
@@ -20,7 +21,6 @@ async function updatestatus(userId: string , status: string)
     body: JSON.stringify({ status : status})
     });
 }
-
 
 
 
