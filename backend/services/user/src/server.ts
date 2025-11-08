@@ -1,7 +1,12 @@
 import dotenv from 'dotenv';
 import app from './app'
 import { initRabbitMQ , receiveFromQueue } from './integration/rabbitmq.integration';
+import { validateEnvironmentVariables } from './utils/envValidator';
+
 dotenv.config();
+
+// Validate environment variables before starting
+validateEnvironmentVariables();
 
 const port = Number(process.env.USER_SERVICE_PORT);
 const host = process.env.USER_SERVICE_HOST;
