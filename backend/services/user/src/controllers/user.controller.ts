@@ -55,6 +55,7 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
 
   let newData: { isVerified?: boolean , walletBalance?: number } = {};
   let body = req.body as any;
+
   try
   {
     let existingProfile = await prisma.profile.findUnique({ where: { userId } });
@@ -113,9 +114,14 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
     }
 
     await sendServiceRequestSimple('chat', userId, 'PUT', dataSend )
+    console.log("Data sent to chat service for updateProfileHandlerDB:", dataSend);
     await sendServiceRequestSimple('notify', userId, 'PUT', {...dataSend , notificationSettings : 
     {...(body.preferences?.notifications && { ...body.preferences.notifications })}
     } )
+    console.log("Data sent to notify service for updateProfileHandlerDB:", {...dataSend , notificationSettings : 
+    {...(body.preferences?.notifications && { ...body.preferences.notifications })} } );
+
+  
    
     const redisKey = `profile:${userId}`;
     if(await redis.exists(redisKey))
