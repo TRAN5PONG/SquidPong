@@ -13,6 +13,7 @@ export const enum NotificationType {
   ACHIEVEMENT_UNLOCKED = "achievementUnlocked",
   SPECTATE_INVITE = "spectateInvite",
   PREDICTION_WON = "predictionWon",
+  NEW_MESSAGE = "newMessage",
 }
 
 export enum NotificationPriority {
@@ -145,23 +146,31 @@ export async function processGameNotification(data: any) {
   );
 }
 
-export async function processChatNotification(data: any) {
+
+
+export async function processChatNotification(data: any) 
+{
   const setting = await prisma.user.findUnique({
     where: { userId: data.targetId.toString() },
-    select: { notificationSettings: { select: { chatMessages: true } } },
+    select: { notificationSettings: { select: {chatMessages : true} } },
   });
+
   if (!setting || !setting.notificationSettings) return;
   if (!setting.notificationSettings.chatMessages) return;
 
   await sendDataToQueue(
     {
       targetId: data.targetId.toString(),
-      type: data.type,
-      timestamp: new Date().toISOString(),
+      type: "notification",
+      message: `You have a new message from ${data.byUsername}.`,
     },
     "broadcastData"
   );
+
+  
 }
+
+
 
 export async function processTournamentNotification(data: any) {
   const setting = await prisma.user.findUnique({
@@ -214,12 +223,9 @@ export async function processNotificationFromRabbitMQ(msg: any) {
         await processFriendNotification(data);
         break;
 
-      // Chat notifications
-      // case NotificationType.NEW_MESSAGE:
-      // case NotificationType.NEW_GROUP_MESSAGE:
-      // case NotificationType.MENTION:
-      //   await processChatNotification(data);
-      //   break;
+      case NotificationType.NEW_MESSAGE:
+        await processChatNotification(data);
+        break;
 
       // Tournament notifications
 
