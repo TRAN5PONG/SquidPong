@@ -122,6 +122,11 @@ export const loginSchema: FastifySchema = {
             is2FAEnabled: { 
               type: 'boolean',
               description: 'Whether two-factor authentication is enabled'
+            },
+            twoFAToken: {
+              type: 'string',
+              description: 'Token for completing two-factor authentication',
+              nullable: true
             }
           }
         }

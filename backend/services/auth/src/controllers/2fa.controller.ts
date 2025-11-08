@@ -120,20 +120,20 @@ export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply)
     twoFAMethod = parsedData.twoFAMethod;
     
     // Remove token after use
-    await redis.del(redisKey);
     
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error(UserProfileMessage.USER_NOT_FOUND);
-
+    
     if(user.twoFAMethod != methodParam) throw new Error(`2FA is enabled via ${user.twoFAMethod} .`);
-
+    
     if(twoFAMethod == AUTHENTICATOR)
       verifyAuthenticatorCode(userId, user.twoFASecret!, code);
     else
       verifyEmailCode(userId, code);
-
-      await setJwtTokens(res, userId);
-      respond.message = "Login successful";
+    
+    await redis.del(redisKey);
+    await setJwtTokens(res, userId);
+    respond.message = TwoFA.TWO_FA_VERIFY_SUCCESS;
   } 
   catch (error) {
     sendError(res, error);

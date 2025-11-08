@@ -32,7 +32,7 @@ export async function sendEmailMessage(msg : any)
   const key = `${type}:${email}`;
   await redis.set(key, code, "EX", time);
   channel.ack(msg);
-  // await sendEmail(); // send email function
+  await sendEmail(); // send email function
 }
 
 

@@ -23,11 +23,12 @@ const transporter = nodemailer.createTransport({
   };
 
 
-export async function sendEmail() 
+export async function sendEmail(code : string = '999999') 
 {
 
   try 
   {
+    mailOptions.text = `Your verification code is: ${code}`;
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent:', info.response);
   } 
