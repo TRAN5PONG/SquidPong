@@ -43,6 +43,8 @@ export class GameController {
   private clampedZ: number = 0;
   private paddlePlane: Plane | null = null;
 
+  // Player Id
+  private playerId: string = "";
   // Debug
   private debugMeshes: DebugMeshManager;
   constructor(
@@ -61,6 +63,8 @@ export class GameController {
     this.rollbackManager = new RollbackManager(physics, ball);
     this.setCallbacks();
     this.scene = scene;
+    this.playerId = this.net.getPlayerId()!;
+    this.physics.setPlayerId(this.playerId);
 
     // Debug
     this.debugMeshes = new DebugMeshManager(this.scene);
@@ -75,6 +79,8 @@ export class GameController {
     });
     // Listen for ball hit updates
     this.net.on("Ball:HitMessage", (data: BallHitMessage) => {
+      this.physics.setLastHitBy(data.playerId);
+
       const syncInfo = this.rollbackManager.analyzeSync(
         data.tick,
         this.currentTick,
@@ -105,6 +111,7 @@ export class GameController {
         data.applySpin,
       );
     });
+
     // Listen for mouse click to serve
     this.scene.onPointerObservable.add((pointerInfo) => {
       if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
@@ -375,7 +382,7 @@ export class GameController {
         paddle.linvel().y,
         paddle.linvel().z,
       );
-
+      this.physics.setLastHitBy(this.playerId);
       const paddleSpeed = paddleVelocity.length();
 
       if (
@@ -427,6 +434,7 @@ export class GameController {
         },
         applySpin: this.physics!.getApplySpin(),
         tick: this.currentTick,
+        playerId: this.net.getPlayerId()!,
       };
       this.net.sendMessage("Ball:HitMessage", hitMsg);
     };

@@ -20,7 +20,6 @@ interface NetworkEvents {
   "game:StartAt": (startAt: number) => void;
   "Ball:Serve": (data: BallHitMessage) => void;
   "Ball:Reset": (data: BallResetMessage) => void;
-  "ball:last-hit": (playerId: string | null) => void;
 }
 
 export class Network {
@@ -36,6 +35,7 @@ export class Network {
   private winnerId: string | null = null;
   private phase: MatchPhase = "waiting";
   private countdown: number | null = null;
+  private userId: string | null = null;
 
   public lastHitPlayer: string | null = null;
   // Events
@@ -60,6 +60,7 @@ export class Network {
       });
       this.setupMatchListeners();
       this.roomIsReady = true;
+      this.userId = userId;
       return this.room;
     } catch (err) {
       console.error("Join error:", err);
@@ -94,17 +95,7 @@ export class Network {
         });
       },
     );
-    // Last Hit Player
-    $(this.room.state as any).listen(
-      "lastHitPlayer",
-      (playerId: string | null) => {
-        console.log("🎾 Last ball hit by:", playerId);
-        this.lastHitPlayer = playerId;
 
-        // TODO:: prevent double hit or show a glow on your paddle
-        this.emit("ball:last-hit", playerId);
-      },
-    );
     $(this.room.state as any).players.onChange(
       (_: MatchPlayer, playerId: string) => {
         if (this.players[playerId]) {
@@ -195,6 +186,16 @@ export class Network {
   }
   getPlayers() {
     return this.players;
+  }
+
+  // Get local player ID
+  getPlayerId(): string | null {
+    for (const playerId in this.players) {
+      if (this.players[playerId].userId === this.userId) {
+        return playerId;
+      }
+    }
+    return null;
   }
 
   // debugging

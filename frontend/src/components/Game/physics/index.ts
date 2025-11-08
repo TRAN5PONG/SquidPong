@@ -26,6 +26,10 @@ export class Physics {
   // TEST:
   private PaddleMesh: paddle | null = null;
   timestep = 1 / 60;
+
+  // For prevent double hit detection
+  public lastHitPlayer: string | null = null;
+  private PlayerId: string | null = null;
   // callback
   public onBallPaddleCollision?: (
     ball: RAPIER.RigidBody,
@@ -168,9 +172,11 @@ export class Physics {
       (handle1 === ballHandle && handle2 === paddleHandle) ||
       (handle2 === ballHandle && handle1 === paddleHandle)
     ) {
-      if (now - this.lastCollisioDetectionTime < 150) return;
-      this.lastCollisioDetectionTime = now;
-
+      if (this.lastHitPlayer === this.PlayerId) {
+        // Prevent double hit from same player
+        console.log("Double hit prevented");
+        return;
+      }
       this.onBallPaddleCollision?.(this.ball.body, this.paddle.body);
       return;
     }
@@ -215,7 +221,7 @@ export class Physics {
     const ballVel = this.ball.body.linvel();
 
     let magnusForceX = this.ballSpin.y;
-    console.log("Spin Y (around Y axis):", this.ballSpin.y);
+    // console.log("Spin Y (around Y axis):", this.ballSpin.y);
     this.ball.body.setLinvel(
       {
         x: ballVel.x + magnusForceX * this.timestep,
@@ -271,6 +277,12 @@ export class Physics {
     this.appySpin = apply;
   }
 
+  public setLastHitBy(playerId: string | null) {
+    this.lastHitPlayer = playerId;
+  }
+  public setPlayerId(playerId: string | null) {
+    this.PlayerId = playerId;
+  }
   // getters
   public getBallStatus(): Boolean {
     // return true if ball frozen
