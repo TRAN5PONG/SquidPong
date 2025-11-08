@@ -60,8 +60,7 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
     let existingProfile = await prisma.profile.findUnique({ where: { userId } });
     if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
 
-    if(body.username == existingProfile.username) throw new Error(ProfileMessages.SAME_USERNAME);
-    if(await isReadyExists(body.username)) throw new Error(ProfileMessages.READY_EXISTS);
+    if(await isReadyExists(body.username , existingProfile.username)) throw new Error(ProfileMessages.READY_EXISTS);
 
     body.playerCharacters = await purchaseItem(existingProfile ,'playerCharacters' ,  body.playerCharacters);
     body.playerPaddles = await purchaseItem(existingProfile ,'playerPaddles' ,  body.playerPaddles);
