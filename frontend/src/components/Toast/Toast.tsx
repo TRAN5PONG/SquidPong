@@ -100,9 +100,10 @@ export interface ToastEl {
   message: string;
   type: toastType;
   duration?: number;
+  onClick?: () => void;
   key?: number;
 }
-const Toast = ({ message, duration = 3000, type, key }: ToastEl) => {
+const Toast = ({ message, duration = 3000, type, key, onClick }: ToastEl) => {
   const [animClass, setAnimClass] = useState("Toast--animateIn");
   const [visible, setVisible] = useState(true);
 
@@ -122,6 +123,7 @@ const Toast = ({ message, duration = 3000, type, key }: ToastEl) => {
     <div
       className={`${animClass} Toast BorderBottomEffect Toast--${type}`}
       key={key}
+      onClick={onClick}
     >
       <div className="ToastAvatar">
         {type === "success" ? (

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { User, UserPreferences } from "@/types/user";
 import {
@@ -24,6 +24,10 @@ import {
   MiniUser,
   getPendingFriendRequests,
   rejectFriendRequest,
+  changeAvatar,
+  updateProfile,
+  getBlockedUsers,
+  unblockUser,
 } from "@/api/user";
 
 const StyledSettings = styled("div")`
@@ -185,8 +189,9 @@ const StyledSettings = styled("div")`
       display: flex;
       justify-content: flex-start;
       align-items: center;
+
       .textInput {
-        width: 350px;
+        width: 100%;
         height: 38px;
         border: none;
         border-radius: 5px;
@@ -197,6 +202,18 @@ const StyledSettings = styled("div")`
         font-size: 1rem;
         padding: 5px;
         outline: none;
+        transition: all 0.2s ease-in-out;
+        &:valid {
+          &:focus {
+            border: 1px solid var(--green_color);
+          }
+        }
+        &:invalid {
+          border: 1px solid var(--red_color);
+          &:focus {
+            border: 1px solid var(--red_color);
+          }
+        }
       }
 
       .ProfileDataItemText {
@@ -212,8 +229,9 @@ const StyledSettings = styled("div")`
       display: flex;
       justify-content: flex-end;
       margin-top: auto;
+      gap: 5px;
       button {
-        padding: 10px 20px;
+        padding: 10px 15px;
         border-radius: 5px;
         border: none;
         outline: none;
@@ -226,6 +244,7 @@ const StyledSettings = styled("div")`
         align-items: center;
         justify-content: center;
       }
+
       .SaveChangesBtn {
         height: 40px;
         background-color: transparent;
@@ -235,6 +254,12 @@ const StyledSettings = styled("div")`
           background-color: rgba(116, 218, 116, 0.05);
         }
       }
+    }
+    .ErrorSpn {
+      color: var(--red_color);
+      font-family: var(--main_font);
+      font-size: 1rem;
+      margin-top: 5px;
     }
   }
   .Preferences_Container {
@@ -315,7 +340,7 @@ const StyledSettings = styled("div")`
       display: flex;
       flex-direction: column;
       gap: 5px;
-      padding: 10px;
+      padding: 20px;
       .blockedUserItem {
         width: 100%;
         height: 50px;
@@ -367,6 +392,11 @@ const StyledSettings = styled("div")`
             }
           }
         }
+      }
+      .NoneSPN {
+        color: rgba(255, 255, 255, 0.6);
+        font-family: var(--main_font);
+        font-size: 1rem;
       }
     }
   }
@@ -529,7 +559,8 @@ type SettingsMod =
   | "BlockedUsers"
   | "404";
 const Settings = () => {
-  const [profileData, setProfileData] = Zeroact.useState<User>(db.users[0]);
+  const [profileData, setProfileData] = Zeroact.useState<User | null>(null);
+  const [Error, setError] = Zeroact.useState<string>("");
   const [currentMod, setCurrentMod] = Zeroact.useState<SettingsMod | null>(
     null
   );
@@ -542,15 +573,16 @@ const Settings = () => {
   const [receivedFriendRequests, setReceivedFriendRequests] = Zeroact.useState<
     MiniUser[]
   >([]);
+  const [blockedUsers, setBlockedUsers] = Zeroact.useState<MiniUser[]>([]);
   const [Preferences, setPreferences] = Zeroact.useState<UserPreferences>(
     db.FakeUserPreferences
   );
-
   const [showTwoFAModal, setShowTwoFAModal] = Zeroact.useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const modName = useRouteParam("/settings/:key", "key");
   const navigate = useNavigate();
-  const { modal, toasts } = useAppContext();
+  const { modal, toasts, user } = useAppContext();
 
   useEffect(() => {
     if (modName === undefined) return;
@@ -565,6 +597,7 @@ const Settings = () => {
       fetchFriendRequests();
     } else if (modName === "blocked_users") {
       setCurrentMod("BlockedUsers");
+      fetchBlockedUsers();
     } else {
       setCurrentMod("404");
     }
@@ -576,18 +609,47 @@ const Settings = () => {
         "Are you sure you want to save changes?",
         "Save Changes"
       )
-      .then((confirmed) => {
+      .then(async (confirmed) => {
         if (confirmed) {
-          toasts.addToastToQueue({
-            type: "success",
-            message: "Profile data updated successfully!",
-          });
+          try {
+            const resp = await updateProfile(
+              data.firstName,
+              data.lastName,
+              data.username,
+              data.banner || ""
+            );
+            if (resp.success) {
+              toasts.addToastToQueue({
+                type: "success",
+                message: "Profile data updated successfully!",
+              });
+            } else {
+              toasts.addToastToQueue({
+                type: "error",
+                message:
+                  resp.message ||
+                  "An error occurred while updating profile data.",
+              });
+            }
+          } catch (err: any) {
+            toasts.addToastToQueue({
+              type: "error",
+              message:
+                err.message || "An error occurred while updating profile data.",
+            });
+            return;
+          }
         } else
           toasts.addToastToQueue({
-            type: "error",
+            type: "info",
             message: "Profile data update cancelled.",
           });
       });
+  };
+  const onInputChange = (field: string, value: string) => {
+    if (!user) return;
+    const updatedUser = { ...user, [field]: value };
+    setProfileData(updatedUser);
   };
   const onDeleteAccount = () => {
     modal
@@ -635,6 +697,22 @@ const Settings = () => {
       } else setSentFriendRequests([]);
     }
   };
+  const fetchBlockedUsers = async () => {
+    try {
+      const resp = await getBlockedUsers();
+      if (resp.success && resp.data) {
+        setBlockedUsers(resp.data);
+      } else {
+        setBlockedUsers([]);
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message:
+          err.message || "An error occurred while fetching blocked users.",
+      });
+    }
+  };
   const handleAcceptFriendRequest = async (friendId: number) => {
     const resp = await acceptFriendRequest(friendId);
 
@@ -667,9 +745,66 @@ const Settings = () => {
       });
     }
   };
+  const handleUnblockUser = async (userId: number) => {
+    try {
+      const resp = await unblockUser(userId);
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "User unblocked successfully!",
+        });
+        fetchBlockedUsers();
+      } else {
+        toasts.addToastToQueue({
+          type: "error",
+          message: resp.message || "Failed to unblock user.",
+        });
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "An error occurred while unblocking user.",
+      });
+    }
+  };
+  // Avatar upload handler
+  const handleAvatarUpload = async (file: File) => {
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        setProfileData((prevData) =>
+          prevData ? { ...prevData, avatar: base64data } : prevData
+        );
+      };
+      reader.readAsDataURL(file);
+
+      const upAvatar = await changeAvatar(file);
+      if (upAvatar.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Avatar updated successfully!",
+        });
+      } else {
+        toasts.addToastToQueue({
+          type: "error",
+          message: upAvatar.message || "Failed to update avatar.",
+        });
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "An error occurred while uploading avatar.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    setProfileData(user);
+  }, [user]);
 
   if (currentMod === "404") return <NotFound />;
-  if (!currentMod) return <LoaderSpinner />;
+  if (!currentMod || !profileData) return <LoaderSpinner />;
 
   return (
     <StyledSettings
@@ -678,9 +813,22 @@ const Settings = () => {
       className="scroll-y"
     >
       <div className="Banner">
-        <EditIcon stroke="white" size={20} className="EditIcon" />
         <div className="Avatar">
-          <EditIcon stroke="white" size={20} className="EditIcon" />
+          <a onClick={() => fileInputRef.current?.click()}>
+            <EditIcon stroke="white" size={20} className="EditIcon" />
+          </a>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e: any) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                handleAvatarUpload(file);
+              }
+            }}
+          />
         </div>
         <div className="ProfileDetails">
           <h1 className="ProfileDetailsUserName">
@@ -746,15 +894,34 @@ const Settings = () => {
                   className="textInput"
                   type="text"
                   value={profileData.firstName}
+                  onChange={(e: any) => {
+                    onInputChange("firstName", e.currentTarget.value);
+                    setError(
+                      e.currentTarget.validity.valid
+                        ? ""
+                        : "First name: " + e.currentTarget.validationMessage
+                    );
+                  }}
+                  maxLength={15}
+                  minLength={2}
                 />
               </div>
-
               <div className="ProfileDataItem">
                 <h2 className="ProfileDataItemText">Last name :</h2>
                 <input
                   className="textInput"
                   type="text"
                   value={profileData.lastName}
+                  onChange={(e: any) => {
+                    onInputChange("lastName", e.currentTarget.value);
+                    setError(
+                      e.currentTarget.validity.valid
+                        ? ""
+                        : "Last name: " + e.currentTarget.validationMessage
+                    );
+                  }}
+                  maxLength={15}
+                  minLength={2}
                 />
               </div>
               <div className="ProfileDataItem">
@@ -763,17 +930,56 @@ const Settings = () => {
                   className="textInput"
                   type="text"
                   value={profileData.username}
+                  onChange={(e: any) => {
+                    onInputChange("username", e.currentTarget.value);
+                    setError(
+                      e.currentTarget.validity.valid
+                        ? ""
+                        : "Username: " + e.currentTarget.validationMessage
+                    );
+                  }}
+                  maxLength={15}
+                  minLength={3}
                 />
               </div>
-
               <div className="ProfileDataItem">
                 <h2 className="ProfileDataItemText">Banner URL :</h2>
                 <input
                   className="textInput"
                   type="text"
                   value={profileData.banner}
+                  onChange={(e: any) => {
+                    onInputChange("banner", e.currentTarget.value);
+                    setError(
+                      e.currentTarget.validity.valid
+                        ? ""
+                        : "Banner URL: " + e.currentTarget.validationMessage
+                    );
+                  }}
+                  maxLength={200}
+                  pattern="https?:\/\/.*\.(jpg|jpeg|png|webp|gif)$"
                 />
               </div>
+              <div className="ProfileDataItem">
+                <h2 className="ProfileDataItemText">Bio :</h2>
+                <textarea
+                  className="textInput"
+                  style={{ height: "100px", resize: "vertical" }}
+                  value={profileData.bio}
+                  onChange={(e: any) => {
+                    onInputChange("bio", e.currentTarget.value);
+                    setError(
+                      e.currentTarget.validity.valid
+                        ? ""
+                        : "Bio: " + e.currentTarget.validationMessage
+                    );
+                  }}
+                  maxLength={160}
+                >
+                  {profileData.bio}
+                </textarea>
+              </div>
+              <span className="ErrorSpn">{Error}</span>
 
               <div className="ProfileDataActions">
                 <button
@@ -863,8 +1069,8 @@ const Settings = () => {
             <div className="BlockedUsers_container" key="blockedUsers">
               <span className="Spliter">Blocked users :</span>
               <div className="blockedUsersList">
-                {db.users.length > 0 ? (
-                  db.users.map((user) => (
+                {blockedUsers.length > 0 ? (
+                  blockedUsers.map((user) => (
                     <div className="blockedUserItem" key={user.id}>
                       <div
                         className="userAvatar"
@@ -872,14 +1078,17 @@ const Settings = () => {
                       />
                       <span>{user.username}</span>
 
-                      <buttn className="unblockBtn" onClick={() => {}}>
+                      <buttn
+                        className="unblockBtn"
+                        onClick={() => handleUnblockUser(user.userId)}
+                      >
                         unblock
                         <DeleteIcon size={16} fill="rgba(255, 255, 255, 0.5)" />
                       </buttn>
                     </div>
                   ))
                 ) : (
-                  <span>No blocked users</span>
+                  <span className="NoneSPN">No blocked users.</span>
                 )}
               </div>
             </div>

@@ -23,7 +23,14 @@ import { useAppContext } from "@/contexts/AppProviders";
 import Toast from "../Toast/Toast";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { getRankMetaData } from "@/utils/game";
-import { getUserById, getUserFriends, MiniUser } from "@/api/user";
+import {
+  blockUser,
+  getUserById,
+  getUserFriends,
+  MiniUser,
+  removeFriend,
+  sendFriendRequest,
+} from "@/api/user";
 import Skeleton from "../Skeleton/Skeleton";
 
 const StyledProfileModal = styled("div")`
@@ -406,22 +413,87 @@ const Profile = () => {
   const { modal, toasts, user } = useAppContext();
   const navigate = useNavigate();
 
+  const handleFriendAddUnfriend = async (receiverId: string) => {
+    if (profileFriends.find((f) => f.username === user?.username)) {
+      try {
+        const resp = await removeFriend(Number(receiverId));
+        if (resp.success) {
+          toasts.addToastToQueue({
+            type: "info",
+            message: "Unfriended successfully.",
+            duration: 3000,
+          });
+          getFriends(profileData!.username);
+        } else {
+          toasts.addToastToQueue({
+            type: "warning",
+            message: resp.message || "Failed to unfriend.",
+            duration: 3000,
+          });
+        }
+      } catch (err: any) {
+        toasts.addToastToQueue({
+          type: "error",
+          message: err.message || "An unexpected error occurred.",
+          duration: 3000,
+        });
+      }
+    } else {
+      try {
+        const resp = await sendFriendRequest(Number(receiverId));
+
+        if (resp.success) {
+          toasts.addToastToQueue({
+            type: "info",
+            message: "Friend request sent successfully.",
+            duration: 3000,
+          });
+        } else {
+          toasts.addToastToQueue({
+            type: "warning",
+            message: resp.message || "Failed to send friend request.",
+            duration: 3000,
+          });
+        }
+      } catch (err: any) {
+        toasts.addToastToQueue({
+          type: "error",
+          message: err.message || "An unexpected error occurred.",
+          duration: 3000,
+        });
+      }
+    }
+  };
   const handleBlockUser = () => {
-    console.log("Block user clicked");
+    if (!profileData) return;
 
     modal
       .showConfirmationModal(
         "Are you sure you want to block this user?",
         "Block User"
       )
-      .then((confirmed) => {
+      .then(async (confirmed) => {
         if (confirmed) {
-          toasts.addToastToQueue({
-            message: "User has been blocked",
-            type: "success",
-            duration: 3000,
-            key: 12344,
-          });
+          try {
+            console.log(profileData.id);
+            const resp = await blockUser(Number(profileData.userId));
+            if (!resp.success) {
+              throw new Error("Failed to block user");
+            }
+            toasts.addToastToQueue({
+              message: "User has been blocked",
+              type: "success",
+              duration: 3000,
+              key: 12344,
+            });
+          } catch (error) {
+            toasts.addToastToQueue({
+              message: "Failed to block user. Please try again later.",
+              type: "error",
+              duration: 3000,
+              key: 12345,
+            });
+          }
         } else {
           toasts.addToastToQueue({
             message: "User block cancelled",
@@ -459,6 +531,7 @@ const Profile = () => {
   const getFriends = async (userId: string) => {
     const resp = await getUserFriends(userId);
     if (resp.success && resp.data) {
+      console.log(resp.data);
       setProfileFriends(resp.data);
     }
   };
@@ -530,14 +603,19 @@ const Profile = () => {
 
         {user?.username === profileData.username ? (
           <div className="ActionBtns">
-            <button className="actionBtn AddFriendBtn">
-              Settings
-            </button>
+            <button className="actionBtn AddFriendBtn">Settings</button>
           </div>
         ) : (
           <div className="ActionBtns">
-            <button className="actionBtn AddFriendBtn">
-              Add friend
+            <button
+              className="actionBtn AddFriendBtn"
+              onClick={() =>
+                handleFriendAddUnfriend(profileData.userId.toString())
+              }
+            >
+              {profileFriends.find((f) => f.username === user?.username)
+                ? "UNFRIEND"
+                : "ADD FRIEND"}
               <AddFriendIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
             </button>
             <button className="actionBtn">

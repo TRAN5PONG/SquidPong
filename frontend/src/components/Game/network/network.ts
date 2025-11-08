@@ -1,7 +1,7 @@
 import { Client, getStateCallbacks, Room } from "colyseus.js";
 import { MatchPhase, MatchState } from "./GameState";
 import { Match, MatchPlayer } from "@/types/game/game";
-import { BallHitMessage, Vec3 } from "@/types/network";
+import { BallHitMessage, BallResetMessage, Vec3 } from "@/types/network";
 
 interface NetworkEvents {
   "player:connected": (playerId: string, player: MatchPlayer) => void;
@@ -19,6 +19,8 @@ interface NetworkEvents {
   "Ball:HitMessage": (data: BallHitMessage) => void;
   "game:StartAt": (startAt: number) => void;
   "Ball:Serve": (data: BallHitMessage) => void;
+  "Ball:Reset": (data: BallResetMessage) => void;
+  "ball:last-hit": (playerId: string | null) => void;
 }
 
 export class Network {
@@ -35,6 +37,7 @@ export class Network {
   private phase: MatchPhase = "waiting";
   private countdown: number | null = null;
 
+  public lastHitPlayer: string | null = null;
   // Events
   private eventListeners: Map<keyof NetworkEvents, Function[]> = new Map();
 
@@ -89,6 +92,17 @@ export class Network {
             else this.emit("player:disconnected", playerId);
           }
         });
+      },
+    );
+    // Last Hit Player
+    $(this.room.state as any).listen(
+      "lastHitPlayer",
+      (playerId: string | null) => {
+        console.log("🎾 Last ball hit by:", playerId);
+        this.lastHitPlayer = playerId;
+
+        // TODO:: prevent double hit or show a glow on your paddle
+        this.emit("ball:last-hit", playerId);
       },
     );
     $(this.room.state as any).players.onChange(
@@ -160,6 +174,10 @@ export class Network {
     this.room.onMessage("Ball:Serve", (data: BallHitMessage) => {
       this.emit("Ball:Serve", data);
     });
+
+    this.room.onMessage("Ball:Reset", (data: BallResetMessage) => {
+      this.emit("Ball:Reset", data);
+    });
   }
 
   // Send message to server
@@ -208,6 +226,9 @@ export class Network {
     return this.roomIsReady;
   }
 
+  getLastHitPlayer() {
+    return this.lastHitPlayer;
+  }
   // Leave
   leave() {
     if (this.room) {
