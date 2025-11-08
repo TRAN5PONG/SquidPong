@@ -23,3 +23,6 @@ Thumbs.db
 
 # Uploads and temporary files
 uploads/
+
+frontend/src/uploads/v8-compile-cache-0/
+node_modules/
