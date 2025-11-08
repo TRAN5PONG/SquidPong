@@ -38,7 +38,9 @@ enum ReactionType {
 
 enum MessageType {
   TEXT
-  INVITE
+  INVITE_MATCH
+  INVITE_TOURNAMENT
+
 }
 
 enum ChatType {
@@ -130,6 +132,9 @@ model Message {
   content    String?
   
   status     statusMessage @default(SENT)
+
+  matchId      String?
+  tournamentId String?
 
   reactions  Reaction[]
   
