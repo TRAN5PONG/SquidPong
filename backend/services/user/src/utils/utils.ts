@@ -146,6 +146,7 @@ export async function sendServiceRequestSimple(serviceName : string , userId : n
 {
   const url = SERVICE_URLS[serviceName as keyof typeof SERVICE_URLS] + (ENDPOINTS as any)[method.toUpperCase()];
   
+  console.log(`url : ${url}  method : ${method}  body : ${body} `);
   const headers: Record<string, string> = {
     'x-secret-token': process.env.SECRET_TOKEN || '',
     'x-user-id': String(userId),

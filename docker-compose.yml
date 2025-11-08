@@ -68,7 +68,6 @@ services:
         condition: service_healthy
     command: sh -c "npm run dev"
     volumes:
-      - ./frontend/src/uploads:/tmp/
       - ./backend/gateway/src:/gateway/src
     env_file:
       - ./backend/gateway/.env
@@ -89,7 +88,7 @@ services:
     ports:
       - "5001:5555"
     volumes:
-      - ./uploads/user/:/auth/uploads/
+      - ./backend/services/user/uploads:/auth/uploads
       - ./backend/services/auth/src:/auth/src
       - ./backend/services/auth/prisma:/auth/prisma
     networks:
@@ -149,7 +148,6 @@ services:
     ports:
       - "5003:5555"
     volumes:
-      - ./uploads/chat/:/chat/uploads
       - ./backend/services/chat/src:/chat/src
       - ./backend/services/chat/prisma:/chat/prisma
     networks: 

@@ -5,6 +5,7 @@ import fs from 'fs';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
 import { Readable } from 'stream';
+import crypto from 'crypto';
 
 import app from "../app";
 
@@ -46,6 +47,7 @@ export async function fetchIntraUser(access_token: string): Promise<any>
 
   return userJSON;
 }
+
 
 export function sendResponseToFrontend(res: FastifyReply, respond: any)
 {
@@ -101,14 +103,24 @@ export async function fetchAvatarImagePipeline(imageUrl: string, username: strin
   if (!res.body) throw new Error('No response body');
 
   const ext = res.headers.get('content-type')?.split('/');
-  let filePath = `/auth/uploads/avatar/${username}.${ext ? ext[1] : 'jpg'}`;
+  const extension = ext ? ext[1] : 'jpg';
   
+  const uploadDir = '/auth/uploads/avatar';
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+  let physicalPath: string;
+  let randomName: string;
+
+  do {
+    randomName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${extension}`;
+    physicalPath = `${uploadDir}/${randomName}`;
+  } while (fs.existsSync(physicalPath));
   
-  
-  console.log('Saving avatar to', filePath);
+  console.log('Saving avatar to', physicalPath);
   const nodeStream = Readable.fromWeb(res.body as any);
 
-  await pipe(nodeStream, fs.createWriteStream(filePath));
-  filePath = `http://localhost:4000/api/user/avatars/${username}.${ext ? ext[1] : 'jpg'}`;
+  await pipe(nodeStream, fs.createWriteStream(physicalPath));
+  const filePath = `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/user/avatars/${randomName}`;
+  // const filePath = `${pro}/api/user/avatars/${randomName}`;
   return (filePath);
 }
