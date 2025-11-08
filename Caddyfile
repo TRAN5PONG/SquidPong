@@ -15,15 +15,15 @@ http://{$HOST_LOCAL}:80 {
 # ===================================
 # Backend proxy (dynamic IP)
 # ===================================
-http://{$HOST_EXTERNAL}:{$BACKEND_PORT} {
-    reverse_proxy {$BACKEND_HOST}:{$BACKEND_PORT}
-}
+# http://{$HOST_EXTERNAL}:{$BACKEND_PORT} {
+#     reverse_proxy {$BACKEND_HOST}:{$BACKEND_PORT}
+# }
 
-# ===================================
-# Frontend proxy + docs (dynamic IP)
-# ===================================
-http://{$HOST_EXTERNAL}:80 {
-    reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
-}
+# # ===================================
+# # Frontend proxy + docs (dynamic IP)
+# # ===================================
+# http://{$HOST_EXTERNAL}:80 {
+#     reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
+# }
 
 

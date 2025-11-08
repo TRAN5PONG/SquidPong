@@ -14,7 +14,6 @@ import {
   getGroupMessages, updateMember, inviteUserToGroup
 } from '../controllers/group.controller';
 
-import { ReactionsForMessage } from '../controllers/reaction.controller';
 
 
 import {
@@ -77,8 +76,8 @@ export const chatRoutes : Route[] = [
   
 
   { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats },
-  { method: 'POST',   url: '/api/chat/new',                handler: createChat  },          
-  { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat  },          
+  { method: 'POST',   url: '/api/chat/new',                handler: createChat  }, // createChatSchema         
+  // { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat  },          
   { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById  },
 
   { method: 'POST',   url: '/api/chat/block/:friendId',    handler: blockUserHandler  },
@@ -127,11 +126,3 @@ export const groupRoutes: Route[] = [
   { method: 'GET',    url: '/api/group/:groupId/messages',     handler: getGroupMessages, schema: getGroupMessagesSchema },
 
 ]
-
-// ------------------- Poll REST Endpoints -----------------
-
-
-export const reactionRoutes: Route[] = [
-
-  {method: 'GET', url: '/api/chat/:messageId/reactions', handler: ReactionsForMessage, schema: getReactionsForMessageSchema},
-];

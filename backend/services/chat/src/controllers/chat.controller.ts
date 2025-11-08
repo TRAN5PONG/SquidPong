@@ -6,9 +6,9 @@ import { chatMessages  } from '../utils/RespondMessage';
 import { findChatBetweenUsers } from '../utils/chat';
 import { fetchAndEnsureUser } from '../utils/helper';
 import { checkSecretToken } from '../utils/helper';
+import { sendDataToQueue } from '../integration/rabbitmq.integration';
+
 import app from '../app';
-
-
 
 export async function createChat(req: FastifyRequest, res: FastifyReply) 
 {
@@ -177,20 +177,26 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
-   const { friendId } = req.params as { friendId: string };
+   const { chatId } = req.params as { chatId : string };
 
    try 
    {
-      checkSecretToken(req);
-      const chatId = await findChatBetweenUsers(Number(userId), Number(friendId));
-      if (!chatId) throw new Error('Chat not found between users');
+      const chat = await prisma.chat.findUnique({
+         where: { id: Number(chatId) },
+         include: { members: true },
+      });
+
+      if (!chat) throw new Error(`Chat not found: ${chatId}`);
+
+      const isMember = chat.members.some((m: any) => m.userId === String(userId));
+      if (!isMember) throw new Error(`User ${userId} is not a member of chat ${chatId}`);
 
       await prisma.chat.update({
          where: { id: Number(chatId) },
          data: {
             members: {
                updateMany: {
-                  where: { userId: friendId },
+                  where: { userId: userId },
                   data: { isBlocked: true }
                }
             }
@@ -237,20 +243,26 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
-   const { friendId } = req.params as { friendId: string };
+   const { chatId } = req.params as { chatId : string };
 
    try 
    {
-      checkSecretToken(req);
-      const chatId = await findChatBetweenUsers(Number(userId), Number(friendId));
-      if (!chatId) throw new Error('Chat not found between users');
+      const chat = await prisma.chat.findUnique({
+         where: { id: Number(chatId) },
+         include: { members: true },
+      });
+
+      if (!chat) throw new Error(`Chat not found: ${chatId}`);
+
+      const isMember = chat.members.some((m: any) => m.userId === String(userId));
+      if (!isMember) throw new Error(`User ${userId} is not a member of chat ${chatId}`);
 
       await prisma.chat.update({
          where: { id: Number(chatId) },
          data: {
             members: {
                updateMany: {
-                  where: { userId: friendId },
+                  where: { userId: userId },
                   data: { isBlocked: false }
                }
             }
@@ -264,7 +276,6 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
 
    return res.send(respond);
 }
-
 
 
 export async function deleteAccountHandler(req: FastifyRequest, res: FastifyReply)
@@ -297,7 +308,7 @@ export async function deleteAccountHandler(req: FastifyRequest, res: FastifyRepl
 
 export async function sendMessageHandler(req: FastifyRequest, res: FastifyReply)
 {
-   const respond: ApiResponse<{ content: string }> = { success: true, message: 'Message sent successfully' };
+   const respond: ApiResponse<null> = { success: true, message: 'Message sent successfully' };
    const headers = req.headers as { 'x-user-id': string };
    const senderId = headers['x-user-id'];
    
@@ -309,7 +320,9 @@ export async function sendMessageHandler(req: FastifyRequest, res: FastifyReply)
       const chat = await prisma.chat.findFirst({
          where: {
             id: Number(chatId),
-            members: { some: { userId: senderId } }
+         },
+         select : {
+            members: true
          }
       });
 
@@ -323,8 +336,10 @@ export async function sendMessageHandler(req: FastifyRequest, res: FastifyReply)
 
          },
       });
-
-      respond.data = { content };
+      
+      const targetIds = chat.members.filter((m:any) => m.userId !== senderId).map((m:any) => m.userId);
+      const dataToSend = { type : 'newMessage' , fromId : senderId , targetIds : targetIds};
+      await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
    {
@@ -337,7 +352,7 @@ export async function sendMessageHandler(req: FastifyRequest, res: FastifyReply)
 
 export async function editMessageHandler(req: FastifyRequest, res: FastifyReply)
 {
-   const respond: ApiResponse<{ messageId: number; content: string }> = { success: true, message: 'Message edited successfully' };
+   const respond: ApiResponse<null> = { success: true, message: 'Message edited successfully' };
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
    
@@ -347,7 +362,8 @@ export async function editMessageHandler(req: FastifyRequest, res: FastifyReply)
    try 
    {
       const message = await prisma.message.findUnique({
-         where: { id: Number(messageId) }
+         where: { id: Number(messageId) },
+         include: { chat: { include: { members: true } } }
       });
 
       if (!message) throw new Error('Message not found');
@@ -358,7 +374,9 @@ export async function editMessageHandler(req: FastifyRequest, res: FastifyReply)
          data: { content, isEdited: true },
       });
 
-      respond.data = { messageId: Number(messageId), content };
+      const targetIds = message.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
+      const dataToSend = { type : 'editMessage' , fromId : userId , targetIds : targetIds};
+      await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
    {
@@ -371,7 +389,7 @@ export async function editMessageHandler(req: FastifyRequest, res: FastifyReply)
 
 export async function deleteMessageHandler(req: FastifyRequest, res: FastifyReply)
 {
-   const respond: ApiResponse<{ messageId: number }> = { success: true, message: 'Message deleted successfully' };
+   const respond: ApiResponse<null> = { success: true, message: 'Message deleted successfully' };
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
    
@@ -380,7 +398,8 @@ export async function deleteMessageHandler(req: FastifyRequest, res: FastifyRepl
    try 
    {
       const message = await prisma.message.findUnique({
-         where: { id: Number(messageId) }
+         where: { id: Number(messageId) },
+         include: { chat: { include: { members: true } } }
       });
 
       if (!message) throw new Error('Message not found');
@@ -388,7 +407,9 @@ export async function deleteMessageHandler(req: FastifyRequest, res: FastifyRepl
 
       await prisma.message.delete({ where: { id: Number(messageId) } });
 
-      respond.data = { messageId: Number(messageId) };
+      const targetIds = message.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
+      const dataToSend = { type : 'deleteMessage' , fromId : userId , targetIds : targetIds};
+      await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
    {
@@ -401,7 +422,7 @@ export async function deleteMessageHandler(req: FastifyRequest, res: FastifyRepl
 
 export async function replyToMessageHandler(req: FastifyRequest, res: FastifyReply)
 {
-   const respond: ApiResponse<any> = { success: true, message: 'Reply sent successfully' };
+   const respond: ApiResponse<null> = { success: true, message: 'Reply sent successfully' };
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
    
@@ -411,7 +432,8 @@ export async function replyToMessageHandler(req: FastifyRequest, res: FastifyRep
    try 
    {
       const originalMessage = await prisma.message.findUnique({
-         where: { id: Number(messageId) }
+         where: { id: Number(messageId) },
+         include: { chat: { include: { members: true } } }
       });
 
       if (!originalMessage) throw new Error('Original message not found');
@@ -425,7 +447,9 @@ export async function replyToMessageHandler(req: FastifyRequest, res: FastifyRep
          },
       });
 
-      respond.data = { replyMessage };
+      const targetIds = originalMessage.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
+      const dataToSend = { type : 'newMessage' , fromId : userId , targetIds : targetIds};
+      await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
    {
@@ -438,7 +462,7 @@ export async function replyToMessageHandler(req: FastifyRequest, res: FastifyRep
 
 export async function addReactionHandler(req: FastifyRequest, res: FastifyReply)
 {
-   const respond: ApiResponse<{ emoji: string }> = { success: true, message: 'Reaction added successfully' };
+   const respond: ApiResponse<null> = { success: true, message: 'Reaction added successfully' };
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
    
@@ -448,7 +472,8 @@ export async function addReactionHandler(req: FastifyRequest, res: FastifyReply)
    try 
    {
       const message = await prisma.message.findUnique({
-         where: { id: Number(messageId) }
+         where: { id: Number(messageId) },
+         include: { chat: { include: { members: true } } }
       });
 
       if (!message) throw new Error('Message not found');
@@ -464,7 +489,9 @@ export async function addReactionHandler(req: FastifyRequest, res: FastifyReply)
          create: { messageId: Number(messageId), userId, emoji: emoji as any },
       });
 
-      respond.data = { emoji };
+      const targetIds = message.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
+      const dataToSend = { type : 'newReaction' , fromId : userId , targetIds : targetIds};
+      await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
    {
@@ -477,7 +504,7 @@ export async function addReactionHandler(req: FastifyRequest, res: FastifyReply)
 
 export async function removeReactionHandler(req: FastifyRequest, res: FastifyReply)
 {
-   const respond: ApiResponse<{ messageId: number }> = { success: true, message: 'Reaction removed successfully' };
+   const respond: ApiResponse<null> = { success: true, message: 'Reaction removed successfully' };
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
    
@@ -486,7 +513,8 @@ export async function removeReactionHandler(req: FastifyRequest, res: FastifyRep
    try 
    {
       const message = await prisma.message.findUnique({
-         where: { id: Number(messageId) }
+         where: { id: Number(messageId) },
+         include: { chat: { include: { members: true } } }
       });
 
       if (!message) throw new Error('Message not found');
@@ -500,7 +528,9 @@ export async function removeReactionHandler(req: FastifyRequest, res: FastifyRep
          },
       });
 
-      respond.data = { messageId: Number(messageId) };
+      const targetIds = message.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
+      const dataToSend = { type : 'removeReaction' , fromId : userId , targetIds : targetIds};
+      await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
    {

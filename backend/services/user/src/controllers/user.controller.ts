@@ -21,7 +21,7 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
   const response: ApiResponse<null> = {  success: true,  message: ProfileMessages.CREATE_SUCCESS  };
   const body = req.body as {userId : number ,  username: string; firstName: string; lastName: string; avatar?: string };
 
-  body['avatar'] = body['avatar'] || `/default/avatar.png`;
+  body['avatar'] = body['avatar'] || `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/user/avatars/default.png`;
   try 
   {
     checkSecretToken(req);
@@ -300,7 +300,6 @@ export async function updateProfileImageHandler(req: FastifyRequest, res: Fastif
   const headers = req.headers as any;
   const userId = Number(headers['x-user-id']);
 
-  console.log("Updating profile image for userId:", userId);
   try 
   {
     const parsed = await convertParsedMultipartToJson(req) as any;
@@ -310,6 +309,11 @@ export async function updateProfileImageHandler(req: FastifyRequest, res: Fastif
     const redisKey = `profile:${userId}`;
     if (await redis.exists(redisKey)) 
       await redis.update(redisKey, '$', { avatar: parsed });
+
+    await sendServiceRequestSimple('chat', userId, 'PUT', { avatar: parsed } )
+    await sendServiceRequestSimple('notify', userId, 'PUT', { avatar: parsed } )
+
+
   }
   catch (error) {
     return sendError(res, error);
@@ -349,77 +353,6 @@ export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply)
 }
 
 
-export async function getShopItemsHandler(req: FastifyRequest, res: FastifyReply) 
-{
-  const response: ApiResponse<any> = { success: true, message: 'Shop items retrieved successfully' };
-  const userId = parseInt(req.headers['x-user-id'] as string);
-
-  try {
-    const { ITEM_PRICES } = await import('../utils/itemPrices');
-    
-    const userKey = `user:${userId}`;
-    let userProfile: any = null;
-    let existingCharacters: string[] = [];
-    let existingPaddles: string[] = [];
-
-    // Check Redis first, then database
-    if (await redis.exists(userKey)) {
-      userProfile = await redis.get(userKey);
-      existingCharacters = Array.isArray(userProfile?.playerCharacters) 
-        ? userProfile.playerCharacters 
-        : JSON.parse(userProfile?.playerCharacters || '["Zero"]');
-      existingPaddles = Array.isArray(userProfile?.playerPaddles) 
-        ? userProfile.playerPaddles 
-        : JSON.parse(userProfile?.playerPaddles || '["Boss"]');
-    } else {
-      userProfile = await prisma.profile.findUnique({
-        where: { userId },
-        select: {
-          playerCharacters: true,
-          playerPaddles: true,
-          walletBalance: true
-        }
-      });
-
-      if (!userProfile) {
-        throw new Error('User not found');
-      }
-
-      existingCharacters = JSON.parse(userProfile.playerCharacters || '["Zero"]');
-      existingPaddles = JSON.parse(userProfile.playerPaddles || '["Boss"]');
-    }
-
-    // Build shop data
-    const availableCharacters = Object.entries(ITEM_PRICES.characters).map(([name, price]) => ({
-      name,
-      price,
-      type: 'character',
-      owned: existingCharacters.includes(name),
-      canPurchase: !existingCharacters.includes(name) && (userProfile?.walletBalance || 0) >= price
-    }));
-
-    const availablePaddles = Object.entries(ITEM_PRICES.paddles).map(([name, price]) => ({
-      name,
-      price,
-      type: 'paddle',
-      owned: existingPaddles.includes(name),
-      canPurchase: !existingPaddles.includes(name) && (userProfile?.walletBalance || 0) >= price
-    }));
-
-    response.data = {
-      walletBalance: userProfile?.walletBalance || 0,
-      characters: availableCharacters,
-      paddles: availablePaddles,
-      ownedCharacters: existingCharacters,
-      ownedPaddles: existingPaddles
-    };
-
-  } catch (error) {
-    return sendError(res, error);
-  }
-
-  return res.send(response);
-}
 
 
 export async function sendNotificationHandler(req: FastifyRequest, res: FastifyReply) 

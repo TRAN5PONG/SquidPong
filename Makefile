@@ -1,5 +1,5 @@
 FILE = ./docker-compose.yml
-change-backend-url = ./scripts/set-backend-url.sh
+change-backend-url = ./scripts/set-backend-url.sh 
 
 up:
 	${change-backend-url}
