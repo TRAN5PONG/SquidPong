@@ -45,6 +45,9 @@ class MatchState extends Schema {
   // Pause logic
   @type("number") maxPauseTime!: number;
   @type("string") pauseBy: string | null = null;
+
+  @type({ map: "number" }) scores = new MapSchema<number>();
+  @type("string") lastHitPlayer: string | null = null;
 }
 
 // --- Room ---
@@ -63,6 +66,10 @@ export class MatchRoom extends Room<MatchState> {
   private pauseInterval?: NodeJS.Timeout;
 
   onCreate = async (options: MatchRoomOptions) => {
+    this.state.players.forEach((player) => {
+      this.state.scores.set(player.id, 0); // initialize score
+    });
+    this.state.lastHitPlayer = null;
     // Get/create consistent roomId
     this.roomId = options.roomId;
 
@@ -118,6 +125,17 @@ export class MatchRoom extends Room<MatchState> {
       this.broadcast("Ball:Serve", message, { except: client });
     });
 
+    this.onMessage("Ball:Out", (client, message) => {
+      const scoringPlayer = this.state.lastHitPlayer;
+      if (!scoringPlayer) return; // safety check
+
+      // Ball fell on player1 side → award point to last hitter
+      if (message.side === "player1") this.incrementScore(scoringPlayer);
+      else this.incrementScore(scoringPlayer);
+
+      // Reset lastHitPlayer and ball
+      this.resetBallForServe(scoringPlayer);
+    });
     // Player give up
     this.onMessage("player:give-up", (client) => {
       const _client = client as any;
@@ -175,7 +193,6 @@ export class MatchRoom extends Room<MatchState> {
   onAuth(client: Client, options: any) {
     const _client = client as any;
     const { players, spectators } = this.metadata;
-    console.log("====================AUTH++++++++++++++++++++++++++++");
     if (players.includes(options.userId)) {
       _client.meta = { role: "player", userId: options.userId };
       return true;
@@ -399,5 +416,22 @@ export class MatchRoom extends Room<MatchState> {
 
       this.broadcast("game:resumed", { by: "system", remainingPauseTime: 0 });
     }
+  }
+
+  private incrementScore(playerId: string) {
+    const current = this.state.scores.get(playerId) || 0;
+    this.state.scores.set(playerId, current + 1);
+    this.broadcast("score:update", { playerId, score: current + 1 });
+  }
+
+  private resetBallForServe(lastHitter: string) {
+    const ballResetMessage = {
+      position: { x: 0, y: 2.8, z: 0 },
+      velocity: { x: 0, y: 0, z: 0 },
+      lastHitPlayer: lastHitter,
+    };
+
+    this.state.lastHitPlayer = null; // reset for next rally
+    this.broadcast("Ball:Reset", ballResetMessage);
   }
 }

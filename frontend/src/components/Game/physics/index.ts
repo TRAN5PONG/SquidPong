@@ -9,6 +9,8 @@ import { Floor } from "./Floor";
 import { Net } from "./Net";
 import { Table } from "./Table";
 
+// TEST:import { Paddle } from "../entities/Paddle/GamePaddle";
+import { paddle } from "../entities/Paddle/GamePaddle";
 export class Physics {
   private world!: RAPIER.World;
   eventQueue: RAPIER.EventQueue = null!;
@@ -21,6 +23,8 @@ export class Physics {
   private spinDecay: number = 0.98; // Spin decay factor per tick
   private appySpin: boolean = false;
 
+  // TEST:
+  private PaddleMesh: paddle | null = null;
   timestep = 1 / 60;
   // callback
   public onBallPaddleCollision?: (
@@ -51,7 +55,7 @@ export class Physics {
 
     this.world = new RAPIER.World(constants.Gravity);
     this.world.timestep = 1 / 60;
-    this.eventQueue = new RAPIER.EventQueue(false);
+    this.eventQueue = new RAPIER.EventQueue(true);
 
     // Create entities
     new Table(this.world);
@@ -72,76 +76,60 @@ export class Physics {
   queueBallImpulse(impulse: Vector3) {
     this.Impulse = impulse;
   }
+
   calculateTargetZYVelocity(
-    ballPosition: RAPIER.Vector,
+    ballPos: RAPIER.Vector,
     paddlePos: RAPIER.Vector,
   ): Vector3 {
     const halfLength = constants.TABLE.size.length / 2;
-    let opponentTableStart: number;
-    let opponentTableEnd: number;
+    const halfWidth = constants.TABLE.size.width / 2;
+    const tableSurfaceY =
+      constants.TABLE.position.y + constants.TABLE.size.height / 2;
+    const gravity = Math.abs(constants.Gravity.y); // positive value
 
-    if (paddlePos.z > 0) {
-      opponentTableStart = -halfLength;
-      opponentTableEnd = 0.3;
-    } else {
-      opponentTableStart = 0.3;
-      opponentTableEnd = halfLength;
-    }
-
+    // --- Compute Z target on opponent side ---
     const safeMargin = 0.4;
-    const targetZMin = opponentTableStart + safeMargin;
-    const targetZMax = opponentTableEnd - safeMargin;
-    const paddleSpeed = new Vector3(
-      this.paddle.body.linvel().x,
-      this.paddle.body.linvel().y,
-      this.paddle.body.linvel().z,
-    );
-    const paddleVelocityZ = paddleSpeed.length() * 0.009; // TODO: adjusting
+    const [zMin, zMax] =
+      paddlePos.z > 0
+        ? [-halfLength + safeMargin, 0.3 - safeMargin]
+        : [0.3 + safeMargin, halfLength - safeMargin];
+
+    const paddleVelocityZ = this.paddle.body.linvel().z * 0.15;
     const targetZ = this.calculateTargetZFromVelocity(
       paddleVelocityZ,
-      targetZMin,
-      targetZMax,
+      zMin,
+      zMax,
     );
     this.TargetZ = targetZ;
 
-    const tableSurfaceY =
-      constants.TABLE.position.y + constants.TABLE.size.height / 2;
-    const Gravity = constants.Gravity.y * -1;
-
+    // --- Compute Y velocity to reach arc height ---
     const minArcHeight = tableSurfaceY + constants.NET.size.height + 0.2;
-    const currentBasedHeight = ballPosition.y + 0.2;
-    const arcHeight = Math.max(minArcHeight, currentBasedHeight);
+    const arcHeight = Math.max(minArcHeight, ballPos.y + 0.2);
+    const heightGain = Math.max(arcHeight - ballPos.y, 0.3);
 
-    const heightToGain = arcHeight - ballPosition.y;
-
-    const velocityY = Math.sqrt(2 * Gravity * Math.max(heightToGain, 0.3));
-
-    const timeUp = velocityY / Gravity;
-    const timeDown = Math.sqrt((2 * (arcHeight - tableSurfaceY)) / Gravity);
+    const velocityY = Math.sqrt(2 * gravity * heightGain);
+    const timeUp = velocityY / gravity;
+    const timeDown = Math.sqrt((2 * (arcHeight - tableSurfaceY)) / gravity);
     const totalFlightTime = timeUp + timeDown;
 
-    const deltaZ = targetZ - ballPosition.z;
-    const requiredVelocityZ = deltaZ / totalFlightTime;
+    // --- Compute Z velocity to reach target Z ---
+    const velocityZ = (targetZ - ballPos.z) / totalFlightTime;
 
-    const halfWidth = constants.TABLE.size.width / 2;
+    // --- Compute X target and velocity ---
     const minX = -halfWidth + safeMargin;
-    const maxX = +halfWidth - safeMargin;
-
-    let targetX: number;
-    if (!this.appySpin)
-      targetX = paddlePos.x + this.paddle.body.linvel().x * 0.05;
-    else targetX = paddlePos.x;
+    const maxX = halfWidth - safeMargin;
+    let targetX = this.appySpin
+      ? paddlePos.x
+      : paddlePos.x + this.paddle.body.linvel().x * 0.05;
     targetX = Math.max(minX, Math.min(maxX, targetX));
 
-    const deltaX = targetX - ballPosition.x;
-    const velocityX = deltaX / totalFlightTime;
-
+    const velocityX = (targetX - ballPos.x) / totalFlightTime;
     this.TargetX = targetX;
 
-    const newForce = new Vector3(velocityX, velocityY, requiredVelocityZ);
-    return newForce;
+    // --- Return final velocity vector ---
+    return new Vector3(velocityX, velocityY, velocityZ);
   }
-  // Takes paddle velocity and maps it deterministically to a Z target
+
   calculateTargetZFromVelocity(
     paddleVelocityZ: number,
     zMin: number,
@@ -152,8 +140,14 @@ export class Physics {
     return zMin + t * (zMax - zMin); // Map to [zMin, zMax]
   }
 
-  Step() {
-    // this.applyMagnusEffect();
+  // TEST:
+  public setPaddleMesh(paddle: paddle) {
+    this.PaddleMesh = paddle;
+  }
+  Step(dt: number) {
+    //TEST:
+    this.paddle.update(dt);
+    this.applyMagnusEffect();
     this.world.step(this.eventQueue);
 
     this.eventQueue.drainCollisionEvents((h1, h2, started) => {
@@ -177,7 +171,6 @@ export class Physics {
       if (now - this.lastCollisioDetectionTime < 150) return;
       this.lastCollisioDetectionTime = now;
 
-      console.log("Ball-Paddle collision detected");
       this.onBallPaddleCollision?.(this.ball.body, this.paddle.body);
       return;
     }

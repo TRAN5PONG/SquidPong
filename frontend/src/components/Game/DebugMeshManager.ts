@@ -13,7 +13,7 @@ import { constants } from "@/utils/constants";
 export class DebugMeshManager {
   private scene: Scene;
 
-  private paddleMesh!: Mesh;
+  public paddleMesh!: Mesh;
   private ballMesh!: Mesh;
   private netMesh!: Mesh;
   private groundMesh!: Mesh;

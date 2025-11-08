@@ -1,12 +1,17 @@
 import { MatchPlayer } from "@/types/game/game";
-import { Schema} from "@colyseus/schema";
+import { Schema } from "@colyseus/schema";
 
 interface Spectator {
   id: string;
   username: string;
 }
 
-export type MatchPhase = "waiting" | "countdown" | "playing" | "paused" | "ended";
+export type MatchPhase =
+  | "waiting"
+  | "countdown"
+  | "playing"
+  | "paused"
+  | "ended";
 
 export interface MatchState extends Schema {
   players: Map<string, MatchPlayer>;
@@ -15,4 +20,5 @@ export interface MatchState extends Schema {
   countdown: number;
   winnerId: string | null;
   pauseBy: string | null;
+  lastHitPlayer: string | null;
 }

@@ -63,6 +63,12 @@ export class Paddle extends BasePaddle {
     await super.load();
     this.setupInitialPosition();
 
+    if (this.mesh && this.isLocal) {
+      this.mesh.getChildMeshes().forEach((mesh) => {
+        // Always render paddles on top layer
+        mesh.renderingGroupId = 2;
+      });
+    }
     if (this.options) {
       if (this.options.color) {
         this.setColor(this.options.color.color);
@@ -77,10 +83,10 @@ export class Paddle extends BasePaddle {
     this.clampedZ =
       this.mesh?.position.z || (this.side === "LEFT" ? -2.8 : 2.8);
 
-    if (this.isLocal) {
-      this.setupPaddlePlane();
-      this.enableLiveMouseTracking();
-    }
+    // if (this.isLocal) {
+    //   this.setupPaddlePlane();
+    //   this.enableLiveMouseTracking();
+    // }
   }
   private setupPaddlePlane(): void {
     if (!this.mesh) return;
@@ -136,7 +142,7 @@ export class Paddle extends BasePaddle {
       this.mesh.position.y,
       this.clampedZ,
     );
-    const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.6);
+    const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.8);
     this.mesh.position.copyFrom(interpolated);
 
     // Smooth rotation
@@ -156,7 +162,21 @@ export class Paddle extends BasePaddle {
     );
   }
 
-  private getBoundaries() {
+  // TEST:
+  public updateVisual(alpha: number) {
+    if (!this.paddle_physics) return;
+    const pos = this.paddle_physics.getInterpolatedPos(alpha);
+    this.mesh.position.set(pos.x, pos.y, pos.z);
+
+    const boundaries = this.getBoundaries();
+    const pct =
+      (pos.x - boundaries.x.min) / (boundaries.x.max - boundaries.x.min);
+    const centered = pct * 2 - 1;
+    const targetRot = centered * -(Math.PI / 2);
+    this.mesh.rotation.z = targetRot;
+  }
+
+  public getBoundaries() {
     return {
       x: { min: -3, max: 3 },
       z: this.side === "LEFT" ? { min: -5, max: -1.5 } : { min: 1.5, max: 5 },
