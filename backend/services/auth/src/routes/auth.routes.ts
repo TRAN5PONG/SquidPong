@@ -113,7 +113,7 @@ const authRoutes: Route[] = [
     schema: deleteAccountSchema,
   },
   {
-    method: "POST",
+    method: "PUT",
     url: "/api/auth/update",
     handler: authController.postUpdateAuthHandler,
     // Optionally add schema validation here
