@@ -357,6 +357,7 @@ export async function postUpdateAuthHandler(req: FastifyRequest, res: FastifyRep
   const secretToken = req.headers['x-secret-token'] as string;
   try 
   {
+    console.log("postUpdateAuthHandler called with id:", id, "and new username:", username);
     if (secretToken !== process.env.SECRET_TOKEN)
       throw new Error('Unauthorized: Invalid secret token');
 

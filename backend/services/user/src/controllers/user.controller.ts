@@ -101,9 +101,8 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
           }
         });
 
-    // another services update 
     if(body.username)
-      await sendServiceRequestSimple('chat', userId, 'PUT',{username : body.username } )
+      await sendServiceRequestSimple('auth', userId, 'PUT',{username : body.username } )
 
     const dataSend = {
       ...(body.username && { username : body.username }),
@@ -122,7 +121,6 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
     if(await redis.exists(redisKey))
       await redis.update(redisKey, '$', dataSend);
   
-    // end another services update
   }
   catch (error) {
     return sendError(res, error);
@@ -279,13 +277,37 @@ export async function getUserByIdHandler(req: FastifyRequest, res: FastifyReply)
 export async function getUserByUserNameHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.FETCH_SUCCESS };
+  
+  const headers = req.headers as {'x-user-id': string};
+  const userId = Number(headers['x-user-id']);
+
   const { username } = req.params as { username: string };
+
 
   try 
   {
-    const profile = await prisma.profile.findUnique({ where: { username } });
+    let profile = await prisma.profile.findUnique({ where: { username } });
     if (!profile) throw new Error(GeneralMessages.NOT_FOUND);
-    respond.data = await mergeProfileWithRedis(profile);
+
+    let profileWithStatus: any = await mergeProfileWithRedis(profile);
+
+    if(userId !== profile.userId)
+    {
+      const statusFriends = await prisma.friendship.findFirst({
+        where: {
+          OR: [
+            { senderId : userId, receiverId: profile.userId },
+            { senderId : profile.userId, receiverId: userId }
+          ]
+        }
+      });
+      if(!statusFriends)
+        profileWithStatus.friendshipStatus = 'NOT_FRIENDS';
+      else
+        profileWithStatus.friendshipStatus = statusFriends.status;
+    }
+    
+    respond.data = profileWithStatus;
   } 
   catch (error) {
     return sendError(res, error);
