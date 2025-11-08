@@ -5,7 +5,7 @@ import { Paddle } from "../entities/Paddle/GamePaddle";
 import { Ball } from "../entities/Ball";
 import { Physics } from "../physics";
 import { RollbackManager } from "./RollbackManager";
-import { BallHitMessage, PaddleState } from "@/types/network";
+import { BallHitMessage, ballResetMessage, PaddleState } from "@/types/network";
 import { Scene, Plane } from "@babylonjs/core";
 import { PointerEventTypes } from "@babylonjs/core";
 
@@ -111,7 +111,10 @@ export class GameController {
         data.applySpin,
       );
     });
-
+    // Listen for ball reset (new round)
+    this.net.on("Ball:Reset", (data: ballResetMessage) => {
+      this.resetGame(data);
+    });
     // Listen for mouse click to serve
     this.scene.onPointerObservable.add((pointerInfo) => {
       if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
@@ -486,7 +489,31 @@ export class GameController {
     this.startPaddleSync();
   }
 
-  public resetGame(): void { }
+  public resetGame(data: ballResetMessage): void {
+    this.physics.setBallFrozen(true);
+    this.physics.setBallPosition(
+      data.position.x,
+      data.position.y,
+      data.position.z,
+    );
+    this.physics.setBallVelocity(
+      data.velocity.x,
+      data.velocity.y,
+      data.velocity.z,
+    );
+    this.physics.setLastHitBy(data.lastHitPlayer);
+
+    // Reset rollback manager
+    this.rollbackManager.reset();
+
+    // Reset game state
+    this.gameState = GameState.WAITING_FOR_SERVE;
+    this.currentTick = 0;
+    this.lastCollisionTick = 0;
+
+    // Clear opponent paddle buffer
+    this.bufferOppPaddleStates = [];
+  }
 
   // ==================== Serve methods =================
   public BallServe(): void {

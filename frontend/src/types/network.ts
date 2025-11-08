@@ -41,3 +41,9 @@ export interface BallResetMessage {
   velocity: Vec3;
   lastHitPlayer: string | null;
 }
+
+export interface ballResetMessage {
+  position: BallState;
+  velocity: BallState;
+  lastHitPlayer: string | null;
+}
