@@ -310,33 +310,34 @@ export async function sendMessageHandler(req: FastifyRequest, res: FastifyReply)
    const headers = req.headers as { 'x-user-id': string };
    const senderId = headers['x-user-id'];
    
-   const { chatId, content } = req.body as { chatId: number; content: string };
-
+   const { chatId, content , matchId , tournamentId } = req.body as { chatId: number; content?: string , matchId? : string , tournamentId? : string };
 
    try 
    {
       const chat = await prisma.chat.findFirst({
-         where: {
-            id: Number(chatId),
-         },
-         select : {
-            members: true
-         }
+         where: { id: Number(chatId)},
+         select : { members: true }
       });
-
       if (!chat) throw new Error('Chat not found or user is not a member');
+
+      
+      const type = matchId ? 'INVITE_MATCH' : tournamentId ? 'INVITE_TOURNAMENT' : 'TEXT';
 
       await prisma.message.create({
          data: {
             chatId: Number(chatId),
-            content,
-            senderId
-
+            content: content || '',
+            senderId: senderId,
+            type: type,
+            matchId: matchId ? String(matchId) : null,
+            tournamentId: tournamentId ? String(tournamentId) : null,
          },
       });
       
+      const data = (type === 'TEXT') ? {} : { type : type , matchId : matchId , tournamentId : tournamentId ,  };
+
       const targetIds = chat.members.filter((m:any) => m.userId !== senderId).map((m:any) => m.userId);
-      const dataToSend = { type : 'newMessage' , fromId : senderId , targetIds : targetIds};
+      const dataToSend = { type : 'newMessage' , fromId : senderId , targetId : targetIds , data };
       await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
@@ -355,7 +356,8 @@ export async function editMessageHandler(req: FastifyRequest, res: FastifyReply)
    const userId = headers['x-user-id'];
    
    const { messageId } = req.params as { messageId: string };
-   const { content } = req.body as { content: string };
+   const { content , matchId , tournamentId } = req.body as { content?: string , matchId? : string , tournamentId? : string };
+
 
    try 
    {
@@ -367,13 +369,17 @@ export async function editMessageHandler(req: FastifyRequest, res: FastifyReply)
       if (!message) throw new Error('Message not found');
       if (message.senderId !== userId) throw new Error('Only the sender can edit the message');
 
+      const type = matchId ? 'INVITE_MATCH' : tournamentId ? 'INVITE_TOURNAMENT' : 'TEXT';
+      if(type !== message.type) throw new Error('Cannot change message with different type');
+
       await prisma.message.update({
          where: { id: Number(messageId) },
-         data: { content, isEdited: true },
+         data: {isEdited: true, content : content ? content : null , matchId : matchId ? String(matchId) : null , tournamentId : tournamentId ? String(tournamentId) : null },
       });
 
+      const data = {messageId ,type , content , matchId , tournamentId , isEdited: true };
       const targetIds = message.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
-      const dataToSend = { type : 'editMessage' , fromId : userId , targetIds : targetIds};
+      const dataToSend = { type : 'editMessage' , fromId : userId , targetId : targetIds , data };
       await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
@@ -406,7 +412,7 @@ export async function deleteMessageHandler(req: FastifyRequest, res: FastifyRepl
       await prisma.message.delete({ where: { id: Number(messageId) } });
 
       const targetIds = message.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
-      const dataToSend = { type : 'deleteMessage' , fromId : userId , targetIds : targetIds};
+      const dataToSend = { type : 'deleteMessage' , fromId : userId , targetId : targetIds , data : {messageId}};
       await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
@@ -446,7 +452,7 @@ export async function replyToMessageHandler(req: FastifyRequest, res: FastifyRep
       });
 
       const targetIds = originalMessage.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
-      const dataToSend = { type : 'newMessage' , fromId : userId , targetIds : targetIds};
+      const dataToSend = { type : 'newMessage' , fromId : userId , targetId : targetIds};
       await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
@@ -487,8 +493,9 @@ export async function addReactionHandler(req: FastifyRequest, res: FastifyReply)
          create: { messageId: Number(messageId), userId, emoji: emoji as any },
       });
 
+      const data = {emoji , messageId };
       const targetIds = message.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
-      const dataToSend = { type : 'newReaction' , fromId : userId , targetIds : targetIds};
+      const dataToSend = { type : 'newReaction' , fromId : userId , targetId : targetIds , data};
       await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 
@@ -527,7 +534,7 @@ export async function removeReactionHandler(req: FastifyRequest, res: FastifyRep
       });
 
       const targetIds = message.chat.members.filter((m:any) => m.userId !== userId).map((m:any) => m.userId);
-      const dataToSend = { type : 'removeReaction' , fromId : userId , targetIds : targetIds};
+      const dataToSend = { type : 'removeReaction' , fromId : userId , targetId : targetIds , data : {messageId} };
       await sendDataToQueue(dataToSend , 'eventhub');
    }
    catch (error) 

@@ -12,9 +12,9 @@ type Route = {
 const notifyRoutes: Route[] = [
   
   // User Management Routes (Internal)
-  { method: 'POST', url: '/api/notify/user/create', handler: createUser, },
-  { method: 'PUT', url: '/api/notify/user/update', handler: updateUser, },
-  { method: 'DELETE', url: '/api/notify/user/delete', handler: deleteAccountHandler },
+  { method: 'POST', url: '/api/notify/create', handler: createUser, },
+  { method: 'PUT', url: '/api/notify/update', handler: updateUser, },
+  { method: 'DELETE', url: '/api/notify/delete', handler: deleteAccountHandler },
   
   // Notification Routes
   { method: 'GET', url: '/api/notify/history', handler: getNotificationHistoryHandler },
