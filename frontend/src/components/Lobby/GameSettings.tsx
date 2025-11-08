@@ -381,7 +381,7 @@ interface GameSettingsProps {
   setSelectedMode: (mode: GameMode | null) => void;
 }
 const GameSettings = (props: GameSettingsProps) => {
-  const [isInviteOponentOpen, setIsInviteOponentOpen] = useState(false);
+  const [isInviteOponentOpen, setIsInviteOponentOpen] = useState(true);
 
   // Sounds
   const { errorSound, readySound, notificationSound } = useSounds();
@@ -579,7 +579,7 @@ const GameSettings = (props: GameSettingsProps) => {
           console.log("No pending match found");
         }
       } catch (err) {
-        console.error("Error fetching pending match:", err);
+        // console.error("Error fetching pending match:", err);
       }
     };
     getIPMatch();
@@ -1455,7 +1455,7 @@ const InviteOponent = (props: InviteOponentProps) => {
   const [isLoading, setisLoading] = useState(false);
   const [ModalMode, setModalMode] = useState<
     "invite" | "join" | "InvitationsList" | "SelectOponent" | "inviteData"
-  >("invite");
+  >("SelectOponent");
 
   //App Ctx
   const { toasts, user } = useAppContext();
@@ -1464,6 +1464,7 @@ const InviteOponent = (props: InviteOponentProps) => {
   const [code, setCode] = useState("");
   const [isPrivateInvite, setIsPrivateInvite] = useState(false);
   const [selectedOpponent, setSelectedOpponent] = useState<User | null>(null);
+  const [userFriends, setUserFriends] = useState<User[]>([]);
   const [opponentsList, setOpponentsList] = useState<User[]>([]);
   const [query, setQuery] = useState("");
 
@@ -1494,7 +1495,7 @@ const InviteOponent = (props: InviteOponentProps) => {
       try {
         const friends = await getUserFriends(user?.username);
         if (friends && friends.data) {
-          setOpponentsList(friends.data as unknown as User[]);
+          setUserFriends(friends.data as unknown as User[]);
         }
       } catch (err) {
         console.error("Error fetching friends list: ", err);
@@ -1502,7 +1503,10 @@ const InviteOponent = (props: InviteOponentProps) => {
     };
 
     if (ModalMode === "InvitationsList") getUserInvitations();
-    else if (ModalMode === "SelectOponent") getFriendsList();
+    else if (ModalMode === "SelectOponent")
+    {
+      getFriendsList();
+    }
   }, [ModalMode]);
 
   // Invitation preview
@@ -1610,9 +1614,11 @@ const InviteOponent = (props: InviteOponentProps) => {
   };
   const Search = async (query: string) => {
     const Users = await SearchUsers(query);
-    return Users;
+
+    if (Users.data) {
+      setOpponentsList(Users.data);
+    }
   };
-  const handleOpponentSearch = () => {};
   // const handleJoinWithCode = async () => {
   //   try {
   //     const invite = await getInvitationByCode(code);
@@ -1650,7 +1656,10 @@ const InviteOponent = (props: InviteOponentProps) => {
 
   useEffect(() => {
     if (query.trim() === "") {
-      return setOpponentsList([]);
+      console.log(userFriends);
+      const shuffled = userFriends.sort(() => 0.5 - Math.random());
+      console.log("shuf:", shuffled);
+      return setOpponentsList(shuffled);
     }
     const delayDebounceFn = setTimeout(() => {
       Search(query.trim());

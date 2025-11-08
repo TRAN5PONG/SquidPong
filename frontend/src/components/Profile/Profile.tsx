@@ -23,7 +23,14 @@ import { useAppContext } from "@/contexts/AppProviders";
 import Toast from "../Toast/Toast";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { getRankMetaData } from "@/utils/game";
-import { blockUser, getUserById, getUserFriends, MiniUser } from "@/api/user";
+import {
+  blockUser,
+  getUserById,
+  getUserFriends,
+  MiniUser,
+  removeFriend,
+  sendFriendRequest,
+} from "@/api/user";
 import Skeleton from "../Skeleton/Skeleton";
 
 const StyledProfileModal = styled("div")`
@@ -406,6 +413,57 @@ const Profile = () => {
   const { modal, toasts, user } = useAppContext();
   const navigate = useNavigate();
 
+  const handleFriendAddUnfriend = async (receiverId: string) => {
+    if (profileFriends.find((f) => f.username === user?.username)) {
+      try {
+        const resp = await removeFriend(Number(receiverId));
+        if (resp.success) {
+          toasts.addToastToQueue({
+            type: "info",
+            message: "Unfriended successfully.",
+            duration: 3000,
+          });
+          getFriends(profileData!.username);
+        } else {
+          toasts.addToastToQueue({
+            type: "warning",
+            message: resp.message || "Failed to unfriend.",
+            duration: 3000,
+          });
+        }
+      } catch (err: any) {
+        toasts.addToastToQueue({
+          type: "error",
+          message: err.message || "An unexpected error occurred.",
+          duration: 3000,
+        });
+      }
+    } else {
+      try {
+        const resp = await sendFriendRequest(Number(receiverId));
+
+        if (resp.success) {
+          toasts.addToastToQueue({
+            type: "info",
+            message: "Friend request sent successfully.",
+            duration: 3000,
+          });
+        } else {
+          toasts.addToastToQueue({
+            type: "warning",
+            message: resp.message || "Failed to send friend request.",
+            duration: 3000,
+          });
+        }
+      } catch (err: any) {
+        toasts.addToastToQueue({
+          type: "error",
+          message: err.message || "An unexpected error occurred.",
+          duration: 3000,
+        });
+      }
+    }
+  };
   const handleBlockUser = () => {
     if (!profileData) return;
 
@@ -473,6 +531,7 @@ const Profile = () => {
   const getFriends = async (userId: string) => {
     const resp = await getUserFriends(userId);
     if (resp.success && resp.data) {
+      console.log(resp.data);
       setProfileFriends(resp.data);
     }
   };
@@ -548,8 +607,15 @@ const Profile = () => {
           </div>
         ) : (
           <div className="ActionBtns">
-            <button className="actionBtn AddFriendBtn">
-              Add friend
+            <button
+              className="actionBtn AddFriendBtn"
+              onClick={() =>
+                handleFriendAddUnfriend(profileData.userId.toString())
+              }
+            >
+              {profileFriends.find((f) => f.username === user?.username)
+                ? "UNFRIEND"
+                : "ADD FRIEND"}
               <AddFriendIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
             </button>
             <button className="actionBtn">
