@@ -42,6 +42,7 @@ import { useCountdown } from "@/hooks/useCountdown";
 import { socketManager } from "@/utils/socket";
 import { getUserCurrentMatch } from "@/api/match";
 import { useSounds } from "@/contexts/SoundProvider";
+import { getUserFriends, MiniUser, SearchUsers } from "@/api/user";
 
 const StyledGameSettings = styled("div")`
   width: 450px;
@@ -380,7 +381,7 @@ interface GameSettingsProps {
   setSelectedMode: (mode: GameMode | null) => void;
 }
 const GameSettings = (props: GameSettingsProps) => {
-  const [isInviteOponentOpen, setIsInviteOponentOpen] = useState(false);
+  const [isInviteOponentOpen, setIsInviteOponentOpen] = useState(true);
 
   // Sounds
   const { errorSound, readySound, notificationSound } = useSounds();
@@ -578,7 +579,7 @@ const GameSettings = (props: GameSettingsProps) => {
           console.log("No pending match found");
         }
       } catch (err) {
-        console.error("Error fetching pending match:", err);
+        // console.error("Error fetching pending match:", err);
       }
     };
     getIPMatch();
@@ -1213,6 +1214,13 @@ const StyledInviteOponent = styled("div")`
       align-items: center;
       gap: 5px;
       overflow-y: auto;
+      max-height: 250px;
+      .NoneSPN {
+        color: rgba(255, 255, 255, 0.5);
+        font-family: var(--span_font);
+        font-size: 1rem;
+        margin-top: 20px;
+      }
       .SelectOponentModePlayersListItem {
         width: 100%;
         height: 50px;
@@ -1447,7 +1455,7 @@ const InviteOponent = (props: InviteOponentProps) => {
   const [isLoading, setisLoading] = useState(false);
   const [ModalMode, setModalMode] = useState<
     "invite" | "join" | "InvitationsList" | "SelectOponent" | "inviteData"
-  >("invite");
+  >("SelectOponent");
 
   //App Ctx
   const { toasts, user } = useAppContext();
@@ -1456,6 +1464,9 @@ const InviteOponent = (props: InviteOponentProps) => {
   const [code, setCode] = useState("");
   const [isPrivateInvite, setIsPrivateInvite] = useState(false);
   const [selectedOpponent, setSelectedOpponent] = useState<User | null>(null);
+  const [userFriends, setUserFriends] = useState<User[]>([]);
+  const [opponentsList, setOpponentsList] = useState<User[]>([]);
+  const [query, setQuery] = useState("");
 
   // for Invitation Data
   type ExpirationOption = "30min" | "1hr" | "4hr" | "24hr" | "never";
@@ -1464,13 +1475,13 @@ const InviteOponent = (props: InviteOponentProps) => {
   const handleChange = (value: ExpirationOption) =>
     setSelectedExpireOption(value);
 
-  const {popupSound} = useSounds();
-
+  const { popupSound } = useSounds();
   const [userInvitations, setUserInvitations] = useState<GameInvitation[]>([]);
 
   // Fetch user invitations on modalMode = "InvitationsList"
   useEffect(() => {
-    if (!user || ModalMode !== "InvitationsList") return;
+    if (!user) return;
+
     const getUserInvitations = async () => {
       try {
         const userIvitations = await getUserGameInvitations(user?.id!);
@@ -1479,7 +1490,23 @@ const InviteOponent = (props: InviteOponentProps) => {
         console.error("Error fetching user invitations: ", err);
       }
     };
-    getUserInvitations();
+    const getFriendsList = async () => {
+      if (!user) return;
+      try {
+        const friends = await getUserFriends(user?.username);
+        if (friends && friends.data) {
+          setUserFriends(friends.data as unknown as User[]);
+        }
+      } catch (err) {
+        console.error("Error fetching friends list: ", err);
+      }
+    };
+
+    if (ModalMode === "InvitationsList") getUserInvitations();
+    else if (ModalMode === "SelectOponent")
+    {
+      getFriendsList();
+    }
   }, [ModalMode]);
 
   // Invitation preview
@@ -1585,6 +1612,13 @@ const InviteOponent = (props: InviteOponentProps) => {
       });
     }
   };
+  const Search = async (query: string) => {
+    const Users = await SearchUsers(query);
+
+    if (Users.data) {
+      setOpponentsList(Users.data);
+    }
+  };
   // const handleJoinWithCode = async () => {
   //   try {
   //     const invite = await getInvitationByCode(code);
@@ -1619,6 +1653,19 @@ const InviteOponent = (props: InviteOponentProps) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [ModalRef, props]);
+
+  useEffect(() => {
+    if (query.trim() === "") {
+      console.log(userFriends);
+      const shuffled = userFriends.sort(() => 0.5 - Math.random());
+      console.log("shuf:", shuffled);
+      return setOpponentsList(shuffled);
+    }
+    const delayDebounceFn = setTimeout(() => {
+      Search(query.trim());
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
 
   // useCountDown
   // const { days, expired, hours, minutes, seconds } = useCountdown(
@@ -2018,11 +2065,12 @@ const InviteOponent = (props: InviteOponentProps) => {
             type="input"
             placeholder="Search players..."
             className="SearchInput"
+            onChange={(e: any) => setQuery(e.target.value)}
           />
 
-          <div className="SelectOponentModePlayersList">
-            {db.users ? (
-              db.users.map((user) => (
+          <div className="SelectOponentModePlayersList scroll-y">
+            {opponentsList && opponentsList.length > 0 ? (
+              opponentsList.map((user) => (
                 <div
                   className="SelectOponentModePlayersListItem"
                   key={user.id}
@@ -2059,7 +2107,7 @@ const InviteOponent = (props: InviteOponentProps) => {
                 </div>
               ))
             ) : (
-              <span>No players found.</span>
+              <span className="NoneSPN">No players found.</span>
             )}
           </div>
 

@@ -12,7 +12,7 @@ async function fastifyserver()
 
     try 
     {
-        app.listen({port : port , host : host} , () => {console.log(`user service running at http://user:${port} ...`)})
+        await app.listen({port : port , host : host} , () => {console.log(`user service running at http://user:${port} ...`)})
     } 
     catch (error) 
     {

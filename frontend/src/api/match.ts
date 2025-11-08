@@ -12,11 +12,6 @@ export async function getUserCurrentMatch(userId: string) {
     }
   );
 
-  if (!response.ok) {
-    if (response.status === 404) return null; // no pending match
-    throw new Error("Failed to fetch pending match");
-  }
-
   return await response.json();
 }
 

@@ -1,6 +1,11 @@
 import { RouteHandlerMethod , FastifySchema  } from 'fastify';
 
-import {blockUserHandler, unblockUserHandler, removeUserHandler, deleteAccountHandler, createChat , removeChat   , getChatById, getRecentChats } from '../controllers/chat.controller';
+import {
+  blockUserHandler, unblockUserHandler, removeUserHandler, deleteAccountHandler, 
+  createChat, removeChat, getChatById, getRecentChats,
+  sendMessageHandler, editMessageHandler, deleteMessageHandler, 
+  replyToMessageHandler, addReactionHandler, removeReactionHandler
+} from '../controllers/chat.controller';
 import { createUser, updateUser } from '../controllers/user.controller';
 import {
   createGroup, updateGroupInfo, removeGroup, getGroupById, getGoupes,
@@ -18,6 +23,15 @@ import {
   getChatByIdSchema as newGetChatByIdSchema,
   getRecentChatsSchema as newGetRecentChatsSchema
 } from '../schemas/chat.schemas';
+
+import {
+  sendMessageSchema,
+  editMessageSchema,
+  deleteMessageSchema,
+  replyToMessageSchema,
+  addReactionSchema,
+  removeReactionSchema
+} from '../schemas/message.schemas';
 
 import {
   createGroupSchema,
@@ -58,17 +72,31 @@ type Route = {
 export const chatRoutes : Route[] = [
   { method: 'POST',   url: '/api/chat/user/create',            handler: createUser },          
   { method: 'PUT',   url: '/api/chat/user/update',     handler: updateUser, },          
+  { method: 'DELETE', url: '/api/chat/user/delete',     handler: deleteAccountHandler },
 
-  { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats, schema: newGetRecentChatsSchema },
+  
 
-  { method: 'POST',   url: '/api/chat/new',                handler: createChat , schema: newCreateChatSchema },          
-  { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat , schema: newRemoveChatSchema },          
-  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById , schema: newGetChatByIdSchema },
+  { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats },
+  { method: 'POST',   url: '/api/chat/new',                handler: createChat  },          
+  { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat  },          
+  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById  },
 
   { method: 'POST',   url: '/api/chat/block/:friendId',    handler: blockUserHandler  },
   { method: 'POST',   url: '/api/chat/unblock/:friendId',  handler: unblockUserHandler  },
   { method: 'DELETE', url: '/api/chat/user/:friendId',     handler: removeUserHandler },
-  { method: 'DELETE', url: '/api/chat/account/delete',     handler: deleteAccountHandler },
+];
+
+
+
+
+// ------------------- Message Endpoints -------------------
+export const messageRoutes: Route[] = [
+  { method: 'POST',   url: '/api/message/send',                handler: sendMessageHandler },
+  { method: 'PATCH',  url: '/api/message/:messageId/edit',     handler: editMessageHandler },
+  { method: 'DELETE', url: '/api/message/:messageId',          handler: deleteMessageHandler },
+  { method: 'POST',   url: '/api/message/:messageId/reply',    handler: replyToMessageHandler },
+  { method: 'POST',   url: '/api/message/:messageId/reaction', handler: addReactionHandler },
+  { method: 'DELETE', url: '/api/message/:messageId/reaction', handler: removeReactionHandler },
 ];
 
 

@@ -97,15 +97,35 @@ export async function getPendingFriendRequests(): Promise<
   return await response.json();
 }
 
-export async function getUserFriends(userid: string): Promise<ApiResponse<MiniUser[]>> {
+/**
+ * Friends
+ * @param userid 
+ * @returns 
+ */
+export async function getUserFriends(
+  userid: string
+): Promise<ApiResponse<MiniUser[]>> {
   const response = await fetch(`${API_BASE_URL}/friend/all-friends/${userid}`, {
     method: "GET",
     credentials: "include",
   });
   return await response.json();
 }
-export async function blockedFriends(): Promise<ApiResponse<User[]>> {
-  const response = await fetch(`${API_BASE_URL}/friend/blocked`, {
+export async function removeFriend(userId: number): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE_URL}/friend/${userId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to remove friend: ${response.statusText}`);
+  }
+  return await response.json();
+}
+/**
+ * Block
+ */
+export async function getBlockedUsers(): Promise<ApiResponse<MiniUser[]>> {
+  const response = await fetch(`${API_BASE_URL}/blocked/all`, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -117,16 +137,23 @@ export async function blockedFriends(): Promise<ApiResponse<User[]>> {
   }
   return await response.json();
 }
-export async function removeFriend(userId: number): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/friend/${userId}`, {
-    method: "DELETE",
+export async function blockUser(userId: number): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE_URL}/blocked/${userId}`, {
+    method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
   if (!response.ok) {
-    throw new Error(`Failed to remove friend: ${response.statusText}`);
+    throw new Error(`Failed to block user: ${response.statusText}`);
+  }
+  return await response.json();
+}
+export async function unblockUser(userId: number): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE_URL}/blocked/${userId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to unblock user: ${response.statusText}`);
   }
   return await response.json();
 }
@@ -142,32 +169,6 @@ export async function getUsers(): Promise<ApiResponse<User[]>> {
   });
   if (!response.ok) {
     throw new Error(`Failed to fetch users: ${response.statusText}`);
-  }
-  return await response.json();
-}
-export async function blockUser(userId: number): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/blocked/${userId}`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to block user: ${response.statusText}`);
-  }
-  return await response.json();
-}
-export async function unblockUser(userId: number): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/blocked/${userId}`, {
-    method: "DELETE",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to unblock user: ${response.statusText}`);
   }
   return await response.json();
 }
@@ -189,3 +190,33 @@ export async function SearchUsers(query: string): Promise<ApiResponse<User[]>> {
   }
   return await response.json();
 }
+
+export const changeAvatar = async (avatarFile: File): Promise<ApiResponse> => {
+  const formData = new FormData();
+
+  formData.append("avatar", avatarFile);
+  const resp = await fetch(`${API_BASE_URL}/user/avatar`, {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+
+  return await resp.json();
+};
+export const updateProfile = async (
+  firstName: string,
+  lastName: string,
+  username: string,
+  banner: string
+): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/user/db`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ firstName, lastName, username, banner }),
+  });
+
+  return await resp.json();
+};

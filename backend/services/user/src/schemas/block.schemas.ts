@@ -29,7 +29,6 @@ const errorResponse = {
 const blockedProfileSchema = {
   type: 'object',
   properties: {
-    id: { type: 'number' },
     userId: { type: 'number' },
     username: { type: 'string' },
     firstName: { type: 'string' },
@@ -37,7 +36,7 @@ const blockedProfileSchema = {
     avatar: { type: 'string' },
     status: { 
       type: 'string',
-      enum: ['ONLINE', 'OFFLINE', 'AWAY', 'BUSY']
+      enum: ['ONLINE', 'OFFLINE', 'DO_NOT_DISTURB']
     },
     isVerified: { type: 'boolean' }
   }

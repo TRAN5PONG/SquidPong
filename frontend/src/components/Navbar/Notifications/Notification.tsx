@@ -118,6 +118,7 @@ const StyledModal = styled("div")`
 interface NotificationProps {
   onClose: () => void;
   notifications: NotificationEl[];
+  refetchNotifs: () => void;
 }
 const Notification = (props: NotificationProps) => {
   const ModalRef = useRef<HTMLDivElement>(null);
@@ -170,7 +171,12 @@ const Notification = (props: NotificationProps) => {
       </div>
       {props.notifications.length > 0 ? (
         props.notifications.map((Notification: NotificationEl) => {
-          return <NotificationItem {...Notification} />;
+          return (
+            <NotificationItem
+              element={Notification}
+              refetchNotifs={props.refetchNotifs}
+            />
+          );
         })
       ) : (
         <span>No notifications</span>
@@ -180,18 +186,23 @@ const Notification = (props: NotificationProps) => {
   );
 };
 
-const NotificationItem = (props: NotificationEl) => {
+interface NotificationItemProps {
+  element: NotificationEl;
+  refetchNotifs: () => void;
+}
+const NotificationItem = (props: NotificationItemProps) => {
   const { toasts } = useAppContext();
   const handleAcceptFriendRequest = async () => {
     try {
-      const resp = await acceptFriendRequest(Number(props.by.userId));
-      if (resp.success)
+      const resp = await acceptFriendRequest(Number(props.element.by.userId));
+      if (resp.success) {
         toasts.addToastToQueue({
           type: "success",
           message: "Friend request accepted.",
           duration: 3000,
         });
-      else
+        props.refetchNotifs();
+      } else
         toasts.addToastToQueue({
           type: "error",
           message: `Failed to accept friend request: ${resp.message}`,
@@ -207,14 +218,15 @@ const NotificationItem = (props: NotificationEl) => {
   };
   const handleDeclineFriendRequest = async () => {
     try {
-      const resp = await rejectFriendRequest(Number(props.by.userId));
-      if (resp.success)
+      const resp = await rejectFriendRequest(Number(props.element.by.userId));
+      if (resp.success) {
         toasts.addToastToQueue({
           type: "success",
           message: "Friend request declined.",
           duration: 3000,
         });
-      else
+        props.refetchNotifs();
+      } else
         toasts.addToastToQueue({
           type: "error",
           message: `Failed to decline friend request: ${resp.message}`,
@@ -230,7 +242,15 @@ const NotificationItem = (props: NotificationEl) => {
   };
   const markasRead = async () => {
     try {
-      const resp = await markNotificationAsRead(props.id);
+      const resp = await markNotificationAsRead(props.element.id);
+      if (resp.success) {
+        props.refetchNotifs();
+      } else
+        toasts.addToastToQueue({
+          type: "error",
+          message: `Failed to mark notification as read: ${resp.message}`,
+          duration: 3000,
+        });
     } catch (error) {
       toasts.addToastToQueue({
         type: "error",
@@ -241,43 +261,43 @@ const NotificationItem = (props: NotificationEl) => {
   };
   return (
     <StyledNotificationItem
-      avatar={props.by?.avatar || ""}
-      isRead={props.isRead}
+      avatar={props.element.by?.avatar || ""}
+      isRead={props.element.isRead}
       onClick={markasRead}
     >
       <div className="NotificationBy">
         <div className="NotificationType">
-          {props.type === "COIN_GIFT_RECEIVED" ? (
+          {props.element.type === "COIN_GIFT_RECEIVED" ? (
             <GiftIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "SPECTATE_INVITE" ? (
+          ) : props.element.type === "SPECTATE_INVITE" ? (
             <LiveIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "FRIEND_REQUEST" ? (
+          ) : props.element.type === "FRIEND_REQUEST" ? (
             <PersonIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "FRIEND_REQUEST_ACCEPTED" ? (
+          ) : props.element.type === "FRIEND_REQUEST_ACCEPTED" ? (
             <PersonIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "WARNING" ? (
+          ) : props.element.type === "WARNING" ? (
             <WarningIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
               size={18}
             />
-          ) : props.type === "PREDICTION_WON" ? (
+          ) : props.element.type === "PREDICTION_WON" ? (
             <GoalIcon
               className="NotifTypeIcon"
               fill="rgba(255,255,255,0.7)"
@@ -294,39 +314,43 @@ const NotificationItem = (props: NotificationEl) => {
       </div>
       <div className="NotificationContent">
         <h1>
-          {props.by?.username ? `${props.by.username} ` : "unknown"}
+          {props.element.by?.username
+            ? `${props.element.by.username} `
+            : "unknown"}
           <span>
-            {props.type === "INFO"
-              ? props.payload?.info
-              : props.type === "WARNING"
-              ? props.payload?.warning
-              : props.type === "FRIEND_REQUEST"
-              ? props.payload?.friendRequest?.message ||
+            {props.element.type === "INFO"
+              ? props.element.payload?.info
+              : props.element.type === "WARNING"
+              ? props.element.payload?.warning
+              : props.element.type === "FRIEND_REQUEST"
+              ? props.element.payload?.friendRequest?.message ||
                 "has sent you a friend request"
-              : props.type === "FRIEND_REQUEST_ACCEPTED"
+              : props.element.type === "FRIEND_REQUEST_ACCEPTED"
               ? "has accepted your friend request"
-              : props.type === "GAME_INVITE"
+              : props.element.type === "GAME_INVITE"
               ? `invited you to play a game`
-              : props.type === "TOURNAMENT_INVITE"
-              ? `has invited you to join the tournament ${props.payload?.tournamentName}`
-              : props.type === "TOURNAMENT_CANCELLED"
-              ? `The tournament ${props.payload?.tournamentName} has been cancelled`
-              : props.type === "COIN_GIFT_RECEIVED"
-              ? `has sent you a coin gift of ${props.payload?.coinAmount} coins`
-              : props.type === "ACHIEVEMENT_UNLOCKED"
-              ? `Achievement Unlocked: ${props.payload?.achievementName}`
-              : props.type === "SPECTATE_INVITE"
-              ? `has invited you to spectate the game with ID ${props.payload?.spectateGameId}`
-              : props.type === "PREDICTION_WON"
-              ? `You won the prediction! Winnings: ${props.payload?.winningsAmount} coins`
+              : props.element.type === "TOURNAMENT_INVITE"
+              ? `has invited you to join the tournament ${props.element.payload?.tournamentName}`
+              : props.element.type === "TOURNAMENT_CANCELLED"
+              ? `The tournament ${props.element.payload?.tournamentName} has been cancelled`
+              : props.element.type === "COIN_GIFT_RECEIVED"
+              ? `has sent you a coin gift of ${props.element.payload?.coinAmount} coins`
+              : props.element.type === "ACHIEVEMENT_UNLOCKED"
+              ? `Achievement Unlocked: ${props.element.payload?.achievementName}`
+              : props.element.type === "SPECTATE_INVITE"
+              ? `has invited you to spectate the game with ID ${props.element.payload?.spectateGameId}`
+              : props.element.type === "PREDICTION_WON"
+              ? `You won the prediction! Winnings: ${props.element.payload?.winningsAmount} coins`
               : "Notification"}{" "}
           </span>
         </h1>
-        {props.type === "FRIEND_REQUEST" ? (
+        {props.element.type === "FRIEND_REQUEST" ? (
           <div className="ActionsBtns">
             <button
               className="ActionBtn AcceptBtn"
-              disabled={props.payload?.friendRequest?.status !== "pending"}
+              disabled={
+                props.element.payload?.friendRequest?.status !== "pending"
+              }
               onClick={handleAcceptFriendRequest}
             >
               <CheckIcon2
@@ -334,13 +358,15 @@ const NotificationItem = (props: NotificationEl) => {
                 fill="white"
                 className="ActionBtnIcon AcceptIcon"
               />
-              {props.payload?.friendRequest?.status === "accepted"
+              {props.element.payload?.friendRequest?.status === "accepted"
                 ? "Accepted"
                 : "Accept"}
             </button>
             <button
               className="ActionBtn DeclineBtn"
-              disabled={props.payload?.friendRequest?.status !== "pending"}
+              disabled={
+                props.element.payload?.friendRequest?.status !== "pending"
+              }
               onClick={handleDeclineFriendRequest}
             >
               <CloseIcon
@@ -348,12 +374,12 @@ const NotificationItem = (props: NotificationEl) => {
                 fill="white"
                 className="ActionBtnIcon DeclineIcon"
               />
-              {props.payload?.friendRequest?.status === "declined"
+              {props.element.payload?.friendRequest?.status === "declined"
                 ? "Declined"
                 : "Decline"}
             </button>
           </div>
-        ) : props.type === "TOURNAMENT_INVITE" ? (
+        ) : props.element.type === "TOURNAMENT_INVITE" ? (
           <div className="ActionsBtns">
             <button className="ActionBtn AcceptBtn">Join</button>
             <button className="ActionBtn DeclineBtn">
@@ -365,7 +391,7 @@ const NotificationItem = (props: NotificationEl) => {
               Decline
             </button>
           </div>
-        ) : props.type === "SPECTATE_INVITE" ? (
+        ) : props.element.type === "SPECTATE_INVITE" ? (
           <div className="ActionsBtns">
             <button className="ActionBtn AcceptBtn">Spectate</button>
             <button className="ActionBtn DeclineBtn">
