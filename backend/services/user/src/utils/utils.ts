@@ -85,11 +85,14 @@ export async function updateUserInServices(serviceUrl: string,method : string , 
   });
 }
 
-export async function isReadyExists(username: string | undefined ) : Promise<boolean>
+export async function isReadyExists(username: string | undefined , oldusername : string ) : Promise<boolean>
 {
   if (!username) return false;
   const existingProfile = await prisma.profile.findUnique({ where: { username } });
-  return (!!existingProfile);
+  
+  if (existingProfile && username !== oldusername)
+    return true;
+  return false;
 }
 
 export async function sendServiceRequest({ url , method = 'GET', body, headers = {}}: {
