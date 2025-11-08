@@ -36,7 +36,7 @@ async function recreateActiveRooms() {
     }
 
     console.log(
-      `🎮 Found ${activeMatches.length} active matches, recreating rooms...`
+      `🎮 Found ${activeMatches.length} active matches, recreating rooms...`,
     );
 
     for (const match of activeMatches) {
@@ -52,9 +52,8 @@ async function recreateActiveRooms() {
       } catch (error) {
         console.error(
           `❌ Failed to recreate room for match ${match.id}:`,
-          error
+          error,
         );
-
 
         // Clear the roomId if recreation fails
         await prisma.match.update({
@@ -93,20 +92,19 @@ const start = async () => {
     }
 
     // Debug rooms
-    // setInterval(async () => {
-    //   const rooms = await matchMaker.query({});
-    //   console.log(
-    //     "📊 Active Rooms:",
-    //     rooms.map((r) => ({
-    //       id: r.roomId,
-    //       name: r.name,
-    //       clients: r.clients,
-    //       locked: r.locked,
-    //       metadata: r.metadata,
-    //     }))
-    //   );
- 
-    // }, 10000); // every 10s
+    setInterval(async () => {
+      const rooms = await matchMaker.query({});
+      console.log(
+        "📊 Active Rooms:",
+        rooms.map((r) => ({
+          id: r.roomId,
+          name: r.name,
+          clients: r.clients,
+          locked: r.locked,
+          metadata: r.metadata,
+        })),
+      );
+    }, 10000); // every 10s
 
     // Start Fastify + Colyseus
     await fastify.listen({ port, host });

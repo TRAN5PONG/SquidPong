@@ -22,7 +22,7 @@ export abstract class Camera {
   }
 
   attach(canvas: HTMLCanvasElement) {
-    this.camera.attachControl(canvas, true);
+    // this.camera.attachControl(canvas, true);
   }
 
   dispose() {

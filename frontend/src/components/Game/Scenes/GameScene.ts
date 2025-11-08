@@ -97,7 +97,7 @@ export class Game {
       this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network(`ws://10.13.8.3:4005`, this.match);
+      this.net = new Network(`ws://10.13.4.3:4005`, this.match);
 
       this.room = await this.net.join(this.userId);
 
@@ -114,7 +114,7 @@ export class Game {
         this.userId === this.hostId ? this.physics.paddle : null,
         {
           color: paddleColors[0],
-          texture: paddleTextures[1],
+          // texture: paddleTextures[1],
         },
       );
       this.guestPaddle = new Paddle(
@@ -132,6 +132,8 @@ export class Game {
       this.opponentPaddle =
         this.userId === this.hostId ? this.guestPaddle : this.hostPaddle;
 
+      // TEST:
+      this.physics.setPaddleMesh(this.localPaddle);
       // Controller
       this.controller = new GameController(
         this.localPaddle,
