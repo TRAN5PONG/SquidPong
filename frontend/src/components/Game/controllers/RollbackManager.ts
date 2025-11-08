@@ -227,4 +227,9 @@ export class RollbackManager {
   public isInProgress(): boolean {
     return this.isRollbackInProgress;
   }
+
+  public reset(): void {
+    this.ballHistory = [];
+    this.isRollbackInProgress = false;
+  }
 }
