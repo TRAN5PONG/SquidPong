@@ -3,9 +3,13 @@ import { WebSocket } from "ws";
 import dotenv from 'dotenv'
 import { handleWsConnect  , handleHttpUpgrade} from './events/websocketEvents';
 import { receiveFromQueue , initRabbitMQ } from './integration/rabbitmq.integration'
+import { validateEnvironmentVariables } from './utils/envValidator'
 
 
 dotenv.config()
+
+// Validate environment variables before starting
+validateEnvironmentVariables()
 
 const port = Number(process.env.GATEWAY_PORT) // 4000
 const host = process.env.GATEWAY_HOST // 0.0.0.0 
