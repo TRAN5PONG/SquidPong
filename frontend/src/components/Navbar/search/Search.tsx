@@ -1,4 +1,5 @@
 import { SearchUsers, sendFriendRequest } from "@/api/user";
+import Skeleton from "@/components/Skeleton/Skeleton";
 import { AddFriendIcon, TrophyIcon, VerifiedIcon } from "@/components/Svg/Svg";
 import { useAppContext } from "@/contexts/AppProviders";
 import { useNavigate } from "@/contexts/RouterProvider";
@@ -28,7 +29,16 @@ const StyledSearchModal = styled("div")`
   .SearchCatgContainer {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 3px;
+    .NOPSpan {
+      font-family: var(--main_font);
+      color: rgba(255, 255, 255, 0.7);
+      opacity: 0.7;
+      font-size: 1rem;
+      text-align: center;
+    }
   }
 `;
 const StyledSearchPlayerBox = styled("div")`
@@ -209,9 +219,23 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
       <h1 className="SearchCatg">Players</h1>
       <div className="SearchCatgContainer">
         {isLoading ? (
-          <span>Loading...</span>
+          Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton
+              dark={true}
+              width="100%"
+              height="50px"
+              borderRadius={5}
+              gap={5}
+              animation="hybrid"
+              index={index + 1}
+            />
+          ))
         ) : players.length === 0 ? (
-          <span>No players found.</span>
+          <span className="NOPSpan">
+            {props.query.trim() === ""
+              ? "Type to search for players."
+              : "No players found matching your search."}
+          </span>
         ) : (
           players.map((player: User) => {
             return (
@@ -226,7 +250,7 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
                 <div className="SearchPlayerInfos">
                   <span className="SearchPlayerInfosFullName">
                     {player.firstName + " " + player.lastName}
-                    {player.isVerified && (
+                    {player.isVerified &&  (
                       <VerifiedIcon fill="var(--main_color)" size={15} />
                     )}
                   </span>
