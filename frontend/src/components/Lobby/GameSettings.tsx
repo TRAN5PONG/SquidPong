@@ -1526,7 +1526,7 @@ const InviteOponent = (props: InviteOponentProps) => {
     try {
       const res = await createInvite(
         props.GameSettings,
-        isPrivateInvite ? selectedOpponent?.id! : null,
+        isPrivateInvite ? selectedOpponent?.userId! : null,
         selectedExpireOption === "never"
           ? null
           : new Date(

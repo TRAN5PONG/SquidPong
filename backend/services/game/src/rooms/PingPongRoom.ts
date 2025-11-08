@@ -66,10 +66,10 @@ export class MatchRoom extends Room<MatchState> {
   private pauseInterval?: NodeJS.Timeout;
 
   onCreate = async (options: MatchRoomOptions) => {
-    this.state.players.forEach((player) => {
-      this.state.scores.set(player.id, 0); // initialize score
-    });
-    this.state.lastHitPlayer = null;
+    // this.state.players.forEach((player) => {
+    //   this.state.scores.set(player.id, 0); // initialize score
+    // });
+    // this.state.lastHitPlayer = null;
     // Get/create consistent roomId
     this.roomId = options.roomId;
 
@@ -136,6 +136,7 @@ export class MatchRoom extends Room<MatchState> {
       // Reset lastHitPlayer and ball
       this.resetBallForServe(scoringPlayer);
     });
+
     // Player give up
     this.onMessage("player:give-up", (client) => {
       const _client = client as any;

@@ -27,6 +27,7 @@ export interface BallHitMessage {
   spin?: Vec3; // Add spin data
   applySpin?: boolean; // Whether to apply spin
   tick: number; // tick when the hit happened
+  playerId: string; // who hit the ball
 }
 
 export interface PaddleState {
