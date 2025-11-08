@@ -227,7 +227,8 @@ export async function processTournamentNotification(data: any) {
 // | "predictionWon"; // a prediction you made has been won
 
 export async function processNotificationFromRabbitMQ(msg: any) {
-  try {
+  try 
+  {
     const data = JSON.parse(msg.content.toString()) as any;
 
     if (!data || !data.type)
