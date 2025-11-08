@@ -14,6 +14,11 @@ export const enum NotificationType {
   SPECTATE_INVITE = "spectateInvite",
   PREDICTION_WON = "predictionWon",
   NEW_MESSAGE = "newMessage",
+  EDIT_MESSAGE = "editMessage",
+  DELETE_MESSAGE = "deleteMessage",
+  NEW_REACTION = "newReaction",
+  REMOVE_REACTION = "removeReaction",
+
 }
 
 export enum NotificationPriority {
@@ -150,23 +155,41 @@ export async function processGameNotification(data: any) {
 
 export async function processChatNotification(data: any) 
 {
-  const setting = await prisma.user.findUnique({
-    where: { userId: data.targetId.toString() },
-    select: { notificationSettings: { select: {chatMessages : true} } },
-  });
+  const {targetId} = data;
 
-  if (!setting || !setting.notificationSettings) return;
-  if (!setting.notificationSettings.chatMessages) return;
+  const targetIds = Array.isArray(targetId) ? targetId : [targetId];
 
-  await sendDataToQueue(
-    {
-      targetId: data.targetId.toString(),
-      type: "notification",
-      message: `You have a new message from ${data.byUsername}.`,
-    },
-    "broadcastData"
-  );
+  console.log("Processing chat notification for targets:", targetIds);
+  for (const tId of targetIds) 
+  {
+    const setting = await prisma.user.findUnique({
+      where: { userId: tId},
+      select: { notificationSettings: { select: {chatMessages : true} } },
+    });
 
+    await sendDataToQueue(
+      {
+        targetId: tId,
+        type: "chat",
+        data: data.data,
+      },
+      "broadcastData"
+    );
+
+    if(data.type !== NotificationType.NEW_MESSAGE) return;
+    console.log(`chatMessages setting for user ${tId}:`, setting);
+    if (!setting || !setting.notificationSettings) return;
+    if (!setting.notificationSettings.chatMessages) return;
+
+    await sendDataToQueue(
+      {
+        targetId: tId,
+        type: "notification",
+        message: `You have a new message from ${data.fromId}.`,
+      },
+      "broadcastData"
+    );
+  }
   
 }
 
@@ -224,6 +247,10 @@ export async function processNotificationFromRabbitMQ(msg: any) {
         break;
 
       case NotificationType.NEW_MESSAGE:
+      case NotificationType.EDIT_MESSAGE:
+      case NotificationType.DELETE_MESSAGE:
+      case NotificationType.NEW_REACTION:
+      case NotificationType.REMOVE_REACTION:
         await processChatNotification(data);
         break;
 
