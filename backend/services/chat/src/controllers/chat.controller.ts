@@ -85,28 +85,26 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      const chat = await prisma.chat.findUnique({
+      const fullChat = await prisma.chat.findUnique({
          where: { id: Number(chatId) },
          include: 
          { members: {include : {user : true}} , 
          messages: {include : {reactions : true , sender:true}} },
 
       });
-      if (!chat)  throw new Error(chatMessages.FETCH_NOT_FOUND);
+      if (!fullChat)  throw new Error(chatMessages.FETCH_NOT_FOUND);
    
-      const isMember = chat.members.some((m:any) => m.userId === userId);
+      const isMember = fullChat.members.some((m:any) => m.userId === userId);
       if (!isMember)  throw new Error(chatMessages.FETCH_NOT_FOUND);
 
-      console.log("Chat messages:", chat.messages);
-      const newData = chat.messages.map((msg:any) => ({
-         from : msg.sender,
-         date : msg.timestamp,
-         message : msg.content,
-         status : msg.status,
-         reactions : msg.reactions,
-         type : msg.type,
-         replyTo : msg.replyToId ?  prisma.message.findUnique({ where: { id: Number(msg.replyToId) } }) : null,
-      }));
+
+      const newData = {
+         id : fullChat.id,
+         lastMessage : fullChat.messages[fullChat.messages.length -1] || null,
+         participants : fullChat.members.map((m:any) => m.user),
+         messages : fullChat.messages,
+      };
+
       respond.data = newData;
 
    } 
