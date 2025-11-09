@@ -31,7 +31,6 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
         preferences: { create: { notifications: { create: {} } } },
       },
     });
-
     
     await sendServiceRequestSimple('chat', body.userId, 'POST',  {...body , userId : String(body.userId) } )
     await sendServiceRequestSimple('notify', body.userId, 'POST',{...body , userId : String(body.userId) } )

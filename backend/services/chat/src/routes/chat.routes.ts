@@ -69,9 +69,9 @@ type Route = {
 
 // ------------------- Chat Endpoints -------------------
 export const chatRoutes : Route[] = [
-  { method: 'POST',   url: '/api/chat/user/create',            handler: createUser },          
-  { method: 'PUT',   url: '/api/chat/user/update',     handler: updateUser, },          
-  { method: 'DELETE', url: '/api/chat/user/delete',     handler: deleteAccountHandler },
+  { method: 'POST',   url: '/api/chat/create',            handler: createUser },          
+  { method: 'PUT',   url: '/api/chat/update',     handler: updateUser, },          
+  { method: 'DELETE', url: '/api/chat/delete',     handler: deleteAccountHandler },
 
   
 
