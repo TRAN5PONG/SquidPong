@@ -18,6 +18,7 @@ export class Physics {
   public paddle!: Paddle;
   public floor!: Floor;
   public net!: Net;
+  public table!: Table;
 
   private ballSpin: Vector3 = new Vector3(0, 0, 0); // Angular velocity in rad/s
   private spinDecay: number = 0.98; // Spin decay factor per tick
@@ -43,6 +44,10 @@ export class Physics {
     ball: RAPIER.RigidBody,
     net: RAPIER.RigidBody,
   ) => void;
+  public onBallTableCollision?: (
+    ball: RAPIER.RigidBody,
+    table: RAPIER.RigidBody,
+  ) => void;
 
   // last collision detection time
   private lastCollisioDetectionTime: number = 0;
@@ -62,7 +67,7 @@ export class Physics {
     this.eventQueue = new RAPIER.EventQueue(true);
 
     // Create entities
-    new Table(this.world);
+    this.table = new Table(this.world);
     this.floor = new Floor(this.world);
     this.net = new Net(this.world);
 
@@ -144,13 +149,36 @@ export class Physics {
     return zMin + t * (zMax - zMin); // Map to [zMin, zMax]
   }
 
+  calculateServeVelocity(
+    ballPos: RAPIER.Vector,
+    paddlePos: RAPIER.Vector,
+  ): Vector3 {
+    const halfLength = constants.TABLE.size.length / 2;
+    const tableSurfaceY =
+      constants.TABLE.position.y + constants.TABLE.size.height / 2;
+
+    const isServerOnRight = paddlePos.z > 0;
+
+    // Simple serve: fixed velocities that work
+    const velocityY = 2.5; // Upward velocity (can adjust 2.0-3.0)
+
+    // Z velocity: toward server's side
+    // Positive paddle.z (right) needs positive velocityZ
+    // Negative paddle.z (left) needs negative velocityZ
+    const velocityZ = isServerOnRight ? -3.5 : 3.5; // Adjust 3.0-4.5 for distance
+
+    // X velocity: slight movement (optional)
+    const velocityX = paddlePos.x * 0.3; // Follow paddle position slightly
+
+    return new Vector3(velocityX, velocityY, velocityZ);
+  }
   // TEST:
   public setPaddleMesh(paddle: paddle) {
     this.PaddleMesh = paddle;
   }
   Step(dt: number) {
     //TEST:
-    this.paddle.update(dt);
+    this.paddle.update();
     this.applyMagnusEffect();
     this.world.step(this.eventQueue);
 
@@ -166,6 +194,7 @@ export class Physics {
     const paddleHandle = this.paddle.collider.handle;
     const floorHandle = this.floor.collider.handle;
     const netHandle = this.net.collider.handle;
+    const tableHandle = this.table.collider.handle;
 
     // Ball + Paddle
     if (
@@ -196,6 +225,14 @@ export class Physics {
       (handle2 === ballHandle && handle1 === netHandle)
     ) {
       this.onBallNetCollision?.(this.ball.body, this.net.body);
+      return;
+    }
+    // Ball + Table
+    if (
+      (handle1 === ballHandle && handle2 === tableHandle) ||
+      (handle2 === ballHandle && handle1 === tableHandle)
+    ) {
+      this.onBallTableCollision?.(this.ball.body, this.table.body);
       return;
     }
   }

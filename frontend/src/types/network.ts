@@ -36,14 +36,9 @@ export interface PaddleState {
   velocity: { x: number; y: number; z: number };
 }
 
-export interface BallResetMessage {
-  position: Vec3;
-  velocity: Vec3;
-  lastHitPlayer: string | null;
-}
-
 export interface ballResetMessage {
   position: BallState;
   velocity: BallState;
   lastHitPlayer: string | null;
+  nextServerId: string | null;
 }
