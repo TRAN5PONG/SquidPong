@@ -9,15 +9,9 @@ services:
       rabbitmq:
         condition: service_healthy
     ports:
-      - "8080:80"
-      - "4000:4000"
+      - "80:80"
     environment:
-      - HOST_LOCAL=localhost
-      - HOST_EXTERNAL=10.13.4.1
-      - BACKEND_HOST=gateway
-      - BACKEND_PORT=4000
-      - FRONTEND_HOST=frontend
-      - FRONTEND_PORT=5173
+      - HOST_EXTERNAL=10.13.249.173
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     networks:

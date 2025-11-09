@@ -1,30 +1,13 @@
-# ===================================
-# Backend proxy (localhost)
-# ===================================
-http://{$HOST_LOCAL}:{$BACKEND_PORT} {
-    reverse_proxy {$BACKEND_HOST}:{$BACKEND_PORT}
+http://{$HOST_EXTERNAL} {
+    handle /api/* {
+        reverse_proxy gateway:4000
+    }
+
+    handle /events {
+        reverse_proxy gateway:4000
+    }
+
+    handle {
+        reverse_proxy frontend:5173
+    }
 }
-
-# ===================================
-# Frontend proxy + docs (localhost)
-# ===================================
-http://{$HOST_LOCAL}:80 {
-    reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
-}
-
-# ===================================
-# Backend proxy (dynamic IP)
-# ===================================
-http://{$HOST_EXTERNAL}:{$BACKEND_PORT} {
-    reverse_proxy {$BACKEND_HOST}:{$BACKEND_PORT}
-}
-
-# ===================================
-# Frontend proxy + docs (dynamic IP)
-# ===================================
-http://{$HOST_EXTERNAL}:80 {
-    reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
-}
-
-
-
