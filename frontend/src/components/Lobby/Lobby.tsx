@@ -400,7 +400,6 @@ const Lobby = () => {
         (char: GameCharacter) => char.id === user?.playerSelectedCharacter
       )!
     );
-    console.log(selectedChar);
     if (backgroundSound.isMuffled) {
       backgroundSound.setMuffled(false);
     }

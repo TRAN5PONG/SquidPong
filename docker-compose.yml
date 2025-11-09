@@ -13,7 +13,7 @@ services:
       - "4000:4000"
     environment:
       - HOST_LOCAL=localhost
-      - HOST_EXTERNAL=10.13.249.173
+      - HOST_EXTERNAL=10.13.4.1
       - BACKEND_HOST=gateway
       - BACKEND_PORT=4000
       - FRONTEND_HOST=frontend

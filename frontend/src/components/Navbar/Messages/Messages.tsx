@@ -15,6 +15,8 @@ import {
 import { User, UserStatus } from "@/types/user";
 import Skeleton from "@/components/Skeleton/Skeleton";
 import { useAppContext } from "@/contexts/AppProviders";
+import { getConversations, newConversation } from "@/api/chat";
+import { getUserFriends, MiniUser, SearchUsers } from "@/api/user";
 
 const SyledChatModal = styled("div")`
   width: 350px;
@@ -78,6 +80,7 @@ const SyledChatModal = styled("div")`
       color: rgba(255, 255, 255, 0.5);
       font-family: var(--main_font);
       margin-top: 5px;
+      text-align: center;
     }
   }
   .NewChatContainer {
@@ -90,7 +93,7 @@ const SyledChatModal = styled("div")`
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      h2{
+      h2 {
         font-family: var(--main_font);
         font-size: 1.1rem;
         color: rgba(255, 255, 255, 0.7);
@@ -204,6 +207,12 @@ const SyledChatModal = styled("div")`
         }
       }
     }
+    .NFoundSpan {
+      color: rgba(255, 255, 255, 0.5);
+      font-family: var(--main_font);
+      margin-top: 5px;
+      text-align: center;
+    }
   }
 `;
 interface ChatModalProps {
@@ -220,6 +229,8 @@ const ChatModal = (props: ChatModalProps) => {
     null
   );
   const [user, setUser] = useState<User | null>(null);
+  const [friends, setFriends] = useState<MiniUser[]>([]);
+  const [query, setQuery] = useState<string>("");
 
   const ModalRef = useRef<HTMLDivElement>(null);
   const appCtx = useAppContext();
@@ -240,7 +251,6 @@ const ChatModal = (props: ChatModalProps) => {
   }, [ModalRef, props]);
 
   const OnMessageClick = (conversation: Conversation) => {
-    console.log("Conversation clicked:", conversation);
     if (appCtx.chat.activeConversations?.includes(conversation.id)) {
       return;
     }
@@ -250,15 +260,66 @@ const ChatModal = (props: ChatModalProps) => {
     ]);
     props.onClose();
   };
+  /**
+   * Start conversations
+   */
+  const fetchFriends = async () => {
+    try {
+      const friendsList = await getUserFriends(user!.username);
+      if (friendsList.success && friendsList.data) {
+        setFriends(friendsList.data);
+      }
+    } catch (err) {
+      console.error("Error fetching friends:", err);
+    }
+  };
+  const Search = async (query: string) => {
+    const Users = await SearchUsers(query);
+    if (Users.data) {
+      const filterOutCurrentUser = Users.data.filter(
+        (u) => u.userId !== user?.userId
+      );
+      setFriends(filterOutCurrentUser as unknown as MiniUser[]);
+    }
+  };
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      Search(query.trim());
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
+
+  /**
+   * Fetch conversations
+   */
+  const fetchConversations = async () => {
+    try {
+      const resp = await getConversations();
+      if (resp.success && resp.data) {
+        setConversations(resp.data);
+        setIsLoadingConversations(false);
+      }
+    } catch (err: any) {}
+  };
+  const startNewConversation = async (friendId: string) => {
+    try {
+      const resp = await newConversation(friendId);
+      if (resp.success) {
+        fetchConversations();
+        setCurrentView("chats");
+      }
+    } catch (err) {
+      console.error("Error starting new conversation:", err);
+    }
+  };
 
   useEffect(() => {
-    console.log("ChatModal mounted");
-
-    setTimeout(() => {
-      setConversations(db.conversations);
-      setIsLoadingConversations(false);
-    }, 500);
-  }, []);
+    if (currentView === "chats") {
+      fetchConversations();
+    } else {
+      fetchFriends();
+    }
+  }, [currentView]);
 
   useEffect(() => {
     setUser(appCtx.user);
@@ -281,17 +342,7 @@ const ChatModal = (props: ChatModalProps) => {
               <span>Create DM</span>
             </div>
           </div>
-          {Conversations ? (
-            Conversations.map((converstaion: Conversation, key) => {
-              return (
-                <ChatItem
-                  converstation={converstaion}
-                  userId={user?.id}
-                  onClick={OnMessageClick}
-                />
-              );
-            })
-          ) : isLoadingConversations ? (
+          {isLoadingConversations ? (
             Array.from({ length: 5 }).map((_, index) => (
               <Skeleton
                 dark={true}
@@ -303,6 +354,16 @@ const ChatModal = (props: ChatModalProps) => {
                 index={index + 1}
               />
             ))
+          ) : Conversations && Conversations.length > 0 ? (
+            Conversations.map((converstaion: Conversation, key) => {
+              return (
+                <ChatItem
+                  converstation={converstaion}
+                  userId={user?.userId}
+                  onClick={OnMessageClick}
+                />
+              );
+            })
           ) : (
             <span className="NFoundSpan">No conversations started yet.</span>
           )}
@@ -324,30 +385,39 @@ const ChatModal = (props: ChatModalProps) => {
               type="text"
               className="SearchInputField"
               placeholder="Search a player to chat with..."
+              value={query}
+              onChange={(e: any) => setQuery(e.target.value)}
             />
           </div>
 
           <div className="UsersContainer">
-            {db.users.map((user) => (
-              <div className="UserItem">
-                <div
-                  className="UserItemAvatar"
-                  style={{ backgroundImage: `url(${user.avatar})` }}
-                />
-                <div className="UserItemInfo">
-                  <span className="UserItemName">
-                    {user.firstName + " " + user.lastName}
-                    {user.isVerified && (
-                      <VerifiedIcon size={15} fill="rgba(68, 85, 126, 1)" />
-                    )}
-                  </span>
-                  <span className="UserItemStatus">{user.status}</span>
+            {friends && friends.length > 0 ? (
+              friends.map((user) => (
+                <div className="UserItem">
+                  <div
+                    className="UserItemAvatar"
+                    style={{ backgroundImage: `url(${user.avatar})` }}
+                  />
+                  <div className="UserItemInfo">
+                    <span className="UserItemName">
+                      {user.firstName + " " + user.lastName}
+                      {user.isVerified && (
+                        <VerifiedIcon size={15} fill="rgba(68, 85, 126, 1)" />
+                      )}
+                    </span>
+                    <span className="UserItemStatus">{user.status}</span>
+                  </div>
+                  <button
+                    className="StartConvBtn"
+                    onClick={() => startNewConversation(user.userId.toString())}
+                  >
+                    <ChatIcon size={15} fill="rgba(68, 85, 126, 1)" />
+                  </button>
                 </div>
-                <button className="StartConvBtn">
-                  <ChatIcon size={15} fill="rgba(68, 85, 126, 1)" />
-                </button>
-              </div>
-            ))}
+              ))
+            ) : (
+              <span className="NFoundSpan">No users found.</span>
+            )}
           </div>
         </div>
       )}
@@ -433,8 +503,8 @@ interface ChatItemProps {
 }
 const ChatItem = (props: ChatItemProps) => {
   let time = "";
-  if (props.converstation.lastMessage?.date) {
-    const dateObj = new Date(props.converstation.lastMessage.date);
+  if (props.converstation.lastMessage?.timestamp) {
+    const dateObj = new Date(props.converstation.lastMessage.timestamp);
     const hours = String(dateObj.getHours()).padStart(2, "0");
     const minutes = String(dateObj.getMinutes()).padStart(2, "0");
     time = `${hours}:${minutes}`;
@@ -442,10 +512,11 @@ const ChatItem = (props: ChatItemProps) => {
 
   const isGroupChat = props.converstation.participants.length > 2; // todo : i may integrate this later.
   const chattingWith = props.converstation.participants.find(
-    (participant) => participant.id !== props.userId
+    (participant) => Number(participant.userId) !== Number(props.userId)
   );
   const isLastMessageFromUser =
-    props.converstation.lastMessage?.from.id === props.userId;
+    Number(props.converstation.lastMessage?.sender.userId) ===
+    Number(props.userId);
 
   return (
     <StyledChatItem
@@ -474,7 +545,7 @@ const ChatItem = (props: ChatItemProps) => {
             )}
           </span>
           <span>{isLastMessageFromUser && "You :"}</span>
-          <span>{props.converstation.lastMessage?.message}</span>
+          <span>{props.converstation.lastMessage?.content}</span>
         </div>
       </div>
       <div className="ChatItemTime">{time}</div>
