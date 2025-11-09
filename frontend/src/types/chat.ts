@@ -13,9 +13,10 @@ export interface ChatReaction {
 }
 
 export interface ChatMessage {
-	from: User;
-	date: Date;
-	message: string;
+	id: number;
+	sender: User;
+	timestamp: Date;
+	content: string;
 	status: ChatMessageStatus;
 	reactions: ChatReaction[];
 	type: ChatMessageType;
@@ -27,8 +28,8 @@ export interface Conversation {
 	id : string;
 	participants: User[];
 	lastMessage: ChatMessage | null;
-	unreadCount: number;
-	updatedAt: Date;
+	unreadCount?: number;
+	updatedAt?: Date;
 }
 
 export interface ConversationDetails extends Conversation {

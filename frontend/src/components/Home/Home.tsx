@@ -28,6 +28,7 @@ import {
 import { LoaderSpinner } from "../Loader/Loader";
 import { getUserProfile } from "@/api/user";
 import { useSounds } from "@/contexts/SoundProvider";
+import { socketManager } from "@/utils/socket";
 
 const StyledHome = styled("div")`
   width: 100vw;
@@ -552,11 +553,11 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
           message: "Login successful!",
         });
         const userData = await getUserProfile();
-        if (userData.success)
-          setTimeout(() => {
+        if (userData.success) {
+          socketManager.connect(`ws://${import.meta.env.VITE_IP}:4000/events`);
             setUser(userData.data!);
             navigate("/lobby");
-          }, 500);
+        }
       }
     } catch (error: any) {
       console.error("Login error:", error);

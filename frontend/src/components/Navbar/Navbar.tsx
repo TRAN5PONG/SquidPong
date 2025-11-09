@@ -183,6 +183,10 @@ const Navbar = () => {
   const { currentPath } = useContext(RouterContext);
   const { user, toasts } = useAppContext();
 
+  if (!user || currentPath === "/" || currentPath.startsWith("/game")) {
+    return null;
+  }
+
   // Toggles
   const toggleChatModal = () => {
     setShowChatModal(!ShowChatModal);
@@ -196,6 +200,7 @@ const Navbar = () => {
 
   // Fetchs
   const getNotifs = async () => {
+    if (!user) return;
     try {
       const res = await getNotifications();
       if (res.success && res.data) {
@@ -227,11 +232,9 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
+    console.log("user is", user);
     getNotifs();
   }, [user]);
-
-  if (!user || currentPath === "/" || currentPath.startsWith("/game"))
-    return null;
 
   return (
     <StyledNav className="GlassMorphism" avatar={user.avatar}>

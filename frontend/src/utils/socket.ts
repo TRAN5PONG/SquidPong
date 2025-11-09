@@ -6,6 +6,14 @@ class SocketManager {
 
   connect(url: string) {
     this.socket = new WebSocket(url);
+
+    if (!this.socket) {
+      console.error("WebSocket connection failed");
+      return;
+    } else {
+      console.log("WebSocket connected to", url);
+    }
+
     this.socket.onmessage = (event) => {
       let parsedData: any;
 

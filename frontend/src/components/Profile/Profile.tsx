@@ -475,7 +475,6 @@ const Profile = () => {
       .then(async (confirmed) => {
         if (confirmed) {
           try {
-            console.log(profileData.id);
             const resp = await blockUser(Number(profileData.userId));
             if (!resp.success) {
               throw new Error("Failed to block user");
@@ -531,7 +530,6 @@ const Profile = () => {
   const getFriends = async (userId: string) => {
     const resp = await getUserFriends(userId);
     if (resp.success && resp.data) {
-      console.log(resp.data);
       setProfileFriends(resp.data);
     }
   };

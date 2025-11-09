@@ -381,7 +381,7 @@ interface GameSettingsProps {
   setSelectedMode: (mode: GameMode | null) => void;
 }
 const GameSettings = (props: GameSettingsProps) => {
-  const [isInviteOponentOpen, setIsInviteOponentOpen] = useState(true);
+  const [isInviteOponentOpen, setIsInviteOponentOpen] = useState(false);
 
   // Sounds
   const { errorSound, readySound, notificationSound } = useSounds();
@@ -1455,7 +1455,7 @@ const InviteOponent = (props: InviteOponentProps) => {
   const [isLoading, setisLoading] = useState(false);
   const [ModalMode, setModalMode] = useState<
     "invite" | "join" | "InvitationsList" | "SelectOponent" | "inviteData"
-  >("SelectOponent");
+  >("invite");
 
   //App Ctx
   const { toasts, user } = useAppContext();
@@ -1496,6 +1496,10 @@ const InviteOponent = (props: InviteOponentProps) => {
         const friends = await getUserFriends(user?.username);
         if (friends && friends.data) {
           setUserFriends(friends.data as unknown as User[]);
+          const shuffled = friends.data
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 3);
+          setOpponentsList(shuffled as unknown as User[]);
         }
       } catch (err) {
         console.error("Error fetching friends list: ", err);
@@ -1526,7 +1530,7 @@ const InviteOponent = (props: InviteOponentProps) => {
     try {
       const res = await createInvite(
         props.GameSettings,
-        isPrivateInvite ? selectedOpponent?.id! : null,
+        isPrivateInvite ? selectedOpponent?.userId! : null,
         selectedExpireOption === "never"
           ? null
           : new Date(
@@ -1656,8 +1660,7 @@ const InviteOponent = (props: InviteOponentProps) => {
 
   useEffect(() => {
     if (query.trim() === "") {
-      console.log(userFriends);
-      const shuffled = userFriends.sort(() => 0.5 - Math.random());
+      const shuffled = userFriends;
       console.log("shuf:", shuffled);
       return setOpponentsList(shuffled);
     }

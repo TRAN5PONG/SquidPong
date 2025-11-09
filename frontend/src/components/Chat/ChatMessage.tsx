@@ -1,7 +1,21 @@
-import Zeroact from "@/lib/Zeroact";
+import Zeroact, { useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { ChatMessage } from "@/types/chat";
-import { CoinIcon, GroupIcon, InfosIcon, PingPongIcon } from "../Svg/Svg";
+import {
+  CoinIcon,
+  DeleteIcon,
+  EditIcon2,
+  GroupIcon,
+  InfosIcon,
+  PingPongIcon,
+} from "../Svg/Svg";
+import {
+  deleteMessage,
+  editMessage,
+  reactToMessage,
+  removeReaction,
+} from "@/api/chat";
+import { timeAgo } from "@/utils/time";
 
 const StyledChatMessage = styled("div")`
   width: 100%;
@@ -9,6 +23,13 @@ const StyledChatMessage = styled("div")`
   flex-direction: ${(props: any) => (props.isMe ? "row-reverse" : "row")};
   gap: 10px;
   position: relative;
+  transition: 0.2s ease-in-out;
+  &:hover .MsgOptions {
+    opacity: 1;
+  }
+  &:hover .ChatMsg .ChatMsgBottom .Reactions .AddReaction {
+    opacity: 1;
+  }
 
   .ChatMessageFrom {
     width: 35px;
@@ -146,10 +167,17 @@ const StyledChatMessage = styled("div")`
         }
       }
     }
-    .ChatMsgTetx {
+    .ChatMsgText {
       font-size: 0.9rem;
       color: white;
     }
+    .ChatMsgText[contenteditable="true"] {
+      outline: 1px solid rgba(256, 256, 256, 0.2);
+      background-color: rgba(256, 256, 256, 0.05);
+      border-radius: 4px;
+      padding: 5px 4px;
+    }
+
     .ChatMsgBottom {
       display: flex;
       align-items: center;
@@ -165,6 +193,9 @@ const StyledChatMessage = styled("div")`
         .AddReaction {
           padding: 1px 5px;
           cursor: pointer;
+          transition: 0.2s ease-in-out;
+          filter: brightness(1);
+          opacity: 0.5;
           transition: 0.2s ease-in-out;
           &:hover {
             background-color: rgba(256, 256, 256, 0.1);
@@ -237,21 +268,131 @@ const StyledChatMessage = styled("div")`
       }
     }
   }
+  .MsgOptions {
+    width: 50px;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    opacity: 0;
+
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    padding: 3px;
+    backdrop-filter: blur(10px);
+    transition: 0.2s ease-in-out;
+
+    .OptsContainer {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+
+      .OptionEL {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: 0.2s all ease-in-out;
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+  }
 `;
-const ChatMessaegeEl = (props: { message: ChatMessage, isUser: boolean }) => {
-  const [showReactionsTooltip, setshowReactionsTooltip] =
-    Zeroact.useState(false);
+
+const reactions = {
+  LIKE: "👍",
+  LOVE: "❤️",
+  LAUGH: "😂",
+  WOW: "😮",
+  SAD: "😢",
+  ANGRY: "😡",
+  FUCK: "🖕",
+};
+interface MessageReaction {
+  id: number;
+  userId: string;
+  messageId: number;
+  emoji: keyof typeof reactions; // "LIKE" | "DISLIKE" | ...
+  timestamp: string;
+}
+const ChatMessaegeEl = (props: { message: ChatMessage; isUser: boolean }) => {
+  const [showReactionsTooltip, setshowReactionsTooltip] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  /**
+   * Message
+   */
+  const handleEditMessage = async (newContent: string) => {
+    try {
+      await editMessage(props.message.id, newContent || props.message.content);
+    } catch (err) {
+      console.error("Failed to edit message:", err);
+    }
+  };
+  const handleDeleteMessage = async () => {
+    try {
+      await deleteMessage(props.message.id);
+    } catch (err) {
+      console.error("Failed to delete message:", err);
+    }
+  };
+
+  /**
+   * Reactions
+   */
+  const handleRemoveReaction = async () => {
+    try {
+      const resp = await removeReaction(props.message.id);
+    } catch (err) {
+      console.error("Failed to remove reaction:", err);
+    }
+  };
+  const handleAddReaction = async (reaction: string) => {
+    try {
+      const resp = await reactToMessage(props.message.id, reaction);
+      setshowReactionsTooltip(false);
+    } catch (err) {
+      console.error("Failed to add reaction:", err);
+    }
+  };
+  const countReactions = (reactionsArr: MessageReaction[]) => {
+    return reactionsArr.reduce<Record<string, number>>((acc, reaction) => {
+      if (!acc[reaction.emoji]) acc[reaction.emoji] = 0;
+      acc[reaction.emoji]++;
+      return acc;
+    }, {});
+  };
+  const reactionCounts = countReactions(
+    props.message.reactions as unknown as MessageReaction[]
+  );
 
   return (
     <StyledChatMessage
-      avatar={props.message.from.avatar}
+      avatar={props.message.sender.avatar}
       isReplyTo={!!props.message.replyTo}
       isMe={props.isUser}
     >
       <div className="ChatMessageFrom" />
 
       <div className="ChatMsg">
-        <span className="ChatMsgTetx">{props.message.message}</span>
+        <span
+          className="ChatMsgText"
+          contentEditable={isEditing}
+          suppressContentEditableWarning={true}
+          onBlur={(e: any) => {
+            setIsEditing(false);
+            handleEditMessage(e.currentTarget.textContent);
+          }}
+        >
+          {props.message.content}
+        </span>
         {props.message.type === "invite" && (
           <div className="GameInvite">
             <div className="Host">
@@ -327,14 +468,20 @@ const ChatMessaegeEl = (props: { message: ChatMessage, isUser: boolean }) => {
           onMouseLeave={() => setshowReactionsTooltip(false)}
         >
           <div className="Reactions">
-            <div className="Reaction">
-              <span>👍</span>
-              <span>3</span>
-            </div>
-            <div className="Reaction">
-              <span>❤️</span>
-              <span>1</span>
-            </div>
+            {Object.entries(reactionCounts).map(([reactionType, count]) => {
+              if (count === 0) return null; // skip zero counts
+              const key = reactionType as keyof typeof reactions; // assertion
+              return (
+                <div
+                  key={reactionType}
+                  className="Reaction"
+                  // onClick={() => handleRemoveReaction()}
+                >
+                  <span>{reactions[key]}</span>
+                  <span>{count}</span>
+                </div>
+              );
+            })}
 
             <div
               className="AddReaction"
@@ -348,18 +495,35 @@ const ChatMessaegeEl = (props: { message: ChatMessage, isUser: boolean }) => {
                 showReactionsTooltip ? "active" : ""
               }`}
             >
-              <span>👍</span>
-              <span>❤️</span>
-              <span>😂</span>
-              <span>😮</span>
-              <span>😢</span>
-              <span>😡</span>
-              <span>🖕</span>
+              {Object.entries(reactions).map(([name, emoji]) => (
+                <span
+                  key={emoji}
+                  onClick={() => handleAddReaction(name)}
+                  title={name}
+                >
+                  {emoji}
+                </span>
+              ))}
             </div>
           </div>
-          <span className="ChatMsgDate">12pm</span>
+          <span className="ChatMsgDate">
+            {timeAgo(props.message.timestamp)}
+          </span>
         </div>
       </div>
+
+      {props.isUser && (
+        <div className="MsgOptions">
+          <div className="OptsContainer">
+            <div onClick={() => setIsEditing(true)} className="OptionEL">
+              <EditIcon2 fill="rgba(255, 255, 255, 0.6)" size={15} />
+            </div>
+            <div className="OptionEL" onClick={() => handleDeleteMessage()}>
+              <DeleteIcon fill="rgba(255, 255, 255, 0.6)" size={20} />
+            </div>
+          </div>
+        </div>
+      )}
     </StyledChatMessage>
   );
 };

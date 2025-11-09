@@ -20,9 +20,6 @@ import SelectCharacter from "./components/SelectCharacter/SelectCharacter";
 import Toast, { ToastContainer } from "./components/Toast/Toast";
 
 
-import.meta.env.VITE_IP;
-
-
 // Redux
 import { store } from "@/store";
 import { userActions } from "./store/user/actions";
@@ -121,7 +118,7 @@ function RouterSwitch({ routes }: { routes: Route[] }) {
 
   // Stats
   const [delayedRoute, setdelayedRoute] = useState<Route | null>(
-    findMatchingRoute(currentPath),
+    findMatchingRoute(currentPath)
   );
   const [showLoader, setShowLoader] = useState<boolean>(false);
 
@@ -148,36 +145,34 @@ function RouterSwitch({ routes }: { routes: Route[] }) {
 
   return (
     <div className="route-container">
-      <Loader show={showLoader} onFinish={() => { }} nextRoute={currentPath} />
+      <Loader show={showLoader} onFinish={() => {}} nextRoute={currentPath} />
       <RouteComponent />
     </div>
   );
 }
 
 const App = () => {
-  const { modal, setUser } = useAppContext();
+  const { modal, setUser, user } = useAppContext();
 
   useEffect(() => {
-    // setUser(db.users[0]);
     const initializeAuth = async () => {
       try {
         const userData = await getUserProfile();
-        // console.log("User data:", userData);
+        console.log("User data:", userData);
         setUser(userData.data!);
       } catch (error) {
         console.log("No valid session found");
       }
     };
-    socketManager.connect(`ws://${import.meta.env.VITE_IP}:4000/events`);
 
     initializeAuth();
-  }, []);
+  }, [user]);
 
   return (
     <StyledApp>
       <ToastContainer />
       <Navbar />
-      <ChatContainer conversationsIds={["1"]} />
+      <ChatContainer />
       <GameMenu />
       <RouterSwitch routes={routes} />
 

@@ -1,12 +1,12 @@
 import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { ChatMessage, ConversationDetails } from "@/types/chat";
 import { styled } from "@/lib/Zerostyle";
-import { CloseIcon, MinimizeIcon } from "../Svg/Svg";
+import { CloseIcon, EmojiIcon, MinimizeIcon, SendIcon } from "../Svg/Svg";
 import { UserStatus } from "@/types/user";
-import ChatInput from "./ChatInput";
 import ChatMessaegeEl from "./ChatMessage";
 import { db } from "@/db";
 import { useAppContext } from "@/contexts/AppProviders";
+import { getMessages, sendMessage } from "@/api/chat";
 
 const StyledChatContainer = styled("div")`
   .MinimizedConvsContainer {
@@ -129,7 +129,56 @@ const StyledMaximizedConv = styled("div")`
     gap: 5px;
     overflow-y: scroll;
     position: relative;
-
+  }
+  .chat-input-container {
+    position: absolute;
+    bottom: 5px;
+    width: 340px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    .SendSvg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      right: 5px;
+      cursor: pointer;
+      svg {
+        transition: 0.1s ease-in-out;
+        &:hover {
+          fill: var(--main_color);
+        }
+      }
+    }
+    .EmojieSvg {
+      position: absolute;
+      left: 5px;
+      cursor: pointer;
+      transition: 0.1s ease-in-out;
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+    input {
+      width: 100%;
+      height: 100%;
+      padding: 0 40px;
+      outline: none;
+      border: none;
+      font-size: 1rem;
+      background-color: var(--bg_color_super_light);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.7);
+    }
+    input::placeholder {
+      color: white;
+      opacity: 0.3;
+    }
   }
 `;
 const StyledMinimizedConv = styled("div")`
@@ -154,48 +203,62 @@ const StyledMinimizedConv = styled("div")`
     right: 3px;
   }
 `;
-interface ChatContainerProps {
-  conversationsIds: string[];
-}
-export const ChatContainer = (props: ChatContainerProps) => {
-  const [converstations, setConversations] = useState<
-    ConversationDetails[] | null
-  >(null);
+
+export const ChatContainer = () => {
+  const [converstations, setConversations] = useState<ConversationDetails[]>(
+    []
+  );
   const [minimizedConversations, setMinimizedConversations] = useState<
-    ConversationDetails[] | null
-  >(null);
+    ConversationDetails[]
+  >([]);
   const [maximizedConversations, setMaximizedConversations] = useState<
-    ConversationDetails[] | null
-  >(null);
+    ConversationDetails[]
+  >([]);
 
   const appCtx = useAppContext();
 
   useEffect(() => {
-    //fetch conversations from db
     const convsIds: string[] | null = appCtx.chat.activeConversations;
 
     if (!convsIds) {
       // Clear conversations if no active conversations
-      setConversations(null);
-      setMinimizedConversations(null);
-      setMaximizedConversations(null);
+      setConversations([]);
+      setMinimizedConversations([]);
+      setMaximizedConversations([]);
       return;
     }
 
-    const convs: ConversationDetails[] = []; // TODO: I WILL DIFINITELY NEED TO FETCH ONLY THE NEW INJECTED ONES RATHER THAN ALL OF THEM EVRY TIME!
-    for (const id of convsIds) {
-      const conversation = db.fakeConversationDetails.find(
-        (conv) => conv.id === id
-      );
-      if (conversation) {
-        convs.push(conversation);
+    /**
+     * Fetch
+     */
+    const getConversationDetails = async (id: number) => {
+      try {
+        const resp = await getMessages(id);
+        if (resp.success && resp.data) {
+          setConversations((prevs) => {
+            if (prevs.find((c) => c.id === resp.data!.id)) return prevs;
+            return [...prevs, resp.data!];
+          });
+        } else {
+          console.error("Failed to fetch conversation details:", resp.message);
+        }
+      } catch (error) {
+        console.error("Error fetching conversation details:", error);
       }
-    }
-    setConversations(convs);
+    };
 
-    setMinimizedConversations(convs);
-    setMaximizedConversations([]);
+    /**
+     * Populate conversations
+     */
+    for (const id of convsIds) {
+      getConversationDetails(Number(id));
+    }
   }, [appCtx.chat.activeConversations]);
+
+  useEffect(() => {
+    setMinimizedConversations([]);
+    setMaximizedConversations(converstations);
+  }, [converstations]);
 
   const onMaximizeClick = (conversation: ConversationDetails) => {
     if (!minimizedConversations) return;
@@ -230,30 +293,34 @@ export const ChatContainer = (props: ChatContainerProps) => {
     <StyledChatContainer>
       <div className="MinimizedConvsContainer">
         {minimizedConversations &&
-          minimizedConversations.map((conversation) => (
-            <StyledMinimizedConv
-              avatar_url={
-                conversation.participants.find((p) => p.id !== appCtx.user!.id) //todo : stupid approach
-                  ?.avatar
-              }
-              onClick={() => onMaximizeClick(conversation)}
-            />
-          ))}
+          minimizedConversations.map((conversation) => {
+            const chattingWith = conversation.participants.find(
+              (p) => Number(p.userId) !== Number(appCtx.user!.userId)
+            );
+            return (
+              <StyledMinimizedConv
+                avatar_url={chattingWith?.avatar}
+                onClick={() => onMaximizeClick(conversation)}
+              />
+            );
+          })}
       </div>
       <div className="MaximizedConvsContainer">
         {maximizedConversations &&
-          maximizedConversations.map((conversation) => (
-            <MaximizedConv
-              conversation={conversation}
-              userId={appCtx.user!.id}
-              chattingWithId={
-                conversation.participants.find((p) => p.id !== appCtx.user!.id)
-                  ?.id || ""
-              }
-              onClick={() => onMinimizeClick(conversation)}
-              onClose={() => onCloseClick(conversation)}
-            />
-          ))}
+          maximizedConversations.map((conversation) => {
+            const chattingWith = conversation.participants.find(
+              (p) => Number(p.userId) !== Number(appCtx.user!.userId)
+            );
+            return (
+              <MaximizedConv
+                conversation={conversation}
+                userId={appCtx.user!.userId}
+                chattingWithId={chattingWith?.userId || ""}
+                onClick={() => onMinimizeClick(conversation)}
+                onClose={() => onCloseClick(conversation)}
+              />
+            );
+          })}
       </div>
     </StyledChatContainer>
   );
@@ -267,19 +334,47 @@ interface MaximizedConvProps {
 }
 const MaximizedConv = (props: MaximizedConvProps) => {
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   }, []);
+  /**
+   * states
+   */
+  const [messageInput, setMessageInput] = Zeroact.useState<string>("");
 
+  /**
+   * checkers
+   */
   const chattingWith = props.conversation.participants.find(
-    (p) => p.id !== props.conversation.participants[0].id
+    (p) => p.userId === props.chattingWithId
   );
 
-  if (!chattingWith) return null;
+  /**
+   * handlers
+   */
+  const handleSendMessage = async () => {
+    if (messageInput.trim() === "") return;
+    try {
+      const resp = await sendMessage(
+        Number(props.conversation.id),
+        messageInput
+      );
+      if (resp.success) {
+        console.log("Message sent successfully");
+        setMessageInput("");
+        // Optionally update the UI or fetch messages again
+      } else {
+        console.error("Failed to send message:", resp.message);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
 
+
+  if (!chattingWith) return null;
   return (
     <StyledMaximizedConv
       avatar_url={chattingWith.avatar}
@@ -310,12 +405,23 @@ const MaximizedConv = (props: MaximizedConvProps) => {
           return (
             <ChatMessaegeEl
               message={message}
-              isUser={message.from.id === props.userId}
+              isUser={Number(message.sender.userId) === Number(props.userId)}
             />
           );
         })}
       </div>
-      <ChatInput />
+      <div className="chat-input-container">
+        <a onClick={() => handleSendMessage()} className="SendSvg">
+          <SendIcon fill="white" size={25} />
+        </a>
+        <input
+          type="text"
+          placeholder="Type a message..."
+          onChange={(e: any) => setMessageInput(e.target.value)}
+          value={messageInput}
+        />
+        <EmojiIcon fill="white" size={25} className="EmojieSvg" />
+      </div>
     </StyledMaximizedConv>
   );
 };
