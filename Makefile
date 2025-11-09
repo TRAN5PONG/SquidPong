@@ -5,6 +5,7 @@ check-services = ./scripts/check-services.sh
 up:
 	${change-backend-url}
 	docker compose -f ${FILE} up --build
+	docker compose -f ${FILE} up  --build
 	@echo ""
 	@echo "Waiting for services to start..."
 	@sleep 5

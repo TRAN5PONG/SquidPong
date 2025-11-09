@@ -19,7 +19,6 @@ import Tournament from "./components/Tournament/Tournament";
 import SelectCharacter from "./components/SelectCharacter/SelectCharacter";
 import Toast, { ToastContainer } from "./components/Toast/Toast";
 
-
 // Redux
 import { store } from "@/store";
 import { userActions } from "./store/user/actions";
@@ -155,16 +154,17 @@ const App = () => {
   const { modal, setUser, user } = useAppContext();
 
   useEffect(() => {
+    if (!socketManager.isConntected()) {
+      socketManager.connect(`${import.meta.env.VITE_IP}`);
+    }
     const initializeAuth = async () => {
       try {
         const userData = await getUserProfile();
-        console.log("User data:", userData);
         setUser(userData.data!);
       } catch (error) {
         console.log("No valid session found");
       }
     };
-
     initializeAuth();
   }, [user]);
 

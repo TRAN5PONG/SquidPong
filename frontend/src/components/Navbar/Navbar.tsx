@@ -232,7 +232,7 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    console.log("user is", user);
+    if (!user) return;
     getNotifs();
   }, [user]);
 

@@ -7,6 +7,7 @@ import ChatMessaegeEl from "./ChatMessage";
 import { db } from "@/db";
 import { useAppContext } from "@/contexts/AppProviders";
 import { getMessages, sendMessage } from "@/api/chat";
+import { socketManager } from "@/utils/socket";
 
 const StyledChatContainer = styled("div")`
   .MinimizedConvsContainer {
@@ -126,7 +127,7 @@ const StyledMaximizedConv = styled("div")`
     padding: 10px 10px 75px 10px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 10px;
     overflow-y: scroll;
     position: relative;
   }
@@ -318,6 +319,7 @@ export const ChatContainer = () => {
                 chattingWithId={chattingWith?.userId || ""}
                 onClick={() => onMinimizeClick(conversation)}
                 onClose={() => onCloseClick(conversation)}
+                setConversations={setConversations}
               />
             );
           })}
@@ -327,6 +329,11 @@ export const ChatContainer = () => {
 };
 interface MaximizedConvProps {
   conversation: ConversationDetails;
+  setConversations: (
+    value:
+      | ConversationDetails[]
+      | ((prev: ConversationDetails[]) => ConversationDetails[])
+  ) => void;
   chattingWithId: string;
   userId: string;
   onClick: () => void;
@@ -334,15 +341,17 @@ interface MaximizedConvProps {
 }
 const MaximizedConv = (props: MaximizedConvProps) => {
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
-  }, []);
+  }, [props.conversation.messages]);
   /**
    * states
    */
   const [messageInput, setMessageInput] = Zeroact.useState<string>("");
+  const inputRef = Zeroact.useRef<HTMLInputElement>(null);
 
   /**
    * checkers
@@ -361,10 +370,19 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         Number(props.conversation.id),
         messageInput
       );
-      if (resp.success) {
+      if (resp.success && resp.data) {
         console.log("Message sent successfully");
         setMessageInput("");
-        // Optionally update the UI or fetch messages again
+        if (inputRef.current) {
+          inputRef.current.value = ""; // Manually clear the DOM
+        }
+        props.setConversations((prevs) =>
+          prevs.map((conv) =>
+            conv.id === props.conversation.id
+              ? { ...conv, messages: [...conv.messages, resp.data!] }
+              : conv
+          )
+        );
       } else {
         console.error("Failed to send message:", resp.message);
       }
@@ -373,6 +391,23 @@ const MaximizedConv = (props: MaximizedConvProps) => {
     }
   };
 
+  useEffect(() => {
+    socketManager.subscribe("chat", (data: any) => {
+      if (data.chatId) {
+        props.setConversations((prevs) =>
+          prevs.map((conv) =>
+            Number(conv.id) === Number(data.chatId)
+              ? { ...conv, messages: [...conv.messages, data] }
+              : conv
+          )
+        );
+      }
+    });
+
+    return () => {
+      socketManager.unsubscribe("chat", () => {});
+    };
+  }, []);
 
   if (!chattingWith) return null;
   return (
@@ -415,10 +450,16 @@ const MaximizedConv = (props: MaximizedConvProps) => {
           <SendIcon fill="white" size={25} />
         </a>
         <input
+          ref={inputRef}
           type="text"
           placeholder="Type a message..."
           onChange={(e: any) => setMessageInput(e.target.value)}
           value={messageInput}
+          onKeyDown={(e: any) => {
+            if (e.key === "Enter") {
+              handleSendMessage();
+            }
+          }}
         />
         <EmojiIcon fill="white" size={25} className="EmojieSvg" />
       </div>

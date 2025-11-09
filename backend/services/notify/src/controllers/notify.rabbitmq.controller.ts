@@ -141,6 +141,7 @@ export async function processGameNotification(data: any) {
   if (!setting || !setting.notificationSettings) return;
   if (!setting.notificationSettings.gameInvites) return;
 
+  console.log("hlllllllllllllllllllllllllllllllll")
   await sendDataToQueue(
     {
       targetId: data.targetId.toString(),
@@ -167,10 +168,11 @@ export async function processChatNotification(data: any)
       select: { notificationSettings: { select: {chatMessages : true} } },
     });
 
+    console.log("chaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaat")
     await sendDataToQueue(
       {
         targetId: tId,
-        type: "chat",
+        event: "chat",
         data: data.data,
       },
       "broadcastData"
@@ -184,7 +186,7 @@ export async function processChatNotification(data: any)
     await sendDataToQueue(
       {
         targetId: tId,
-        type: "notification",
+        event: "notification",
         message: `You have a new message from ${data.fromId}.`,
       },
       "broadcastData"
