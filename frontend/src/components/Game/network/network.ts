@@ -1,7 +1,7 @@
 import { Client, getStateCallbacks, Room } from "colyseus.js";
 import { MatchPhase, MatchState } from "./GameState";
 import { Match, MatchPlayer } from "@/types/game/game";
-import { BallHitMessage, BallResetMessage, Vec3 } from "@/types/network";
+import { BallHitMessage, ballResetMessage, Vec3 } from "@/types/network";
 
 interface NetworkEvents {
   "player:connected": (playerId: string, player: MatchPlayer) => void;
@@ -19,7 +19,12 @@ interface NetworkEvents {
   "Ball:HitMessage": (data: BallHitMessage) => void;
   "game:StartAt": (startAt: number) => void;
   "Ball:Serve": (data: BallHitMessage) => void;
-  "Ball:Reset": (data: BallResetMessage) => void;
+  "Ball:Reset": (data: ballResetMessage) => void;
+  "score:update": (data: { playerId: string; newScore: number }) => void;
+  "round:ended": (data: {
+    pointBy: string;
+    scores: Record<string, number>;
+  }) => void;
 }
 
 export class Network {
@@ -40,6 +45,9 @@ export class Network {
   public lastHitPlayer: string | null = null;
   // Events
   private eventListeners: Map<keyof NetworkEvents, Function[]> = new Map();
+
+  // Scores
+  private scores: Record<string, number> = {};
 
   constructor(serverUrl: string, match: Match) {
     this.serverUrl = serverUrl;
@@ -147,9 +155,9 @@ export class Network {
     this.room.onMessage("game:give-up-denied", (reason) => {
       this.emit("game:pause-denied", reason);
     });
-    // this.room.onMessage("game:ended", (data) => {
-    //   this.emit("game:ended", data);
-    // }); // todo : it seems that its working without adding this
+    this.room.onMessage("game:ended", (data) => {
+      this.emit("game:ended", data);
+    }); // todo : it seems that its working without adding this
     this.room.onMessage("game:started", (data) => {
       this.emit("game:started", data);
     });
@@ -159,6 +167,7 @@ export class Network {
     });
     this.room.onMessage("Ball:HitMessage", (data: BallHitMessage) => {
       // this.gameState = GameState.IN_PLAY; // TODO: should be set by serve only
+      console.log("Received Ball:HitMessage:", data);
       this.emit("Ball:HitMessage", data);
     });
 
@@ -166,8 +175,17 @@ export class Network {
       this.emit("Ball:Serve", data);
     });
 
-    this.room.onMessage("Ball:Reset", (data: BallResetMessage) => {
+    // move ball to serve position
+    this.room.onMessage("Ball:Reset", (data: ballResetMessage) => {
       this.emit("Ball:Reset", data);
+    });
+
+    // point scored, here are the updated scores
+    this.room.onMessage("round:ended", (data) => {
+      this.scores = data.scores;
+
+      console.log("Scores updated:", this.scores);
+      this.emit("round:ended", data);
     });
   }
 
@@ -270,5 +288,9 @@ export class Network {
   dispose() {
     this.leave();
     this.eventListeners.clear();
+  }
+
+  getScores() {
+    return this.scores;
   }
 }

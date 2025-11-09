@@ -20,5 +20,7 @@ export interface MatchState extends Schema {
   countdown: number;
   winnerId: string | null;
   pauseBy: string | null;
+  scores: Map<string, number>;
   lastHitPlayer: string | null;
+  currentServer: string | null;
 }
