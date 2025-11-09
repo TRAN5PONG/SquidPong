@@ -24,6 +24,7 @@ const StyledChatMessage = styled("div")`
   gap: 10px;
   position: relative;
   transition: 0.2s ease-in-out;
+
   &:hover .MsgOptions {
     opacity: 1;
   }
@@ -331,6 +332,7 @@ const ChatMessaegeEl = (props: { message: ChatMessage; isUser: boolean }) => {
    */
   const handleEditMessage = async (newContent: string) => {
     try {
+      props.message.content = newContent;
       await editMessage(props.message.id, newContent || props.message.content);
     } catch (err) {
       console.error("Failed to edit message:", err);
@@ -386,6 +388,12 @@ const ChatMessaegeEl = (props: { message: ChatMessage; isUser: boolean }) => {
           className="ChatMsgText"
           contentEditable={isEditing}
           suppressContentEditableWarning={true}
+          onKeyDown={(e: any) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault(); // Prevent new line
+              e.currentTarget.blur(); // Trigger blur event which saves
+            }
+          }}
           onBlur={(e: any) => {
             setIsEditing(false);
             handleEditMessage(e.currentTarget.textContent);
@@ -507,6 +515,7 @@ const ChatMessaegeEl = (props: { message: ChatMessage; isUser: boolean }) => {
             </div>
           </div>
           <span className="ChatMsgDate">
+            {props.message.isEdited ? "Edited - " : ""}
             {timeAgo(props.message.timestamp)}
           </span>
         </div>

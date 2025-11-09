@@ -7,18 +7,12 @@ class SocketManager {
   connect(url: string) {
     this.socket = new WebSocket(url);
 
-    if (!this.socket) {
-      console.error("WebSocket connection failed");
-      return;
-    } else {
-      console.log("WebSocket connected to", url);
-    }
-
     this.socket.onmessage = (event) => {
       let parsedData: any;
 
       try {
         parsedData = JSON.parse(event.data);
+        console.log(parsedData);
 
         if (parsedData.data && parsedData.event) {
           const handlers = this.listeners[parsedData.event];
@@ -49,6 +43,17 @@ class SocketManager {
   sendMessage(data: any) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(data));
+    }
+  }
+
+  isConntected(): boolean {
+    return this.socket?.readyState === WebSocket.OPEN;
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
     }
   }
 }
