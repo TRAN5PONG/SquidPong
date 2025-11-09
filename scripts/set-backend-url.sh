@@ -49,18 +49,18 @@ set_urls_in_file() {
  
   # Replace VITE_API_BASE_URL if it exists
   if grep -q -E '^\s*VITE_API_BASE_URL\s*=' "$file"; then
-    sed -i "s|^\s*VITE_API_BASE_URL\s*=.*|VITE_API_BASE_URL=http://${IP}:4000/api|" "$file"
-    sed -i "s|^\s*VITE_IP\s*=.*|VITE_IP=${IP}|" "$file"
+    sed -i "s|^\s*VITE_API_BASE_URL\s*=.*|VITE_API_BASE_URL=https://${IP}/api|" "$file"
+    sed -i "s|^\s*VITE_IP\s*=.*|VITE_IP=wss://${IP}/events|" "$file"
   fi
 
   # Replace BACKEND_URL if it exists
   if grep -q -E '^\s*BACKEND_URL\s*=' "$file"; then
-    sed -i "s|^\s*BACKEND_URL\s*=.*|BACKEND_URL=\"http://${IP}:4000\"|" "$file"
+    sed -i "s|^\s*BACKEND_URL\s*=.*|BACKEND_URL=\"https://${IP}\"|" "$file"
   fi
 
   # Replace FRONTEND_URL if it exists
   if grep -q -E '^\s*FRONTEND_URL\s*=' "$file"; then
-    sed -i "s|^\s*FRONTEND_URL\s*=.*|FRONTEND_URL=\"http://${IP}:8080\"|" "$file"
+    sed -i "s|^\s*FRONTEND_URL\s*=.*|FRONTEND_URL=\"https://${IP}\"|" "$file"
   fi
 
 }
@@ -79,12 +79,12 @@ done
 
 
 
-echo "backend URL : http://${IP}:4000"
-echo "frontend URL: http://${IP}:8080"
+echo "backend URL : https://${IP}"
+echo "frontend URL: https://${IP}/api/"
 
 # Update Postman collection baseUrl variable (sed-only)
 POSTMAN_FILE="./postman/SquidPong-services.postman_collection.json"
-BASE_URL="http://${IP}:4000"
+BASE_URL="https://${IP}"
 set_postman_baseurl "$POSTMAN_FILE" "$BASE_URL" || true
 
 exit 0
