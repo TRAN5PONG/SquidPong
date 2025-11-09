@@ -49,8 +49,8 @@ set_urls_in_file() {
  
   # Replace VITE_API_BASE_URL if it exists
   if grep -q -E '^\s*VITE_API_BASE_URL\s*=' "$file"; then
-    sed -i "s|^\s*VITE_API_BASE_URL\s*=.*|VITE_API_BASE_URL=https://${IP}/api|" "$file"
-    sed -i "s|^\s*VITE_IP\s*=.*|VITE_IP=wss://${IP}/events|" "$file"
+    sed -i "s|^\s*VITE_API_BASE_URL\s*=.*|VITE_API_BASE_URL=https://${IP}:4433/api|" "$file"
+    sed -i "s|^\s*VITE_IP\s*=.*|VITE_IP=wss://${IP}:4433/events|" "$file"
   fi
 
   # Replace BACKEND_URL if it exists
@@ -69,6 +69,15 @@ if [ -f docker-compose.yml ]; then
   sed -i.tmp -E "s|^([[:space:]]*-?[[:space:]]*HOST_EXTERNAL[[:space:]]*=).*|\1${IP}|" docker-compose.yml && rm -f docker-compose.yml.tmp
 else
   echo "docker-compose.yml not found; skipped updating HOST_EXTERNAL"
+fi
+
+# Update nginx.conf server_name
+if [ -f nginx.conf ]; then
+  echo "Updating nginx.conf server_name to: $IP"
+  sed -i.tmp -E "s|^([[:space:]]*server_name[[:space:]]+).*|\1${IP};|" nginx.conf && rm -f nginx.conf.tmp
+  echo "nginx.conf updated"
+else
+  echo "nginx.conf not found; skipped updating server_name"
 fi
 
 
