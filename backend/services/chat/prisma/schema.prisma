@@ -130,11 +130,10 @@ model Message {
 
   type       MessageType  @default(TEXT)
   content    String?
-  
-  status     statusMessage @default(SENT)
-
   matchId      String?
   tournamentId String?
+
+  status     statusMessage @default(SENT)
 
   reactions  Reaction[]
   

@@ -181,6 +181,13 @@ export async function updateProfileHandler(req: FastifyRequest, res: FastifyRepl
       rankTier: newRankTier,
       rankDivision: newRankDivision
     });
+
+    if(body.status !== undefined)
+    {
+      await sendServiceRequestSimple('chat', userId, 'PUT', { status: body.status } )
+      await sendServiceRequestSimple('notify', userId, 'PUT', { status: body.status } )
+    }
+
   }
   catch (error) {
     return sendError(res, error);
