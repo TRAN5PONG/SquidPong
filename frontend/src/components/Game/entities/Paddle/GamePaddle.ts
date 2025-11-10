@@ -83,10 +83,10 @@ export class Paddle extends BasePaddle {
     this.clampedZ =
       this.mesh?.position.z || (this.side === "LEFT" ? -2.8 : 2.8);
 
-    // if (this.isLocal) {
-    //   this.setupPaddlePlane();
-    //   this.enableLiveMouseTracking();
-    // }
+    if (this.isLocal) {
+      this.setupPaddlePlane();
+      this.enableLiveMouseTracking();
+    }
   }
   private setupPaddlePlane(): void {
     if (!this.mesh) return;

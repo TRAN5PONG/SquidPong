@@ -20,7 +20,10 @@ interface NetworkEvents {
   "game:StartAt": (startAt: number) => void;
   "Ball:Serve": (data: BallHitMessage) => void;
   "Ball:Reset": (data: ballResetMessage) => void;
-  "score:update": (data: { playerId: string; newScore: number }) => void;
+  "score:update": (data: {
+    scores: { playerId: string; newScore: number };
+    pointBy: string;
+  }) => void;
   "round:ended": (data: {
     pointBy: string;
     scores: Record<string, number>;
@@ -45,9 +48,6 @@ export class Network {
   public lastHitPlayer: string | null = null;
   // Events
   private eventListeners: Map<keyof NetworkEvents, Function[]> = new Map();
-
-  // Scores
-  private scores: Record<string, number> = {};
 
   constructor(serverUrl: string, match: Match) {
     this.serverUrl = serverUrl;
@@ -166,7 +166,6 @@ export class Network {
       // console.log("Opponent Paddle Data:", data);
     });
     this.room.onMessage("Ball:HitMessage", (data: BallHitMessage) => {
-      // this.gameState = GameState.IN_PLAY; // TODO: should be set by serve only
       console.log("Received Ball:HitMessage:", data);
       this.emit("Ball:HitMessage", data);
     });
@@ -182,10 +181,8 @@ export class Network {
 
     // point scored, here are the updated scores
     this.room.onMessage("round:ended", (data) => {
-      this.scores = data.scores;
-
-      console.log("Scores updated:", this.scores);
       this.emit("round:ended", data);
+      this.emit("score:update", data);
     });
   }
 
@@ -288,9 +285,5 @@ export class Network {
   dispose() {
     this.leave();
     this.eventListeners.clear();
-  }
-
-  getScores() {
-    return this.scores;
   }
 }

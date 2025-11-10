@@ -75,7 +75,6 @@ export class GameController {
     // Debug
     this.debugMeshes = new DebugMeshManager(this.scene);
     // this.debugMeshes.createMeshes();
-
     // For now, right paddle always serves first just for testing
     this.MyTurnToServe = this.localPaddle.side === "RIGHT" ? true : false;
 
@@ -123,6 +122,7 @@ export class GameController {
 
     // Listen for ball reset (new round)
     this.net.on("Ball:Reset", (data: ballResetMessage) => {
+      console.log("Received Ball:Reset message:", data);
       this.resetRound(data);
     });
 
@@ -142,15 +142,9 @@ export class GameController {
         }
       }
     });
-
-    // TEST:
-    // this.setupPaddlePlane();
-    // this.enableLiveMouseTracking();
   }
 
-  // TEST:
   // ================= 2D To 3D ==================
-
   private screenToWorld(mouseX: number, mouseY: number): Vector3 {
     const ray = this.scene.createPickingRay(
       mouseX,
@@ -164,49 +158,10 @@ export class GameController {
       new Vector3(0, 1, 0),
     ); // y=2.8 plane
     const distance = ray.intersectsPlane(plane);
-    if (distance === null) return Vector3.Zero();
+    if (distance === null)
+      return new Vector3(0, 2.8, this.localPaddle.side === "LEFT" ? -3 : 3);
 
     return ray.origin.add(ray.direction.scale(distance));
-  }
-
-  private enableLiveMouseTracking(): void {
-    this.scene.onBeforeRenderObservable.add(() => {
-      if (!this.paddlePlane) return;
-      const pointerX = this.scene.pointerX;
-      const pointerY = this.scene.pointerY;
-      if (pointerX === undefined || pointerY === undefined) return;
-
-      const ray = this.scene.createPickingRay(
-        pointerX,
-        pointerY,
-        null,
-        this.scene.activeCamera,
-      );
-      const distance = ray.intersectsPlane(this.paddlePlane);
-      if (distance === null) return;
-
-      const boundaries = this.localPaddle.getBoundaries();
-      const point = ray.origin.add(ray.direction.scale(distance));
-
-      this.clampedX = Math.max(
-        boundaries.x.min,
-        Math.min(boundaries.x.max, point.x),
-      );
-      this.clampedZ = Math.max(
-        boundaries.z.min,
-        Math.min(boundaries.z.max, point.z),
-      );
-    });
-  }
-
-  private setupPaddlePlane(): void {
-    const planePosition = new Vector3(
-      0,
-      this.localPaddle.getMeshPosition().y,
-      0,
-    );
-    const planeNormal = new Vector3(0, 1, 0);
-    this.paddlePlane = Plane.FromPositionAndNormal(planePosition, planeNormal);
   }
 
   private updateLocalPaddle(): void {
@@ -228,6 +183,16 @@ export class GameController {
 
     this.updateVisualsOpponentPaddle();
     this.updateVisualsBall(alpha);
+
+    const appliedPos = this.physics.getApplySpin();
+    if (appliedPos) {
+      const ballVel = this.physics.ball.body.linvel();
+      this.ball.updateFireEffect({
+        x: ballVel.x,
+        y: ballVel.y,
+        z: ballVel.z,
+      });
+    }
   }
   /*
    * if GameState is WAITING_FOR_SERVE, position the ball in front of the local paddle
@@ -398,13 +363,6 @@ export class GameController {
       );
       const paddleSpeed = paddleVelocity.length();
 
-      if (
-        this.rollbackManager?.isInProgress() ||
-        this.lastCollisionTick === this.currentTick
-      ) {
-        return;
-      }
-
       this.physics.setLastHitBy(this.playerId);
       this.lasthitPlayerId = this.playerId;
       this.lastTableBounceSide = null;
@@ -414,39 +372,36 @@ export class GameController {
       let ballVel: Vector3;
       let isServe = false; // Track if this is a serve
 
-      if (this.gameState === GameState.WAITING_FOR_SERVE) {
-        // === SERVE HIT ===
-        isServe = true; // Mark as serve
-        ballVel = this.physics.calculateServeVelocity(
-          ball.translation(),
-          paddle.translation(),
-        );
-        this.physics.setBallSpin(0, 0, 0);
-        this.physics.setApplySpin(false);
+      // if (this.gameState === GameState.WAITING_FOR_SERVE) {
+      //   // === SERVE HIT ===
+      //   isServe = true; // Mark as serve
+      //   ballVel = this.physics.calculateServeVelocity(
+      //     ball.translation(),
+      //     paddle.translation(),
+      //   );
+      //   this.physics.setBallSpin(0, 0, 0);
+      //   this.physics.setApplySpin(false);
+      //
+      //   // Update game state
+      //   this.gameState = GameState.IN_PLAY;
+      // } else {
+      // === RALLY HIT ===
+      const spinCalc = this.calculateMagnusSpin(paddleSpeed, paddleVelocity.x);
+      this.physics.setBallSpin(0, spinCalc.spinY, 0);
+      this.physics.setApplySpin(spinCalc.applySpin);
 
-        // Update game state
-        this.gameState = GameState.IN_PLAY;
-      } else {
-        // === RALLY HIT ===
-        const spinCalc = this.calculateMagnusSpin(
-          paddleSpeed,
-          paddleVelocity.x,
-          this.localPaddle.side === "RIGHT" ? -1 : 1,
-        );
-        this.physics.setBallSpin(0, spinCalc.spinY, 0);
-        this.physics.setApplySpin(spinCalc.applySpin);
-
-        ballVel = this.physics.calculateTargetZYVelocity(
-          ball.translation(),
-          paddle.translation(),
-        );
-      }
+      ballVel = this.physics.calculateTrajectory(
+        ball.translation(),
+        paddle.translation(),
+      );
+      // }
 
       const currentVel = ball.linvel();
       const mass = ball.mass();
 
+      const dir = this.localPaddle.side === "LEFT" ? 1 : -1;
       const impulse = new Vector3(
-        (ballVel.x - currentVel.x) * mass,
+        (ballVel.x - currentVel.x) * mass * dir,
         (ballVel.y - currentVel.y) * mass,
         (ballVel.z - currentVel.z) * mass,
       );
@@ -471,31 +426,28 @@ export class GameController {
       };
 
       // Send correct message type based on whether it's a serve or rally hit
-      if (isServe) {
-        console.log("Sending Ball:Serve message");
-        this.net.sendMessage("Ball:Serve", hitMsg);
-      } else {
-        console.log("Sending Ball:HitMessage");
-        this.net.sendMessage("Ball:HitMessage", hitMsg);
-      }
+      // if (isServe) {
+      //   console.log("==== Sending Ball:Serve message ====");
+      //   this.net.sendMessage("Ball:Serve", hitMsg);
+      // } else {
+      // console.log("==== Sending Ball:HitMessage ====");
+      this.net.sendMessage("Ball:HitMessage", hitMsg);
+      // }
     };
     // Ball with floor collision callback
     this.physics.onBallFloorCollision = (ball, floor) => {
-      // Could add sound or effects here
       if (this.shouldISendThisEvent(ball)) {
         this.ballOut();
       }
     };
     // Ball with net collision callback
     this.physics.onBallNetCollision = (ball, net) => {
-      // Could add sound or effects here
       if (this.shouldISendThisEvent(ball)) {
         this.ballOut();
       }
     };
     // ball with Table collision callback
     this.physics.onBallTableCollision = (ball, table) => {
-      // Could add sound or effects here
       if (this.shouldISendThisEvent(ball)) {
         this.handleTableBounce(ball);
       }
@@ -506,130 +458,84 @@ export class GameController {
     const lastHitById = this.lasthitPlayerId;
     const myPlayerId = this.playerId;
 
-    console.log(`🔍 Last hit by: ${lastHitById}, My ID: ${myPlayerId}`);
-
     return lastHitById === myPlayerId;
   }
+
   private ballOut(): void {
-    const Message = {
-      side: this.localPaddle.side === "RIGHT" ? "player1" : "player2",
-    };
-    // console.log(`Ball out! Point for ${Message} `);
-    this.net.sendMessage("Ball:Out", Message);
+    this.net.sendMessage("Ball:Out", {});
   }
 
   private handleTableBounce(ball: any): void {
     const ballZ = ball.translation().z;
     const currentSide: "LEFT" | "RIGHT" = ballZ > 0 ? "RIGHT" : "LEFT";
-
-    // Get the side of the player who last hit the ball
     const lastHitterSide = this.getPlayerSide(this.lasthitPlayerId);
 
-    // SERVE PHASE: Ball must bounce on server's side first, then opponent's side
+    // --- SERVE PHASE ---
     if (!this.serverSideBounced) {
-      // First bounce during serve
-      const serverSide = this.MyTurnToServe
-        ? this.localPaddle.side
-        : this.opponentPaddle.side;
+      // Automatically accept first bounce as valid
+      this.serverSideBounced = true;
+      this.lastTableBounceSide = currentSide;
 
-      if (currentSide === serverSide) {
-        // ✅ Valid first bounce on server's side
-        this.serverSideBounced = true;
-        this.lastTableBounceSide = currentSide;
-        console.log(`✅ Serve: Ball bounced on server's side (${currentSide})`);
-      } else {
-        // ❌ Serve fault - ball didn't bounce on server's side first
-        console.log(
-          `❌ Serve fault - ball bounced on wrong side (${currentSide} instead of ${serverSide})`,
-        );
-        this.serveFault();
-        return;
-      }
+      console.log(`✅ Auto-serve valid: first bounce on ${currentSide}`);
+      return;
     }
-    // RALLY PHASE: After the serve is complete (ball has bounced on both sides)
-    else if (this.lastTableBounceSide !== null) {
-      // During rally, check if ball bounced on hitter's own side (FAULT)
+
+    // --- RALLY PHASE ---
+    if (this.lastTableBounceSide !== null) {
+      // Fault: hitter’s own side
       if (lastHitterSide && currentSide === lastHitterSide) {
         console.log(
-          `❌ Fault - Player hit ball and it bounced on their own side (${currentSide})`,
+          `❌ Fault: ball bounced on hitter's own side (${currentSide})`,
         );
         this.ballOut();
         return;
       }
 
-      // Check for double bounce on same side
+      // Fault: double bounce on same side
       if (this.lastTableBounceSide === currentSide) {
         console.log(`❌ Double bounce on ${currentSide} side`);
         this.ballOut();
         return;
       }
 
-      // Valid bounce on opponent's side
+      // ✅ Valid rally bounce
       this.lastTableBounceSide = currentSide;
-      console.log(`✅ Valid bounce on ${currentSide} side`);
+      console.log(`✅ Valid rally bounce on ${currentSide}`);
+      return;
     }
-    // SERVE COMPLETION: Second bounce (must be on opponent's side)
-    else {
-      const serverSide = this.MyTurnToServe
-        ? this.localPaddle.side
-        : this.opponentPaddle.side;
-      const opponentSide = serverSide === "LEFT" ? "RIGHT" : "LEFT";
 
-      if (currentSide === opponentSide) {
-        // ✅ Valid second bounce - serve is complete, rally begins
-        this.lastTableBounceSide = currentSide;
-        console.log(
-          `✅ Serve complete: Ball bounced on opponent's side (${currentSide})`,
-        );
-      } else {
-        // ❌ Serve fault - ball bounced on server's side twice
-        console.log(`❌ Serve fault - ball bounced on server's side twice`);
-        this.serveFault();
-        return;
-      }
-    }
+    // --- FALLBACK / RARE CASE ---
+    this.lastTableBounceSide = currentSide;
+    console.log(`✅ Bounce registered on ${currentSide}`);
   }
 
-  // Helper to determine which side a player is on based on their ID
-  private getPlayerSide(playerId: string | null): "LEFT" | "RIGHT" | null {
-    if (!playerId) return null;
-
-    // Check if this player ID matches the local player
-    if (playerId === this.playerId) {
-      return this.localPaddle.side;
-    }
-
-    // Otherwise it's the opponent
-    return this.opponentPaddle.side;
-  }
   private serveFault(): void {
-    const serverId = this.MyTurnToServe ? this.playerId : null;
+    // Determine who is serving based on MyTurnToServe
+    const serverId = this.MyTurnToServe
+      ? this.playerId
+      : this.net.getPlayerId();
+
     if (serverId) {
-      console.log(`⚠️ Serve fault by player ${serverId}`);
       this.net.sendMessage("Serve:Failed", { playerId: serverId });
     }
   }
-  // Helper method to get player's side
   private getPlayerSide(playerId: string | null): "LEFT" | "RIGHT" | null {
     if (!playerId) return null;
 
-    // If it's my ID, return my paddle side
     if (playerId === this.playerId) {
       return this.localPaddle.side;
     }
 
-    // Otherwise it's opponent's side
     return this.opponentPaddle.side;
   }
   private calculateMagnusSpin(
     paddleSpeed: number,
     paddleVelocityX: number,
-    paddleSide: number,
   ): { spinY: number; applySpin: boolean } {
     let spinY = 0;
     let applySpin = false;
 
-    if (paddleSpeed >= 26) {
+    if (paddleSpeed >= 28) {
       const clampedPaddleVelX = Math.max(-29, Math.min(29, paddleVelocityX));
 
       if (Math.abs(clampedPaddleVelX) > 26) {
@@ -639,7 +545,7 @@ export class GameController {
           spinY = ((clampedPaddleVelX + 26) / (-29 + 26)) * -6;
         }
 
-        spinY *= paddleSide;
+        spinY = -spinY;
         applySpin = true;
       }
     }
@@ -675,28 +581,23 @@ export class GameController {
     );
     this.physics.setLastHitBy(data.lastHitPlayer);
 
-    // Reset rollback manager
     this.rollbackManager.reset();
-
-    // Reset game state
     this.gameState = GameState.WAITING_FOR_SERVE;
     this.currentTick = 0;
     this.lastCollisionTick = 0;
-
-    // Clear opponent paddle buffer
     this.bufferOppPaddleStates = [];
 
-    // reset bounce logic
+    // Reset serve-specific tracking
     this.lastTableBounceSide = null;
     this.hasBouncedOnce = false;
     this.serverSideBounced = false;
-    this.lasthitPlayerId = null;
 
+    // Set who last hit based on who's serving
     this.MyTurnToServe = data.nextServerId === this.net.getPlayerId();
-    // TODO: start Timout for serve
-    // if (this.MyTurnToServe)
+    this.lasthitPlayerId = this.MyTurnToServe
+      ? this.playerId
+      : data.nextServerId;
   }
-
   // ==================== Serve methods =================
   public BallServe(): void {
     this.physics.setBallFrozen(false);
@@ -727,20 +628,20 @@ export class GameController {
   // ==================== Main update methods =================
   public fixedUpdate(): void {
     if (!this.ball || !this.physics) return;
-    // TEST:
+
     const pointerX = this.scene.pointerX;
     const pointerY = this.scene.pointerY;
+    if (pointerX === undefined || pointerY === undefined) return;
 
     const worldPos = this.screenToWorld(pointerX, pointerY);
     this.physics.paddle.setTarget(worldPos.x, worldPos.y, worldPos.z);
 
     // TEST:
-    this.updateLocalPaddle();
+    // this.updateLocalPaddle();
 
     this.physics.ball.setPosition("PREV");
     this.physics.Step(1 / 60);
     this.physics.ball.setPosition("CURR");
-
     // if (this.serveState === GameState.IN_PLAY)
     this.rollbackManager?.recordState(this.currentTick);
     this.incrementTick();

@@ -8,11 +8,19 @@ import {
 } from "@babylonjs/core";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 
+// Effect
+import { ParticleSystem } from "@babylonjs/core/Particles/particleSystem";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Color4 } from "@babylonjs/core/Maths/math.color";
+
 export class BasePaddle {
   mesh!: TransformNode;
   protected mainMesh!: AbstractMesh;
   textureMesh: any; // Store the cloned mesh for texture
 
+  private particleSystem: ParticleSystem | null = null;
+  private isFireActive: boolean = false;
+  private fireEnabled: boolean = false; // Control if fire is allowed
   protected scene: Scene;
 
   constructor(scene: Scene) {
@@ -24,6 +32,8 @@ export class BasePaddle {
         "/models/paddle.glb",
         this.scene,
       );
+
+      this.setupFireEffect();
       if (!container || !container.meshes) {
         throw new Error("Failed to load paddle model");
       }
@@ -139,5 +149,86 @@ export class BasePaddle {
     const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
     const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
     return new Color3(r, g, b);
+  }
+
+  setupFireEffect(): void {
+    if (!this.mainMesh) return;
+
+    // Create particle system
+    this.particleSystem = new ParticleSystem("paddleFire", 2000, this.scene);
+
+    // Texture
+    this.particleSystem.particleTexture = new Texture(
+      "https://raw.githubusercontent.com/BabylonJS/Babylon.js/master/packages/tools/playground/public/textures/flare.png",
+      this.scene,
+    );
+
+    // Emit from the paddle
+    this.particleSystem.emitter = this.mainMesh;
+    this.particleSystem.minEmitBox = new Vector3(-0.5, -0.1, -0.3);
+    this.particleSystem.maxEmitBox = new Vector3(0.5, 0.1, 0.3);
+
+    // DARK FIRE COLORS
+    this.particleSystem.color1 = new Color4(0.6, 0.1, 0, 1.0);
+    this.particleSystem.color2 = new Color4(0.4, 0.05, 0, 1.0);
+    this.particleSystem.colorDead = new Color4(0.1, 0, 0, 0.0);
+
+    // Particle size
+    this.particleSystem.minSize = 0.2;
+    this.particleSystem.maxSize = 0.5;
+
+    // Lifetime
+    this.particleSystem.minLifeTime = 0.1;
+    this.particleSystem.maxLifeTime = 0.25;
+
+    // Emission rate
+    this.particleSystem.emitRate = 1500;
+
+    // Blend mode
+    this.particleSystem.blendMode = ParticleSystem.BLENDMODE_ONEONE;
+
+    // Speed
+    this.particleSystem.minEmitPower = 0.5;
+    this.particleSystem.maxEmitPower = 1.5;
+    this.particleSystem.updateSpeed = 0.005;
+
+    // No gravity
+    this.particleSystem.gravity = new Vector3(0, 0, 0);
+
+    // Direction
+    this.particleSystem.direction1 = new Vector3(-0.5, -0.5, -0.5);
+    this.particleSystem.direction2 = new Vector3(0.5, 0.5, 0.5);
+
+    this.isFireActive = false;
+
+    console.log("Paddle fire effect setup complete!");
+  }
+
+  enableFire(enabled: boolean): void {
+    this.fireEnabled = enabled;
+    if (!enabled && this.isFireActive) {
+      this.particleSystem?.stop();
+      this.isFireActive = false;
+    }
+  }
+
+  updateFireEffect(velocity: Vector3): void {
+    if (!this.particleSystem || !this.fireEnabled) return;
+
+    const speed = velocity.length();
+    const fireThreshold = 8;
+
+    if (speed > fireThreshold) {
+      if (!this.isFireActive) {
+        this.particleSystem.start();
+        this.isFireActive = true;
+      }
+      this.particleSystem.emitRate = 1000 + speed * 50;
+    } else {
+      if (this.isFireActive) {
+        this.particleSystem.stop();
+        this.isFireActive = false;
+      }
+    }
   }
 }
