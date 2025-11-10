@@ -4,7 +4,8 @@ import {
   blockUserHandler, unblockUserHandler, removeUserHandler, deleteAccountHandler, 
   createChat, removeChat, getChatById, getRecentChats,
   sendMessageHandler, editMessageHandler, deleteMessageHandler, 
-  replyToMessageHandler, addReactionHandler, removeReactionHandler
+  replyToMessageHandler, addReactionHandler, removeReactionHandler,
+  markMessagesAsRead
 } from '../controllers/chat.controller';
 import { createUser, updateUser } from '../controllers/user.controller';
 import {
@@ -79,6 +80,7 @@ export const chatRoutes : Route[] = [
   { method: 'POST',   url: '/api/chat/new',                handler: createChat  }, // createChatSchema         
   // { method: 'DELETE', url: '/api/chat/remove/:chatId',     handler: removeChat  },          
   { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById  },
+  { method: 'PATCH',  url: '/api/chat/:chatId/read',       handler: markMessagesAsRead  },
 
   { method: 'POST',   url: '/api/chat/block/:friendId',    handler: blockUserHandler  },
   { method: 'POST',   url: '/api/chat/unblock/:friendId',  handler: unblockUserHandler  },
