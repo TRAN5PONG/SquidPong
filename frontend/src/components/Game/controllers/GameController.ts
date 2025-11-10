@@ -176,24 +176,6 @@ export class GameController {
     // this.debugMeshes.paddleMesh!.position.copyFrom(position);
   }
 
-  // ================= Visual interpolation =================
-  public updateVisuals(alpha: number): void {
-    // TEST:
-    this.localPaddle.updateVisual(alpha);
-
-    this.updateVisualsOpponentPaddle();
-    this.updateVisualsBall(alpha);
-
-    const appliedPos = this.physics.getApplySpin();
-    if (appliedPos) {
-      const ballVel = this.physics.ball.body.linvel();
-      this.ball.updateFireEffect({
-        x: ballVel.x,
-        y: ballVel.y,
-        z: ballVel.z,
-      });
-    }
-  }
   /*
    * if GameState is WAITING_FOR_SERVE, position the ball in front of the local paddle
    * else, interpolate the ball position between previous and current physics positions
@@ -547,6 +529,7 @@ export class GameController {
 
         spinY = -spinY;
         applySpin = true;
+        this.ball.activateFireEffect();
       }
     }
 
@@ -556,6 +539,13 @@ export class GameController {
   // ==================== Game loop methods =================
   public incrementTick(): void {
     this.currentTick++;
+  }
+
+  public updateVisuals(alpha: number): void {
+    this.localPaddle.updateVisual(alpha);
+
+    this.updateVisualsOpponentPaddle();
+    this.updateVisualsBall(alpha);
   }
 
   // ==================== Game state methods =================
@@ -569,16 +559,8 @@ export class GameController {
 
   public resetRound(data: ballResetMessage): void {
     this.physics.setBallFrozen(true);
-    this.physics.setBallPosition(
-      data.position.x,
-      data.position.y,
-      data.position.z,
-    );
-    this.physics.setBallVelocity(
-      data.velocity.x,
-      data.velocity.y,
-      data.velocity.z,
-    );
+
+    this.physics.reset(data);
     this.physics.setLastHitBy(data.lastHitPlayer);
 
     this.rollbackManager.reset();
