@@ -21,7 +21,7 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
   const response: ApiResponse<null> = {  success: true,  message: ProfileMessages.CREATE_SUCCESS  };
   const body = req.body as {userId : number ,  username: string; firstName: string; lastName: string; avatar?: string };
 
-  body['avatar'] = body['avatar'] || `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/user/avatars/default.png`;
+  body['avatar'] = body['avatar'] || `${process.env.BACKEND_URL || 'http://localhost:4000'}:4433/api/user/avatars/default.png`;
   try 
   {
     checkSecretToken(req);

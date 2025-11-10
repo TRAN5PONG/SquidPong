@@ -120,7 +120,7 @@ export async function fetchAvatarImagePipeline(imageUrl: string, username: strin
   const nodeStream = Readable.fromWeb(res.body as any);
 
   await pipe(nodeStream, fs.createWriteStream(physicalPath));
-  const filePath = `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/user/avatars/${randomName}`;
+  const filePath = `${process.env.BACKEND_URL || 'http://localhost:4000'}:4433/api/user/avatars/${randomName}`;
   // const filePath = `${pro}/api/user/avatars/${randomName}`;
   return (filePath);
 }
