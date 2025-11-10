@@ -1,13 +1,7 @@
-import { useEffect, useState } from "@/lib/Zeroact";
 import { Scene } from "@babylonjs/core/scene";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { AbstractMesh, Vector3 } from "@babylonjs/core";
-import { TrailMesh } from "@babylonjs/core/Meshes/trailMesh";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { GlowLayer } from "@babylonjs/core/Layers/glowLayer";
-import { Vec3 } from "@/types/network";
 import { ParticleSystem } from "@babylonjs/core/Particles/particleSystem";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
@@ -88,14 +82,14 @@ export class Ball {
     // this.particleSystem.colorDead = new Color4(0.05, 0, 0, 0.0); // Nearly black
 
     // DARK FIRE COLORS - Dark red/orange flames
-    this.particleSystem.color1 = new Color4(0.6, 0.1, 0, 1.0); // Dark red
-    this.particleSystem.color2 = new Color4(0.4, 0.05, 0, 1.0); // Darker red
-    this.particleSystem.colorDead = new Color4(0.1, 0, 0, 0.0); // Very dark red fade
+    // this.particleSystem.color1 = new Color4(0.6, 0.1, 0, 1.0); // Dark red
+    // this.particleSystem.color2 = new Color4(0.4, 0.05, 0, 1.0); // Darker red
+    // this.particleSystem.colorDead = new Color4(0.1, 0, 0, 0.0); // Very dark red fade
 
     // SMOKE COLORS for sample shot
-    // this.particleSystem.color1 = new Color4(0.1, 0.1, 0.1, 1.0); // Dark gray
-    // this.particleSystem.color2 = new Color4(0.05, 0.05, 0.05, 1.0); // Almost black
-    // this.particleSystem.colorDead = new Color4(0, 0, 0, 0.0); // Black fade
+    this.particleSystem.color1 = new Color4(0.1, 0.1, 0.1, 1.0); // Dark gray
+    this.particleSystem.color2 = new Color4(0.05, 0.05, 0.05, 1.0); // Almost black
+    this.particleSystem.colorDead = new Color4(0, 0, 0, 0.0); // Black fade
     // Smaller particles that stay close
     this.particleSystem.minSize = 0.001;
     this.particleSystem.maxSize = 0.5;
@@ -126,32 +120,18 @@ export class Ball {
 
     console.log("Fire effect setup complete!");
   }
-  updateFireEffect(velocity: Vec3): void {
-    if (!this.particleSystem) {
-      console.log("No particle system!");
-      return;
+
+  activateFireEffect(): void {
+    if (this.particleSystem && !this.isFireActive) {
+      this.particleSystem.start();
+      this.isFireActive = true;
     }
+  }
 
-    const speed = Math.sqrt(
-      velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2,
-    );
-
-    const fireThreshold = 8; // Adjust this value
-
-    if (speed > fireThreshold) {
-      if (!this.isFireActive) {
-        this.particleSystem.start();
-        this.isFireActive = true;
-        console.log("Fire started! Speed:", speed);
-      }
-      // More fire when faster
-      this.particleSystem.emitRate = 1000 + speed * 50;
-    } else {
-      if (this.isFireActive) {
-        this.particleSystem.stop();
-        this.isFireActive = false;
-        console.log("Fire stopped");
-      }
+  deactivateFireEffect(): void {
+    if (this.particleSystem && this.isFireActive) {
+      this.particleSystem.stop();
+      this.isFireActive = false;
     }
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "@/lib/Zeroact";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { constants } from "@/utils/constants";
+import { ballResetMessage } from "@/types/network";
 
 import { Ball } from "./Ball";
 import { Paddle } from "./Paddle";
@@ -94,58 +95,97 @@ export class Physics {
     const halfWidth = constants.TABLE.size.width / 2;
     const tableSurfaceY =
       constants.TABLE.position.y + constants.TABLE.size.height / 2;
+    const netTopY = constants.TABLE.position.y + constants.NET.size.height;
     const gravity = Math.abs(constants.Gravity.y);
+    const safeMargin = 0.3;
 
-    // --- Compute Z target on opponent side ---
-    const safeMargin = 0.4;
     const [zMin, zMax] =
       paddlePos.z > 0
-        ? [-halfLength + safeMargin, -0.3 - safeMargin] // Fixed: was 0.3
-        : [0.3 + safeMargin, halfLength - safeMargin];
+        ? [-halfLength + safeMargin, -0.2 - safeMargin]
+        : [0.2 + safeMargin, halfLength - safeMargin];
 
-    const paddleVelocityZ = this.paddle.body.linvel().z * 0.15;
+    const paddleVelocityZ = this.paddle.body.linvel().z * 0.2;
+
+    // --- Target Z position ---
     const targetZ = this.calculateTargetZFromVelocity(
       paddleVelocityZ,
       zMin,
       zMax,
     );
 
-    // --- Compute Y velocity to reach arc height ---
-    const minArcHeight = tableSurfaceY + constants.NET.size.height + 0.2;
-    const arcHeight = Math.max(minArcHeight, ballPos.y + 0.2);
-    const heightGain = Math.max(arcHeight - ballPos.y, 0.3);
-    const velocityY = Math.sqrt(2 * gravity * heightGain);
+    // --- Dynamic arc height based on paddle velocity and distance ---
+    const paddleSpeed = Math.sqrt(
+      this.paddle.body.linvel().x ** 2 +
+      this.paddle.body.linvel().y ** 2 +
+      this.paddle.body.linvel().z ** 2,
+    );
 
-    // FIX: Calculate time based on actual parabolic motion
-    const timeUp = velocityY / gravity;
+    // Lower speeds = lower arc (more likely to hit net)
+    // Higher speeds = higher arc (clears net safely)
+    const baseArcHeight = 0.2; // Minimum clearance above net
+    const speedFactor = Math.min(paddleSpeed / 30, 1); // Normalize speed
+    const dynamicClearance = baseArcHeight + speedFactor * 0.4; // 0.2 to 0.6
 
-    // FIX: Ensure arcHeight is above tableSurfaceY before calculating timeDown
+    const minArcHeight = netTopY + dynamicClearance;
+    const desiredArcHeight = ballPos.y + 0.3;
+    const arcHeight = Math.max(minArcHeight, desiredArcHeight);
+
+    // --- Height gain (can be negative for low shots) ---
+    const heightGain = arcHeight - ballPos.y;
+
+    // Allow negative height gain for low shots that might hit net
+    const velocityY =
+      heightGain > 0
+        ? Math.sqrt(2 * gravity * heightGain)
+        : -Math.sqrt(2 * gravity * Math.abs(heightGain));
+
+    // --- Flight time calculation ---
+    const timeUp = heightGain > 0 ? velocityY / gravity : 0;
     const landingHeight = tableSurfaceY;
-    const fallDistance = Math.max(arcHeight - landingHeight, 0.1);
+    const peakHeight = heightGain > 0 ? arcHeight : ballPos.y;
+    const fallDistance = Math.max(peakHeight - landingHeight, 0.1);
     const timeDown = Math.sqrt((2 * fallDistance) / gravity);
-
     const totalFlightTime = timeUp + timeDown;
 
-    // FIX: Add minimum flight time based on distance to prevent impossibly fast shots
     const distanceZ = Math.abs(targetZ - ballPos.z);
-    const minTimeForDistance = distanceZ / 20.0; // Maximum horizontal speed ~15 m/s
+    const minTimeForDistance = distanceZ / 20.0;
     const safeFlightTime = Math.max(totalFlightTime, minTimeForDistance);
 
-    // --- Compute Z velocity to reach target Z ---
+    // --- Z velocity ---
     const velocityZ = (targetZ - ballPos.z) / safeFlightTime;
 
-    // --- Compute X target and velocity ---
+    // --- X target and velocity ---
     const minX = -halfWidth + safeMargin;
     const maxX = halfWidth - safeMargin;
-    const paddleSideMultiplier = paddlePos.z > 0 ? -1 : 1;
+    const paddleSide = paddlePos.z > 0 ? -1 : 1;
+
     let targetX = this.appySpin
       ? paddlePos.x
-      : paddlePos.x + this.paddle.body.linvel().x * 0.1 * paddleSideMultiplier;
+      : paddlePos.x + this.paddle.body.linvel().x * 0.05 * paddleSide;
+
     targetX = Math.max(minX, Math.min(maxX, targetX));
     const velocityX = (targetX - ballPos.x) / safeFlightTime;
 
-    // --- Return final velocity vector ---
+    // Debug: log if trajectory will likely hit net
+    const netClearanceAtMidpoint = arcHeight - netTopY;
+    if (netClearanceAtMidpoint < 0.15) {
+      console.log(
+        `⚠️ Low trajectory! Net clearance: ${netClearanceAtMidpoint.toFixed(2)}m - May hit net`,
+      );
+    }
+
     return new Vector3(velocityX, velocityY, velocityZ);
+  }
+
+  calculateTargetZFromVelocity(
+    paddleVelocityZ: number,
+    zMin: number,
+    zMax: number,
+  ): number {
+    // Increased sensitivity for more variation in target placement
+    const clamped = Math.max(-2, Math.min(2, paddleVelocityZ / 1.5));
+    const t = (clamped + 2) / 4; // Map to [0, 1]
+    return zMin + t * (zMax - zMin);
   }
   calculateTargetZFromVelocity(
     paddleVelocityZ: number,
@@ -274,6 +314,12 @@ export class Physics {
 
     // Decay spin
     this.ballSpin.scaleInPlace(this.spinDecay);
+  }
+
+  // ==== Reset ====
+  public reset(data: ballResetMessage): void {
+    this.ball.reset(data);
+    this.lastHitPlayer = null;
   }
   //  setters
   setBallVelocity(x: number, y: number, z: number) {

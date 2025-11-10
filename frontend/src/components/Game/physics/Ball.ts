@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { constants } from "@/utils/constants";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { ballResetMessage } from "@/types/network";
 
 export class Ball {
   private prev_pos: Vector3;
@@ -58,5 +59,16 @@ export class Ball {
         this.body.translation().y,
         this.body.translation().z,
       );
+  }
+
+  public reset(data: ballResetMessage): void {
+    this.body.setTranslation(
+      { x: data.position.x, y: data.position.y, z: data.position.z },
+      true,
+    );
+    this.body.setLinvel(
+      { x: data.velocity.x, y: data.velocity.y, z: data.velocity.z },
+      true,
+    );
   }
 }
