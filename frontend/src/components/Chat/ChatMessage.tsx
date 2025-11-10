@@ -323,7 +323,7 @@ interface MessageReaction {
   emoji: keyof typeof reactions; // "LIKE" | "DISLIKE" | ...
   timestamp: string;
 }
-const ChatMessaegeEl = (props: { message: ChatMessage; isUser: boolean }) => {
+const ChatMessaegeEl = (props: { message: ChatMessage; isUser: boolean, key: number }) => {
   const [showReactionsTooltip, setshowReactionsTooltip] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
