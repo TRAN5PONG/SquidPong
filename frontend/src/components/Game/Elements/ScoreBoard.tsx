@@ -141,6 +141,8 @@ const ScoreBoard = (props: ScoreBoardProps) => {
   const [pauseBy, setPauseBy] = useState<string | null>(null);
   const [pauseCountdown, setPauseCountdown] = useState<number | null>(null);
   const [matchPhase, setMatchPhase] = useState<MatchPhase>("waiting");
+  const [hostScores, setHostScores] = useState<number>(0);
+  const [guestScores, setGuestScores] = useState<number>(0);
 
   // Time
   const [elapsed, setElapsed] = useState<number>(0);
@@ -208,6 +210,22 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       setPauseCountdown(data.remainingPauseTime);
     });
 
+    // score 
+    props.net.on("score:update", (data) => {
+      console.log("Score updated ", data);
+      Object.entries(data.scores).forEach(([playerId, score]) => {
+        if (playerId === data.pointBy) {
+          // Update host score if playerId matches pointBy
+          setHostScores(score as number);
+        } else {
+          // Otherwise, update guest score
+          setGuestScores(score as number);
+        }
+      });
+
+      // if (data.scores.playerId === host?.id) setHostScores(data.scores.);
+      // if (data.scores.playerId === guest?.id) setGuestScores(data.scores[1]);
+    });
     // Time
 
   }, [props.net]);
@@ -218,8 +236,8 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       matchPhase === "paused"
         ? pauseCountdown
         : matchPhase === "countdown"
-        ? countdownValue
-        : null;
+          ? countdownValue
+          : null;
 
     const lastPlayedRef = useRef<number | null>(null);
     const lastPausedRef = useRef<boolean>(false);
@@ -275,7 +293,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     <StyledScoreBoard>
       <OponentCard className="OponentCard">
         <div className="OponentScore">
-          <span>10</span>
+          <span>{hostScores}</span>
         </div>
         <img
           src={host?.avatarUrl || "/assets/avatar.jpg"}
@@ -303,10 +321,10 @@ const ScoreBoard = (props: ScoreBoardProps) => {
             {matchPhase === "playing"
               ? formatTime(elapsed)
               : matchPhase === "paused"
-              ? pauseCountdown
-              : matchPhase === "countdown"
-              ? countdownValue
-              : formatTime(elapsed)}
+                ? pauseCountdown
+                : matchPhase === "countdown"
+                  ? countdownValue
+                  : formatTime(elapsed)}
           </span>
         </div>
 
@@ -315,15 +333,15 @@ const ScoreBoard = (props: ScoreBoardProps) => {
             {matchPhase === "countdown"
               ? "Get Ready!"
               : matchPhase === "paused"
-              ? "Paused"
-              : "Round 1"}
+                ? "Paused"
+                : "Round 1"}
           </span>
         </div>
       </div>
 
       <OponentCard className="OponentCard" isRightSide={true}>
         <div className="OponentScore">
-          <span>10</span>
+          <span>{guestScores}</span>
         </div>
         <img
           src={guest?.avatarUrl || "/assets/avatar.jpg"}
@@ -371,7 +389,7 @@ const OponentCard = styled("div")`
     height: 100%;
     display: flex;
     flex-direction: ${(props: any) =>
-      props.isRightSide ? "row" : "row-reverse"};
+    props.isRightSide ? "row" : "row-reverse"};
     align-items: center;
     gap: 10px;
 
@@ -382,11 +400,11 @@ const OponentCard = styled("div")`
       color: #ffffff;
       display: flex;
       background: ${(props: any) =>
-        props.isRightSide
-          ? "linear-gradient(90deg, #e0bd2f, rgba(255, 217, 68, 0))"
-          : "linear-gradient(90deg, rgba(255, 217, 68, 0), #e0bd2f)"};
+    props.isRightSide
+      ? "linear-gradient(90deg, #e0bd2f, rgba(255, 217, 68, 0))"
+      : "linear-gradient(90deg, rgba(255, 217, 68, 0), #e0bd2f)"};
       flex-direction: ${(props: any) =>
-        props.isRightSide ? "row" : "row-reverse"};
+    props.isRightSide ? "row" : "row-reverse"};
       align-items: center;
       padding: 0px 5px;
       gap: 5px;
@@ -395,9 +413,9 @@ const OponentCard = styled("div")`
   }
   .OponentScore {
     background: ${(props: any) =>
-      props.isRightSide
-        ? "linear-gradient(90deg, #e0bd2f, rgba(255, 217, 68, 0))"
-        : "linear-gradient(90deg, rgba(255, 217, 68, 0), #e0bd2f)"};
+    props.isRightSide
+      ? "linear-gradient(90deg, #e0bd2f, rgba(255, 217, 68, 0))"
+      : "linear-gradient(90deg, rgba(255, 217, 68, 0), #e0bd2f)"};
 
     width: 90px;
     height: 50px;

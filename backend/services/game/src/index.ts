@@ -92,19 +92,19 @@ const start = async () => {
     }
 
     // Debug rooms
-    setInterval(async () => {
-      const rooms = await matchMaker.query({});
-      console.log(
-        "📊 Active Rooms:",
-        rooms.map((r) => ({
-          id: r.roomId,
-          name: r.name,
-          clients: r.clients,
-          locked: r.locked,
-          metadata: r.metadata,
-        })),
-      );
-    }, 10000); // every 10s
+    // setInterval(async () => {
+    //   const rooms = await matchMaker.query({});
+    //   console.log(
+    //     "📊 Active Rooms:",
+    //     rooms.map((r) => ({
+    //       id: r.roomId,
+    //       name: r.name,
+    //       clients: r.clients,
+    //       locked: r.locked,
+    //       metadata: r.metadata,
+    //     })),
+    //   );
+    // }, 10000); // every 10s
 
     // Start Fastify + Colyseus
     await fastify.listen({ port, host });

@@ -14,14 +14,18 @@ export class Paddle {
   constructor(world: RAPIER.World) {
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(
-        constants.PADDLE.position.right.x,
-        constants.PADDLE.position.right.y,
-        constants.PADDLE.position.right.z,
+        constants.PADDLE.position.x,
+        constants.PADDLE.position.y,
+        constants.PADDLE.position.z,
       )
       .setCcdEnabled(true)
       .lockRotations()
       .setLinearDamping(4);
 
+    console.log(
+      " =================== Creating paddle at: ===================== ",
+      constants.PADDLE.position,
+    );
     this.body = world.createRigidBody(bodyDesc);
 
     const colliderDesc = RAPIER.ColliderDesc.cuboid(

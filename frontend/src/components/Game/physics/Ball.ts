@@ -13,9 +13,9 @@ export class Ball {
       .setTranslation(
         constants.BALL.position.x,
         constants.BALL.position.y,
-        constants.BALL.position.z
+        constants.BALL.position.z,
       )
-      .setLinearDamping(0.2)
+      .setLinearDamping(0.1)
       .setAngularDamping(0.1)
       .setCcdEnabled(true);
 
@@ -33,7 +33,7 @@ export class Ball {
     const initialPos = new Vector3(
       this.body.translation().x,
       this.body.translation().y,
-      this.body.translation().z
+      this.body.translation().z,
     );
     this.prev_pos = initialPos.clone();
     this.current_pos = initialPos.clone();
@@ -50,13 +50,13 @@ export class Ball {
       this.prev_pos = new Vector3(
         this.body.translation().x,
         this.body.translation().y,
-        this.body.translation().z
+        this.body.translation().z,
       );
     else
       this.current_pos = new Vector3(
         this.body.translation().x,
         this.body.translation().y,
-        this.body.translation().z
+        this.body.translation().z,
       );
   }
 }
