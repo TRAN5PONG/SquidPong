@@ -33,13 +33,8 @@ export async function checkChatMembershipAndGetOthers(chatId: number, userId: nu
 {
   const chat = await prisma.chat.findUnique({
     where: { id: chatId },
-    include: { 
-      members: true,
-      messages: true
-    },
-  });
-
-  console.log('Chat fetched:', chat);
+    include: { members: true}},
+  );
   if (!chat) throw new Error(`Chat not found: ${chatId}`);
 
   const isMember = chat.members.some((m: any) => m.userId === String(userId));
@@ -49,5 +44,5 @@ export async function checkChatMembershipAndGetOthers(chatId: number, userId: nu
     .filter((m: any) => m.userId !== String(userId))
     .map((m: any) => Number(m.userId));
 
-  return {  chat, targetId };
+  return {targetId };
 }
