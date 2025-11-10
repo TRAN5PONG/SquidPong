@@ -173,12 +173,13 @@ export async function processChatNotification(data: any)
       {
         targetId: tId,
         event: "chat",
+        type : data.type,
         data: data.data,
       },
       "broadcastData"
     );
 
-    if(data.type !== NotificationType.NEW_MESSAGE) return;
+    // if(data.type !== NotificationType.NEW_MESSAGE) return;
     console.log(`chatMessages setting for user ${tId}:`, setting);
     if (!setting || !setting.notificationSettings) return;
     if (!setting.notificationSettings.chatMessages) return;

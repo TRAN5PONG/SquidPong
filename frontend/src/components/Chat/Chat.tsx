@@ -4,10 +4,10 @@ import { styled } from "@/lib/Zerostyle";
 import { CloseIcon, EmojiIcon, MinimizeIcon, SendIcon } from "../Svg/Svg";
 import { UserStatus } from "@/types/user";
 import ChatMessaegeEl from "./ChatMessage";
-import { db } from "@/db";
 import { useAppContext } from "@/contexts/AppProviders";
 import { getMessages, sendMessage } from "@/api/chat";
 import { socketManager } from "@/utils/socket";
+import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledChatContainer = styled("div")`
   .MinimizedConvsContainer {
@@ -82,6 +82,7 @@ const StyledMaximizedConv = styled("div")`
       width: auto;
       display: flex;
       align-items: center;
+      flex: 1;
       .chat-avatar {
         width: 40px;
         height: 40px;
@@ -192,6 +193,23 @@ const StyledMinimizedConv = styled("div")`
   border: 1px solid black;
   cursor: pointer;
   position: relative;
+  .unreadCount {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--red_color);
+    border: 1px solid var(--red_light_color);
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--main_font);
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
 
   &:after {
     content: "";
@@ -216,22 +234,18 @@ export const ChatContainer = () => {
     ConversationDetails[]
   >([]);
 
-  const appCtx = useAppContext();
+  const { chat, user } = useAppContext();
 
   useEffect(() => {
-    const convsIds: string[] | null = appCtx.chat.activeConversations;
+    const convsIds: string[] | null = chat.activeConversations;
 
     if (!convsIds) {
-      // Clear conversations if no active conversations
       setConversations([]);
       setMinimizedConversations([]);
       setMaximizedConversations([]);
       return;
     }
 
-    /**
-     * Fetch
-     */
     const getConversationDetails = async (id: number) => {
       try {
         const resp = await getMessages(id);
@@ -240,25 +254,42 @@ export const ChatContainer = () => {
             if (prevs.find((c) => c.id === resp.data!.id)) return prevs;
             return [...prevs, resp.data!];
           });
-        } else {
-          console.error("Failed to fetch conversation details:", resp.message);
+
+          setMaximizedConversations((prevMax) => {
+            if (prevMax.find((c) => c.id === resp.data!.id)) return prevMax;
+            return [...prevMax, resp.data!];
+          });
         }
       } catch (error) {
         console.error("Error fetching conversation details:", error);
       }
     };
 
-    /**
-     * Populate conversations
-     */
     for (const id of convsIds) {
       getConversationDetails(Number(id));
     }
-  }, [appCtx.chat.activeConversations]);
+  }, [chat.activeConversations]);
+
+  // on maximized not on view
+  // useEffect(() => {
+  //   socketManager.subscribe("chat", (data: any) => {
+  //     if (chat.activeConversations?.includes(data.chatId)) return;
+
+  //     chat.setActiveConversations([
+  //       ...(chat.activeConversations || []),
+  //       data.chatId,
+  //     ]);
+  //   });
+  // }, []);
+
+  // useEffect(() => {
+  //   console.log("minimized conversations updated:", minimizedConversations);
+  // }, [minimizedConversations]);
 
   useEffect(() => {
-    setMinimizedConversations([]);
-    setMaximizedConversations(converstations);
+    if (converstations.length > 0 && maximizedConversations.length === 0) {
+      setMaximizedConversations(converstations);
+    }
   }, [converstations]);
 
   const onMaximizeClick = (conversation: ConversationDetails) => {
@@ -278,17 +309,18 @@ export const ChatContainer = () => {
     setMinimizedConversations([...minimizedConversations, conversation]);
   };
   const onCloseClick = (conversation: ConversationDetails) => {
-    if (!maximizedConversations) return;
-    if (!minimizedConversations) return;
-    setMaximizedConversations(
-      maximizedConversations.filter((c) => c.id !== conversation.id)
-    );
     setMinimizedConversations(
       minimizedConversations.filter((c) => c.id !== conversation.id)
     );
+    setMaximizedConversations(
+      maximizedConversations.filter((c) => c.id !== conversation.id)
+    );
+    chat.setActiveConversations(
+      chat.activeConversations?.filter((id) => id !== conversation.id) || []
+    );
   };
 
-  if (!appCtx.user) return null;
+  if (!user) return null;
 
   return (
     <StyledChatContainer>
@@ -296,13 +328,20 @@ export const ChatContainer = () => {
         {minimizedConversations &&
           minimizedConversations.map((conversation) => {
             const chattingWith = conversation.participants.find(
-              (p) => Number(p.userId) !== Number(appCtx.user!.userId)
+              (p) => Number(p.userId) !== Number(user!.userId)
             );
             return (
               <StyledMinimizedConv
+                key={conversation.id}
                 avatar_url={chattingWith?.avatar}
                 onClick={() => onMaximizeClick(conversation)}
-              />
+              >
+                {conversation.unreadCount && conversation.unreadCount > 0 && (
+                  <span className="unreadCount">
+                    {conversation.unreadCount}
+                  </span>
+                )}
+              </StyledMinimizedConv>
             );
           })}
       </div>
@@ -310,16 +349,17 @@ export const ChatContainer = () => {
         {maximizedConversations &&
           maximizedConversations.map((conversation) => {
             const chattingWith = conversation.participants.find(
-              (p) => Number(p.userId) !== Number(appCtx.user!.userId)
+              (p) => Number(p.userId) !== Number(user!.userId)
             );
             return (
               <MaximizedConv
                 conversation={conversation}
-                userId={appCtx.user!.userId}
+                userId={user!.userId}
                 chattingWithId={chattingWith?.userId || ""}
                 onClick={() => onMinimizeClick(conversation)}
                 onClose={() => onCloseClick(conversation)}
                 setConversations={setConversations}
+                key={conversation.id}
               />
             );
           })}
@@ -338,9 +378,11 @@ interface MaximizedConvProps {
   userId: string;
   onClick: () => void;
   onClose?: () => void;
+  key?: string;
 }
 const MaximizedConv = (props: MaximizedConvProps) => {
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
+  const { msgSentSound, msgReceivedSound } = useSounds();
 
   useEffect(() => {
     if (messagesRef.current) {
@@ -371,10 +413,10 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         messageInput
       );
       if (resp.success && resp.data) {
-        console.log("Message sent successfully");
+        msgSentSound.play();
         setMessageInput("");
         if (inputRef.current) {
-          inputRef.current.value = ""; // Manually clear the DOM
+          inputRef.current.value = "";
         }
         props.setConversations((prevs) =>
           prevs.map((conv) =>
@@ -391,9 +433,15 @@ const MaximizedConv = (props: MaximizedConvProps) => {
     }
   };
 
+
+  useEffect(() => {
+    
+  })
   useEffect(() => {
     socketManager.subscribe("chat", (data: any) => {
       if (data.chatId) {
+        // i think both users will get the message from socket !! // todo
+        msgReceivedSound.play();
         props.setConversations((prevs) =>
           prevs.map((conv) =>
             Number(conv.id) === Number(data.chatId)
@@ -414,10 +462,11 @@ const MaximizedConv = (props: MaximizedConvProps) => {
     <StyledMaximizedConv
       avatar_url={chattingWith.avatar}
       userState={chattingWith.status} // here i can later calc most of users statuses
+      key={props.key}
     >
-      <div className="chat-header" onClick={props.onClick}>
+      <div className="chat-header">
         <div className="chat-controls">
-          <div className="chat-controle" onClick={props.onClick}>
+          <div className="chat-controle">
             <MinimizeIcon
               stroke="white"
               size={25}
@@ -428,7 +477,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
             <CloseIcon fill="white" size={23} className="chat-controle-icon" />
           </div>
         </div>
-        <div className="chat-title">
+        <div className="chat-title" onClick={props.onClick}>
           <div className="chat-avatar"></div>
           <div className="chat-title-text">
             <h1>{chattingWith.username}</h1>
