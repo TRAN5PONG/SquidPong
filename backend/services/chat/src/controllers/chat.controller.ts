@@ -515,7 +515,7 @@ export async function replyToMessageHandler(req: FastifyRequest,res: FastifyRepl
 
 export async function addReactionHandler( req: FastifyRequest, res: FastifyReply) 
 {
-  const respond: ApiResponse<null> = {
+  const respond: ApiResponse<any> = {
     success: true,
     message: "Reaction added successfully",
   };
@@ -552,6 +552,7 @@ export async function addReactionHandler( req: FastifyRequest, res: FastifyReply
       data,
     };
     await sendDataToQueue(dataToSend, "eventhub");
+    respond.data = data;
   } 
   catch (error) {
     sendError(res, error);
