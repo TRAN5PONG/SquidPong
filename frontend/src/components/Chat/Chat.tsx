@@ -9,6 +9,15 @@ import { getMessages, sendMessage } from "@/api/chat";
 import { socketManager } from "@/utils/socket";
 import { useSounds } from "@/contexts/SoundProvider";
 
+type ConversationWithView = ConversationDetails & {
+  viewState: "maximized" | "minimized";
+  lastMessagePreview?: {
+    content: string;
+    sender: string;
+    timestamp: number;
+  };
+};
+
 const StyledChatContainer = styled("div")`
   .MinimizedConvsContainer {
     height: 100%;
@@ -33,6 +42,7 @@ const StyledChatContainer = styled("div")`
     z-index: 9999;
   }
 `;
+
 const StyledMaximizedConv = styled("div")`
   width: 350px;
   height: 500px;
@@ -183,6 +193,7 @@ const StyledMaximizedConv = styled("div")`
     }
   }
 `;
+
 const StyledMinimizedConv = styled("div")`
   width: 50px;
   height: 50px;
@@ -210,6 +221,17 @@ const StyledMinimizedConv = styled("div")`
     font-size: 0.75rem;
     font-weight: bold;
   }
+  .MiniTooltip {
+    position: absolute;
+    left: 60px;
+    width: 200px;
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.7);
+    border : 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
 
   &:after {
     content: "";
@@ -224,25 +246,17 @@ const StyledMinimizedConv = styled("div")`
 `;
 
 export const ChatContainer = () => {
-  const [converstations, setConversations] = useState<ConversationDetails[]>(
+  const [conversations, setConversations] = useState<ConversationWithView[]>(
     []
   );
-  const [minimizedConversations, setMinimizedConversations] = useState<
-    ConversationDetails[]
-  >([]);
-  const [maximizedConversations, setMaximizedConversations] = useState<
-    ConversationDetails[]
-  >([]);
-
   const { chat, user } = useAppContext();
+  const { msgSentSound, msgReceivedSound } = useSounds();
 
   useEffect(() => {
     const convsIds: string[] | null = chat.activeConversations;
 
     if (!convsIds) {
       setConversations([]);
-      setMinimizedConversations([]);
-      setMaximizedConversations([]);
       return;
     }
 
@@ -251,13 +265,10 @@ export const ChatContainer = () => {
         const resp = await getMessages(id);
         if (resp.success && resp.data) {
           setConversations((prevs) => {
-            if (prevs.find((c) => c.id === resp.data!.id)) return prevs;
-            return [...prevs, resp.data!];
-          });
+            const existing = prevs.find((c) => c.id === resp.data!.id);
+            if (existing) return prevs; // Already exists
 
-          setMaximizedConversations((prevMax) => {
-            if (prevMax.find((c) => c.id === resp.data!.id)) return prevMax;
-            return [...prevMax, resp.data!];
+            return [...prevs, { ...resp.data!, viewState: "maximized" }];
           });
         }
       } catch (error) {
@@ -270,53 +281,95 @@ export const ChatContainer = () => {
     }
   }, [chat.activeConversations]);
 
-  // on maximized not on view
-  // useEffect(() => {
-  //   socketManager.subscribe("chat", (data: any) => {
-  //     if (chat.activeConversations?.includes(data.chatId)) return;
-
-  //     chat.setActiveConversations([
-  //       ...(chat.activeConversations || []),
-  //       data.chatId,
-  //     ]);
-  //   });
-  // }, []);
-
-  // useEffect(() => {
-  //   console.log("minimized conversations updated:", minimizedConversations);
-  // }, [minimizedConversations]);
-
   useEffect(() => {
-    if (converstations.length > 0 && maximizedConversations.length === 0) {
-      setMaximizedConversations(converstations);
-    }
-  }, [converstations]);
+    const handleChatMessage = (data: any) => {
+      if (!data.chatId) return;
 
-  const onMaximizeClick = (conversation: ConversationDetails) => {
-    if (!minimizedConversations) return;
-    if (!maximizedConversations) return;
-    setMinimizedConversations(
-      minimizedConversations.filter((c) => c.id !== conversation.id)
+      console.log("Received message:", data);
+
+      // Check if this conversation is already active
+      const isActive = chat.activeConversations?.includes(data.chatId);
+
+      if (!isActive) {
+        // Open new conversation as maximized
+        console.log("Opening new conversation:", data.chatId);
+        chat.setActiveConversations([
+          ...(chat.activeConversations || []),
+          data.chatId,
+        ]);
+        return;
+      }
+
+      // Conversation is active - update messages
+      msgReceivedSound.play();
+
+      setConversations((prevs) =>
+        prevs.map((conv) => {
+          if (Number(conv.id) !== Number(data.chatId)) return conv;
+
+          // Update messages for this conversation
+          const updatedConv = {
+            ...conv,
+            messages: [...conv.messages, data],
+          };
+
+          // If minimized, add preview tooltip
+          if (conv.viewState === "minimized") {
+            console.log("minimized conversation - adding preview");//todo
+            return {
+              ...updatedConv,
+              lastMessagePreview: {
+                content: data.content || data.text || "New message",
+                sender: data.sender?.username || "Unknown",
+                timestamp: Date.now(),
+              },
+            };
+          }
+
+          // If maximized, just update messages
+          return updatedConv;
+        })
+      );
+    };
+
+    socketManager.subscribe("chat", handleChatMessage);
+
+    return () => {
+      socketManager.unsubscribe("chat", handleChatMessage);
+    };
+  }, [chat.activeConversations]);
+
+  const minimizedConversations = conversations.filter(
+    (c) => c.viewState === "minimized"
+  );
+  const maximizedConversations = conversations.filter(
+    (c) => c.viewState === "maximized"
+  );
+
+  const onMaximizeClick = (conversationId: string) => {
+    setConversations((prevs) =>
+      prevs.map((conv) =>
+        conv.id === conversationId
+          ? { ...conv, viewState: "maximized" as const }
+          : conv
+      )
     );
-    setMaximizedConversations([...maximizedConversations, conversation]);
   };
-  const onMinimizeClick = (conversation: ConversationDetails) => {
-    if (!maximizedConversations) return;
-    if (!minimizedConversations) return;
-    setMaximizedConversations(
-      maximizedConversations.filter((c) => c.id !== conversation.id)
+  const onMinimizeClick = (conversationId: string) => {
+    setConversations((prevs) =>
+      prevs.map((conv) =>
+        conv.id === conversationId
+          ? { ...conv, viewState: "minimized" as const }
+          : conv
+      )
     );
-    setMinimizedConversations([...minimizedConversations, conversation]);
   };
-  const onCloseClick = (conversation: ConversationDetails) => {
-    setMinimizedConversations(
-      minimizedConversations.filter((c) => c.id !== conversation.id)
-    );
-    setMaximizedConversations(
-      maximizedConversations.filter((c) => c.id !== conversation.id)
-    );
+
+  const onCloseClick = (conversationId: string) => {
+    setConversations((prevs) => prevs.filter((c) => c.id !== conversationId));
+
     chat.setActiveConversations(
-      chat.activeConversations?.filter((id) => id !== conversation.id) || []
+      chat.activeConversations?.filter((id) => id !== conversationId) || []
     );
   };
 
@@ -325,61 +378,63 @@ export const ChatContainer = () => {
   return (
     <StyledChatContainer>
       <div className="MinimizedConvsContainer">
-        {minimizedConversations &&
-          minimizedConversations.map((conversation) => {
-            const chattingWith = conversation.participants.find(
-              (p) => Number(p.userId) !== Number(user!.userId)
-            );
-            return (
-              <StyledMinimizedConv
-                key={conversation.id}
-                avatar_url={chattingWith?.avatar}
-                onClick={() => onMaximizeClick(conversation)}
-              >
-                {conversation.unreadCount && conversation.unreadCount > 0 && (
-                  <span className="unreadCount">
-                    {conversation.unreadCount}
-                  </span>
-                )}
-              </StyledMinimizedConv>
-            );
-          })}
+        {minimizedConversations.map((conversation) => {
+          const chattingWith = conversation.participants.find(
+            (p) => Number(p.userId) !== Number(user!.userId)
+          );
+          console.log("unread count:", conversation);
+          return (
+            <StyledMinimizedConv
+              key={conversation.id}
+              avatar_url={chattingWith?.avatar}
+              onClick={() => onMaximizeClick(conversation.id)}
+            >
+              <span className="MiniTooltip">
+                {conversation.lastMessagePreview?.content}
+              </span>
+              {conversation.unreadCount && conversation.unreadCount > 0 && (
+                <span className="unreadCount">{conversation.unreadCount}</span>
+              )}
+            </StyledMinimizedConv>
+          );
+        })}
       </div>
       <div className="MaximizedConvsContainer">
-        {maximizedConversations &&
-          maximizedConversations.map((conversation) => {
-            const chattingWith = conversation.participants.find(
-              (p) => Number(p.userId) !== Number(user!.userId)
-            );
-            return (
-              <MaximizedConv
-                conversation={conversation}
-                userId={user!.userId}
-                chattingWithId={chattingWith?.userId || ""}
-                onClick={() => onMinimizeClick(conversation)}
-                onClose={() => onCloseClick(conversation)}
-                setConversations={setConversations}
-                key={conversation.id}
-              />
-            );
-          })}
+        {maximizedConversations.map((conversation) => {
+          const chattingWith = conversation.participants.find(
+            (p) => Number(p.userId) !== Number(user!.userId)
+          );
+          return (
+            <MaximizedConv
+              conversation={conversation}
+              userId={user!.userId}
+              chattingWithId={chattingWith?.userId || ""}
+              onMinimize={() => onMinimizeClick(conversation.id)}
+              onClose={() => onCloseClick(conversation.id)}
+              setConversations={setConversations}
+              key={conversation.id}
+            />
+          );
+        })}
       </div>
     </StyledChatContainer>
   );
 };
+
 interface MaximizedConvProps {
-  conversation: ConversationDetails;
+  conversation: ConversationWithView;
   setConversations: (
     value:
-      | ConversationDetails[]
-      | ((prev: ConversationDetails[]) => ConversationDetails[])
+      | ConversationWithView[]
+      | ((prev: ConversationWithView[]) => ConversationWithView[])
   ) => void;
   chattingWithId: string;
   userId: string;
-  onClick: () => void;
-  onClose?: () => void;
-  key?: string;
+  onMinimize: () => void;
+  onClose: () => void;
+  key: string;
 }
+
 const MaximizedConv = (props: MaximizedConvProps) => {
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
   const { msgSentSound, msgReceivedSound } = useSounds();
@@ -389,22 +444,14 @@ const MaximizedConv = (props: MaximizedConvProps) => {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   }, [props.conversation.messages]);
-  /**
-   * states
-   */
+
   const [messageInput, setMessageInput] = Zeroact.useState<string>("");
   const inputRef = Zeroact.useRef<HTMLInputElement>(null);
 
-  /**
-   * checkers
-   */
   const chattingWith = props.conversation.participants.find(
     (p) => p.userId === props.chattingWithId
   );
 
-  /**
-   * handlers
-   */
   const handleSendMessage = async () => {
     if (messageInput.trim() === "") return;
     try {
@@ -418,6 +465,8 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         if (inputRef.current) {
           inputRef.current.value = "";
         }
+
+        // Update only the conversations array
         props.setConversations((prevs) =>
           prevs.map((conv) =>
             conv.id === props.conversation.id
@@ -425,48 +474,22 @@ const MaximizedConv = (props: MaximizedConvProps) => {
               : conv
           )
         );
-      } else {
-        console.error("Failed to send message:", resp.message);
       }
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
 
-
-  useEffect(() => {
-    
-  })
-  useEffect(() => {
-    socketManager.subscribe("chat", (data: any) => {
-      if (data.chatId) {
-        // i think both users will get the message from socket !! // todo
-        msgReceivedSound.play();
-        props.setConversations((prevs) =>
-          prevs.map((conv) =>
-            Number(conv.id) === Number(data.chatId)
-              ? { ...conv, messages: [...conv.messages, data] }
-              : conv
-          )
-        );
-      }
-    });
-
-    return () => {
-      socketManager.unsubscribe("chat", () => {});
-    };
-  }, []);
-
   if (!chattingWith) return null;
+
   return (
     <StyledMaximizedConv
       avatar_url={chattingWith.avatar}
-      userState={chattingWith.status} // here i can later calc most of users statuses
-      key={props.key}
+      userState={chattingWith.status}
     >
       <div className="chat-header">
         <div className="chat-controls">
-          <div className="chat-controle">
+          <div className="chat-controle" onClick={props.onMinimize}>
             <MinimizeIcon
               stroke="white"
               size={25}
@@ -477,7 +500,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
             <CloseIcon fill="white" size={23} className="chat-controle-icon" />
           </div>
         </div>
-        <div className="chat-title" onClick={props.onClick}>
+        <div className="chat-title">
           <div className="chat-avatar"></div>
           <div className="chat-title-text">
             <h1>{chattingWith.username}</h1>
@@ -488,6 +511,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         {props.conversation.messages.map((message: ChatMessage) => {
           return (
             <ChatMessaegeEl
+              key={message.id}
               message={message}
               isUser={Number(message.sender.userId) === Number(props.userId)}
             />
