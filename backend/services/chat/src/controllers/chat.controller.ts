@@ -73,7 +73,8 @@ export async function removeChat(req: FastifyRequest, res: FastifyReply) {
   return res.send(respond);
 }
 
-export async function getChatById(req: FastifyRequest, res: FastifyReply) {
+export async function getChatById(req: FastifyRequest, res: FastifyReply) 
+{
   const respond: ApiResponse<any> = {
     success: true,
     message: chatMessages.FETCH_SUCCESS,
@@ -83,7 +84,8 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply) {
 
   const { chatId } = req.params as { chatId: string };
 
-  try {
+  try 
+  {
     const fullChat = await prisma.chat.findUnique({
       where: { id: Number(chatId) },
       include: {
@@ -96,8 +98,10 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply) {
     const isMember = fullChat.members.some((m: any) => m.userId === userId);
     if (!isMember) throw new Error(chatMessages.FETCH_NOT_FOUND);
 
+    const unreadCount = fullChat.messages.filter((m: any) => m.senderId !== userId && m.status !== "READ").length;
     const newData = {
       id: fullChat.id,
+      unreadCount,
       lastMessage: fullChat.messages[fullChat.messages.length - 1] || null,
       participants: fullChat.members.map((m: any) => m.user),
       messages: fullChat.messages,
