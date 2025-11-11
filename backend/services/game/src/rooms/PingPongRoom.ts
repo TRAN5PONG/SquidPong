@@ -50,6 +50,7 @@ class MatchState extends Schema {
   @type("string") pauseBy: string | null = null;
 
   @type({ map: "number" }) scores = new MapSchema<number>();
+  @type("string") pointBy: string | null = null;
   @type("number") totalPointsScored: number = 0;
   @type("string") lastHitPlayer: string | null = null;
   @type("string") currentServer: string | null = null;
@@ -92,6 +93,8 @@ export class MatchRoom extends Room<MatchState> {
     // TEST:
     // this.state.totalPointsScored = 100;
     this.state.lastHitPlayer = null;
+    this.state.currentServer = null;
+
     this.setMetadata({
       matchId: options.matchId,
       players: options.players,
@@ -218,6 +221,10 @@ export class MatchRoom extends Room<MatchState> {
   onJoin = async (client: Client, options: any) => {
     const _client = client as any;
 
+    // prints ID of the client that just joined
+    console.log(
+      `Client joined room ${this.roomId} with id ${client.sessionId}`,
+    );
     if (_client.meta.role === "player") {
       // check if player already in room
       const matchPlayer = await prisma.matchPlayer.findFirst({
@@ -253,6 +260,13 @@ export class MatchRoom extends Room<MatchState> {
 
         this.state.players.set(matchPlayer.id, player);
         this.state.scores.set(matchPlayer.id, 0);
+      }
+
+      if (this.state.players.size === 2 && !this.state.currentServer) {
+        const playerIds = Array.from(this.state.players.keys());
+        this.state.currentServer = playerIds[0];
+
+        console.log(`Initial server set to player ${this.state.currentServer}`);
       }
     } else {
       const spectator = new Spectator();
@@ -436,6 +450,7 @@ export class MatchRoom extends Room<MatchState> {
 
     const totalPoints = this.state.totalPointsScored;
 
+    console.log(`Player ${playerId} scored a point. New score: ${current + 1}`);
     // if (current + 1 >= totalPoints) {
     //   this.state.phase = "ended";
     //   this.state.winnerId = playerId;
@@ -463,14 +478,11 @@ export class MatchRoom extends Room<MatchState> {
     this.resetBallForServe(this.state.currentServer!);
   }
   private resetBallForServe(nextServerId: string) {
-    this.state.currentServer = nextServerId;
     this.state.lastHitPlayer = null;
 
     const serveMsg: ballResetMessage = {
       position: { x: 0, y: 2.5, z: 0 },
       velocity: { x: 0, y: 0, z: 0 },
-      lastHitPlayer: null,
-      nextServerId: nextServerId,
     };
 
     this.broadcast("Ball:Reset", serveMsg);
@@ -494,11 +506,6 @@ export class MatchRoom extends Room<MatchState> {
     if (!pointWinner) return;
 
     this.incrementScore(pointWinner);
-    this.broadcast("round:ended", {
-      pointBy: pointWinner,
-      scores: this.getScores(),
-    });
-
     this.serveCount++;
 
     if (this.serveCount >= this.SERVES_PER_TURN) {

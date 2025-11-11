@@ -28,6 +28,8 @@ interface NetworkEvents {
     pointBy: string;
     scores: Record<string, number>;
   }) => void;
+  "serve:Turn": (serverId: string) => void;
+  "lastHitPlayer:updated": (lastHitPlayer: string) => void;
 }
 
 export class Network {
@@ -136,6 +138,22 @@ export class Network {
     $(this.room.state as any).listen("game:StartAt", (startAt: number) => {
       this.emit("game:StartAt", startAt);
     });
+    $(this.room.state as any).listen(
+      "lastHitPlayer",
+      (lastHitPlayer: string) => {
+        this.emit("lastHitPlayer:updated", lastHitPlayer);
+      },
+    );
+    $(this.room.state as any).listen("scores", (scores) => {
+      this.emit("score:update", {
+        scores: scores,
+        pointBy: this.room?.state.lastHitPlayer || "",
+      });
+      console.log("Scores updated:", scores.toJSON());
+    });
+    $(this.room.state as any).listen("currentServer", (currentServer) => {
+      this.emit("serve:Turn", currentServer);
+    });
 
     this.room.onMessage("game:paused", (data) => {
       this.emit("game:paused", data);
@@ -179,10 +197,8 @@ export class Network {
       this.emit("Ball:Reset", data);
     });
 
-    // point scored, here are the updated scores
     this.room.onMessage("round:ended", (data) => {
       this.emit("round:ended", data);
-      this.emit("score:update", data);
     });
   }
 
