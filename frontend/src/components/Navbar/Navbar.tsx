@@ -23,6 +23,8 @@ import { getNotifications, markNotificationAsRead } from "@/api/notification";
 import { NotificationEl } from "@/types/notification";
 import { socketManager } from "@/utils/socket";
 import Toast from "../Toast/Toast";
+import { Conversation } from "@/types/chat";
+import { getConversations } from "@/api/chat";
 
 const StyledNav = styled("div")`
   width: 100%;
@@ -178,6 +180,7 @@ const Navbar = () => {
   // stats
   const [query, setQuery] = useState("");
   const [notifications, setNotifications] = useState<NotificationEl[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   // contexts
   const { currentPath } = useContext(RouterContext);
@@ -199,7 +202,7 @@ const Navbar = () => {
   };
 
   // Fetchs
-  const getNotifs = async () => {
+  const fetchNotifications = async () => {
     if (!user) return;
     try {
       const res = await getNotifications();
@@ -209,6 +212,16 @@ const Navbar = () => {
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
+  };
+  const fetchConversations = async () => {
+    try {
+      const resp = await getConversations();
+      console.log("Fetched conversations:", resp);
+      if (resp.success && resp.data) {
+        setConversations(resp.data);
+        // setIsLoadingConversations(false);
+      }
+    } catch (err: any) {}
   };
 
   useEffect(() => {
@@ -224,7 +237,7 @@ const Navbar = () => {
           } catch (error) {}
         },
       });
-      getNotifs();
+      fetchNotifications();
     });
     return () => {
       socketManager.unsubscribe("notification", () => {});
@@ -233,7 +246,8 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!user) return;
-    getNotifs();
+    fetchNotifications();
+    fetchConversations();
   }, [user]);
 
   return (
@@ -276,7 +290,12 @@ const Navbar = () => {
             className="RightElIcon"
           />
         </div>
-        <div className="RightEl" onClick={toggleChatModal}>
+        <div
+          className={`RightEl ${
+            conversations.length > 0 ? "NotificationON" : ""
+          }`}
+          onClick={toggleChatModal}
+        >
           <ChatIcon size={20} fill="rgba(73, 91, 134, 0.9)" />
         </div>
         <div className="RightEl" onClick={toggleProfileModel}>
@@ -294,7 +313,7 @@ const Navbar = () => {
             setShowNotificationModal(false);
           }}
           notifications={notifications}
-          refetchNotifs={getNotifs}
+          refetchNotifs={fetchNotifications}
         />
       ) : null}
       {showSettingsModal ? (
@@ -313,6 +332,8 @@ const Navbar = () => {
           onClose={() => {
             setShowChatModal(false);
           }}
+          conversations={conversations}
+          refetch_conversations={fetchConversations}
         />
       ) : null}
     </StyledNav>

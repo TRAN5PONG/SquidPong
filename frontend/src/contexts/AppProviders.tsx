@@ -18,7 +18,7 @@ type userData = {
   setPreferences: (preferences: UserPreferences | null) => void;
   chat: {
     activeConversations: string[] | null;
-    setActiveConversations: (conversations: string[] | null) => void;
+    setActiveConversations: (conversations: string[]) => void;
   };
   toasts: {
     toastsQueue: ToastEl[];
@@ -46,9 +46,8 @@ const AppContext = createContext<userData | null>(null);
 export function AppProvider({ children }: { children: ZeroactNode[] }) {
   const [user, setUser] = useState<User | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [activeConversations, setActiveConversations] = useState<
-    string[] | null
-  >(null);
+  const [activeConversations, setActiveConversations] = useState<string[]>([]);
+
   // Toasts management
   const [toastsQueue, setToastsQueue] = useState<ToastEl[]>([]);
   const addToastToQueue = (toast: ToastEl) => {
@@ -92,6 +91,8 @@ export function AppProvider({ children }: { children: ZeroactNode[] }) {
     modalState.resolve?.(false);
     setModalState((prev) => ({ ...prev, show: false, resolve: null }));
   };
+
+
 
   return (
     <AppContext.Provider

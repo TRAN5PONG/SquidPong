@@ -4,10 +4,19 @@ import { styled } from "@/lib/Zerostyle";
 import { CloseIcon, EmojiIcon, MinimizeIcon, SendIcon } from "../Svg/Svg";
 import { UserStatus } from "@/types/user";
 import ChatMessaegeEl from "./ChatMessage";
-import { db } from "@/db";
 import { useAppContext } from "@/contexts/AppProviders";
 import { getMessages, sendMessage } from "@/api/chat";
 import { socketManager } from "@/utils/socket";
+import { useSounds } from "@/contexts/SoundProvider";
+
+type ConversationWithView = ConversationDetails & {
+  viewState: "maximized" | "minimized";
+  lastMessagePreview?: {
+    content: string;
+    sender: string;
+    timestamp: number;
+  };
+};
 
 const StyledChatContainer = styled("div")`
   .MinimizedConvsContainer {
@@ -33,6 +42,7 @@ const StyledChatContainer = styled("div")`
     z-index: 9999;
   }
 `;
+
 const StyledMaximizedConv = styled("div")`
   width: 350px;
   height: 500px;
@@ -82,6 +92,7 @@ const StyledMaximizedConv = styled("div")`
       width: auto;
       display: flex;
       align-items: center;
+      flex: 1;
       .chat-avatar {
         width: 40px;
         height: 40px;
@@ -182,6 +193,7 @@ const StyledMaximizedConv = styled("div")`
     }
   }
 `;
+
 const StyledMinimizedConv = styled("div")`
   width: 50px;
   height: 50px;
@@ -192,6 +204,34 @@ const StyledMinimizedConv = styled("div")`
   border: 1px solid black;
   cursor: pointer;
   position: relative;
+  .unreadCount {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--red_color);
+    border: 1px solid var(--red_light_color);
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--main_font);
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+  .MiniTooltip {
+    position: absolute;
+    left: 60px;
+    width: 200px;
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.7);
+    border : 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
 
   &:after {
     content: "";
@@ -206,163 +246,212 @@ const StyledMinimizedConv = styled("div")`
 `;
 
 export const ChatContainer = () => {
-  const [converstations, setConversations] = useState<ConversationDetails[]>(
+  const [conversations, setConversations] = useState<ConversationWithView[]>(
     []
   );
-  const [minimizedConversations, setMinimizedConversations] = useState<
-    ConversationDetails[]
-  >([]);
-  const [maximizedConversations, setMaximizedConversations] = useState<
-    ConversationDetails[]
-  >([]);
-
-  const appCtx = useAppContext();
+  const { chat, user } = useAppContext();
+  const { msgSentSound, msgReceivedSound } = useSounds();
 
   useEffect(() => {
-    const convsIds: string[] | null = appCtx.chat.activeConversations;
+    const convsIds: string[] | null = chat.activeConversations;
 
     if (!convsIds) {
-      // Clear conversations if no active conversations
       setConversations([]);
-      setMinimizedConversations([]);
-      setMaximizedConversations([]);
       return;
     }
 
-    /**
-     * Fetch
-     */
     const getConversationDetails = async (id: number) => {
       try {
         const resp = await getMessages(id);
         if (resp.success && resp.data) {
           setConversations((prevs) => {
-            if (prevs.find((c) => c.id === resp.data!.id)) return prevs;
-            return [...prevs, resp.data!];
+            const existing = prevs.find((c) => c.id === resp.data!.id);
+            if (existing) return prevs; // Already exists
+
+            return [...prevs, { ...resp.data!, viewState: "maximized" }];
           });
-        } else {
-          console.error("Failed to fetch conversation details:", resp.message);
         }
       } catch (error) {
         console.error("Error fetching conversation details:", error);
       }
     };
 
-    /**
-     * Populate conversations
-     */
     for (const id of convsIds) {
       getConversationDetails(Number(id));
     }
-  }, [appCtx.chat.activeConversations]);
+  }, [chat.activeConversations]);
 
   useEffect(() => {
-    setMinimizedConversations([]);
-    setMaximizedConversations(converstations);
-  }, [converstations]);
+    const handleChatMessage = (data: any) => {
+      if (!data.chatId) return;
 
-  const onMaximizeClick = (conversation: ConversationDetails) => {
-    if (!minimizedConversations) return;
-    if (!maximizedConversations) return;
-    setMinimizedConversations(
-      minimizedConversations.filter((c) => c.id !== conversation.id)
+      console.log("Received message:", data);
+
+      // Check if this conversation is already active
+      const isActive = chat.activeConversations?.includes(data.chatId);
+
+      if (!isActive) {
+        // Open new conversation as maximized
+        console.log("Opening new conversation:", data.chatId);
+        chat.setActiveConversations([
+          ...(chat.activeConversations || []),
+          data.chatId,
+        ]);
+        return;
+      }
+
+      // Conversation is active - update messages
+      msgReceivedSound.play();
+
+      setConversations((prevs) =>
+        prevs.map((conv) => {
+          if (Number(conv.id) !== Number(data.chatId)) return conv;
+
+          // Update messages for this conversation
+          const updatedConv = {
+            ...conv,
+            messages: [...conv.messages, data],
+          };
+
+          // If minimized, add preview tooltip
+          if (conv.viewState === "minimized") {
+            console.log("minimized conversation - adding preview");//todo
+            return {
+              ...updatedConv,
+              lastMessagePreview: {
+                content: data.content || data.text || "New message",
+                sender: data.sender?.username || "Unknown",
+                timestamp: Date.now(),
+              },
+            };
+          }
+
+          // If maximized, just update messages
+          return updatedConv;
+        })
+      );
+    };
+
+    socketManager.subscribe("chat", handleChatMessage);
+
+    return () => {
+      socketManager.unsubscribe("chat", handleChatMessage);
+    };
+  }, [chat.activeConversations]);
+
+  const minimizedConversations = conversations.filter(
+    (c) => c.viewState === "minimized"
+  );
+  const maximizedConversations = conversations.filter(
+    (c) => c.viewState === "maximized"
+  );
+
+  const onMaximizeClick = (conversationId: string) => {
+    setConversations((prevs) =>
+      prevs.map((conv) =>
+        conv.id === conversationId
+          ? { ...conv, viewState: "maximized" as const }
+          : conv
+      )
     );
-    setMaximizedConversations([...maximizedConversations, conversation]);
   };
-  const onMinimizeClick = (conversation: ConversationDetails) => {
-    if (!maximizedConversations) return;
-    if (!minimizedConversations) return;
-    setMaximizedConversations(
-      maximizedConversations.filter((c) => c.id !== conversation.id)
-    );
-    setMinimizedConversations([...minimizedConversations, conversation]);
-  };
-  const onCloseClick = (conversation: ConversationDetails) => {
-    if (!maximizedConversations) return;
-    if (!minimizedConversations) return;
-    setMaximizedConversations(
-      maximizedConversations.filter((c) => c.id !== conversation.id)
-    );
-    setMinimizedConversations(
-      minimizedConversations.filter((c) => c.id !== conversation.id)
+  const onMinimizeClick = (conversationId: string) => {
+    setConversations((prevs) =>
+      prevs.map((conv) =>
+        conv.id === conversationId
+          ? { ...conv, viewState: "minimized" as const }
+          : conv
+      )
     );
   };
 
-  if (!appCtx.user) return null;
+  const onCloseClick = (conversationId: string) => {
+    setConversations((prevs) => prevs.filter((c) => c.id !== conversationId));
+
+    chat.setActiveConversations(
+      chat.activeConversations?.filter((id) => id !== conversationId) || []
+    );
+  };
+
+  if (!user) return null;
 
   return (
     <StyledChatContainer>
       <div className="MinimizedConvsContainer">
-        {minimizedConversations &&
-          minimizedConversations.map((conversation) => {
-            const chattingWith = conversation.participants.find(
-              (p) => Number(p.userId) !== Number(appCtx.user!.userId)
-            );
-            return (
-              <StyledMinimizedConv
-                avatar_url={chattingWith?.avatar}
-                onClick={() => onMaximizeClick(conversation)}
-              />
-            );
-          })}
+        {minimizedConversations.map((conversation) => {
+          const chattingWith = conversation.participants.find(
+            (p) => Number(p.userId) !== Number(user!.userId)
+          );
+          console.log("unread count:", conversation);
+          return (
+            <StyledMinimizedConv
+              key={conversation.id}
+              avatar_url={chattingWith?.avatar}
+              onClick={() => onMaximizeClick(conversation.id)}
+            >
+              <span className="MiniTooltip">
+                {conversation.lastMessagePreview?.content}
+              </span>
+              {conversation.unreadCount && conversation.unreadCount > 0 && (
+                <span className="unreadCount">{conversation.unreadCount}</span>
+              )}
+            </StyledMinimizedConv>
+          );
+        })}
       </div>
       <div className="MaximizedConvsContainer">
-        {maximizedConversations &&
-          maximizedConversations.map((conversation) => {
-            const chattingWith = conversation.participants.find(
-              (p) => Number(p.userId) !== Number(appCtx.user!.userId)
-            );
-            return (
-              <MaximizedConv
-                conversation={conversation}
-                userId={appCtx.user!.userId}
-                chattingWithId={chattingWith?.userId || ""}
-                onClick={() => onMinimizeClick(conversation)}
-                onClose={() => onCloseClick(conversation)}
-                setConversations={setConversations}
-              />
-            );
-          })}
+        {maximizedConversations.map((conversation) => {
+          const chattingWith = conversation.participants.find(
+            (p) => Number(p.userId) !== Number(user!.userId)
+          );
+          return (
+            <MaximizedConv
+              conversation={conversation}
+              userId={user!.userId}
+              chattingWithId={chattingWith?.userId || ""}
+              onMinimize={() => onMinimizeClick(conversation.id)}
+              onClose={() => onCloseClick(conversation.id)}
+              setConversations={setConversations}
+              key={conversation.id}
+            />
+          );
+        })}
       </div>
     </StyledChatContainer>
   );
 };
+
 interface MaximizedConvProps {
-  conversation: ConversationDetails;
+  conversation: ConversationWithView;
   setConversations: (
     value:
-      | ConversationDetails[]
-      | ((prev: ConversationDetails[]) => ConversationDetails[])
+      | ConversationWithView[]
+      | ((prev: ConversationWithView[]) => ConversationWithView[])
   ) => void;
   chattingWithId: string;
   userId: string;
-  onClick: () => void;
-  onClose?: () => void;
+  onMinimize: () => void;
+  onClose: () => void;
+  key: string;
 }
+
 const MaximizedConv = (props: MaximizedConvProps) => {
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
+  const { msgSentSound, msgReceivedSound } = useSounds();
 
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   }, [props.conversation.messages]);
-  /**
-   * states
-   */
+
   const [messageInput, setMessageInput] = Zeroact.useState<string>("");
   const inputRef = Zeroact.useRef<HTMLInputElement>(null);
 
-  /**
-   * checkers
-   */
   const chattingWith = props.conversation.participants.find(
     (p) => p.userId === props.chattingWithId
   );
 
-  /**
-   * handlers
-   */
   const handleSendMessage = async () => {
     if (messageInput.trim() === "") return;
     try {
@@ -371,11 +460,13 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         messageInput
       );
       if (resp.success && resp.data) {
-        console.log("Message sent successfully");
+        msgSentSound.play();
         setMessageInput("");
         if (inputRef.current) {
-          inputRef.current.value = ""; // Manually clear the DOM
+          inputRef.current.value = "";
         }
+
+        // Update only the conversations array
         props.setConversations((prevs) =>
           prevs.map((conv) =>
             conv.id === props.conversation.id
@@ -383,41 +474,22 @@ const MaximizedConv = (props: MaximizedConvProps) => {
               : conv
           )
         );
-      } else {
-        console.error("Failed to send message:", resp.message);
       }
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
 
-  useEffect(() => {
-    socketManager.subscribe("chat", (data: any) => {
-      if (data.chatId) {
-        props.setConversations((prevs) =>
-          prevs.map((conv) =>
-            Number(conv.id) === Number(data.chatId)
-              ? { ...conv, messages: [...conv.messages, data] }
-              : conv
-          )
-        );
-      }
-    });
-
-    return () => {
-      socketManager.unsubscribe("chat", () => {});
-    };
-  }, []);
-
   if (!chattingWith) return null;
+
   return (
     <StyledMaximizedConv
       avatar_url={chattingWith.avatar}
-      userState={chattingWith.status} // here i can later calc most of users statuses
+      userState={chattingWith.status}
     >
-      <div className="chat-header" onClick={props.onClick}>
+      <div className="chat-header">
         <div className="chat-controls">
-          <div className="chat-controle" onClick={props.onClick}>
+          <div className="chat-controle" onClick={props.onMinimize}>
             <MinimizeIcon
               stroke="white"
               size={25}
@@ -439,6 +511,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         {props.conversation.messages.map((message: ChatMessage) => {
           return (
             <ChatMessaegeEl
+              key={message.id}
               message={message}
               isUser={Number(message.sender.userId) === Number(props.userId)}
             />

@@ -217,23 +217,20 @@ const SyledChatModal = styled("div")`
 `;
 interface ChatModalProps {
   onClose: () => void;
+  conversations: Conversation[];
+  refetch_conversations: () => void;
 }
 
 type ChatModalView = "chats" | "newChat";
 
 const ChatModal = (props: ChatModalProps) => {
   const [currentView, setCurrentView] = useState<ChatModalView>("chats");
-  const [isLoadingConversations, setIsLoadingConversations] =
-    useState<boolean>(true);
-  const [Conversations, setConversations] = useState<Conversation[] | null>(
-    null
-  );
-  const [user, setUser] = useState<User | null>(null);
+
   const [friends, setFriends] = useState<MiniUser[]>([]);
   const [query, setQuery] = useState<string>("");
 
   const ModalRef = useRef<HTMLDivElement>(null);
-  const appCtx = useAppContext();
+  const { user, chat } = useAppContext();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -251,11 +248,12 @@ const ChatModal = (props: ChatModalProps) => {
   }, [ModalRef, props]);
 
   const OnMessageClick = (conversation: Conversation) => {
-    if (appCtx.chat.activeConversations?.includes(conversation.id)) {
+    if (chat.activeConversations?.includes(conversation.id)) {
+      console.log("bec of here");
       return;
     }
-    appCtx.chat.setActiveConversations([
-      ...(appCtx.chat.activeConversations || []),
+    chat.setActiveConversations([
+      ...(chat.activeConversations || []),
       conversation.id,
     ]);
     props.onClose();
@@ -292,20 +290,13 @@ const ChatModal = (props: ChatModalProps) => {
   /**
    * Fetch conversations
    */
-  const fetchConversations = async () => {
-    try {
-      const resp = await getConversations();
-      if (resp.success && resp.data) {
-        setConversations(resp.data);
-        setIsLoadingConversations(false);
-      }
-    } catch (err: any) {}
-  };
+
   const startNewConversation = async (friendId: string) => {
     try {
       const resp = await newConversation(friendId);
+      console.log(resp)
       if (resp.success) {
-        fetchConversations();
+        props.refetch_conversations();
         setCurrentView("chats");
       }
     } catch (err) {
@@ -314,16 +305,10 @@ const ChatModal = (props: ChatModalProps) => {
   };
 
   useEffect(() => {
-    if (currentView === "chats") {
-      fetchConversations();
-    } else {
+    if (currentView === "newChat") {
       fetchFriends();
     }
   }, [currentView]);
-
-  useEffect(() => {
-    setUser(appCtx.user);
-  }, [appCtx.user]); // todo : i may delete this useEffect
 
   if (!user) return null;
 
@@ -342,31 +327,34 @@ const ChatModal = (props: ChatModalProps) => {
               <span>Create DM</span>
             </div>
           </div>
-          {isLoadingConversations ? (
-            Array.from({ length: 5 }).map((_, index) => (
-              <Skeleton
-                dark={true}
-                width="100%"
-                height="50px"
-                borderRadius={5}
-                gap={5}
-                animation="hybrid"
-                index={index + 1}
-              />
-            ))
-          ) : Conversations && Conversations.length > 0 ? (
-            Conversations.map((converstaion: Conversation, key) => {
-              return (
-                <ChatItem
-                  converstation={converstaion}
-                  userId={user?.userId}
-                  onClick={OnMessageClick}
-                />
-              );
-            })
-          ) : (
-            <span className="NFoundSpan">No conversations started yet.</span>
-          )}
+          {
+            // isLoadingConversations ? (
+            //   Array.from({ length: 5 }).map((_, index) => (
+            //     <Skeleton
+            //       dark={true}
+            //       width="100%"
+            //       height="50px"
+            //       borderRadius={5}
+            //       gap={5}
+            //       animation="hybrid"
+            //       index={index + 1}
+            //     />
+            //   ))
+            // ) :
+            props.conversations && props.conversations.length > 0 ? (
+              props.conversations.map((converstaion: Conversation, key) => {
+                return (
+                  <ChatItem
+                    converstation={converstaion}
+                    userId={user?.userId}
+                    onClick={OnMessageClick}
+                  />
+                );
+              })
+            ) : (
+              <span className="NFoundSpan">No conversations started yet.</span>
+            )
+          }
         </div>
       ) : (
         <div className="NewChatContainer">
