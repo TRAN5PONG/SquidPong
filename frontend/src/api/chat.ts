@@ -122,6 +122,16 @@ export const getMessageReactions = async (
 
   return resp.json();
 };
+export const markConversationAsRead = async (
+  conversationId: number
+) : Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/chat/${conversationId}/read`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+
+  return resp.json();
+}
 /**
  * Reactions
  */
