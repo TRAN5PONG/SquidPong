@@ -70,7 +70,6 @@ async function onChatNotificationMessage(this:any , message: any)
   }
   catch (error)
   {
-
     console.error("Error processing chat-notification message:", error);
   }
 
@@ -87,9 +86,7 @@ async function onClientDisconnect(ws: any)
 
   try 
   {
-
-    if (ws.readyState === ws.OPEN)
-      ws.close();
+    // if (ws.readyState === ws.OPEN) ws.close();
 
     onlineUsers.delete(`socket:${userId}`);
     await redis.srem('online_users', userId);
