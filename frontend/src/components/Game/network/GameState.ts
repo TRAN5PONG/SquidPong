@@ -1,5 +1,5 @@
 import { MatchPlayer } from "@/types/game/game";
-import { Schema } from "@colyseus/schema";
+import { MapSchema, Schema } from "@colyseus/schema";
 
 interface Spectator {
   id: string;
@@ -20,7 +20,8 @@ export interface MatchState extends Schema {
   countdown: number;
   winnerId: string | null;
   pauseBy: string | null;
-  scores: Map<string, number>;
+
+  scores: MapSchema<number>;
   lastHitPlayer: string | null;
   currentServer: string | null;
 }

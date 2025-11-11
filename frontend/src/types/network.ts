@@ -39,6 +39,4 @@ export interface PaddleState {
 export interface ballResetMessage {
   position: BallState;
   velocity: BallState;
-  lastHitPlayer: string | null;
-  nextServerId: string | null;
 }

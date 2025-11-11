@@ -8,7 +8,7 @@ import { RollbackManager } from "./RollbackManager";
 import { BallHitMessage, ballResetMessage, PaddleState } from "@/types/network";
 import { Scene, Plane } from "@babylonjs/core";
 import { PointerEventTypes } from "@babylonjs/core";
-
+import { BallTrajectory } from "../physics/ballTrajectory";
 // debug paddle
 import { DebugMeshManager } from "../../Game/DebugMeshManager.ts";
 
@@ -44,6 +44,8 @@ export class GameController {
     [];
   private readonly MAX_SIZE: number = 6;
 
+  // TEST:
+  private gameCamera: GameCamera | null = null;
   // TEST: Mouse tracking
   private clampedX: number = 0;
   private clampedZ: number = 0;
@@ -75,8 +77,6 @@ export class GameController {
     // Debug
     this.debugMeshes = new DebugMeshManager(this.scene);
     // this.debugMeshes.createMeshes();
-    // For now, right paddle always serves first just for testing
-    this.MyTurnToServe = this.localPaddle.side === "RIGHT" ? true : false;
 
     // Listen for opponent paddle updates
     this.net.on("opponent:paddle", (data) => {
@@ -122,10 +122,22 @@ export class GameController {
 
     // Listen for ball reset (new round)
     this.net.on("Ball:Reset", (data: ballResetMessage) => {
-      console.log("Received Ball:Reset message:", data);
       this.resetRound(data);
     });
 
+    // Listen for serve Turn updates
+    this.net.on("serve:Turn", (currentServerId: string) => {
+      this.MyTurnToServe = currentServerId === this.playerId;
+
+      console.log(
+        `It's now ${this.MyTurnToServe ? "my" : "opponent's"} turn to serve.`,
+      );
+    });
+
+    // Listen Last Hit Player updates
+    this.net.on("lastHitPlayer:updated", (lastHitPlayerId: string) => {
+      this.lasthitPlayerId = lastHitPlayerId;
+    });
     // Listen for mouse click to serve
     this.scene.onPointerObservable.add((pointerInfo) => {
       if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
@@ -138,7 +150,6 @@ export class GameController {
           // left click
           console.log("Pointer down event detected");
           this.BallServe();
-          this.gameState = GameState.IN_PLAY;
         }
       }
     });
@@ -354,29 +365,37 @@ export class GameController {
       let ballVel: Vector3;
       let isServe = false; // Track if this is a serve
 
-      // if (this.gameState === GameState.WAITING_FOR_SERVE) {
-      //   // === SERVE HIT ===
-      //   isServe = true; // Mark as serve
-      //   ballVel = this.physics.calculateServeVelocity(
-      //     ball.translation(),
-      //     paddle.translation(),
-      //   );
-      //   this.physics.setBallSpin(0, 0, 0);
-      //   this.physics.setApplySpin(false);
-      //
-      //   // Update game state
-      //   this.gameState = GameState.IN_PLAY;
-      // } else {
-      // === RALLY HIT ===
-      const spinCalc = this.calculateMagnusSpin(paddleSpeed, paddleVelocity.x);
-      this.physics.setBallSpin(0, spinCalc.spinY, 0);
-      this.physics.setApplySpin(spinCalc.applySpin);
+      if (this.gameState === GameState.WAITING_FOR_SERVE) {
+        // === SERVE HIT ===
+        isServe = true;
+        ballVel = BallTrajectory.calculateTrajectory(
+          ball.translation(),
+          paddle.translation(),
+          paddleVelocity,
+          false,
+          paddleSpeed,
+          "serve",
+        );
+        this.physics.setBallSpin(0, 0, 0);
+        this.physics.setApplySpin(false);
+      } else {
+        // === RALLY HIT ===
+        const spinCalc = this.calculateMagnusSpin(
+          paddleSpeed,
+          paddleVelocity.x,
+        );
+        this.physics.setBallSpin(0, spinCalc.spinY, 0);
+        // this.physics.setApplySpin(spinCalc.applySpin);
 
-      ballVel = this.physics.calculateTrajectory(
-        ball.translation(),
-        paddle.translation(),
-      );
-      // }
+        ballVel = BallTrajectory.calculateTrajectory(
+          ball.translation(),
+          paddle.translation(),
+          paddleVelocity,
+          spinCalc.applySpin,
+          paddleSpeed,
+          "play",
+        );
+      }
 
       const currentVel = ball.linvel();
       const mass = ball.mass();
@@ -408,13 +427,13 @@ export class GameController {
       };
 
       // Send correct message type based on whether it's a serve or rally hit
-      // if (isServe) {
-      //   console.log("==== Sending Ball:Serve message ====");
-      //   this.net.sendMessage("Ball:Serve", hitMsg);
-      // } else {
-      // console.log("==== Sending Ball:HitMessage ====");
-      this.net.sendMessage("Ball:HitMessage", hitMsg);
-      // }
+      if (isServe) {
+        console.log("==== Sending Ball:Serve message ====");
+        this.net.sendMessage("Ball:Serve", hitMsg);
+      } else {
+        console.log("==== Sending Ball:HitMessage ====");
+        this.net.sendMessage("Ball:HitMessage", hitMsg);
+      }
     };
     // Ball with floor collision callback
     this.physics.onBallFloorCollision = (ball, floor) => {
@@ -529,7 +548,7 @@ export class GameController {
 
         spinY = -spinY;
         applySpin = true;
-        this.ball.activateFireEffect();
+        // this.ball.activateFireEffect();
       }
     }
 
@@ -573,15 +592,11 @@ export class GameController {
     this.lastTableBounceSide = null;
     this.hasBouncedOnce = false;
     this.serverSideBounced = false;
-
-    // Set who last hit based on who's serving
-    this.MyTurnToServe = data.nextServerId === this.net.getPlayerId();
-    this.lasthitPlayerId = this.MyTurnToServe
-      ? this.playerId
-      : data.nextServerId;
   }
+
   // ==================== Serve methods =================
   public BallServe(): void {
+    this.gameState = GameState.IN_PLAY;
     this.physics.setBallFrozen(false);
     const serveVelocity = new Vector3(0, 2.5, 0);
     const ballPos = this.ball.getMeshPosition();

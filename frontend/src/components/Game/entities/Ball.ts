@@ -35,6 +35,7 @@ export class Ball {
       this.meshGroup = group;
 
       this.setupFireEffect();
+      this.activateFireEffect();
       this.mesh.scaling.scaleInPlace(2);
     } catch (error) {
       console.error("Error loading ball model:", error);
@@ -68,8 +69,8 @@ export class Ball {
 
     // Emit from the ball - SMALLER emission area so particles stay close
     this.particleSystem.emitter = this.mesh;
-    this.particleSystem.minEmitBox = new Vector3(-0.05, -0.05, -0.05);
-    this.particleSystem.maxEmitBox = new Vector3(0.05, 0.05, 0.05);
+    this.particleSystem.minEmitBox = new Vector3(-0.03, -0.03, -0.03);
+    this.particleSystem.maxEmitBox = new Vector3(0.03, 0.03, 0.03);
 
     // FIRE COLORS - Red/Orange/Yellow gradient
     // this.particleSystem.color1 = new Color4(1, 0.2, 0, 1.0); // Bright red-orange
@@ -90,9 +91,10 @@ export class Ball {
     this.particleSystem.color1 = new Color4(0.1, 0.1, 0.1, 1.0); // Dark gray
     this.particleSystem.color2 = new Color4(0.05, 0.05, 0.05, 1.0); // Almost black
     this.particleSystem.colorDead = new Color4(0, 0, 0, 0.0); // Black fade
+
     // Smaller particles that stay close
-    this.particleSystem.minSize = 0.001;
-    this.particleSystem.maxSize = 0.5;
+    this.particleSystem.minSize = 0.1;
+    this.particleSystem.maxSize = 0.2;
 
     // Shorter lifetime so particles don't spread far
     this.particleSystem.minLifeTime = 0.1;
@@ -105,9 +107,9 @@ export class Ball {
     this.particleSystem.blendMode = ParticleSystem.BLENDMODE_ONEONE;
 
     // LOW speed so particles stay attached to ball
-    this.particleSystem.minEmitPower = 0.5;
+    this.particleSystem.minEmitPower = 0.8;
     this.particleSystem.maxEmitPower = 1.5;
-    this.particleSystem.updateSpeed = 0.005;
+    this.particleSystem.updateSpeed = 0.002;
 
     // NO gravity - we want fire to follow the ball
     this.particleSystem.gravity = new Vector3(0, 0, 0);

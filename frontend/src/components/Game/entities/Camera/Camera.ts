@@ -11,8 +11,8 @@ export abstract class Camera {
 
     // common config
     this.camera.allowUpsideDown = false;
-    // this.camera.lowerRadiusLimit = 2;
-    // this.camera.upperRadiusLimit = 20;
+    this.camera.lowerRadiusLimit = 10;
+    this.camera.upperRadiusLimit = 20;
   }
 
   protected abstract setupPosition(): void;

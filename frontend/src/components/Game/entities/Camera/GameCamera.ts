@@ -19,6 +19,7 @@ export class GameCamera extends Camera {
       this.camera.setPosition(new Vector3(0, 5.6, -11.8));
       this.camera.setTarget(new Vector3(0, 3, 0));
     }
+
+    this.camera.radius = 12;
   }
 }
-
