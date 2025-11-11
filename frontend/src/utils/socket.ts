@@ -29,6 +29,23 @@ class SocketManager {
         return;
       }
     };
+
+    this.socket.onerror = (error) => {
+      console.error("[WebSocket] Error occurred:", error);
+    };
+    this.socket.onopen = () => {
+      console.log("[WebSocket] Connection established");
+    };
+    this.socket.onclose = (event) => {
+      console.warn(
+        `[WebSocket] Connection closed (code: ${event.code}, reason: ${
+          event.reason || "no reason"
+        })`
+      );
+
+      // Optional: auto-reconnect logic
+      // setTimeout(() => this.connect(url), 3000);
+    };
   }
 
   subscribe(event: string, handler: EventHandler) {

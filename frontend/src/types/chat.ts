@@ -2,13 +2,24 @@ import { GameInvitation } from "./invite";
 import { User } from "./user";
 
 export type ChatType = "private" | "tournament";
-export type ChatReactionType = "like" | "dislike" | "laugh" | "sad" | "angry";
+export type ChatReactionType =
+  | "LIKE"
+  | "FUCK"
+  | "LAUGH"
+  | "SAD"
+  | "ANGRY"
+  | "WOW"
+  | "LOVE";
 export type ChatMessageType = "text" | "invite";
-export type ChatMessageStatus = "sent" | "delivered" | "read";
+export type ChatMessageStatus = "SENT" | "DELIVERED" | "READ";
 
 export interface ChatReaction {
-  from: User;
-  type: ChatReactionType;
+  emoji: ChatReactionType;
+  count: number;
+  id: number;
+  messageId: number;
+  timestamp: Date;
+  userId: string;
 }
 
 export interface ChatMessage {
