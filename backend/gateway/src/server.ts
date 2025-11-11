@@ -16,6 +16,7 @@ const host = process.env.GATEWAY_HOST // 0.0.0.0
 
 
 
+
 async function start() 
 {
 	try 
