@@ -1,15 +1,20 @@
-import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { ChatMessage, ConversationDetails } from "@/types/chat";
 import { styled } from "@/lib/Zerostyle";
 import { CloseIcon, EmojiIcon, MinimizeIcon, SendIcon } from "../Svg/Svg";
 import { UserStatus } from "@/types/user";
 import ChatMessaegeEl from "./ChatMessage";
 import { useAppContext } from "@/contexts/AppProviders";
-import { getMessages, sendMessage } from "@/api/chat";
+import {
+  getMessages,
+  markConversationAsRead,
+  replyToMessage,
+  sendMessage,
+} from "@/api/chat";
 import { socketManager } from "@/utils/socket";
 import { useSounds } from "@/contexts/SoundProvider";
 
-type ConversationWithView = ConversationDetails & {
+export type ConversationWithView = ConversationDetails & {
   viewState: "maximized" | "minimized";
   lastMessagePreview?: {
     content: string;
@@ -17,7 +22,6 @@ type ConversationWithView = ConversationDetails & {
     timestamp: number;
   };
 };
-
 const StyledChatContainer = styled("div")`
   .MinimizedConvsContainer {
     height: 100%;
@@ -42,7 +46,6 @@ const StyledChatContainer = styled("div")`
     z-index: 9999;
   }
 `;
-
 const StyledMaximizedConv = styled("div")`
   width: 350px;
   height: 500px;
@@ -61,7 +64,7 @@ const StyledMaximizedConv = styled("div")`
   .chat-header {
     height: 50px;
     width: 100%;
-    background-color: rgba(141, 172, 245, 0.863);
+    background-color: var(--main_color);
     display: flex;
     flex-direction: row-reverse;
     justify-content: space-between;
@@ -142,6 +145,42 @@ const StyledMaximizedConv = styled("div")`
     overflow-y: scroll;
     position: relative;
   }
+  .replyingToContainer {
+    background: linear-gradient(
+      180deg,
+      rgb(27, 26, 31, 0.7),
+      rgba(255, 255, 255, 0)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: none;
+    border-right: none;
+    border-radius: 4px 4px 0 0;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    width: 100%;
+    height: 100px;
+    position: absolute;
+    bottom: 0px;
+    left: 0;
+    padding: 10px;
+    display: flex;
+
+    .ReplyingToText {
+      color: white;
+      font-family: var(--main_font);
+      opacity: 0.8;
+    }
+    .closeIcon {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      cursor: pointer;
+      svg:hover {
+        opacity: 0.8;
+        fill: var(--red_color);
+      }
+    }
+  }
   .chat-input-container {
     position: absolute;
     bottom: 5px;
@@ -193,7 +232,6 @@ const StyledMaximizedConv = styled("div")`
     }
   }
 `;
-
 const StyledMinimizedConv = styled("div")`
   width: 50px;
   height: 50px;
@@ -224,13 +262,17 @@ const StyledMinimizedConv = styled("div")`
   .MiniTooltip {
     position: absolute;
     left: 60px;
-    width: 200px;
-    height: 50px;
     border-radius: 5px;
     background: rgba(0, 0, 0, 0.7);
-    border : 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
+    font-size: 0.8rem;
+    color: white;
+    font-family: var(--main_font);
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
   }
 
   &:after {
@@ -244,7 +286,6 @@ const StyledMinimizedConv = styled("div")`
     right: 3px;
   }
 `;
-
 export const ChatContainer = () => {
   const [conversations, setConversations] = useState<ConversationWithView[]>(
     []
@@ -264,6 +305,7 @@ export const ChatContainer = () => {
       try {
         const resp = await getMessages(id);
         if (resp.success && resp.data) {
+          console.log(resp.data);
           setConversations((prevs) => {
             const existing = prevs.find((c) => c.id === resp.data!.id);
             if (existing) return prevs; // Already exists
@@ -285,37 +327,40 @@ export const ChatContainer = () => {
     const handleChatMessage = (data: any) => {
       if (!data.chatId) return;
 
-      console.log("Received message:", data);
+      setConversations((prevConversations) => {
+        // Check if conversation exists in current state
+        const existingConv = prevConversations.find(
+          (c) => Number(c.id) === Number(data.chatId)
+        );
 
-      // Check if this conversation is already active
-      const isActive = chat.activeConversations?.includes(data.chatId);
+        // If conversation doesn't exist, we need to open it
+        if (!existingConv) {
+          // Trigger opening new conversation
+          chat.setActiveConversations([
+            ...(chat.activeConversations || []),
+            data.chatId,
+          ]);
+          return prevConversations; // Don't update yet, will update when conversation loads
+        }
 
-      if (!isActive) {
-        // Open new conversation as maximized
-        console.log("Opening new conversation:", data.chatId);
-        chat.setActiveConversations([
-          ...(chat.activeConversations || []),
-          data.chatId,
-        ]);
-        return;
-      }
+        msgReceivedSound.play();
 
-      // Conversation is active - update messages
-      msgReceivedSound.play();
-
-      setConversations((prevs) =>
-        prevs.map((conv) => {
+        return prevConversations.map((conv) => {
           if (Number(conv.id) !== Number(data.chatId)) return conv;
 
-          // Update messages for this conversation
-          const updatedConv = {
-            ...conv,
-            messages: [...conv.messages, data],
-          };
+          // Check if this message already exists (edited case)
+          const messageExists = conv.messages.some((m) => m.id === data.id);
 
-          // If minimized, add preview tooltip
+          const updatedMessages = messageExists
+            ? conv.messages.map((m) =>
+                m.id === data.id ? { ...m, ...data } : m
+              )
+            : [...conv.messages, data];
+
+          const updatedConv = { ...conv, messages: updatedMessages };
+
+          // If minimized, add preview
           if (conv.viewState === "minimized") {
-            console.log("minimized conversation - adding preview");//todo
             return {
               ...updatedConv,
               lastMessagePreview: {
@@ -326,10 +371,9 @@ export const ChatContainer = () => {
             };
           }
 
-          // If maximized, just update messages
           return updatedConv;
-        })
-      );
+        });
+      });
     };
 
     socketManager.subscribe("chat", handleChatMessage);
@@ -337,7 +381,7 @@ export const ChatContainer = () => {
     return () => {
       socketManager.unsubscribe("chat", handleChatMessage);
     };
-  }, [chat.activeConversations]);
+  }, []); // Empty dependency - subscribe once
 
   const minimizedConversations = conversations.filter(
     (c) => c.viewState === "minimized"
@@ -345,7 +389,6 @@ export const ChatContainer = () => {
   const maximizedConversations = conversations.filter(
     (c) => c.viewState === "maximized"
   );
-
   const onMaximizeClick = (conversationId: string) => {
     setConversations((prevs) =>
       prevs.map((conv) =>
@@ -364,7 +407,6 @@ export const ChatContainer = () => {
       )
     );
   };
-
   const onCloseClick = (conversationId: string) => {
     setConversations((prevs) => prevs.filter((c) => c.id !== conversationId));
 
@@ -372,6 +414,20 @@ export const ChatContainer = () => {
       chat.activeConversations?.filter((id) => id !== conversationId) || []
     );
   };
+
+  useEffect(() => {
+    if (!conversations.some((c) => c.lastMessagePreview)) return;
+    const interval = setInterval(() => {
+      setConversations((prevs) =>
+        prevs.map((conv) => ({
+          ...conv,
+          lastMessagePreview: undefined,
+        }))
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [conversations]);
 
   if (!user) return null;
 
@@ -382,16 +438,18 @@ export const ChatContainer = () => {
           const chattingWith = conversation.participants.find(
             (p) => Number(p.userId) !== Number(user!.userId)
           );
-          console.log("unread count:", conversation);
           return (
             <StyledMinimizedConv
               key={conversation.id}
               avatar_url={chattingWith?.avatar}
               onClick={() => onMaximizeClick(conversation.id)}
             >
-              <span className="MiniTooltip">
-                {conversation.lastMessagePreview?.content}
-              </span>
+              {conversation.lastMessagePreview?.content && (
+                <span className="MiniTooltip">
+                  {conversation.lastMessagePreview?.content}
+                </span>
+              )}
+
               {conversation.unreadCount && conversation.unreadCount > 0 && (
                 <span className="unreadCount">{conversation.unreadCount}</span>
               )}
@@ -420,7 +478,6 @@ export const ChatContainer = () => {
     </StyledChatContainer>
   );
 };
-
 interface MaximizedConvProps {
   conversation: ConversationWithView;
   setConversations: (
@@ -434,7 +491,6 @@ interface MaximizedConvProps {
   onClose: () => void;
   key: string;
 }
-
 const MaximizedConv = (props: MaximizedConvProps) => {
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
   const { msgSentSound, msgReceivedSound } = useSounds();
@@ -446,6 +502,9 @@ const MaximizedConv = (props: MaximizedConvProps) => {
   }, [props.conversation.messages]);
 
   const [messageInput, setMessageInput] = Zeroact.useState<string>("");
+  const [isReplyingTo, setIsReplyingTo] = Zeroact.useState<ChatMessage | null>(
+    null
+  );
   const inputRef = Zeroact.useRef<HTMLInputElement>(null);
 
   const chattingWith = props.conversation.participants.find(
@@ -455,30 +514,76 @@ const MaximizedConv = (props: MaximizedConvProps) => {
   const handleSendMessage = async () => {
     if (messageInput.trim() === "") return;
     try {
-      const resp = await sendMessage(
-        Number(props.conversation.id),
-        messageInput
-      );
-      if (resp.success && resp.data) {
-        msgSentSound.play();
-        setMessageInput("");
-        if (inputRef.current) {
-          inputRef.current.value = "";
-        }
+      if (isReplyingTo) {
+        const resp = await replyToMessage(isReplyingTo.id, messageInput);
+        if (resp.success && resp.data) {
+          msgSentSound.play();
+          setMessageInput("");
+          setIsReplyingTo(null);
+          if (inputRef.current) {
+            inputRef.current.value = "";
+          }
 
-        // Update only the conversations array
-        props.setConversations((prevs) =>
-          prevs.map((conv) =>
-            conv.id === props.conversation.id
-              ? { ...conv, messages: [...conv.messages, resp.data!] }
-              : conv
-          )
+          // Update only the conversations array
+          props.setConversations((prevs) =>
+            prevs.map((conv) =>
+              conv.id === props.conversation.id
+                ? { ...conv, messages: [...conv.messages, resp.data!] }
+                : conv
+            )
+          );
+        }
+      } else {
+        const resp = await sendMessage(
+          Number(props.conversation.id),
+          messageInput
         );
+        if (resp.success && resp.data) {
+          msgSentSound.play();
+          setMessageInput("");
+          if (inputRef.current) {
+            inputRef.current.value = "";
+          }
+
+          // Update only the conversations array
+          props.setConversations((prevs) =>
+            prevs.map((conv) =>
+              conv.id === props.conversation.id
+                ? { ...conv, messages: [...conv.messages, resp.data!] }
+                : conv
+            )
+          );
+        }
       }
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
+  const markConvAsRead = async () => {
+    try {
+      const resp = await markConversationAsRead(Number(props.conversation.id));
+      if (!resp) {
+        console.error("Failed to mark conversation as read");
+        return;
+      }
+    } catch (err) {
+      console.error("Error marking conversation as read:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+    // get last message of the other user
+    const lastMessageFromOtherUser = [...props.conversation.messages]
+      .reverse()
+      .find((m) => Number(m.sender.userId) !== Number(props.userId));
+
+    if (lastMessageFromOtherUser?.status !== "READ") {
+      markConvAsRead();
+    }
+  }, []);
 
   if (!chattingWith) return null;
 
@@ -500,7 +605,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
             <CloseIcon fill="white" size={23} className="chat-controle-icon" />
           </div>
         </div>
-        <div className="chat-title">
+        <div className="chat-title" onClick={props.onMinimize}>
           <div className="chat-avatar"></div>
           <div className="chat-title-text">
             <h1>{chattingWith.username}</h1>
@@ -513,11 +618,26 @@ const MaximizedConv = (props: MaximizedConvProps) => {
             <ChatMessaegeEl
               key={message.id}
               message={message}
+              conversationId={props.conversation.id}
+              setConversations={props.setConversations}
               isUser={Number(message.sender.userId) === Number(props.userId)}
+              userId={props.userId}
+              setIsReplyingTo={setIsReplyingTo}
+              id={`message-${message.id}`}
             />
           );
         })}
       </div>
+      {isReplyingTo && (
+        <div className="replyingToContainer">
+          <div className="closeIcon" onClick={() => setIsReplyingTo(null)}>
+            <CloseIcon fill="rgba(255, 255,255, 0.6)" size={20} />
+          </div>
+          <span className="ReplyingToText">
+            Replying to: {isReplyingTo.content}
+          </span>
+        </div>
+      )}
       <div className="chat-input-container">
         <a onClick={() => handleSendMessage()} className="SendSvg">
           <SendIcon fill="white" size={25} />
