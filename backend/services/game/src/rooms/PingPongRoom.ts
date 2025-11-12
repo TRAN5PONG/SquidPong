@@ -54,6 +54,9 @@ class MatchState extends Schema {
   @type("number") totalPointsScored: number = 0;
   @type("string") lastHitPlayer: string | null = null;
   @type("string") currentServer: string | null = null;
+
+  @type("string") serveState: "waiting_for_serve" | "in_play" =
+    "waiting_for_serve";
 }
 
 // --- Room ---
@@ -133,10 +136,15 @@ export class MatchRoom extends Room<MatchState> {
     // ball hit event from host
     this.onMessage("Ball:HitMessage", (client, message) => {
       this.state.lastHitPlayer = message.playerId;
+      this.state.serveState = "in_play";
       this.broadcast("Ball:HitMessage", message, { except: client });
     });
     // ball serve event from host
     this.onMessage("Ball:Serve", (client, message) => {
+      this.state.lastHitPlayer = message.playerId;
+      this.state.serveState = "in_play";
+
+      console.log(`🎾 Ball served by player ${message.playerId}`);
       this.broadcast("Ball:Serve", message, { except: client });
     });
 
@@ -459,29 +467,45 @@ export class MatchRoom extends Room<MatchState> {
   }
 
   private handleFailedServe(failingPlayerId: string) {
-    const opponentId = Array.from(this.state.players.keys()).find(
-      (id) => id !== failingPlayerId,
-    );
-    if (!opponentId) return;
+    console.log(`❌ Serve failed by player ${failingPlayerId}`);
 
-    // Opponent gets the point
-    this.incrementScore(opponentId);
+    const playerIds = Array.from(this.state.players.keys());
+    const opponentId = playerIds.find((id) => id !== failingPlayerId);
 
-    // Increment serve count and potentially switch server
-    this.serveCount++;
-
-    if (this.serveCount >= this.SERVES_PER_TURN) {
-      this.serveCount = 0;
-      this.state.currentServer = opponentId; // Switch to opponent
+    if (!opponentId) {
+      console.error("❌ Could not find opponent!");
+      return;
     }
 
+    // Opponent gets the point for failed serve
+    this.incrementScore(opponentId);
+
+    this.serveCount++;
+    console.log(
+      `📊 Failed serve counts. Serve count: ${this.serveCount}/${this.SERVES_PER_TURN} for server ${this.state.currentServer}`,
+    );
+
+    if (this.serveCount >= this.SERVES_PER_TURN) {
+      this.state.currentServer = opponentId;
+      this.serveCount = 0;
+      console.log(
+        `🔄 Switching server to ${this.state.currentServer} (completed ${this.SERVES_PER_TURN} serves)`,
+      );
+    }
+
+    // Reset ball for next serve
     this.resetBallForServe(this.state.currentServer!);
   }
+
   private resetBallForServe(nextServerId: string) {
+    console.log(`🎾 Resetting ball for server: ${nextServerId}`);
+
+    this.state.serveState = "waiting_for_serve";
+    this.state.currentServer = nextServerId;
     this.state.lastHitPlayer = null;
 
     const serveMsg: ballResetMessage = {
-      position: { x: 0, y: 2.5, z: 0 },
+      position: { x: 0, y: 4, z: 0 },
       velocity: { x: 0, y: 0, z: 0 },
     };
 
@@ -498,27 +522,43 @@ export class MatchRoom extends Room<MatchState> {
       // Ball went out without anyone hitting it - server fault
       const server = this.state.currentServer;
       pointWinner = playerIds.find((id) => id !== server) || null;
+      console.log(`⚠️ Ball out with no hitter - Server ${server} faulted`);
     } else {
       // Last hitter hit it out - opponent gets the point
       pointWinner = playerIds.find((id) => id !== lastHitter) || null;
+      console.log(
+        `⚠️ Player ${lastHitter} hit ball out - Opponent ${pointWinner} gets point`,
+      );
     }
 
-    if (!pointWinner) return;
+    if (!pointWinner) {
+      console.error("❌ Could not determine point winner!");
+      return;
+    }
 
+    // Award the point
     this.incrementScore(pointWinner);
+
     this.serveCount++;
+    console.log(
+      `📊 Serve count: ${this.serveCount}/${this.SERVES_PER_TURN} for server ${this.state.currentServer}`,
+    );
 
     if (this.serveCount >= this.SERVES_PER_TURN) {
       const nextServerId = playerIds.find(
         (id) => id !== this.state.currentServer,
       );
-
-      this.serveCount = 0;
       this.state.currentServer = nextServerId || this.state.currentServer;
+      this.serveCount = 0;
+      console.log(
+        `🔄 Switching server to ${this.state.currentServer} (completed ${this.SERVES_PER_TURN} serves)`,
+      );
     }
 
+    // Reset ball for next serve
     this.resetBallForServe(this.state.currentServer!);
   }
+
   private getScores() {
     const scores: Record<string, number> = {};
     this.state.scores.forEach((score, playerId) => {

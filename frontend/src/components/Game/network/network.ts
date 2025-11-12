@@ -30,6 +30,7 @@ interface NetworkEvents {
   }) => void;
   "serve:Turn": (serverId: string) => void;
   "lastHitPlayer:updated": (lastHitPlayer: string) => void;
+  "serveState:changed": (serveState: "waiting_for_serve" | "in_play") => void;
 }
 
 export class Network {
@@ -144,13 +145,26 @@ export class Network {
         this.emit("lastHitPlayer:updated", lastHitPlayer);
       },
     );
-    $(this.room.state as any).listen("scores", (scores) => {
-      this.emit("score:update", {
-        scores: scores,
-        pointBy: this.room?.state.lastHitPlayer || "",
-      });
-      console.log("Scores updated:", scores.toJSON());
+    $(this.room.state as any).listen("serveState", (serveState: string) => {
+      this.emit("serveState:changed", serveState);
     });
+    // Listen to score changes properly
+    $(this.room.state as any).scores.onChange(
+      (score: number, playerId: string) => {
+        console.log(`Score changed for player ${playerId}: ${score}`);
+
+        // Emit score update event
+        const allScores: Record<string, number> = {};
+        this.room!.state.scores.forEach((s, pId) => {
+          allScores[pId] = s;
+        });
+
+        this.emit("score:update", {
+          scores: allScores,
+          pointBy: playerId,
+        });
+      },
+    );
     $(this.room.state as any).listen("currentServer", (currentServer) => {
       this.emit("serve:Turn", currentServer);
     });

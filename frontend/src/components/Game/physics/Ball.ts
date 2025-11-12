@@ -71,4 +71,12 @@ export class Ball {
       true,
     );
   }
+
+  public setCollisionEnabled(enabled: boolean) {
+    if (enabled) {
+      this.collider.setEnabled(true);
+    } else {
+      this.collider.setEnabled(false);
+    }
+  }
 }
