@@ -29,8 +29,6 @@ export class Physics {
   private PaddleMesh: paddle | null = null;
   timestep = 1 / 60;
 
-  // For prevent double hit detection
-  public lastHitPlayer: string | null = null;
   private PlayerId: string | null = null;
   // callback
   public onBallPaddleCollision?: (
@@ -49,9 +47,6 @@ export class Physics {
     ball: RAPIER.RigidBody,
     table: RAPIER.RigidBody,
   ) => void;
-
-  // last collision detection time
-  private lastCollisioDetectionTime: number = 0;
 
   Impulse: RAPIER.Vector3 | null = null;
   // debug
@@ -112,11 +107,6 @@ export class Physics {
       (handle1 === ballHandle && handle2 === paddleHandle) ||
       (handle2 === ballHandle && handle1 === paddleHandle)
     ) {
-      if (this.lastHitPlayer === this.PlayerId) {
-        // Prevent double hit from same player
-        console.log("Double hit prevented");
-        return;
-      }
       this.onBallPaddleCollision?.(this.ball.body, this.paddle.body);
       return;
     }
@@ -184,22 +174,25 @@ export class Physics {
   }
 
   // ==== Reset ====
-  public reset(data: ballResetMessage): void {
+  public reset(data: ballResetMessage, frozen: boolean): void {
     this.ball.reset(data);
-    this.lastHitPlayer = null;
+    this.setBallFrozen(frozen);
   }
   //  setters
   setBallVelocity(x: number, y: number, z: number) {
     this.ball.body.setLinvel({ x, y, z }, true);
   }
   public setBallFrozen(frozen: boolean) {
+    console.log("Setting ball frozen:", frozen);
     if (frozen) {
-      this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
       this.ball.body.setGravityScale(0, true);
+      this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     } else {
+      this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, false);
       this.ball.body.setGravityScale(1, true);
     }
   }
+
   setBallPosition(x: number, y: number, z: number) {
     this.ball.body.setTranslation({ x, y, z }, true);
   }
@@ -231,9 +224,6 @@ export class Physics {
     this.appySpin = apply;
   }
 
-  public setLastHitBy(playerId: string | null) {
-    this.lastHitPlayer = playerId;
-  }
   public setPlayerId(playerId: string | null) {
     this.PlayerId = playerId;
   }

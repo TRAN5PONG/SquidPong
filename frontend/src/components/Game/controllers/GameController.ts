@@ -39,6 +39,7 @@ export class GameController {
   private hasBouncedOnce: boolean = false;
   private lasthitPlayerId: string | null = null;
   private serverSideBounced: boolean = false;
+  private isLocalServing: boolean = false;
 
   private bufferOppPaddleStates: Array<{ time: number; data: PaddleState }> =
     [];
@@ -84,7 +85,6 @@ export class GameController {
     });
     // Listen for ball hit updates
     this.net.on("Ball:HitMessage", (data: BallHitMessage) => {
-      this.physics.setLastHitBy(data.playerId);
       this.lasthitPlayerId = data.playerId;
 
       const syncInfo = this.rollbackManager.analyzeSync(
@@ -102,10 +102,10 @@ export class GameController {
     });
     // Listen for ball serve updates
     this.net.on("Ball:Serve", (data: BallHitMessage) => {
-      this.physics.setLastHitBy(data.playerId);
-      this.lasthitPlayerId = data.playerId;
-      this.gameState = GameState.IN_PLAY;
+      // this.lasthitPlayerId = data.playerId;
       this.physics.setBallFrozen(false);
+
+      console.log("==== Received Ball:Serve message ====", data);
       const syncInfo = this.rollbackManager.analyzeSync(
         data.tick,
         this.currentTick,
@@ -130,13 +130,23 @@ export class GameController {
       this.MyTurnToServe = currentServerId === this.playerId;
 
       console.log(
-        `It's now ${this.MyTurnToServe ? "my" : "opponent's"} turn to serve.`,
+        `======== It's now ${this.MyTurnToServe ? "my" : "opponent's"} turn to serve.`,
       );
     });
 
     // Listen Last Hit Player updates
     this.net.on("lastHitPlayer:updated", (lastHitPlayerId: string) => {
       this.lasthitPlayerId = lastHitPlayerId;
+    });
+
+    // Listen for serve state changes
+    this.net.on("serveState:changed", (serveState: string) => {
+      this.gameState =
+        serveState === "in_play"
+          ? GameState.IN_PLAY
+          : GameState.WAITING_FOR_SERVE;
+      this.isLocalServing = false;
+      console.log(`🎮 Game state changed to: ${this.gameState}`);
     });
     // Listen for mouse click to serve
     this.scene.onPointerObservable.add((pointerInfo) => {
@@ -194,7 +204,10 @@ export class GameController {
   private updateVisualsBall(alpha: number): void {
     if (!this.ball || !this.physics) return;
 
-    if (this.gameState === GameState.WAITING_FOR_SERVE) {
+    if (
+      this.gameState === GameState.WAITING_FOR_SERVE &&
+      !this.isLocalServing
+    ) {
       this.attachBallToPaddle();
       return;
     }
@@ -349,6 +362,14 @@ export class GameController {
     if (!this.physics) return;
 
     this.physics.onBallPaddleCollision = (ball, paddle) => {
+      if (
+        this.lasthitPlayerId === this.playerId &&
+        this.gameState === GameState.IN_PLAY
+      ) {
+        console.log("Double hit prevented");
+        return;
+      }
+
       const paddleVelocity = new Vector3(
         paddle.linvel().x,
         paddle.linvel().y,
@@ -356,7 +377,6 @@ export class GameController {
       );
       const paddleSpeed = paddleVelocity.length();
 
-      this.physics.setLastHitBy(this.playerId);
       this.lasthitPlayerId = this.playerId;
       this.lastTableBounceSide = null;
       this.hasBouncedOnce = false;
@@ -366,6 +386,7 @@ export class GameController {
       let isServe = false; // Track if this is a serve
 
       if (this.gameState === GameState.WAITING_FOR_SERVE) {
+        console.log("Processing serve hit...");
         // === SERVE HIT ===
         isServe = true;
         ballVel = BallTrajectory.calculateTrajectory(
@@ -379,13 +400,14 @@ export class GameController {
         this.physics.setBallSpin(0, 0, 0);
         this.physics.setApplySpin(false);
       } else {
+        console.log("Processing rally hit...");
         // === RALLY HIT ===
         const spinCalc = this.calculateMagnusSpin(
           paddleSpeed,
           paddleVelocity.x,
         );
         this.physics.setBallSpin(0, spinCalc.spinY, 0);
-        // this.physics.setApplySpin(spinCalc.applySpin);
+        this.physics.setApplySpin(spinCalc.applySpin);
 
         ballVel = BallTrajectory.calculateTrajectory(
           ball.translation(),
@@ -438,18 +460,21 @@ export class GameController {
     // Ball with floor collision callback
     this.physics.onBallFloorCollision = (ball, floor) => {
       if (this.shouldISendThisEvent(ball)) {
+        console.log("Ball hit the floor ====== ");
         this.ballOut();
       }
     };
     // Ball with net collision callback
     this.physics.onBallNetCollision = (ball, net) => {
       if (this.shouldISendThisEvent(ball)) {
+        console.log("Ball hit the net ===== ");
         this.ballOut();
       }
     };
     // ball with Table collision callback
     this.physics.onBallTableCollision = (ball, table) => {
       if (this.shouldISendThisEvent(ball)) {
+        console.log("Ball hit the table ===== ");
         this.handleTableBounce(ball);
       }
     };
@@ -458,58 +483,91 @@ export class GameController {
   private shouldISendThisEvent(ball: any): boolean {
     const lastHitById = this.lasthitPlayerId;
     const myPlayerId = this.playerId;
+    const shouldSend = lastHitById === myPlayerId;
 
-    return lastHitById === myPlayerId;
+    console.log(
+      `🔍 shouldISendThisEvent: lastHit=${lastHitById}, myId=${myPlayerId}, result=${shouldSend}`,
+    );
+
+    return shouldSend;
   }
 
   private ballOut(): void {
-    this.net.sendMessage("Ball:Out", {});
+    console.log(
+      `🚨 Sending Ball:Out - lasthitPlayerId: ${this.lasthitPlayerId}, myId: ${this.playerId}`,
+    );
+    this.net.sendMessage("Ball:Out", { playerId: this.playerId });
   }
 
   private handleTableBounce(ball: any): void {
     const ballZ = ball.translation().z;
     const currentSide: "LEFT" | "RIGHT" = ballZ > 0 ? "RIGHT" : "LEFT";
     const lastHitterSide = this.getPlayerSide(this.lasthitPlayerId);
+    const serverSide = this.getPlayerSide(
+      this.MyTurnToServe ? this.playerId : this.getOpponentId(),
+    );
+
+    console.log(`🎾 Table bounce on ${currentSide} side`);
+    console.log(`   Last hitter side: ${lastHitterSide}`);
+    console.log(`   Server side: ${serverSide}`);
+    console.log(`   Server bounced: ${this.serverSideBounced}`);
+    console.log(`   Last bounce side: ${this.lastTableBounceSide}`);
 
     // --- SERVE PHASE ---
-    if (!this.serverSideBounced) {
-      // Automatically accept first bounce as valid
-      this.serverSideBounced = true;
-      this.lastTableBounceSide = currentSide;
-
-      console.log(`✅ Auto-serve valid: first bounce on ${currentSide}`);
+    if (this.gameState === GameState.WAITING_FOR_SERVE) {
+      // During serve toss - should not hit table yet
+      console.log(`⚠️ Ball hit table during serve toss - fault!`);
+      this.ballOut();
       return;
     }
 
-    // --- RALLY PHASE ---
-    if (this.lastTableBounceSide !== null) {
-      // Fault: hitter’s own side
-      if (lastHitterSide && currentSide === lastHitterSide) {
+    // --- FIRST BOUNCE AFTER SERVE ---
+    if (!this.serverSideBounced) {
+      // First bounce must be on server's side
+      if (currentSide !== serverSide) {
         console.log(
-          `❌ Fault: ball bounced on hitter's own side (${currentSide})`,
+          `❌ Serve fault: first bounce must be on server's side (${serverSide}), but was on ${currentSide}`,
         );
         this.ballOut();
         return;
       }
 
-      // Fault: double bounce on same side
-      if (this.lastTableBounceSide === currentSide) {
-        console.log(`❌ Double bounce on ${currentSide} side`);
-        this.ballOut();
-        return;
-      }
-
-      // ✅ Valid rally bounce
+      // Valid first bounce on server's side
+      this.serverSideBounced = true;
       this.lastTableBounceSide = currentSide;
-      console.log(`✅ Valid rally bounce on ${currentSide}`);
+      console.log(
+        `✅ Valid serve: first bounce on server's side (${currentSide})`,
+      );
       return;
     }
 
-    // --- FALLBACK / RARE CASE ---
+    // --- SECOND BOUNCE (Still part of serve or rally) ---
+    // Check if this is a double bounce (fault)
+    if (this.lastTableBounceSide === currentSide) {
+      console.log(`❌ Double bounce on ${currentSide} side - fault!`);
+      this.ballOut();
+      return;
+    }
+
+    // Check if ball bounced on hitter's own side (fault)
+    if (lastHitterSide && currentSide === lastHitterSide) {
+      console.log(
+        `❌ Fault: ball bounced on hitter's own side (${currentSide})`,
+      );
+      this.ballOut();
+      return;
+    }
+
+    // Valid bounce on opponent's side
     this.lastTableBounceSide = currentSide;
-    console.log(`✅ Bounce registered on ${currentSide}`);
+    console.log(`✅ Valid bounce on ${currentSide} side`);
   }
 
+  // Helper method to get opponent ID
+  private getOpponentId(): string | null {
+    const playerIds = this.net.getPlayerIds();
+    return playerIds.find((id) => id !== this.playerId) || null;
+  }
   private serveFault(): void {
     // Determine who is serving based on MyTurnToServe
     const serverId = this.MyTurnToServe
@@ -577,13 +635,12 @@ export class GameController {
   }
 
   public resetRound(data: ballResetMessage): void {
-    this.physics.setBallFrozen(true);
+    this.physics.reset(data, true);
 
-    this.physics.reset(data);
-    this.physics.setLastHitBy(data.lastHitPlayer);
+    // this.gameState = GameState.WAITING_FOR_SERVE;
+    this.isLocalServing = false;
 
     this.rollbackManager.reset();
-    this.gameState = GameState.WAITING_FOR_SERVE;
     this.currentTick = 0;
     this.lastCollisionTick = 0;
     this.bufferOppPaddleStates = [];
@@ -596,12 +653,15 @@ export class GameController {
 
   // ==================== Serve methods =================
   public BallServe(): void {
-    this.gameState = GameState.IN_PLAY;
-    this.physics.setBallFrozen(false);
-    const serveVelocity = new Vector3(0, 2.5, 0);
+    console.log("🎾 BallServe() called - tossing ball up!");
+    this.isLocalServing = true;
+
     const ballPos = this.ball.getMeshPosition();
+    const serveVelocity = new Vector3(0, 2.5, 0);
 
     this.physics.setBallPosition(ballPos.x, ballPos.y, ballPos.z);
+    // this.physics.ball.setCollisionEnabled(true);
+    this.physics.setBallFrozen(false);
     this.physics.setBallVelocity(
       serveVelocity.x,
       serveVelocity.y,
@@ -609,17 +669,6 @@ export class GameController {
     );
 
     this.lasthitPlayerId = this.playerId;
-    // this.physics.setLastHitBy(this.playerId);
-    // Sync serve to opponent
-    const serveMsg: BallHitMessage = {
-      position: { x: ballPos.x, y: ballPos.y, z: ballPos.z },
-      velocity: { x: serveVelocity.x, y: serveVelocity.y, z: serveVelocity.z },
-      spin: { x: 0, y: 0, z: 0 },
-      applySpin: false,
-      tick: this.currentTick,
-      playerId: this.net.getPlayerId()!,
-    };
-    this.net.sendMessage("Ball:Serve", serveMsg);
   }
 
   // ==================== Main update methods =================

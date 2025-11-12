@@ -13,6 +13,8 @@ export type MatchPhase =
   | "paused"
   | "ended";
 
+type ServeState = "waiting_for_serve" | "in_play";
+
 export interface MatchState extends Schema {
   players: Map<string, MatchPlayer>;
   spectators: Map<string, Spectator>;
@@ -24,4 +26,5 @@ export interface MatchState extends Schema {
   scores: MapSchema<number>;
   lastHitPlayer: string | null;
   currentServer: string | null;
+  serveState: ServeState;
 }
