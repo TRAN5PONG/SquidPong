@@ -126,3 +126,4 @@ export const GamePowerUps: {
       "Confuse your opponent by reversing their paddle controls for a short duration.",
   },
 ];
+

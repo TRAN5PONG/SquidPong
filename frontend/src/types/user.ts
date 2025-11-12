@@ -1,6 +1,6 @@
-import { GameCharacter, rank_tier, RankDivision } from "./game/game";
+import { rank_tier, RankDivision } from "./game/rank";
 
-export type UserStatus = "online" | "offline" | "idle" | "doNotDisturb";
+export type UserStatus = "ONLINE" | "OFFLINE" | "IDLE" | "DONOTDISTURB";
 
 export interface User {
   id: string;

@@ -221,6 +221,9 @@ const StyledChatMessage = styled("div")`
         font-size: 1rem;
         font-weight: 500;
         color: white;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        min-height: 20px;
       }
       .ChatMsgText[contenteditable="true"] {
         outline: 1px solid rgba(256, 256, 256, 0.2);

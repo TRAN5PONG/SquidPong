@@ -1,3 +1,4 @@
+import { updateProfile } from "@/api/user";
 import Zeroact, { useEffect } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 
@@ -63,12 +64,20 @@ interface StatusProps {
   isVisible?: boolean;
 }
 const Status = (props: StatusProps) => {
+  const onStatusClick = async (status: string) => {
+    try {
+      const resp = await updateProfile({ status: status.toUpperCase() });
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  };
   return (
     <StyledStatus isVisible={props.isVisible}>
-      <span>online</span>
-      <span>offline</span>
-      <span>idle</span>
-      <span>do not disturb</span>
+      {["ONLINE", "OFFLINE", "IDLE", "DONOTDISTURB"].map((s) => (
+        <span key={s} onClick={() => onStatusClick(s)}>
+          {s}
+        </span>
+      ))}
     </StyledStatus>
   );
 };
