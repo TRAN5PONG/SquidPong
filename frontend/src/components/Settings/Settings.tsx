@@ -612,12 +612,13 @@ const Settings = () => {
       .then(async (confirmed) => {
         if (confirmed) {
           try {
-            const resp = await updateProfile(
-              data.firstName,
-              data.lastName,
-              data.username,
-              data.banner || ""
-            );
+            const resp = await updateProfile({
+              firstName: data.firstName,
+              lastName: data.lastName,
+              username: data.username,
+              bio: data.bio,
+              banner: data.banner,
+            });
             if (resp.success) {
               toasts.addToastToQueue({
                 type: "success",

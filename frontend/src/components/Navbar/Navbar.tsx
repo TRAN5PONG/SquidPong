@@ -246,6 +246,7 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!user) return;
+    console.log(user);
     fetchNotifications();
     fetchConversations();
   }, [user]);

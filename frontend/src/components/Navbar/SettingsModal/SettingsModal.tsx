@@ -46,11 +46,11 @@ const StyledSettingsModal = styled("div")`
       height: 10px;
       border-radius: 50%;
       background-color: ${(props: { userStatus: UserStatus }) =>
-        props.userStatus === "online"
+        props.userStatus === "ONLINE"
           ? "var(--green_color)"
-          : props.userStatus === "doNotDisturb"
+          : props.userStatus === "DONOTDISTURB"
           ? "var(--red_color)"
-          : props.userStatus === "idle"
+          : props.userStatus === "IDLE"
           ? "var(--yellow_color)"
           : "var(--gray_color)"};
     }

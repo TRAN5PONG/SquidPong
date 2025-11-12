@@ -99,8 +99,8 @@ export async function getPendingFriendRequests(): Promise<
 
 /**
  * Friends
- * @param userid 
- * @returns 
+ * @param userid
+ * @returns
  */
 export async function getUserFriends(
   userid: string
@@ -204,10 +204,7 @@ export const changeAvatar = async (avatarFile: File): Promise<ApiResponse> => {
   return await resp.json();
 };
 export const updateProfile = async (
-  firstName: string,
-  lastName: string,
-  username: string,
-  banner: string
+  data: Record<string, any>
 ): Promise<ApiResponse> => {
   const resp = await fetch(`${API_BASE_URL}/user/db`, {
     method: "PUT",
@@ -215,7 +212,7 @@ export const updateProfile = async (
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ firstName, lastName, username, banner }),
+    body: JSON.stringify(data),
   });
 
   return await resp.json();

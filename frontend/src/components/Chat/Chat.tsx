@@ -110,11 +110,11 @@ const StyledMaximizedConv = styled("div")`
           width: 10px;
           height: 10px;
           background-color: ${(props: { userState: UserStatus }) =>
-            props.userState === "online"
+            props.userState === "ONLINE"
               ? "#15e215"
-              : props.userState === "idle"
+              : props.userState === "IDLE"
               ? "#f7d315"
-              : props.userState === "doNotDisturb"
+              : props.userState === "DONOTDISTURB"
               ? "#f71515"
               : ""};
           border-radius: 50%;
@@ -608,7 +608,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         <div className="chat-title" onClick={props.onMinimize}>
           <div className="chat-avatar"></div>
           <div className="chat-title-text">
-            <h1>{chattingWith.username}</h1>
+            <h1>{chattingWith.firstName + " " + chattingWith.lastName}</h1>
           </div>
         </div>
       </div>
@@ -634,7 +634,10 @@ const MaximizedConv = (props: MaximizedConvProps) => {
             <CloseIcon fill="rgba(255, 255,255, 0.6)" size={20} />
           </div>
           <span className="ReplyingToText">
-            Replying to: {isReplyingTo.content}
+            Replying to:{" "}
+            {isReplyingTo.content.length > 10
+              ? isReplyingTo.content.slice(0, 10) + "..."
+              : isReplyingTo.content}
           </span>
         </div>
       )}
