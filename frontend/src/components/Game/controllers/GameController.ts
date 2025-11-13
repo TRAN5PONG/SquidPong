@@ -5,7 +5,12 @@ import { Paddle } from "../entities/Paddle/GamePaddle";
 import { Ball } from "../entities/Ball";
 import { Physics } from "../physics";
 import { RollbackManager } from "./RollbackManager";
-import { BallHitMessage, ballResetMessage, PaddleState } from "@/types/network";
+import {
+  BallHitMessage,
+  ballResetMessage,
+  PaddleState,
+  ballTossMessage,
+} from "@/types/network";
 import { Scene, Plane } from "@babylonjs/core";
 import { PointerEventTypes } from "@babylonjs/core";
 import { BallTrajectory } from "../physics/ballTrajectory";
@@ -40,6 +45,8 @@ export class GameController {
   private lasthitPlayerId: string | null = null;
   private serverSideBounced: boolean = false;
   private isLocalServing: boolean = false;
+  private isPointEnded: boolean = false;
+  private TossBallUp: boolean = false;
 
   private bufferOppPaddleStates: Array<{ time: number; data: PaddleState }> =
     [];
@@ -77,7 +84,7 @@ export class GameController {
 
     // Debug
     this.debugMeshes = new DebugMeshManager(this.scene);
-    // this.debugMeshes.createMeshes();
+    this.debugMeshes.createMeshes();
 
     // Listen for opponent paddle updates
     this.net.on("opponent:paddle", (data) => {
@@ -85,7 +92,7 @@ export class GameController {
     });
     // Listen for ball hit updates
     this.net.on("Ball:HitMessage", (data: BallHitMessage) => {
-      this.lasthitPlayerId = data.playerId;
+      // this.lasthitPlayerId = data.playerId;
 
       const syncInfo = this.rollbackManager.analyzeSync(
         data.tick,
@@ -105,6 +112,16 @@ export class GameController {
       // this.lasthitPlayerId = data.playerId;
       this.physics.setBallFrozen(false);
 
+      this.physics.setBallPosition(
+        data.position.x,
+        data.position.y,
+        data.position.z,
+      );
+      this.physics.setBallVelocity(
+        data.velocity.x,
+        data.velocity.y,
+        data.velocity.z,
+      );
       console.log("==== Received Ball:Serve message ====", data);
       const syncInfo = this.rollbackManager.analyzeSync(
         data.tick,
@@ -117,6 +134,27 @@ export class GameController {
         data.velocity,
         data.spin,
         data.applySpin,
+      );
+    });
+    // Listen for ball toss updates
+    this.net.on("Ball:Toss", (data: ballTossMessage) => {
+      this.physics.setBallFrozen(false);
+      this.TossBallUp = true;
+      console.log("🎾 Received Ball:Toss message", data);
+
+      // print tick
+      console.log(`   Current Tick: ${this.currentTick}`);
+      const syncInfo = this.rollbackManager.analyzeSync(
+        data.tick,
+        this.currentTick,
+      );
+
+      this.rollbackManager.applyNetworkState(
+        syncInfo,
+        data.position,
+        data.velocity,
+        undefined,
+        false,
       );
     });
 
@@ -206,8 +244,10 @@ export class GameController {
 
     if (
       this.gameState === GameState.WAITING_FOR_SERVE &&
-      !this.isLocalServing
+      !this.isLocalServing &&
+      !this.TossBallUp
     ) {
+      console.log("Attaching ball to paddle for serve...");
       this.attachBallToPaddle();
       return;
     }
@@ -227,7 +267,7 @@ export class GameController {
 
     // debug
     const ballPos = this.ball.getMeshPosition();
-    // this.debugMeshes.updateBall(ballPos);
+    this.debugMeshes.updateBall(ballPos);
   }
 
   public getInterpolated(time: number): PaddleState | null {
@@ -481,6 +521,10 @@ export class GameController {
   }
 
   private shouldISendThisEvent(ball: any): boolean {
+    if (this.isPointEnded) {
+      console.log("Point already ended, not sending event.");
+      return false;
+    }
     const lastHitById = this.lasthitPlayerId;
     const myPlayerId = this.playerId;
     const shouldSend = lastHitById === myPlayerId;
@@ -496,6 +540,8 @@ export class GameController {
     console.log(
       `🚨 Sending Ball:Out - lasthitPlayerId: ${this.lasthitPlayerId}, myId: ${this.playerId}`,
     );
+
+    this.isPointEnded = true;
     this.net.sendMessage("Ball:Out", { playerId: this.playerId });
   }
 
@@ -639,6 +685,8 @@ export class GameController {
 
     // this.gameState = GameState.WAITING_FOR_SERVE;
     this.isLocalServing = false;
+    this.isPointEnded = false;
+    this.TossBallUp = false;
 
     this.rollbackManager.reset();
     this.currentTick = 0;
@@ -654,13 +702,15 @@ export class GameController {
   // ==================== Serve methods =================
   public BallServe(): void {
     console.log("🎾 BallServe() called - tossing ball up!");
+
+    // print tick
+    console.log(`   Current Tick: ${this.currentTick}`);
     this.isLocalServing = true;
 
     const ballPos = this.ball.getMeshPosition();
     const serveVelocity = new Vector3(0, 2.5, 0);
 
     this.physics.setBallPosition(ballPos.x, ballPos.y, ballPos.z);
-    // this.physics.ball.setCollisionEnabled(true);
     this.physics.setBallFrozen(false);
     this.physics.setBallVelocity(
       serveVelocity.x,
@@ -669,6 +719,22 @@ export class GameController {
     );
 
     this.lasthitPlayerId = this.playerId;
+
+    const ballTossMessage: ballTossMessage = {
+      position: {
+        x: ballPos.x,
+        y: ballPos.y,
+        z: ballPos.z,
+      },
+      velocity: {
+        x: serveVelocity.x,
+        y: serveVelocity.y,
+        z: serveVelocity.z,
+      },
+      playerId: this.playerId,
+      tick: this.currentTick,
+    };
+    this.net.sendMessage("Ball:Toss", ballTossMessage);
   }
 
   // ==================== Main update methods =================

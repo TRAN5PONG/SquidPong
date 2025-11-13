@@ -93,8 +93,6 @@ export class MatchRoom extends Room<MatchState> {
     this.state.maxPauseTime = match.matchSetting?.pauseTime || 3;
     this.state.totalPointsScored = match.matchSetting?.scoreLimit || 11;
 
-    // TEST:
-    // this.state.totalPointsScored = 100;
     this.state.lastHitPlayer = null;
     this.state.currentServer = null;
 
@@ -156,6 +154,12 @@ export class MatchRoom extends Room<MatchState> {
       this.handleFailedServe(message.playerId);
     });
 
+    this.onMessage("Ball:Toss", (client, message) => {
+      console.log(`🎾 Ball toss by player ${message.playerId}`);
+
+      // this.state.serveState = "in_play";
+      this.broadcast("Ball:Toss", message, { except: client });
+    });
     // Player give up
     this.onMessage("player:give-up", (client) => {
       const _client = client as any;
@@ -274,7 +278,10 @@ export class MatchRoom extends Room<MatchState> {
         const playerIds = Array.from(this.state.players.keys());
         this.state.currentServer = playerIds[0];
 
-        console.log(`Initial server set to player ${this.state.currentServer}`);
+        console.log(
+          `=========================== Initial server set to player ${this.state.currentServer}`,
+        );
+        console.log(`serve player ids: ${playerIds[0]}`);
       }
     } else {
       const spectator = new Spectator();
@@ -555,8 +562,9 @@ export class MatchRoom extends Room<MatchState> {
       );
     }
 
-    // Reset ball for next serve
-    this.resetBallForServe(this.state.currentServer!);
+    setTimeout(() => {
+      this.resetBallForServe(this.state.currentServer!);
+    }, 3000);
   }
 
   private getScores() {

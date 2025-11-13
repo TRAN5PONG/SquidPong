@@ -40,3 +40,10 @@ export interface ballResetMessage {
   position: BallState;
   velocity: BallState;
 }
+
+export interface ballTossMessage {
+  position: BallState;
+  velocity: BallState;
+  playerId: string;
+  tick: number;
+}
