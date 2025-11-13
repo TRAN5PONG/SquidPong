@@ -124,7 +124,8 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply) {
   return res.send(respond);
 }
 
-export async function getRecentChats(req: FastifyRequest, res: FastifyReply) {
+export async function getRecentChats(req: FastifyRequest, res: FastifyReply) 
+{
   const respond: ApiResponse<any> = {
     success: true,
     message: "Recent chats fetched successfully.",
@@ -134,13 +135,15 @@ export async function getRecentChats(req: FastifyRequest, res: FastifyReply) {
   const userId = headers["x-user-id"];
 
   let dataRespond: any = [];
-  try {
+  try 
+  {
     const recentChats = await prisma.chat.findMany({
       where: {
         members: { some: { userId } },
       },
       include: {
         members: { include: { user: true } },
+        group: true,
         messages: {
           orderBy: { timestamp: "desc" },
           take: 1,
@@ -164,6 +167,7 @@ export async function getRecentChats(req: FastifyRequest, res: FastifyReply) {
 
       dataRespond.push({
         id: chat.id,
+        group: chat.group || null,
         participants: chat.members.map((m: any) => m.user),
         lastMessage: chat.messages[0] || null,
         unreadCount: unreadCount,
