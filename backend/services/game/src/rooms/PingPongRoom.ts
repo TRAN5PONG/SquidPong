@@ -567,11 +567,5 @@ export class MatchRoom extends Room<MatchState> {
     }, 3000);
   }
 
-  private getScores() {
-    const scores: Record<string, number> = {};
-    this.state.scores.forEach((score, playerId) => {
-      scores[playerId] = score;
-    });
-    return scores;
-  }
+  private addMatchStats() { }
 }
