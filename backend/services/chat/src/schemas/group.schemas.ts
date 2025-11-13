@@ -131,7 +131,6 @@ export const createGroupSchema: FastifySchema = {
     },
     required: ['x-user-id']
   },
-  consumes: ['multipart/form-data'],
   body: {
     type: 'object',
     properties: {
@@ -150,10 +149,6 @@ export const createGroupSchema: FastifySchema = {
         type: 'string',
         enum: ['PUBLIC', 'PRIVATE'],
         description: 'Group type (default: PUBLIC)'
-      },
-      image: {
-        type: 'string',
-        description: 'Group image file'
       }
     },
     required: ['name', 'desc'],
@@ -242,6 +237,71 @@ export const updateGroupInfoSchema: FastifySchema = {
     404: {
       ...errorResponse,
       description: 'Group not found'
+    }
+  }
+};
+
+export const updateGroupImageSchema: FastifySchema = {
+  description: 'Update group image (admin/owner only)',
+  tags: ['Group Management'],
+  summary: 'Update Group Image',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID from authentication token'
+      }
+    },
+    required: ['x-user-id']
+  },
+  params: {
+    type: 'object',
+    properties: {
+      groupId: {
+        type: 'string',
+        description: 'Group ID to update'
+      }
+    },
+    required: ['groupId']
+  },
+  consumes: ['multipart/form-data'],
+  body: {
+    type: 'object',
+    properties: {
+      image: {
+        description: 'Group image file (max 5MB). Field name must be "image"',
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['file'] },
+          filename: { type: 'string' },
+          encoding: { type: 'string' },
+          mimetype: { type: 'string', pattern: '^image/' }
+        }
+      }
+    },
+    required: ['image']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Group image updated successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Invalid file format or missing image field'
+    },
+    403: {
+      ...errorResponse,
+      description: 'Insufficient permissions (admin/owner required)'
+    },
+    404: {
+      ...errorResponse,
+      description: 'Group not found'
+    },
+    413: {
+      ...errorResponse,
+      description: 'File too large - maximum size is 5MB'
     }
   }
 };

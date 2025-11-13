@@ -49,7 +49,8 @@ export enum PollMessages {
 
 export enum GroupMessages {
 
-    // Group CRUD
+    NOT_FOUND = 'Group not found.',
+    IMAGE_UPDATED_SUCCESS = 'Group image updated successfully.',
     CANNOT_CHANGE_OWN_ROLE = 'You cannot change your own role in the group.',
     JOIN_REQUEST_REJECTED_SUCCESS = 'Join request rejected successfully.',
     JOIN_REQUEST_REJECTED_FAILED = 'Failed to reject join request.',

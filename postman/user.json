@@ -1,0 +1,689 @@
+{
+	"info": {
+		"_postman_id": "45a6e743-a029-4b55-80d2-7c51b52255a9",
+		"name": "SquidPong - User Service",
+		"description": "User profile, friends, and blocking endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40559190"
+	},
+	"item": [
+		{
+			"name": "User Profile",
+			"item": [
+				{
+					"name": "Create Profile",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"user1\",\n  \"firstName\": \"User\",\n  \"lastName\": \"One\",\n  \"avatar\": \"https://example.com/avatar1.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/me",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/user/me",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/id/1",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"id",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by Username",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/username/user3",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"username",
+								"user3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/all?page=1&limit=10",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/search?q=user",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "user"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile (DB)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"bio\": \"My new bio\"\n}"
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/db",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"db"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile (Realtime)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"online\"\n}"
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/realtime",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"realtime"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Avatar",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": "/path/to/avatar.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/avatar",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"avatar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Profile",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/me",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Friends",
+			"item": [
+				{
+					"name": "Send Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/friend/request",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"friend",
+								"request"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/friend/accept",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"friend",
+								"accept"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/friend/reject",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"friend",
+								"reject"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Friend Request",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/friend/cancel",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"friend",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pending Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/friend/pending",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"friend",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Friends List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/friend/all-friends/:username",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"friend",
+								"all-friends",
+								":username"
+							],
+							"variable": [
+								{
+									"key": "username",
+									"value": "user1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Friend",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/friend/:friendId",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"friend",
+								":friendId"
+							],
+							"variable": [
+								{
+									"key": "friendId",
+									"value": "{{friendId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Friendship",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/friend/verify/:friendId",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"friend",
+								"verify",
+								":friendId"
+							],
+							"variable": [
+								{
+									"key": "friendId",
+									"value": "{{friendId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Blocking",
+			"item": [
+				{
+					"name": "Block User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/blocked/:blockId",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"blocked",
+								":blockId"
+							],
+							"variable": [
+								{
+									"key": "blockId",
+									"value": "{{friendId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/blocked/:blockId",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"blocked",
+								":blockId"
+							],
+							"variable": [
+								{
+									"key": "blockId",
+									"value": "{{friendId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Blocked Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{userBaseUrl}}/api/blocked/all",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"blocked",
+								"all"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Send Notification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipientId\": \"{{friendId}}\",\n  \"type\": \"FRIEND_REQUEST\",\n  \"message\": \"You have a new friend request\"\n}"
+						},
+						"url": {
+							"raw": "{{userBaseUrl}}/api/user/notification/send",
+							"host": [
+								"{{userBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"notification",
+								"send"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "userBaseUrl",
+			"value": "http://localhost:4003",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "friendId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

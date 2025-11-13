@@ -7,6 +7,8 @@ import { GroupMessages } from '../utils/RespondMessage';
 import { checkUserAndFetchGroup } from '../utils/group.check';
 import { convertParsedMultipartToJson } from '../utils/helper';
 
+
+
 enum GroupRole {
    ADMIN = 'ADMIN',
    MEMBER = 'MEMBER',
@@ -51,35 +53,40 @@ export async function createGroup(req: FastifyRequest, res: FastifyReply)
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
-   const {name , desc , type , image} = await convertParsedMultipartToJson(req) as { name: string; desc: string , type: TypeofGoup | undefined , image?: any  };
-   
-   
+   const { name, desc, type } = req.body as { name: string; desc: string , type?: TypeofGoup   };
+
    try
    {
 
-      const user = await fetchAndEnsureUser(userId);
-      const newGroup = await prisma.group.create({
+      const group = await prisma.group.create({
          data: {
             name,
             desc,
-            ...(type !== undefined && { type }),
-            ...(image !== undefined && { imageUrl : image }),
-            members: { create: [ { user: { connect: { id: user.id } }, role: OWNER, status: APPROVED }]},
+            type: type || PUBLIC_G,
+            members: {
+               create: {
+                  userId: String(userId),
+                  role: OWNER,
+                  status: APPROVED,
+               },
+            },
             chat: {
                create: {
                   type: GROUP,
-                  members: { create: [ {user: { connect: { id: user.id } } }]},
+                  members: {
+                     create: {
+                        userId: String(userId),
+                     },
+                  },
                },
             },
          },
          include: {
             chat: true,
-            members: true,
          },
       });
 
-   respond.data = newGroup;
-   
+      respond.data = group;
    }
    catch (error) {
       sendError(res ,error);
@@ -128,6 +135,44 @@ export async function updateGroupInfo(req: FastifyRequest, res: FastifyReply)
       sendError(res ,error);
    }
    
+   return res.send(respond);
+}
+
+
+
+export async function updateGroupImage(req: FastifyRequest, res: FastifyReply) 
+{
+   const respond: ApiResponse<any> = { success: true, message: GroupMessages.IMAGE_UPDATED_SUCCESS };
+   const headers = req.headers as any;
+   const userId = Number(headers['x-user-id']);
+   
+   const { groupId } = req.params as { groupId: string };
+   
+   try 
+   {
+   
+    const group = await prisma.group.findUnique({ 
+      where: { id: Number(groupId) } , 
+      include: { members: true } });
+   
+    if (!group) throw new Error(GroupMessages.NOT_FOUND);
+   
+    const requester = group.members.find((m:any) => m.userId === userId);
+    if (!requester || requester.role === MEMBER) throw new Error(GroupMessages.UPDATED_FAILED);
+   
+    const {imageUrl } = await convertParsedMultipartToJson(req) as {imageUrl: string};
+    
+    const data = await prisma.group.update({
+       where: { id: Number(groupId) },
+       data: { imageUrl },
+    });
+   
+    respond.data = data;
+   }
+   catch (error) {
+     return sendError(res, error);
+   }
+  
    return res.send(respond);
 }
 
