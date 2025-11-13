@@ -33,22 +33,17 @@ export async function removeFriendFromChat(userId: number, friendId: number)
 
 
 
-export async function blockUserInChat(userId: number, friendId: number)
+export async function blockUserInChat(userId: number)
 {
-    const chatServiceUrl = getChatServiceUrl();
-    const secretToken = getSecretToken();
-    
-    const response = await fetch(`${chatServiceUrl}/api/chat/block/${friendId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userId.toString(),
-        'x-secret-token': secretToken,
-      },
-    });
-
-    if (!response.ok)
-        console.error('Failed to block user in chat service:', await response.text());
+  const url = `http://chat:4003/api/chat/block/${userId}`;
+  await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-id': userId.toString(),
+      'x-secret-token': getSecretToken(),
+    },
+  });
 }
 
 
