@@ -42,10 +42,6 @@ export async function createProfileHandler(req: FastifyRequest, res: FastifyRepl
   return res.send(response);
 }
 
-
-
-
-
 export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<null> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
@@ -132,7 +128,6 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
   return res.send(respond);
 }
 
-
 export async function updateProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
@@ -197,7 +192,6 @@ export async function updateProfileHandler(req: FastifyRequest, res: FastifyRepl
   return res.send(respond);
 }
 
-
 export async function getAllUserHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<Profile[]> = {success: true,  message: ProfileMessages.FETCH_SUCCESS};
@@ -212,7 +206,6 @@ export async function getAllUserHandler(req: FastifyRequest, res: FastifyReply)
   }
   return res.send(respond);
 }
-
 
 export async function deleteProfileHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -254,7 +247,7 @@ export async function getCurrentUserHandler(req: FastifyRequest, res: FastifyRep
   {
     const profile = await prisma.profile.findUnique({
       where: { userId },
-      include: { preferences: true },
+      include: { preferences: { include: { notifications: true } } },
     });
     if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
     
@@ -337,8 +330,6 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
   return res.send(respond);
 }
 
-
-
 export async function updateProfileImageHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
@@ -365,8 +356,6 @@ export async function updateProfileImageHandler(req: FastifyRequest, res: Fastif
 
   return res.send(respond);
 }
-
-
 
 export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -395,9 +384,6 @@ export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply)
   }
   return res.send(respond);
 }
-
-
-
 
 export async function sendNotificationHandler(req: FastifyRequest, res: FastifyReply) 
 {
