@@ -85,8 +85,7 @@ export async function postLoginHandler(req:FastifyRequest , res:FastifyReply)
     else if(username)
       user = await prisma.user.findUnique({ where: { username }})
 
-    if(!user)
-      throw new Error(UserProfileMessage.USER_NOT_FOUND)
+    if(!user) throw new Error(UserProfileMessage.USER_NOT_FOUND)
 
     await isUserAllowedToLogin(password , user);
     await isTwoFactorEnabled(user.id, user.twoFAMethod, res, respond);

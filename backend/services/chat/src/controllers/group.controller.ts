@@ -150,11 +150,9 @@ export async function updateGroupImage(req: FastifyRequest, res: FastifyReply)
    
    try 
    {
-   
     const group = await prisma.group.findUnique({ 
       where: { id: Number(groupId) } , 
       include: { members: true } });
-   
     if (!group) throw new Error(GroupMessages.NOT_FOUND);
    
     const requester = group.members.find((m:any) => m.userId === userId);
