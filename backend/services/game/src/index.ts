@@ -5,7 +5,7 @@ import { matchRoutes } from "./routes/matchRoutes";
 import { invitationRoutes } from "./routes/invitationRoutes";
 import { initRabbitMQ, receiveFromQueue } from "./integration/rabbitmqClient";
 import cors from "@fastify/cors";
-import { MatchRoom } from "./rooms/PingPongRoom";
+import { MatchRoom } from "./rooms/MatchRoom";
 import { prisma } from "./lib/prisma";
 
 dotenv.config();
