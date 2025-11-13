@@ -147,18 +147,17 @@ const ScoreBoard = (props: ScoreBoardProps) => {
   // Time
   const [elapsed, setElapsed] = useState<number>(0);
 
-
   useEffect(() => {
     if (!props.match) return;
     setHost(
       props.match.opponent1.isHost
         ? props.match.opponent1
-        : props.match.opponent2
+        : props.match.opponent2,
     );
     setGuest(
       props.match.opponent1.isHost
         ? props.match.opponent2
-        : props.match.opponent1
+        : props.match.opponent1,
     );
   }, [props.match]);
 
@@ -187,7 +186,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
             pauseRequests: player.pauseRequests,
             remainingPauseTime: player.remainingPauseTime,
           });
-      }
+      },
     );
     props.net.on("player:disconnected", (playerId: string) => {
       if (playerId === host?.id && host)
@@ -210,25 +209,20 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       setPauseCountdown(data.remainingPauseTime);
     });
 
-    // score 
+    // score
     props.net.on("score:update", (data) => {
-      console.log("Score updated ", data);
       Object.entries(data.scores).forEach(([playerId, score]) => {
-        if (playerId === data.pointBy) {
-          // Update host score if playerId matches pointBy
+        if (playerId === host?.id) {
           setHostScores(score as number);
-        } else {
-          // Otherwise, update guest score
+          console.log(`✅ Host (${host?.username}) score: ${score}`);
+        } else if (playerId === guest?.id) {
           setGuestScores(score as number);
+          console.log(`✅ Guest (${guest?.username}) score: ${score}`);
         }
       });
-
-      // if (data.scores.playerId === host?.id) setHostScores(data.scores.);
-      // if (data.scores.playerId === guest?.id) setGuestScores(data.scores[1]);
     });
     // Time
-
-  }, [props.net]);
+  }, [props.net, host, guest]);
 
   useEffect(() => {
     // todo : should be refactored

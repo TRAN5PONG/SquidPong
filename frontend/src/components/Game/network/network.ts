@@ -1,7 +1,12 @@
 import { Client, getStateCallbacks, Room } from "colyseus.js";
 import { MatchPhase, MatchState } from "./GameState";
 import { Match, MatchPlayer } from "@/types/game/game";
-import { BallHitMessage, ballResetMessage, Vec3 } from "@/types/network";
+import {
+  BallHitMessage,
+  ballResetMessage,
+  ballTossMessage,
+  Vec3,
+} from "@/types/network";
 
 interface NetworkEvents {
   "player:connected": (playerId: string, player: MatchPlayer) => void;
@@ -31,6 +36,7 @@ interface NetworkEvents {
   "serve:Turn": (serverId: string) => void;
   "lastHitPlayer:updated": (lastHitPlayer: string) => void;
   "serveState:changed": (serveState: "waiting_for_serve" | "in_play") => void;
+  "Ball:Toss": (data: ballTossMessage) => void;
 }
 
 export class Network {
@@ -72,6 +78,8 @@ export class Network {
       this.setupMatchListeners();
       this.roomIsReady = true;
       this.userId = userId;
+
+      console.log("Player Id joisned:", this.getPlayerId());
       return this.room;
     } catch (err) {
       console.error("Join error:", err);
@@ -213,6 +221,10 @@ export class Network {
 
     this.room.onMessage("round:ended", (data) => {
       this.emit("round:ended", data);
+    });
+
+    this.room.onMessage("Ball:Toss", (data: ballTossMessage) => {
+      this.emit("Ball:Toss", data);
     });
   }
 
