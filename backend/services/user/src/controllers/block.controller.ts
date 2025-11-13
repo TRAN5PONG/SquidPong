@@ -48,8 +48,6 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
     });
     if(!existingFriendship)
       throw new Error(BlockMessages.BLOCK_NO_FRIEND);
-    
-    console.log("Existing Friendship:", existingFriendship);
 
     await prisma.friendship.update({
       where: { id: existingFriendship.id},
@@ -57,7 +55,7 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
     });
 
     // Block user in chat service
-    await blockUserInChat(userId, blockId);
+    // await blockUserInChat(userId, blockId);
   } 
   catch (error) {
     sendError(res, error);

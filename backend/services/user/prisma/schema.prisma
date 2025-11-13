@@ -100,7 +100,7 @@ model Profile {
   firstName String
   lastName  String
 
-  status    UserStatus   @default(ONLINE)
+  status    UserStatus   @default(OFFLINE)
   lastSeen  DateTime     @default(now())
   avatar    String        @default("/uploads/user/avatar/default.png")
   banner    String        @default("http://localhost:4000/api/user/banners/default.png")

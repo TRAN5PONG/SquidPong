@@ -1,0 +1,688 @@
+{
+	"info": {
+		"_postman_id": "9e89d391-41a5-4f0d-8c37-b710a21db1e7",
+		"name": "SquidPong - Chat Service",
+		"description": "Chat Service API with WebSocket endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40559190"
+	},
+	"item": [
+		{
+			"name": "Private Chat",
+			"item": [
+				{
+					"name": "Get Recent Chats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/chat/recent?limit=10",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"recent"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Private Chat",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/chat/new",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"new"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Chat Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/chat/{{chatId}}/messages",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"{{chatId}}",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Messages as Read",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/chat/{{chatId}}/read",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"{{chatId}}",
+								"read"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/chat/block/{{friendId}}",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"block",
+								"{{friendId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/chat/unblock/{{friendId}}",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"unblock",
+								"{{friendId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/chat/user/{{friendId}}",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"user",
+								"{{friendId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Messages",
+			"item": [
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chatId\": {{chatId}},\n  \"content\": \"Hello! This is a test message.\",\n  \"type\": \"TEXT\"\n}"
+						},
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/message/send",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Message",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Edited message\"\n}"
+						},
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/message/{{messageId}}/edit",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"{{messageId}}",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Message",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/message/{{messageId}}",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"{{messageId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reply to Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is a reply\"\n}"
+						},
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/message/{{messageId}}/reply",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"{{messageId}}",
+								"reply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Reaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"emoji\": \"LIKE\"\n}"
+						},
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/message/{{messageId}}/reaction",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"{{messageId}}",
+								"reaction"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Reaction",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/message/{{messageId}}/reaction",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"{{messageId}}",
+								"reaction"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Groups",
+			"item": [
+				{
+					"name": "Create Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"My Group\",\n  \"desc\": \"Group description\",\n  \"type\": \"PUBLIC\"\n}"
+						},
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group/create",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group/{{groupId}}",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"{{groupId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Groups",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group?search=group&page=1&limit=10",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "group"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Group Info",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Group Name\",\n  \"desc\": \"Updated description\"\n}"
+						},
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group/{{groupId}}",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"{{groupId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Group",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group/{{groupId}}",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"{{groupId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group/{{groupId}}/messages?page=1&limit=50",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"{{groupId}}",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Group Members",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group/{{groupId}}/members",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"{{groupId}}",
+								"members"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invite User to Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetUserId\": \"{{friendId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group/{{groupId}}/invite",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"{{groupId}}",
+								"invite"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Leave Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{chatBaseUrl}}/api/group/{{groupId}}/members/leave",
+							"host": [
+								"{{chatBaseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"{{groupId}}",
+								"members",
+								"leave"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "chatBaseUrl",
+			"value": "http://localhost:4002",
+			"type": "string"
+		},
+		{
+			"key": "wsUrl",
+			"value": "ws://localhost:4002",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "friendId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "chatId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "messageId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "groupId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

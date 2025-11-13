@@ -117,11 +117,10 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
     await sendServiceRequestSimple('notify', userId, 'PUT', {...dataSend , notificationSettings : 
     {...(body.preferences?.notifications && { ...body.preferences.notifications })}
     } )
-    console.log("Data sent to notify service for updateProfileHandlerDB:", {...dataSend , notificationSettings : 
-    {...(body.preferences?.notifications && { ...body.preferences.notifications })} } );
-
-  
    
+    if(body.status)
+      await redis.update(`profile:${userId}`, '$', { status: body.status });
+
     const redisKey = `profile:${userId}`;
     if(await redis.exists(redisKey))
       await redis.update(redisKey, '$', dataSend);
@@ -152,9 +151,12 @@ export async function updateProfileHandler(req: FastifyRequest, res: FastifyRepl
 
     if(body.status !== undefined && body.status === 'OFFLINE')
     {
-      profile = await redis.get(cacheKey);
-      if(!profile) profile = {status : "OFFLINE"}
-    
+
+      if(await redis.exists(cacheKey) == false)
+        profile = await redis.get(cacheKey);
+      else
+        profile = {status : "OFFLINE"}
+
       profile.status = 'OFFLINE';
       await prisma.profile.update({ where: { userId }, data: profile });
       await redis.del(cacheKey);
@@ -194,7 +196,6 @@ export async function updateProfileHandler(req: FastifyRequest, res: FastifyRepl
   }
   return res.send(respond);
 }
-
 
 
 export async function getAllUserHandler(req: FastifyRequest, res: FastifyReply) 
@@ -258,6 +259,16 @@ export async function getCurrentUserHandler(req: FastifyRequest, res: FastifyRep
     if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
     
     respond.data = await mergeProfileWithRedis(profile);
+
+    if(await redis.exists(`profile:${userId}`) == false)
+    {
+      await redis.set(`profile:${userId}`,{ 
+      status: profile.status ,username : profile.username , 
+      firstName : profile.firstName , lastName : profile.lastName ,  
+      avatar : profile.avatar,
+      });
+    }
+    
   }
   catch (error) {
     return sendError(res, error);
@@ -295,7 +306,6 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
 
   const { username } = req.params as { username: string };
 
-
   try 
   {
     let profile = await prisma.profile.findUnique({ where: { username } });
@@ -316,7 +326,7 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
       if(!statusFriends)
         profileWithStatus.friendshipStatus = 'NOT_FRIENDS';
       else
-        profileWithStatus.friendshipStatus = statusFriends.status;
+        profileWithStatus.friendshipStatus = {from : statusFriends.senderId , status : statusFriends.status };
     }
     
     respond.data = profileWithStatus;
@@ -328,6 +338,7 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
 }
 
 
+
 export async function updateProfileImageHandler(req: FastifyRequest, res: FastifyReply) 
 {
   const respond: ApiResponse<any> = { success: true, message: ProfileMessages.UPDATE_SUCCESS };
@@ -337,7 +348,6 @@ export async function updateProfileImageHandler(req: FastifyRequest, res: Fastif
   try 
   {
     const parsed = await convertParsedMultipartToJson(req) as any;
-    console.log("Parsed image data:", parsed);
     await prisma.profile.update({ where: { userId }, data: { avatar: parsed } });
 
     const redisKey = `profile:${userId}`;

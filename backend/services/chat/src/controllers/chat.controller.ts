@@ -74,6 +74,8 @@ export async function removeChat(req: FastifyRequest, res: FastifyReply) {
   return res.send(respond);
 }
 
+
+
 export async function getChatById(req: FastifyRequest, res: FastifyReply) {
   const respond: ApiResponse<any> = {
     success: true,
@@ -176,7 +178,8 @@ export async function getRecentChats(req: FastifyRequest, res: FastifyReply) {
   return res.send(respond);
 }
 
-export async function blockUserHandler(req: FastifyRequest, res: FastifyReply) {
+export async function blockUserHandler(req: FastifyRequest, res: FastifyReply) 
+{
   const respond: ApiResponse<null> = {
     success: true,
     message: "User blocked successfully",
@@ -446,10 +449,8 @@ export async function editMessageHandler(
   return res.send(respond);
 }
 
-export async function deleteMessageHandler(
-  req: FastifyRequest,
-  res: FastifyReply
-) {
+export async function deleteMessageHandler(req: FastifyRequest,res: FastifyReply) 
+{
   const respond: ApiResponse<null> = {
     success: true,
     message: "Message deleted successfully",
@@ -459,7 +460,8 @@ export async function deleteMessageHandler(
 
   const { messageId } = req.params as { messageId: string };
 
-  try {
+  try 
+  {
     const message = await prisma.message.findUnique({
       where: { id: Number(messageId) },
       include: { chat: { include: { members: true } } },
@@ -468,7 +470,10 @@ export async function deleteMessageHandler(
     if (message.senderId !== userId)
       throw new Error("Only the sender can delete the message");
 
-    await prisma.message.delete({ where: { id: Number(messageId) } });
+    const data = await prisma.message.update({
+      where: { id: Number(messageId) },
+      data: { isDeleted: true , content : `message deleted.` },
+    });
 
     const targetIds = message.chat.members
       .filter((m: any) => m.userId !== userId)
@@ -477,7 +482,7 @@ export async function deleteMessageHandler(
       type: "deleteMessage",
       fromId: userId,
       targetId: targetIds,
-      data: { messageId },
+      data,
     };
     await sendDataToQueue(dataToSend, "eventhub");
   } catch (error) {
@@ -662,10 +667,8 @@ export async function removeReactionHandler(
   return res.send(respond);
 }
 
-export async function markMessagesAsRead(
-  req: FastifyRequest,
-  res: FastifyReply
-) {
+export async function markMessagesAsRead( req: FastifyRequest, res: FastifyReply)
+{
   const respond: ApiResponse<{ updatedCount: number }> = {
     success: true,
     message: "Messages marked as read successfully",
@@ -675,7 +678,8 @@ export async function markMessagesAsRead(
 
   const { chatId } = req.params as { chatId: string };
 
-  try {
+  try 
+  {
     const chat = await prisma.chat.findUnique({
       where: { id: Number(chatId) },
       include: { members: true },
@@ -693,6 +697,15 @@ export async function markMessagesAsRead(
       },
       data: { status: "READ" },
     });
+
+    const targetIds = chat.members.filter((m: any) => m.userId !== userId).map((m: any) => m.userId);
+    const dataToSend = {
+      type: "messagesRead",
+      fromId: userId,
+      targetId: targetIds,
+      data: { chatId: Number(chatId) },
+    };
+    await sendDataToQueue(dataToSend, "eventhub");
 
     respond.data = { updatedCount: result.count };
   } catch (error) {
