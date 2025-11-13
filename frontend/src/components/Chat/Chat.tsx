@@ -328,19 +328,16 @@ export const ChatContainer = () => {
       if (!data.chatId) return;
 
       setConversations((prevConversations) => {
-        // Check if conversation exists in current state
         const existingConv = prevConversations.find(
           (c) => Number(c.id) === Number(data.chatId)
         );
 
-        // If conversation doesn't exist, we need to open it
         if (!existingConv) {
-          // Trigger opening new conversation
           chat.setActiveConversations([
             ...(chat.activeConversations || []),
             data.chatId,
           ]);
-          return prevConversations; // Don't update yet, will update when conversation loads
+          return prevConversations;
         }
 
         msgReceivedSound.play();
@@ -348,7 +345,6 @@ export const ChatContainer = () => {
         return prevConversations.map((conv) => {
           if (Number(conv.id) !== Number(data.chatId)) return conv;
 
-          // Check if this message already exists (edited case)
           const messageExists = conv.messages.some((m) => m.id === data.id);
 
           const updatedMessages = messageExists
@@ -357,9 +353,12 @@ export const ChatContainer = () => {
               )
             : [...conv.messages, data];
 
-          const updatedConv = { ...conv, messages: updatedMessages };
+          const updatedConv = {
+            ...conv,
+            messages: updatedMessages,
+            unreadCount: conv.unreadCount ? conv.unreadCount + 1 : 1,
+          };
 
-          // If minimized, add preview
           if (conv.viewState === "minimized") {
             return {
               ...updatedConv,
@@ -572,17 +571,15 @@ const MaximizedConv = (props: MaximizedConvProps) => {
   };
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-    // get last message of the other user
-    const lastMessageFromOtherUser = [...props.conversation.messages]
-      .reverse()
-      .find((m) => Number(m.sender.userId) !== Number(props.userId));
-
-    if (lastMessageFromOtherUser?.status !== "READ") {
+    if (!inputRef.current) return;
+    inputRef.current.addEventListener("focus", () => {
       markConvAsRead();
-    }
+      props.setConversations((prevs) =>
+        prevs.map((conv) =>
+          conv.id === props.conversation.id ? { ...conv, unreadCount: 0 } : conv
+        )
+      );
+    });
   }, []);
 
   if (!chattingWith) return null;

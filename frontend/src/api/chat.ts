@@ -124,14 +124,14 @@ export const getMessageReactions = async (
 };
 export const markConversationAsRead = async (
   conversationId: number
-) : Promise<ApiResponse> => {
+): Promise<ApiResponse> => {
   const resp = await fetch(`${API_BASE_URL}/chat/${conversationId}/read`, {
     method: "PATCH",
     credentials: "include",
   });
 
   return resp.json();
-}
+};
 /**
  * Reactions
  */
@@ -155,6 +155,96 @@ export const removeReaction = async (
 ): Promise<ApiResponse> => {
   const resp = await fetch(`${API_BASE_URL}/message/${messageId}/reaction`, {
     method: "DELETE",
+    credentials: "include",
+  });
+
+  return resp.json();
+};
+
+/**
+ * Groups
+ */
+export const createGroupChat = async (
+  name: string,
+  desc: string,
+  type: string
+): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/group`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name, desc, type }),
+  });
+
+  return resp.json();
+};
+export const updateGroupChat = async (
+  groupId: number,
+  name: string,
+  desc: string
+): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/group/${groupId}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name, desc }),
+  });
+
+  return resp.json();
+};
+export const deleteGroupChat = async (
+  groupId: number
+): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/group/${groupId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  return resp.json();
+};
+export const searchGroupChats = async (query: string): Promise<ApiResponse> => {
+  const resp = await fetch(
+    `${API_BASE_URL}/group?search=${encodeURIComponent(query)}`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  return resp.json();
+};
+export const listGroupMembers = async (
+  groupId: number
+): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/group/${groupId}/members`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return resp.json();
+};
+export const inviteToGroup = async (
+  groupId: number,
+  targetUserId: number
+): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/group/${groupId}/invite`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ targetUserId }),
+  });
+
+  return resp.json();
+};
+export const leaveGroup = async (groupId: number): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/group/${groupId}/members/leave`, {
+    method: "POST",
     credentials: "include",
   });
 

@@ -4,24 +4,36 @@ import { PasswordIcon } from "../Svg/Svg";
 import { db } from "@/db";
 import { useSound } from "@/hooks/useSound";
 import { characters, GameCharacter } from "@/types/game/character";
+import { useAppContext } from "@/contexts/AppProviders";
 
 const SelectCharacter = () => {
   const [selectedChar, setselectedChar] =
     Zeroact.useState<GameCharacter | null>(null); //playerId
-  const FakeUser = db.users[0];
+  const {user} = useAppContext();
 
   useEffect(() => {
-    const selectedCharId = FakeUser.playerSelectedCharacter;
+    if (!user) return;
+    console.log(user);
+    const selectedCharId = user.playerSelectedCharacter;
     const selectedChar =
       characters.find((char) => char.id === selectedCharId) || null;
     setselectedChar(selectedChar);
-  }, []);
+  }, [user]);
+
+  const handleSelectChar = async(character: GameCharacter) => {
+
+  }
+  const handlePurchaseChar = async(character: GameCharacter) => {
+
+  }
+
+  if (!user) return null;
 
   return (
     <StyledSelectCharacter>
       <div className="CharacterList">
         {characters.map((character) => {
-          const isLocked = !FakeUser.playerCharacters.includes(character.id);
+          const isLocked = !user.playerCharacters.includes(character.id);
           const isSelected = selectedChar?.id === character.id;
 
           return (
@@ -57,8 +69,8 @@ const SelectCharacter = () => {
 
         <div className="actions">
           {selectedChar &&
-          !FakeUser.playerCharacters.includes(selectedChar.id) ? (
-            <button className="PurchBtn">Purchase</button>
+          !user.playerCharacters.includes(selectedChar.id) ? (
+            <button className="PurchBtn">Purchase - {selectedChar.price}</button>
           ) : null}
           <button className="SelectBtn">select</button>
         </div>
@@ -130,7 +142,8 @@ const StyledSelectCharacter = styled("div")`
       }
       .PurchBtn {
         background-color: rgba(255, 217, 68, 1);
-        width: 150px;
+        width: auto;
+        padding: 0 20px; 
       }
       .SelectBtn {
         background-color: transparent;
