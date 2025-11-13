@@ -84,7 +84,7 @@ export class GameController {
 
     // Debug
     this.debugMeshes = new DebugMeshManager(this.scene);
-    this.debugMeshes.createMeshes();
+    // this.debugMeshes.createMeshes();
 
     // Listen for opponent paddle updates
     this.net.on("opponent:paddle", (data) => {
@@ -267,7 +267,7 @@ export class GameController {
 
     // debug
     const ballPos = this.ball.getMeshPosition();
-    this.debugMeshes.updateBall(ballPos);
+    // this.debugMeshes.updateBall(ballPos);
   }
 
   public getInterpolated(time: number): PaddleState | null {
@@ -422,6 +422,9 @@ export class GameController {
       this.hasBouncedOnce = false;
       this.lastCollisionTick = this.currentTick;
 
+      console.log(
+        `🎾 Paddle collision - lasthitPlayerId set to: ${this.lasthitPlayerId}`,
+      );
       let ballVel: Vector3;
       let isServe = false; // Track if this is a serve
 
@@ -521,28 +524,61 @@ export class GameController {
   }
 
   private shouldISendThisEvent(ball: any): boolean {
+    // Don't send if point already ended
     if (this.isPointEnded) {
       console.log("Point already ended, not sending event.");
       return false;
     }
+
     const lastHitById = this.lasthitPlayerId;
     const myPlayerId = this.playerId;
-    const shouldSend = lastHitById === myPlayerId;
 
+    if (!lastHitById) {
+      console.log(
+        "⚠️ No lastHitPlayer set - defaulting to server responsibility",
+      );
+      return this.MyTurnToServe;
+    }
+    // CRITICAL FIX: Only the player who last hit the ball should report violations
+    // But during serve, the server is responsible for all faults until receiver hits
+    if (
+      this.gameState === GameState.WAITING_FOR_SERVE ||
+      !this.serverSideBounced
+    ) {
+      // During serve phase, only the server should report faults
+      const shouldSend = this.MyTurnToServe;
+      console.log(
+        `🔍 Serve phase - shouldISendThisEvent: isMyServe=${this.MyTurnToServe}, result=${shouldSend}`,
+      );
+      return shouldSend;
+    }
+
+    // During rally, only last hitter reports
+    const shouldSend = lastHitById === myPlayerId;
     console.log(
-      `🔍 shouldISendThisEvent: lastHit=${lastHitById}, myId=${myPlayerId}, result=${shouldSend}`,
+      `🔍 Rally phase - shouldISendThisEvent: lastHit=${lastHitById}, myId=${myPlayerId}, result=${shouldSend}`,
     );
 
     return shouldSend;
   }
 
   private ballOut(): void {
+    // Double-check we haven't already sent this
+    if (this.isPointEnded) {
+      console.log("⚠️ ballOut() called but point already ended - ignoring");
+      return;
+    }
+
     console.log(
       `🚨 Sending Ball:Out - lasthitPlayerId: ${this.lasthitPlayerId}, myId: ${this.playerId}`,
     );
 
+    // Mark point as ended BEFORE sending to prevent race conditions
     this.isPointEnded = true;
-    this.net.sendMessage("Ball:Out", { playerId: this.playerId });
+
+    this.net.sendMessage("Ball:Out", {
+      playerId: this.lasthitPlayerId || this.playerId, // Send who actually hit it
+    });
   }
 
   private handleTableBounce(ball: any): void {
@@ -554,10 +590,17 @@ export class GameController {
     );
 
     console.log(`🎾 Table bounce on ${currentSide} side`);
+    console.log(`   Last hitter: ${this.lasthitPlayerId}`);
     console.log(`   Last hitter side: ${lastHitterSide}`);
     console.log(`   Server side: ${serverSide}`);
     console.log(`   Server bounced: ${this.serverSideBounced}`);
     console.log(`   Last bounce side: ${this.lastTableBounceSide}`);
+
+    // Only process if we should send this event
+    if (!this.shouldISendThisEvent(ball)) {
+      console.log("⚠️ Not my responsibility to track this bounce");
+      return;
+    }
 
     // --- SERVE PHASE ---
     if (this.gameState === GameState.WAITING_FOR_SERVE) {
@@ -683,7 +726,7 @@ export class GameController {
   public resetRound(data: ballResetMessage): void {
     this.physics.reset(data, true);
 
-    // this.gameState = GameState.WAITING_FOR_SERVE;
+    this.gameState = GameState.WAITING_FOR_SERVE;
     this.isLocalServing = false;
     this.isPointEnded = false;
     this.TossBallUp = false;
