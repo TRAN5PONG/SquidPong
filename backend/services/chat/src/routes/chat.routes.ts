@@ -9,7 +9,7 @@ import {
 } from '../controllers/chat.controller';
 import { createUser, updateUser } from '../controllers/user.controller';
 import {
-  createGroup, updateGroupInfo, removeGroup, getGroupById, getGoupes,
+  createGroup, updateGroupInfo, updateGroupImage, removeGroup, getGroupById, getGoupes,
   removeGroupMember, leaveGroup, listGroupMembers,
   requestJoinGroup, getJoinRequests, approveJoinRequest, rejectJoinRequest,
   getGroupMessages, updateMember, inviteUserToGroup
@@ -36,6 +36,7 @@ import {
 import {
   createGroupSchema,
   updateGroupInfoSchema,
+  updateGroupImageSchema,
   removeGroupSchema,
   getGroupByIdSchema,
   getGroupsSchema,
@@ -105,26 +106,27 @@ export const messageRoutes: Route[] = [
 export const groupRoutes: Route[] = [
 
   // Group management
-  { method: 'POST',   url: '/api/group/',                       handler: createGroup, schema: createGroupSchema },
-  { method: 'PATCH',  url: '/api/group/:groupId',              handler: updateGroupInfo, schema: updateGroupInfoSchema },            
-  { method: 'DELETE', url: '/api/group/:groupId',              handler: removeGroup, schema: removeGroupSchema },                
-  { method: 'GET',    url: '/api/group/:groupId',              handler: getGroupById, schema: getGroupByIdSchema },              
-  { method: 'GET',    url: '/api/group',                       handler: getGoupes, schema: getGroupsSchema },                 
+  { method: 'POST',   url: '/api/group/create',                       handler: createGroup },
+  { method: 'PATCH',  url: '/api/group/:groupId',              handler: updateGroupInfo },    
+  { method: 'PUT',    url: '/api/group/:groupId/image',        handler: updateGroupImage },        
+  { method: 'DELETE', url: '/api/group/:groupId',              handler: removeGroup },                
+  { method: 'GET',    url: '/api/group/:groupId',              handler: getGroupById },              
+  { method: 'GET',    url: '/api/group',                       handler: getGoupes },                 
 
   // Members management
-  { method: 'PATCH',  url: '/api/group/:groupId/members', handler: updateMember, schema: updateMemberSchema }, 
-  { method: 'DELETE', url: '/api/group/:groupId/members', handler: removeGroupMember, schema: removeGroupMemberSchema }, 
-  { method: 'POST',   url: '/api/group/:groupId/members/leave', handler: leaveGroup, schema: leaveGroupSchema },            
-  { method: 'GET',    url: '/api/group/:groupId/members',      handler: listGroupMembers, schema: listGroupMembersSchema },    
+  { method: 'PATCH',  url: '/api/group/:groupId/members', handler: updateMember }, 
+  { method: 'DELETE', url: '/api/group/:groupId/members', handler: removeGroupMember }, 
+  { method: 'POST',   url: '/api/group/:groupId/members/leave', handler: leaveGroup },            
+  { method: 'GET',    url: '/api/group/:groupId/members',      handler: listGroupMembers },    
 
   // Join requests (for private group)
-  { method: 'POST',   url: '/api/group/:groupId/join-requests',           handler: requestJoinGroup, schema: requestJoinGroupSchema },
-  { method: 'GET',    url: '/api/group/:groupId/join-requests',           handler: getJoinRequests, schema: getJoinRequestsSchema },
-  { method: 'PATCH',  url: '/api/group/:groupId/join-requests/approve', handler: approveJoinRequest, schema: approveJoinRequestSchema },
-  { method: 'PATCH',  url: '/api/group/:groupId/join-requests/reject',  handler: rejectJoinRequest, schema: rejectJoinRequestSchema },
+  { method: 'POST',   url: '/api/group/:groupId/join-requests',           handler: requestJoinGroup },
+  { method: 'GET',    url: '/api/group/:groupId/join-requests',           handler: getJoinRequests },
+  { method: 'PATCH',  url: '/api/group/:groupId/join-requests/approve', handler: approveJoinRequest },
+  { method: 'PATCH',  url: '/api/group/:groupId/join-requests/reject',  handler: rejectJoinRequest },
 
   // Admin/Owner invite users
-  { method: 'POST',   url: '/api/group/:groupId/invite',                 handler: inviteUserToGroup, schema: inviteUserToGroupSchema },
-  { method: 'GET',    url: '/api/group/:groupId/messages',     handler: getGroupMessages, schema: getGroupMessagesSchema },
+  { method: 'POST',   url: '/api/group/:groupId/invite',                 handler: inviteUserToGroup },
+  { method: 'GET',    url: '/api/group/:groupId/messages',     handler: getGroupMessages },
 
 ]

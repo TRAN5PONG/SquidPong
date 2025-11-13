@@ -4,6 +4,11 @@ import { pipeline } from 'stream/promises';
 import prisma from '../db/database';
 import { redis } from '../integration/redis.integration';
 
+import path from 'path';
+import crypto from 'crypto';
+
+
+
 export async function verifyFriendship(senderId: string, receiverId: string) 
 {
   const res = await fetch(`http://user:4002/api/friend/verify/${receiverId}`, {
@@ -64,11 +69,22 @@ export async function fetchAndEnsureUser(userId: string)
 
 
 
-export async function convertParsedMultipartToJson(req: FastifyRequest): Promise<any> 
+export function checkSecretToken(req: FastifyRequest)
+{
+  const secretToken = req.headers['x-secret-token'] as string;
+  if (secretToken !== process.env.SECRET_TOKEN)
+    throw new Error('Unauthorized: Invalid secret token');
+}
+
+
+
+export async function convertParsedMultipartToJson(req: FastifyRequest): Promise<{imageUrl : string}> 
 {
   const rawBody = req.body as any;
-  const data: Record<string, any> = {};
-  let filePath: string | undefined;
+  let file: string = "";
+  
+  const uploadDir = path.join(process.cwd(), 'uploads', 'group-images');
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
   for (const key in rawBody) 
   {
@@ -76,23 +92,23 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
 
     if (field?.type === 'file') 
     {
-      filePath = `/tmp/group/${Date.now()}-${field.filename}`;
-      await pipeline(field.file, fs.createWriteStream(filePath));
-      data[key] = `http://localhost:4000${filePath}`;
+      const ext = path.extname(field.filename) || '.png';
+
+      let filePath: string;
+      let randomName: string;
+
+      do {
+          randomName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+          filePath = path.join(uploadDir, randomName);
+      } while (fs.existsSync(filePath));
+
+      
+      const buffer = await field.toBuffer();
+      fs.writeFileSync(filePath, buffer);
+
+      file = `${process.env.BACKEND_URL || 'http://localhost:4000'}:4433/api/user/avatars/${randomName}`;
     } 
-    else if (field?.type === 'field') 
-      data[key] = field.value;
   }
 
-  return { ...data };
-}
-
-
-
-
-export function checkSecretToken(req: FastifyRequest)
-{
-  const secretToken = req.headers['x-secret-token'] as string;
-  if (secretToken !== process.env.SECRET_TOKEN)
-    throw new Error('Unauthorized: Invalid secret token');
+  return {imageUrl : file} ;
 }

@@ -86,8 +86,6 @@ async function onClientDisconnect(ws: any)
 
   try 
   {
-    // if (ws.readyState === ws.OPEN) ws.close();
-
     onlineUsers.delete(`socket:${userId}`);
     await redis.srem('online_users', userId);
 
