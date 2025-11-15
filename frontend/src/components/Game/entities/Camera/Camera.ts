@@ -2,17 +2,29 @@ import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Scene } from "@babylonjs/core/scene";
 import { Vector3 } from "@babylonjs/core/Maths/math";
 
+// Camera base
 export abstract class Camera {
   protected camera: ArcRotateCamera;
 
-  constructor(scene: Scene) {
-    // We'll defer actual position & target to derived class
-    this.camera = new ArcRotateCamera("camera", 0, 0, 1, Vector3.Zero(), scene);
+  constructor(
+    scene: Scene,
+    alpha: number = 0,
+    beta: number = 0,
+    radius: number = 10,
+    target: Vector3 = Vector3.Zero()
+  ) {
+    this.camera = new ArcRotateCamera(
+      "camera",
+      alpha,
+      beta,
+      radius,
+      target,
+      scene
+    );
 
-    // common config
     this.camera.allowUpsideDown = false;
-    this.camera.lowerRadiusLimit = 10;
-    this.camera.upperRadiusLimit = 20;
+    this.camera.lowerRadiusLimit = 1;
+    this.camera.upperRadiusLimit = 100;
   }
 
   protected abstract setupPosition(): void;

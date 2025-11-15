@@ -20,7 +20,10 @@ import { Match } from "@/types/game/game";
 import { SpectateScene } from "../Game/Scenes/SpectateScene";
 import { useAppContext } from "@/contexts/AppProviders";
 import { Network } from "../Game/network/network";
-import { cameraModes } from "../Game/entities/Camera/SpectatorCamera";
+import {
+  cameraModes,
+  SpectatorCamera,
+} from "../Game/entities/Camera/SpectatorCamera";
 // import { CameraModeName, cameraModes } from "../Game/entities/cameras/camera";
 
 const StyledSpectate = styled("div")`
@@ -81,7 +84,7 @@ const StyledSpectate = styled("div")`
     .GameContainerOptions {
       .LiveIcon {
         position: absolute;
-        top: 0px;
+        top: 30px;
         right: 10px;
         display: flex;
         flex-direction: row;
@@ -340,6 +343,7 @@ const Spectate = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const SpectateSceneRef = useRef<SpectateScene | null>(null);
   const netWorkRef = useRef<Network | null>(null);
+  const cameraRef = useRef<SpectatorCamera | null>(null);
   // states
   const [selectedBet, setSelectedBet] = Zeroact.useState<string | null>(null);
   const [ammountBet, setAmmountBet] = Zeroact.useState<number | null>(null);
@@ -388,6 +392,7 @@ const Spectate = () => {
     );
     SpectateSceneRef.current.start();
     netWorkRef.current = SpectateSceneRef.current.net;
+    cameraRef.current = SpectateSceneRef.current.camera;
   }, [match, canvasRef.current, user]);
 
   // useEffect(() => {
@@ -421,6 +426,12 @@ const Spectate = () => {
       oponent2avatar={db.users[1].avatar}
     >
       <div className="GameContainer">
+        <ScoreBoard
+          match={match}
+          net={netWorkRef.current}
+          resetCamera={() => {}}
+          startCinematicCamera={() => {}}
+        />
         <div className="GameContainerOptions">
           <div className="LiveIcon">
             <LiveIcon fill="var(--main_color)" size={20} />
@@ -447,20 +458,22 @@ const Spectate = () => {
 
         {showCameraModes && (
           <div className="CameraModes">
-            {/* {cameraModes.map((mode) => (
+            {cameraModes.map((mode) => (
               <div
                 key={mode.mode_name}
                 className={`CameraModeOption ${
-                  camera.currentMode === mode.mode_name ? "selected" : ""
+                  cameraRef.current?.getMode() === mode.mode_name
+                    ? "selected"
+                    : ""
                 }`}
                 onClick={() => {
-                  onCameraModeChange(mode.mode_name);
+                  cameraRef.current?.setMode(mode.mode_name);
                   setShowCameraModes(false);
                 }}
               >
                 {mode.mode_name}
               </div>
-            ))} */}
+            ))}
           </div>
         )}
       </div>

@@ -70,6 +70,9 @@ export class MatchRoom extends Room<MatchState> {
       _client.meta = { role: "spectator", userId: options.userId };
       return true;
     }
+
+
+    console.log("reachs");
     return false;
   }
 
