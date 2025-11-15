@@ -166,35 +166,52 @@ export async function sendServiceRequestSimple(serviceName : string , userId : n
 }
 
 
-export function getPromotedRank(profileRedis: any, newLevel: number) 
+export function getPromotedRank(profileRedis: any, newScore: number) 
 {
   const rankDivisions = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'MASTER'];
-  let newRankTier = profileRedis.rankTier;
-  let newRankDivision = profileRedis.rankDivision;
+  
+  // Ensure score doesn't go below 0
+  if (newScore < 0) {
+    newScore = 0;
+  }
 
-  // Promotion logic: if level >= 100, promote tier
-  if (newLevel >= 100) 
-  {
-    switch (profileRedis.rankTier) {
-      case 'I':
+  // Calculate rank based on total score
+  // Every 100 points = 1 tier
+  // BRONZE I (0-99), BRONZE II (100-199), BRONZE III (200-299)
+  // SILVER I (300-399), SILVER II (400-499), SILVER III (500-599)
+  // etc.
+  
+  const tierNumber = Math.floor(newScore / 100); // 0, 1, 2, 3, 4, 5...
+  const divisionIndex = Math.floor(tierNumber / 3); // 0=BRONZE, 1=SILVER, 2=GOLD...
+  const tierWithinDivision = tierNumber % 3; // 0=I, 1=II, 2=III
+
+  // Cap at MASTER III (max division)
+  let newRankDivision: string;
+  let newRankTier: string;
+
+  if (divisionIndex >= rankDivisions.length) {
+    // Beyond MASTER III
+    newRankDivision = 'MASTER';
+    newRankTier = 'III';
+  } else {
+    newRankDivision = rankDivisions[divisionIndex];
+    
+    switch (tierWithinDivision) {
+      case 0:
+        newRankTier = 'I';
+        break;
+      case 1:
         newRankTier = 'II';
         break;
-      case 'II':
+      case 2:
         newRankTier = 'III';
         break;
-      case 'III':
-        const currentDivisionIndex = rankDivisions.indexOf(profileRedis.rankDivision);
-        if (currentDivisionIndex < rankDivisions.length - 1) {
-          newRankDivision = rankDivisions[currentDivisionIndex + 1];
-          newRankTier = 'I';
-        }
-        break;
       default:
-        break;
+        newRankTier = 'I';
     }
-    newLevel = newLevel % 100;
   }
-  return { newRankTier, newRankDivision , newLevel };
+
+  return { newRankTier, newRankDivision, newScore };
 }
 
 
