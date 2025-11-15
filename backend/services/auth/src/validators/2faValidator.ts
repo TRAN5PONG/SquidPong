@@ -48,16 +48,6 @@ export async function isTwoFactorEnabled(userId : number ,  twoFAMethod : string
   {
     respond.data.is2FAEnabled = false;
     await setJwtTokens(res , userId);
-
-    await fetch('http://user:4002/api/user/db' , {
-      method : "PUT",
-      headers : {
-        "Content-Type" : "application/json",
-        "x-user-id" : userId.toString()
-      },
-      body : JSON.stringify({ status : "online" })
-    });
-
     return ;
   }
   
