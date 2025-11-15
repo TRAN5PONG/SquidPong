@@ -115,6 +115,7 @@ model Profile {
   
   walletBalance Int        @default(0)
   level         Float        @default(0)
+  score         Int        @default(0)
   rankDivision  RankDivision @default(BRONZE)
   rankTier      RankTier   @default(I)
 
