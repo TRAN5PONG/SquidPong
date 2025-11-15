@@ -349,14 +349,6 @@ export class GameController {
     if (this.bufferOppPaddleStates.length > this.MAX_SIZE) {
       this.bufferOppPaddleStates.shift();
     }
-
-    this.opponentPaddle.setPrevPosition();
-    this.opponentPaddle.setPrevRotation();
-
-    this.opponentPaddle.setTarget(
-      { x: data.position.x, y: data.position.y, z: data.position.z },
-      data.rotation.z,
-    );
   }
 
   /*
@@ -627,7 +619,8 @@ export class GameController {
   }
 
   public updateVisuals(alpha: number): void {
-    this.localPaddle.updateVisual(alpha);
+    const pos = this.physics.paddle.getInterpolatedPos(alpha);
+    this.localPaddle.updateVisual(pos as Vector3);
 
     this.updateVisualsOpponentPaddle();
     this.updateVisualsBall(alpha);
