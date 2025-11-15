@@ -385,13 +385,10 @@ export class GameController {
     this.ballSyncTimer = setInterval(() => {
       if (!this.net || !this.ball || !this.physics) return;
 
-      const pos = this.physics.getBallPosition();
-      const vel = this.physics.getBallVelocity();
-
+      const pos = this.ball.getMeshPosition();
+      
       this.net.sendMessage("Ball:state", {
         position: { x: pos.x, y: pos.y, z: pos.z },
-        velocity: { x: vel.x, y: vel.y, z: vel.z },
-        tick: this.currentTick,
       });
     }, 1000 / 30); // 30 FPS
   }

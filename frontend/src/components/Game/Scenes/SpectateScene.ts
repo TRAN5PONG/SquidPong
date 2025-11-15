@@ -10,6 +10,8 @@ import { Light } from "../entities/Light";
 import { Network } from "../network/network";
 import { MatchState } from "../network/GameState";
 import { Paddle } from "../entities/Paddle/GamePaddle";
+import { Vec3 } from "@/types/network";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 export class SpectateScene {
   match!: Match;
@@ -55,7 +57,6 @@ export class SpectateScene {
     try {
       // camera
       this.camera = new SpectatorCamera(this.scene);
-      this.camera.attach(this.canvas);
       // light
       this.light = new Light(this.scene);
       // arena
@@ -68,26 +69,8 @@ export class SpectateScene {
 
       // network
       this.net = new Network("ws://10.13.3.5:4005", this.match, "spectate");
-      this.room = await this.net.spectate(this.userId).then((room) => {
-        room.onMessage("opponent:paddle", (data: any) => {
-          console.log("player change:", data.playerId, this.hostId, this.guestId);
-          if (data.playerId === this.hostId) {
-            // host paddle
-            this.hostPaddle.updatePaddlePosition(
-              data.position.x,
-              data.position.y,
-              data.position.z
-            );
-          } else if (data.playerId === this.guestId) {
-            // guest paddle
-            this.guestPaddle.updatePaddlePosition(
-              data.position.x,
-              data.position.y,
-              data.position.z
-            );
-          }
-        });
-      });
+      this.room = await this.net.spectate(this.userId);
+      this.onPaddleMove();
 
       // load
       await Promise.all([
@@ -122,6 +105,14 @@ export class SpectateScene {
         );
       }
     });
+    this.room.onMessage("Ball:state", (data: any) => {
+      const newPos = new Vector3(
+        data.position.x,
+        data.position.y,
+        data.position.z
+      );
+      this.ball.setMeshPosition(newPos);
+    });
   }
 
   /**
@@ -138,6 +129,14 @@ export class SpectateScene {
       this.engine.resize();
     });
   }
+
+  /**
+   * Getters
+   */
+  public getCamera(): SpectatorCamera {
+    return this.camera;
+  }
+
   dispose() {
     this.engine.dispose();
   }

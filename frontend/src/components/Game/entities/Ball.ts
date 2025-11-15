@@ -43,7 +43,8 @@ export class Ball {
   }
 
   setMeshPosition(pos: Vector3): void {
-    if (this.mesh) this.mesh.position.copyFrom(pos);
+    if (this.mesh) 
+      this.mesh.position.copyFrom(pos);
   }
 
   getMeshPosition(): Vector3 {

@@ -39,14 +39,10 @@ interface NetworkEvents {
   "Ball:Toss": (data: ballTossMessage) => void;
   "host:assigned": (data: { hostPlayerId: string }) => void;
   "host:migrated": (data: { oldHostId: string; newHostId: string }) => void;
+  
 }
 
-interface SpectateEvents {
-  "game:paused": (data: { by: string; remainingPauseTime: number }) => void;
-  "game:resumed": () => void;
-  "game:ended": (data: { winnerId: string }) => void;
-  "game:started": (data: { startTime: number }) => void;
-}
+
 
 export class Network {
   private client: Client;
@@ -108,7 +104,7 @@ export class Network {
         spectate: true,
         userId,
       });
-      this.setupSpectateListeners();
+      this.setupMatchListeners();
       this.roomIsReady = true;
       return this.room;
     } catch (err) {
@@ -117,27 +113,6 @@ export class Network {
     }
   }
 
-  // Setup Spectate event listeners
-  private setupSpectateListeners() {
-    if (!this.room) return;
-
-    this.room.onMessage("game:paused", (data) => {
-      this.emit("game:paused", data);
-    });
-    this.room.onMessage("game:resumed", () => {
-      this.emit("game:resumed");
-    });
-    this.room.onMessage("game:ended", (data) => {
-      this.emit("game:ended", data);
-    });
-    this.room.onMessage("game:started", (data) => {
-      this.emit("game:started", data);
-    });
-    this.room.onMessage("opponent:paddle", (data) => {
-      this.emit("opponent:paddle", data);
-      // console.log("Opponent Paddle Data:", data);
-    });
-  }
 
   // Setup Match listeners
   private setupMatchListeners() {
