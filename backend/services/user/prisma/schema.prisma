@@ -69,17 +69,16 @@ enum MatchResult {
 }
 
 
-
-
 enum PlayerCharacter {
-  Zero
-  Taizen
-  Kira
+  Tbib
+  Med
   Ryu
-  Akira
-  Sora_F2
-  Sora_M3
-  Sora_F3
+  hamaka
+  Mnachit
+  Mira
+  Zero
+  Zenitsu
+  Bssita
 }
 
 enum PlayerPaddle {

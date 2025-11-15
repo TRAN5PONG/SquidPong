@@ -181,6 +181,7 @@ const Navbar = () => {
   const [query, setQuery] = useState("");
   const [notifications, setNotifications] = useState<NotificationEl[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isConversationsON, setIsConversationsON] = useState(false);
 
   // contexts
   const { currentPath } = useContext(RouterContext);
@@ -219,6 +220,11 @@ const Navbar = () => {
       console.log("Fetched conversations:", resp);
       if (resp.success && resp.data) {
         setConversations(resp.data);
+        setIsConversationsON(
+          resp.data.some((conv) =>
+            conv.unreadCount ? conv.unreadCount > 0 : false
+          )
+        );
         // setIsLoadingConversations(false);
       }
     } catch (err: any) {}
@@ -284,7 +290,6 @@ const Navbar = () => {
           }`}
           onClick={toggleNotificationModal}
         >
-          {/* <div className="NotificationON" /> */}
           <NotificationIcon
             size={20}
             fill="rgba(73, 91, 134, 0.9)"
@@ -292,9 +297,7 @@ const Navbar = () => {
           />
         </div>
         <div
-          className={`RightEl ${
-            conversations.length > 0 ? "NotificationON" : ""
-          }`}
+          className={`RightEl ${isConversationsON ? "NotificationON" : ""}`}
           onClick={toggleChatModal}
         >
           <ChatIcon size={20} fill="rgba(73, 91, 134, 0.9)" />
