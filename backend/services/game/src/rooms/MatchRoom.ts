@@ -40,6 +40,7 @@ export class MatchRoom extends Room<MatchState> {
 
     this.state.lastHitPlayer = null;
     this.state.currentServer = null;
+    this.state.hostPlayerId = null;
 
     this.setMetadata({
       matchId: options.matchId,
@@ -101,6 +102,7 @@ export class MatchRoom extends Room<MatchState> {
       }
 
       _client.matchPlayerId = matchPlayer.id;
+
       let player = this.state.players.get(matchPlayer.id);
 
       if (player) {
@@ -115,6 +117,12 @@ export class MatchRoom extends Room<MatchState> {
         this.state.scores.set(matchPlayer.id, 0);
       }
 
+      if (matchPlayer.isHost) {
+        this.state.hostPlayerId = matchPlayer.id;
+        console.log(`🎮 Player ${matchPlayer.id} set as HOST from database`);
+        this.broadcast("host:assigned", { hostPlayerId: matchPlayer.id });
+      }
+
       if (this.state.players.size === 2 && !this.state.currentServer) {
         const playerIds = Array.from(this.state.players.keys());
         this.state.currentServer = playerIds[0];
@@ -122,7 +130,6 @@ export class MatchRoom extends Room<MatchState> {
         console.log(
           `=========================== Initial server set to player ${this.state.currentServer}`,
         );
-        console.log(`serve player ids: ${playerIds[0]}`);
       }
     } else {
       const spectator = new Spectator();
@@ -144,6 +151,10 @@ export class MatchRoom extends Room<MatchState> {
           clearTimeout(player.pauseTimeout);
         }
         player.isConnected = false;
+
+        if (this.state.hostPlayerId === _client.matchPlayerId) {
+          await this.migrateHost(_client.matchPlayerId);
+        }
       }
     }
   };
@@ -323,6 +334,27 @@ export class MatchRoom extends Room<MatchState> {
     if (this.pauseInterval) {
       clearInterval(this.pauseInterval);
       this.pauseInterval = undefined;
+    }
+  }
+
+  private migrateHost(disconnectedHostId: string) {
+    const remainingPlayers = Array.from(this.state.players.values()).filter(
+      (p) => p.isConnected && p.id !== disconnectedHostId,
+    );
+
+    if (remainingPlayers.length > 0) {
+      const newHostId = remainingPlayers[0].id;
+      this.state.hostPlayerId = newHostId;
+
+      console.log(`🔄 HOST MIGRATED: ${disconnectedHostId} -> ${newHostId}`);
+
+      this.broadcast("host:migrated", {
+        oldHostId: disconnectedHostId,
+        newHostId: newHostId,
+      });
+    } else {
+      this.state.hostPlayerId = null;
+      console.log(`⚠️ No remaining players to assign as host`);
     }
   }
 }

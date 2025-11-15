@@ -21,13 +21,13 @@ export class Ball {
       .setCcdEnabled(true);
 
     this.body = world.createRigidBody(bodyDesc);
-
+    this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    this.body.setGravityScale(0, true);
     const colliderDesc = RAPIER.ColliderDesc.ball(constants.BALL.radius)
       .setRestitution(0.8)
       .setFriction(0)
       .setDensity(0.8)
       .setSensor(false);
-
     this.collider = world.createCollider(colliderDesc, this.body);
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
 

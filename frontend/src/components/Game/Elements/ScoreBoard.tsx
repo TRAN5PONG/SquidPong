@@ -214,10 +214,8 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       Object.entries(data.scores).forEach(([playerId, score]) => {
         if (playerId === host?.id) {
           setHostScores(score as number);
-          console.log(`✅ Host (${host?.username}) score: ${score}`);
         } else if (playerId === guest?.id) {
           setGuestScores(score as number);
-          console.log(`✅ Guest (${guest?.username}) score: ${score}`);
         }
       });
     });
