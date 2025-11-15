@@ -322,9 +322,27 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
         }
       });
       if(!statusFriends)
-        profileWithStatus.friendshipStatus = 'NOT_FRIENDS';
+        profileWithStatus.relationshipStatus = 'NO_RELATIONSHIP';
       else
-        profileWithStatus.friendshipStatus = {from : statusFriends.senderId , status : statusFriends.status };
+      {
+        if(statusFriends.status === 'ACCEPTED')
+          profileWithStatus.relationshipStatus = 'FRIENDS';
+        else if(statusFriends.status === 'PENDING')
+        {
+          if(statusFriends.senderId === userId)
+            profileWithStatus.relationshipStatus = 'REQUEST_SENT';
+          else
+            profileWithStatus.relationshipStatus = 'REQUEST_RECEIVED';
+        }
+        else if(statusFriends.status === 'BLOCKED')
+        {
+          if(statusFriends.senderId === userId)
+            profileWithStatus.relationshipStatus = 'YOU_BLOCKED';
+          else
+            profileWithStatus.relationshipStatus = 'BLOCKED_YOU';
+        }
+      }
+      
     }
     
     respond.data = profileWithStatus;
@@ -334,6 +352,7 @@ export async function getUserByUserNameHandler(req: FastifyRequest, res: Fastify
   }
   return res.send(respond);
 }
+
 
 export async function updateProfileImageHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -388,31 +407,4 @@ export async function searchUsersHandler(req: FastifyRequest, res: FastifyReply)
     return sendError(res, error);
   }
   return res.send(respond);
-}
-
-export async function sendNotificationHandler(req: FastifyRequest, res: FastifyReply) 
-{
-  const response: ApiResponse<any> = { success: true, message: 'Notification sent successfully' };
-  const headers = req.headers as any;
-  const senderId = Number(headers['x-user-id']);
-
-  try {
-    const body = req.body as any;
-    const { userId, message, type } = body;
-
-    if (!userId || !message) {
-      throw new Error('userId and message are required');
-    }
-
-    const { createNotificationInNotify } = await import('../integration/notify.restapi');
-    
-    const notification = await createNotificationInNotify(Number(userId), message, type || 'INFO');
-    response.data = notification;
-
-    console.log(`User ${senderId} sent notification to user ${userId}: ${message}`);
-  } catch (error) {
-    return sendError(res, error);
-  }
-
-  return res.send(response);
 }

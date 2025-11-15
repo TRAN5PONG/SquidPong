@@ -175,6 +175,22 @@ model Friendship {
   @@unique([senderId, receiverId])
 }
 
+// Dedicated Blocked Users Table - Directional blocking system
+model BlockedUser {
+  id        String   @id @default(cuid())
+
+  blockerId Int      // User who initiated the block
+  blockedId Int      // User who is being blocked
+  isBlocked Boolean  @default(true)
+  
+  blockedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
 
 
 

@@ -17,33 +17,35 @@ export async function removeFriendFromChat(userId: number, friendId: number)
     const chatServiceUrl = getChatServiceUrl();
     const secretToken = getSecretToken();
         
-    const response = await fetch(`${chatServiceUrl}/api/chat/user/${friendId}`, {
+    const response = await fetch(`${chatServiceUrl}/api/chat/remove`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
         'x-user-id': userId.toString(),
         'x-secret-token': secretToken,
       },
+      body: JSON.stringify({ friendId: friendId.toString() }),
     });
 
     if (!response.ok)
-        console.error('Failed to remove friend from chat service:', await response.text());
+      console.error('Failed to remove chat between users:', await response.text());
 }
 
 
 
-
-export async function blockUserInChat(userId: number)
+export async function blockUserInChat(userId: number , friendId: number)
 {
-  const url = `http://chat:4003/api/chat/block/${userId}`;
+  const url = `http://chat:4003/api/chat/block-friend`;
+
   await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': userId.toString(),
       'x-secret-token': getSecretToken(),
     },
-  });
+    body: JSON.stringify({ userId: userId.toString(), friendId: friendId.toString() }),
+  })
+
 }
 
 
@@ -51,20 +53,16 @@ export async function blockUserInChat(userId: number)
 
 export async function unblockUserInChat(userId: number, friendId: number)
 {
-    const chatServiceUrl = getChatServiceUrl();
-    const secretToken = getSecretToken();
-    
-    const response = await fetch(`${chatServiceUrl}/api/chat/unblock/${friendId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userId.toString(),
-        'x-secret-token': secretToken,
-      },
-    });
+  const url = `http://chat:4003/api/chat/unblock-friend`;
 
-    if (!response.ok)
-        console.error('Failed to unblock user in chat service:', await response.text());
+  await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-secret-token': getSecretToken(),
+    },
+    body: JSON.stringify({ userId: userId.toString(), friendId: friendId.toString() }),
+  });
 }
 
 
