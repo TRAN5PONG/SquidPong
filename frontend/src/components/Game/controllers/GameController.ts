@@ -97,9 +97,9 @@ export class GameController {
         syncInfo,
         data.position,
         data.velocity,
-        data.applyEffect,
+        data.applyEffect!,
+        data.applySpin!,
         data.spin,
-        data.applySpin,
       );
     });
     // Listen for ball serve updates
@@ -107,16 +107,6 @@ export class GameController {
       // this.lasthitPlayerId = data.playerId;
       this.physics.setBallFrozen(false);
 
-      this.physics.setBallPosition(
-        data.position.x,
-        data.position.y,
-        data.position.z,
-      );
-      this.physics.setBallVelocity(
-        data.velocity.x,
-        data.velocity.y,
-        data.velocity.z,
-      );
       const syncInfo = this.rollbackManager.analyzeSync(
         data.tick,
         this.currentTick,
@@ -126,8 +116,9 @@ export class GameController {
         syncInfo,
         data.position,
         data.velocity,
+        false,
+        false,
         data.spin,
-        data.applySpin,
       );
     });
     // Listen for ball toss updates
@@ -135,7 +126,6 @@ export class GameController {
       this.physics.setBallFrozen(false);
       this.TossBallUp = true;
 
-      // print tick
       const syncInfo = this.rollbackManager.analyzeSync(
         data.tick,
         this.currentTick,
@@ -145,8 +135,9 @@ export class GameController {
         syncInfo,
         data.position,
         data.velocity,
-        undefined,
         false,
+        false,
+        { x: 0, y: 0, z: 0 },
       );
     });
 
@@ -387,7 +378,7 @@ export class GameController {
       if (!this.net || !this.ball || !this.physics) return;
 
       const pos = this.ball.getMeshPosition();
-      
+
       this.net.sendMessage("Ball:state", {
         position: { x: pos.x, y: pos.y, z: pos.z },
       });
@@ -487,7 +478,7 @@ export class GameController {
         ball.linvel().z,
       ).length();
 
-      let applyEffect = true;
+      let applyEffect = false;
       if (ballSpeed > 14) {
         this.ball.activateFireEffect();
         applyEffect = true;
@@ -684,6 +675,10 @@ export class GameController {
   public resumeGame(): void {
     this.startPaddleSync();
     this.startBallSync();
+  }
+
+  public startPlay(): void {
+    this.gameState = GameState.WAITING_FOR_SERVE;
   }
 
   public resetRound(data: ballResetMessage): void {

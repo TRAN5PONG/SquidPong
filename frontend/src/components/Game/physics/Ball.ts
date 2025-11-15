@@ -23,6 +23,7 @@ export class Ball {
     this.body = world.createRigidBody(bodyDesc);
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.body.setGravityScale(0, true);
+
     const colliderDesc = RAPIER.ColliderDesc.ball(constants.BALL.radius)
       .setRestitution(0.8)
       .setFriction(0)
