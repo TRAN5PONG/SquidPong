@@ -4,9 +4,7 @@ import * as friendController from '../controllers/friend.controller';
 import * as blockController from '../controllers/block.controller';
 import { 
   createProfileSchema,
-  updateProfileLiveSchema,
   updateProfileDBSchema,
-  updateProfileIntraSchema,
   getCurrentUserSchema,
   getUserByIdSchema,
   getAllUsersSchema,
@@ -53,11 +51,6 @@ const userRoutes: Route[] = [
   { method: 'GET', url: '/api/user/all', handler: userController.getAllUserHandler, schema: getAllUsersSchema },
   { method: 'GET', url: '/api/user/search', handler: userController.searchUsersHandler, schema: searchUsersSchema },
   
-  // Notification routes
-  { method: 'POST', url: '/api/user/notification/send', handler: userController.sendNotificationHandler },
-  
-  // Shop routes
-  // { method: 'POST', url: '/api/user/purchase', handler: userController.purchaseItemHandler, schema: purchaseItemSchema },
 ];
 
 
@@ -75,8 +68,8 @@ const friendRoutes: Route[] = [
   
   { method: 'GET', url: '/api/friend/verify/:friendId', handler: friendController.verifyFriendshipHandler, schema: verifyFriendshipSchema },
   
+  // Block endpoints
   { method: 'GET', url: '/api/blocked/all', handler: blockController.getBlockedUsersHandler, schema: getBlockedUsersSchema },
-  
   { method: 'POST', url: '/api/blocked/:blockId', handler: blockController.blockUserHandler, schema: blockUserSchema },
   { method: 'DELETE', url: '/api/blocked/:blockId', handler: blockController.unblockUserHandler, schema: unblockUserSchema },
 

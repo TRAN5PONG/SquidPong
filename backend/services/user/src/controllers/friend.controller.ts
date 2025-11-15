@@ -9,6 +9,9 @@ import { FriendMessages , ProfileMessages } from '../utils/responseMessages';
 import { iSameUser  , mergeProfileWithRedis} from '../utils/utils';
 import { removeFriendFromChat } from '../integration/chat.restapi';
 
+// Import block checking helpers
+import { hasBlockBetweenUsers } from './block.controller';
+
 enum FriendshipStatus {
   PENDING = "PENDING",
   ACCEPTED = "ACCEPTED",
@@ -102,6 +105,11 @@ export async function sendFriendRequestHandler(req: FastifyRequest, res: Fastify
   try 
   {
     await iSameUser(senderId , receiverId);
+
+    // Check if any block exists between users
+    const hasBlock = await hasBlockBetweenUsers(senderId, receiverId);
+    if (hasBlock)
+      throw new Error(FriendMessages.ADD_FAILED + ' Cannot send friend request to blocked user.');
 
     const exists = await prisma.friendship.findFirst({
       where : {
@@ -197,7 +205,6 @@ export async function removeFriendHandler(req: FastifyRequest, res: FastifyReply
 
   try 
   {
-
     await iSameUser(userId , Number(friendId));
     const friendship = await prisma.friendship.findFirst({
       where: {
