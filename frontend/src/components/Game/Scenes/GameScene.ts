@@ -97,7 +97,7 @@ export class Game {
       this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network(`ws://10.13.3.5:4005`, this.match);
+      this.net = new Network(`ws://10.13.3.3:4005`, this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
@@ -110,7 +110,6 @@ export class Game {
         this.scene,
         "RIGHT",
         this.userId === this.hostId,
-        this.userId === this.hostId ? this.physics.paddle : null,
         {
           color: paddleColors[0],
           // texture: paddleTextures[1],
@@ -120,7 +119,6 @@ export class Game {
         this.scene,
         "LEFT",
         this.userId === this.guestId,
-        this.userId === this.guestId ? this.physics.paddle : null,
         {
           color: paddleColors[1],
         },
@@ -185,7 +183,6 @@ export class Game {
       }
       // --- Compute interpolation factor for visuals ---
       const alpha = accumulator / FIXED_DT;
-      // Update visuals using interpolation
       this.controller.updateVisuals(alpha);
 
       this.scene.render();
