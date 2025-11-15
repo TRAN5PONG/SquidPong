@@ -148,7 +148,7 @@ export class BallTrajectory {
 
     let targetX = applySpin
       ? paddleX
-      : paddleX + paddleVelX * 0.05 * paddleSide;
+      : paddleX + paddleVelX * 0.02 * paddleSide;
 
     targetX = Math.max(minX, Math.min(maxX, targetX));
 

@@ -82,7 +82,7 @@ export class Physics {
     this.Impulse = impulse;
   }
 
-  Step(dt: number) {
+  Step() {
     this.paddle.update();
     this.applyMagnusEffect();
 

@@ -35,7 +35,7 @@ export class Ball {
       this.meshGroup = group;
 
       this.setupFireEffect();
-      this.activateFireEffect();
+      // this.activateFireEffect();
       this.mesh.scaling.scaleInPlace(2);
     } catch (error) {
       console.error("Error loading ball model:", error);
