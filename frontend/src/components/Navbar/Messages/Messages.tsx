@@ -61,18 +61,21 @@ const SyledChatModal = styled("div")`
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        background-color: #495b86;
-        border: 1px solid rgba(117, 147, 218, 0.3);
-        color: rgba(255, 255, 255, 0.5);
         border-radius: 3px;
         font-family: var(--main_font);
         font-size: 0.9rem;
         font-weight: 600;
-        transition: 0.1s ease-in-out;
         gap: 7px;
         margin-top: auto;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+        transition: 0.2s ease-in-out;
+        svg {
+          transition: 0.2s ease-in-out;
+        }
         &:hover {
-          background-color: #5a6f9c;
+          background-color: var(--bg_color_light);
         }
       }
     }
@@ -141,7 +144,6 @@ const SyledChatModal = styled("div")`
         padding-left: 10px;
       }
     }
-
     .UsersContainer {
       flex: 1;
       width: 100%;
@@ -213,6 +215,120 @@ const SyledChatModal = styled("div")`
       margin-top: 5px;
       text-align: center;
     }
+    .NewGroupBtn {
+      width: 100%;
+      height: 40px;
+      background-color: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      font-family: var(--main_font);
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: 0.1s ease-in-out;
+      &:hover {
+        background-color: var(--bg_color_light);
+      }
+    }
+  }
+  .NewGroupContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    .NewGroupContainerHeader {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      h2 {
+        font-family: var(--main_font);
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.7);
+        flex: 1;
+        font-weight: 100;
+      }
+      .BackToConvsBtn {
+        width: 40px;
+        height: 40px;
+        background-color: transparent;
+        border: none;
+        font-family: var(--main_font);
+        border-radius: 3px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: 0.1s ease-in-out;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+      }
+    }
+    .GroupDetails {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 5px;
+      textArea {
+        width: 100%;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.04);
+        font-family: var(--main_font);
+        font-size: 1rem;
+        color: white;
+        outline: none;
+        resize: none;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.04);
+        font-family: var(--main_font);
+        font-size: 1rem;
+        color: white;
+        outline: none;
+        resize: none;
+      }
+
+      .GroupTypeSelection {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--main_font);
+        font-size: 1rem;
+        color: white;
+        span {
+          margin-right: 10px;
+        }
+        input {
+          width: auto;
+          height: auto;
+        }
+      }
+      button {
+        width: 100%;
+        height: 40px;
+        background-color: rgba(68, 85, 126, 0.2);
+        color: rgba(255, 255, 255, 0.4);
+        font-family: var(--main_font);
+        border: 1px solid rgb(68, 85, 126, 0.3);
+        border-radius: 3px;
+        cursor: pointer;
+        transition: 0.1s ease-in-out;
+        &:hover {
+          background-color: var(--bg_color_super_light);
+        }
+      }
+    }
   }
 `;
 interface ChatModalProps {
@@ -221,7 +337,7 @@ interface ChatModalProps {
   refetch_conversations: () => void;
 }
 
-type ChatModalView = "chats" | "newChat";
+type ChatModalView = "chats" | "newChat" | "newGroup";
 
 const ChatModal = (props: ChatModalProps) => {
   const [currentView, setCurrentView] = useState<ChatModalView>("chats");
@@ -294,7 +410,7 @@ const ChatModal = (props: ChatModalProps) => {
   const startNewConversation = async (friendId: string) => {
     try {
       const resp = await newConversation(friendId);
-      console.log(resp)
+      console.log(resp);
       if (resp.success) {
         props.refetch_conversations();
         setCurrentView("chats");
@@ -356,7 +472,7 @@ const ChatModal = (props: ChatModalProps) => {
             )
           }
         </div>
-      ) : (
+      ) : currentView === "newChat" ? (
         <div className="NewChatContainer">
           <div className="NewChatContainerHeader">
             <button
@@ -407,6 +523,38 @@ const ChatModal = (props: ChatModalProps) => {
               <span className="NFoundSpan">No users found.</span>
             )}
           </div>
+
+          <button
+            className="NewGroupBtn"
+            onClick={() => setCurrentView("newGroup")}
+          >
+            <NewChatIcon size={20} fill="rgba(255, 255, 255, 0.5)" />
+            create group chat
+          </button>
+        </div>
+      ) : (
+        <div className="NewGroupContainer">
+          <div className="NewGroupContainerHeader">
+            <button
+              className="BackToConvsBtn"
+              onClick={() => setCurrentView("chats")}
+            >
+              <BackIcon size={25} fill="rgba(255, 255, 255, 0.5)" />
+            </button>
+            <h2>Create a new group chat</h2>
+          </div>
+
+          <div className="GroupDetails">
+            <input type="text" placeholder="Group Name" />
+            <textArea placeholder="Group Description" />
+            <div className="GroupTypeSelection">
+              <span>Type :</span>
+              <input type="radio" name="group_type" value="public" /> Public
+              <input type="radio" name="group_type" value="private" /> Private
+            </div>
+
+            <button>Create Group Chat</button>
+          </div>
         </div>
       )}
     </SyledChatModal>
@@ -445,11 +593,11 @@ const StyledChatItem = styled("div")`
       height: 8px;
       border-radius: 50%;
       background-color: ${(props: { userStatus: UserStatus }) =>
-        props.userStatus === "online"
+        props.userStatus === "ONLINE"
           ? "var(--green_color)"
-          : props.userStatus === "idle"
+          : props.userStatus === "IDLE"
           ? "var(--yellow_color)"
-          : props.userStatus === "doNotDisturb"
+          : props.userStatus === "DONOTDISTURB"
           ? "var(--red_color)"
           : "var(--gray_color)"};
       border: 1px solid rgba(255, 255, 255, 0.4);
@@ -510,7 +658,7 @@ const ChatItem = (props: ChatItemProps) => {
     <StyledChatItem
       avatar={chattingWith?.avatar}
       isRead={
-        props.converstation.lastMessage?.status !== "read" &&
+        props.converstation.lastMessage?.status !== "READ" &&
         !isLastMessageFromUser
       }
       userStatus={chattingWith?.status}
@@ -523,17 +671,23 @@ const ChatItem = (props: ChatItemProps) => {
         <div className="ChatItemLastMessage">
           <span>
             {isLastMessageFromUser &&
-            props.converstation.lastMessage?.status === "delivered" ? (
+            props.converstation.lastMessage?.status === "DELIVERED" ? (
               <SeenIcon size={20} fill="rgba(255,255,255, 0.3)" />
             ) : isLastMessageFromUser &&
-              props.converstation.lastMessage?.status === "read" ? (
+              props.converstation.lastMessage?.status === "READ" ? (
               <SeenIcon size={20} fill="var(--green_color)" />
             ) : (
               ""
             )}
           </span>
           <span>{isLastMessageFromUser && "You :"}</span>
-          <span>{props.converstation.lastMessage?.content}</span>
+          <span>
+            {props.converstation.lastMessage
+              ? props.converstation.lastMessage.content.length > 15
+                ? props.converstation.lastMessage.content.slice(0, 15) + "..."
+                : props.converstation.lastMessage.content
+              : "No messages yet."}
+          </span>
         </div>
       </div>
       <div className="ChatItemTime">{time}</div>

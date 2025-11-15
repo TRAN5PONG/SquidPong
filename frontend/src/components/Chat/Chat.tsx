@@ -1,8 +1,8 @@
 import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
-import { ChatMessage, ConversationDetails } from "@/types/chat";
+import { ChatGroup, ChatMessage, ConversationDetails } from "@/types/chat";
 import { styled } from "@/lib/Zerostyle";
 import { CloseIcon, EmojiIcon, MinimizeIcon, SendIcon } from "../Svg/Svg";
-import { UserStatus } from "@/types/user";
+import { User, UserStatus } from "@/types/user";
 import ChatMessaegeEl from "./ChatMessage";
 import { useAppContext } from "@/contexts/AppProviders";
 import {
@@ -305,7 +305,6 @@ export const ChatContainer = () => {
       try {
         const resp = await getMessages(id);
         if (resp.success && resp.data) {
-          console.log(resp.data);
           setConversations((prevs) => {
             const existing = prevs.find((c) => c.id === resp.data!.id);
             if (existing) return prevs; // Already exists
@@ -328,19 +327,16 @@ export const ChatContainer = () => {
       if (!data.chatId) return;
 
       setConversations((prevConversations) => {
-        // Check if conversation exists in current state
         const existingConv = prevConversations.find(
           (c) => Number(c.id) === Number(data.chatId)
         );
 
-        // If conversation doesn't exist, we need to open it
         if (!existingConv) {
-          // Trigger opening new conversation
           chat.setActiveConversations([
             ...(chat.activeConversations || []),
             data.chatId,
           ]);
-          return prevConversations; // Don't update yet, will update when conversation loads
+          return prevConversations;
         }
 
         msgReceivedSound.play();
@@ -348,7 +344,6 @@ export const ChatContainer = () => {
         return prevConversations.map((conv) => {
           if (Number(conv.id) !== Number(data.chatId)) return conv;
 
-          // Check if this message already exists (edited case)
           const messageExists = conv.messages.some((m) => m.id === data.id);
 
           const updatedMessages = messageExists
@@ -357,9 +352,12 @@ export const ChatContainer = () => {
               )
             : [...conv.messages, data];
 
-          const updatedConv = { ...conv, messages: updatedMessages };
+          const updatedConv = {
+            ...conv,
+            messages: updatedMessages,
+            unreadCount: conv.unreadCount ? conv.unreadCount + 1 : 1,
+          };
 
-          // If minimized, add preview
           if (conv.viewState === "minimized") {
             return {
               ...updatedConv,
@@ -492,24 +490,17 @@ interface MaximizedConvProps {
   key: string;
 }
 const MaximizedConv = (props: MaximizedConvProps) => {
+  const [chattingWith, setChattingWith] = useState<User | ChatGroup | null>(
+    null
+  );
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
   const { msgSentSound, msgReceivedSound } = useSounds();
-
-  useEffect(() => {
-    if (messagesRef.current) {
-      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-    }
-  }, [props.conversation.messages]);
 
   const [messageInput, setMessageInput] = Zeroact.useState<string>("");
   const [isReplyingTo, setIsReplyingTo] = Zeroact.useState<ChatMessage | null>(
     null
   );
   const inputRef = Zeroact.useRef<HTMLInputElement>(null);
-
-  const chattingWith = props.conversation.participants.find(
-    (p) => p.userId === props.chattingWithId
-  );
 
   const handleSendMessage = async () => {
     if (messageInput.trim() === "") return;
@@ -572,25 +563,49 @@ const MaximizedConv = (props: MaximizedConvProps) => {
   };
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
+    console.log(props.conversation);
+    // set chatting with
+    if (props.conversation.group)
+    {
+      console.log("group found", props.conversation.group);
+      setChattingWith(props.conversation.group);
     }
-    // get last message of the other user
-    const lastMessageFromOtherUser = [...props.conversation.messages]
-      .reverse()
-      .find((m) => Number(m.sender.userId) !== Number(props.userId));
-
-    if (lastMessageFromOtherUser?.status !== "READ") {
-      markConvAsRead();
+    else {
+      const participant = props.conversation.participants.find(
+        (p) => p.userId !== props.userId
+      );
+      if (participant) setChattingWith(participant);
     }
   }, []);
+  useEffect(() => {
+    if (!inputRef.current) return;
+    inputRef.current.addEventListener("focus", () => {
+      markConvAsRead();
+      props.setConversations((prevs) =>
+        prevs.map((conv) =>
+          conv.id === props.conversation.id ? { ...conv, unreadCount: 0 } : conv
+        )
+      );
+    });
+    return () => {
+      if (!inputRef.current) return;
+      inputRef.current.removeEventListener("focus", () => {});
+    };
+  }, []);
+  useEffect(() => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
+  }, [props.conversation.messages]);
 
   if (!chattingWith) return null;
 
   return (
     <StyledMaximizedConv
-      avatar_url={chattingWith.avatar}
-      userState={chattingWith.status}
+      avatar_url={
+        (chattingWith as User).avatar || (chattingWith as ChatGroup).imageUrl
+      }
+      // userState={chattingWith.status}
     >
       <div className="chat-header">
         <div className="chat-controls">
@@ -608,7 +623,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         <div className="chat-title" onClick={props.onMinimize}>
           <div className="chat-avatar"></div>
           <div className="chat-title-text">
-            <h1>{chattingWith.firstName + " " + chattingWith.lastName}</h1>
+            {/* <h1>{chattingWith.firstName + " " + chattingWith.lastName}</h1> */}
           </div>
         </div>
       </div>

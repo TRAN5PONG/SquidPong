@@ -35,12 +35,23 @@ export interface ChatMessage {
   isEdited?: boolean;
 }
 
+export interface ChatGroup {
+  chatId: number;
+  createdAt: Date;
+  desc: string;
+  id: number;
+  imageUrl: string;
+  name: string;
+  type: "PRIVATE" | "PUBLIC";
+}
+
 export interface Conversation {
   id: string;
   participants: User[];
   lastMessage: ChatMessage | null;
   unreadCount?: number;
   updatedAt?: Date;
+  group?: ChatGroup;
 }
 
 export interface ConversationDetails extends Conversation {
