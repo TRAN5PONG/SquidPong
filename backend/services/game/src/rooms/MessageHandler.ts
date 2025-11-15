@@ -78,10 +78,12 @@ export class MessageHandler {
         position: message.position,
         velocity: message.velocity,
         rotation: message.rotation,
+        playerId: _client.matchPlayerId,
       },
       { except: client },
     );
   }
+  // TODO:
 
   private handleBallHit(client: Client, message: any) {
     this.room.state.lastHitPlayer = message.playerId;

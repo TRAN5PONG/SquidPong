@@ -52,4 +52,6 @@ export class MatchState extends Schema {
 
   @type("string") serveState: "waiting_for_serve" | "in_play" =
     "waiting_for_serve";
+
+  @type("string") hostPlayerId: string | null = null;
 }

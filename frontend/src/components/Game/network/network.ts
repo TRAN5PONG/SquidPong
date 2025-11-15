@@ -37,6 +37,8 @@ interface NetworkEvents {
   "lastHitPlayer:updated": (lastHitPlayer: string) => void;
   "serveState:changed": (serveState: "waiting_for_serve" | "in_play") => void;
   "Ball:Toss": (data: ballTossMessage) => void;
+  "host:assigned": (data: { hostPlayerId: string }) => void;
+  "host:migrated": (data: { oldHostId: string; newHostId: string }) => void;
 }
 
 export class Network {
@@ -55,6 +57,8 @@ export class Network {
   private userId: string | null = null;
 
   public lastHitPlayer: string | null = null;
+  public hostPlayerId: string | null = null;
+
   // Events
   private eventListeners: Map<keyof NetworkEvents, Function[]> = new Map();
 
@@ -159,8 +163,6 @@ export class Network {
     // Listen to score changes properly
     $(this.room.state as any).scores.onChange(
       (score: number, playerId: string) => {
-        console.log(`Score changed for player ${playerId}: ${score}`);
-
         // Emit score update event
         const allScores: Record<string, number> = {};
         this.room!.state.scores.forEach((s, pId) => {
@@ -176,6 +178,28 @@ export class Network {
     $(this.room.state as any).listen("currentServer", (currentServer) => {
       this.emit("serve:Turn", currentServer);
     });
+
+    $(this.room.state as any).listen("hostPlayerId", (hostPlayerId: string) => {
+      this.hostPlayerId = hostPlayerId;
+    });
+
+    this.room.onMessage("host:assigned", (data) => {
+      this.emit("host:assigned", data);
+      this.hostPlayerId = data.hostPlayerId;
+    });
+
+    this.room.onMessage(
+      "host:migrated",
+      (data: { oldHostId: string; newHostId: string }) => {
+        this.hostPlayerId = data.newHostId;
+
+        console.log(
+          "Host migrated: ========================= ",
+          data.newHostId,
+        );
+        this.emit("host:migrated", data);
+      },
+    );
 
     this.room.onMessage("game:paused", (data) => {
       this.emit("game:paused", data);
@@ -203,10 +227,8 @@ export class Network {
     });
     this.room.onMessage("opponent:paddle", (data) => {
       this.emit("opponent:paddle", data);
-      // console.log("Opponent Paddle Data:", data);
     });
     this.room.onMessage("Ball:HitMessage", (data: BallHitMessage) => {
-      console.log("Received Ball:HitMessage:", data);
       this.emit("Ball:HitMessage", data);
     });
 
@@ -327,5 +349,9 @@ export class Network {
   dispose() {
     this.leave();
     this.eventListeners.clear();
+  }
+
+  isHost(): boolean {
+    return this.hostPlayerId === this.getPlayerId();
   }
 }
