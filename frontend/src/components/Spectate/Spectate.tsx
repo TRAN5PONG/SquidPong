@@ -12,6 +12,15 @@ import { db } from "@/db";
 import { useNavigate } from "@/contexts/RouterProvider";
 import ScoreBoard from "../Game/Elements/ScoreBoard";
 import { Game } from "../Game/Scenes/GameScene";
+import { useRouteParam } from "@/hooks/useParam";
+import { LoaderSpinner } from "../Loader/Loader";
+import Skeleton from "../Skeleton/Skeleton";
+import { getMatchById } from "@/api/match";
+import { Match } from "@/types/game/game";
+import { SpectateScene } from "../Game/Scenes/SpectateScene";
+import { useAppContext } from "@/contexts/AppProviders";
+import { Network } from "../Game/network/network";
+import { cameraModes } from "../Game/entities/Camera/SpectatorCamera";
 // import { CameraModeName, cameraModes } from "../Game/entities/cameras/camera";
 
 const StyledSpectate = styled("div")`
@@ -324,11 +333,73 @@ const StyledSpectate = styled("div")`
 `;
 
 const Spectate = () => {
+  /**
+   *STATE
+   */
+  // refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const SpectateSceneRef = useRef<SpectateScene | null>(null);
+  const netWorkRef = useRef<Network | null>(null);
+  // states
   const [selectedBet, setSelectedBet] = Zeroact.useState<string | null>(null);
   const [ammountBet, setAmmountBet] = Zeroact.useState<number | null>(null);
   const [showCameraModes, setShowCameraModes] = Zeroact.useState(false);
+  const [isLoading, setIsLoading] = Zeroact.useState(true);
+  const [match, setMatch] = Zeroact.useState<Match | null>(null);
+  const [notFound, setNotFound] = Zeroact.useState(false);
 
+  /**
+   * MATCH
+   */
+  const matchId = useRouteParam("/spectate/:id", "id");
+  const { user } = useAppContext();
+  useEffect(() => {
+    if (!matchId) return;
+
+    const fetchMatchData = async () => {
+      setIsLoading(true);
+      try {
+        const matchData = await getMatchById(matchId);
+        if (matchData && matchData.data) {
+          setMatch(matchData.data);
+        } else {
+          setNotFound(true);
+        }
+      } catch (error) {
+        console.error("Error fetching match data:", error);
+        setNotFound(true);
+      }
+    };
+    fetchMatchData();
+
+    try {
+    } catch (err) {
+      console.error("Error fetching match data:", err);
+    }
+  }, [matchId]);
+
+  useEffect(() => {
+    if (!match || !canvasRef.current || !user) return;
+
+    SpectateSceneRef.current = new SpectateScene(
+      canvasRef.current,
+      match,
+      user.id
+    );
+    SpectateSceneRef.current.start();
+    netWorkRef.current = SpectateSceneRef.current.net;
+  }, [match, canvasRef.current, user]);
+
+  // useEffect(() => {
+  //   if (!netWorkRef.current) return;
+
+  //   netWorkRef.current.on("opponent:paddle", (data) => {
+  //     console.log("opponent paddle data:", data);
+  //   });
+  // }, [netWorkRef.current]);
+  /**
+   * BETTING
+   */
   const handleBetSelection = (bet: string) => {
     setSelectedBet((prev) => (prev === bet ? null : bet));
   };
@@ -336,14 +407,14 @@ const Spectate = () => {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    const game = new Game(canvasRef.current);
-    game.start(1)
-  }, [])
-
+    // const game = new Game(canvasRef.current);
+    // game.start(1)
+  }, []);
 
   // const onCameraModeChange = (mode: CameraModeName) => {
   //   camera.setCurrentMode(mode);
   // };
+
   return (
     <StyledSpectate
       oponent1avatar={db.users[0].avatar}
@@ -371,6 +442,7 @@ const Spectate = () => {
           </div>
         </div>
 
+        {isLoading && <LoaderSpinner />}
         <canvas className="gameCanvas" ref={canvasRef} />
 
         {showCameraModes && (
@@ -395,57 +467,91 @@ const Spectate = () => {
       <div className="RightContainer">
         <div className="BettingContainer">
           <div className="BettingHeader">
-            <div className="BetCard">
-              <div className="Oponents">
-                <div className="Oponent" />
-                <div className="Oponent" />
-              </div>
-
-              <div className="BettingOptions">
-                <div className="BettingOption">
-                  <span className="BettingOptionName">W1</span>
-                  <span
-                    className={`BettingOptionOdds ${
-                      selectedBet === "W1" ? "selected" : ""
-                    }`}
-                    onClick={() => handleBetSelection("W1")}
-                  >
-                    2.5
-                  </span>
+            {isLoading ? (
+              <Skeleton
+                height="60px"
+                width="100%"
+                dark={true}
+                borderRadius={5}
+                animation="hybrid"
+                bgColor="var(--bg_color_super_light)"
+              />
+            ) : (
+              <div className="BetCard">
+                <div className="Oponents">
+                  <div className="Oponent" />
+                  <div className="Oponent" />
                 </div>
 
-                <div className="BettingOption">
-                  <span className="BettingOptionName">W2</span>
-                  <span
-                    className={`BettingOptionOdds ${
-                      selectedBet === "W2" ? "selected" : ""
-                    }`}
-                    onClick={() => handleBetSelection("W2")}
-                  >
-                    3.0
-                  </span>
+                <div className="BettingOptions">
+                  <div className="BettingOption">
+                    <span className="BettingOptionName">W1</span>
+                    <span
+                      className={`BettingOptionOdds ${
+                        selectedBet === "W1" ? "selected" : ""
+                      }`}
+                      onClick={() => handleBetSelection("W1")}
+                    >
+                      2.5
+                    </span>
+                  </div>
+
+                  <div className="BettingOption">
+                    <span className="BettingOptionName">W2</span>
+                    <span
+                      className={`BettingOptionOdds ${
+                        selectedBet === "W2" ? "selected" : ""
+                      }`}
+                      onClick={() => handleBetSelection("W2")}
+                    >
+                      3.0
+                    </span>
+                  </div>
+                </div>
+
+                <div className="BettingAmount">
+                  <input
+                    type="number"
+                    min="100"
+                    step="1"
+                    placeholder="Enter amount"
+                    value={ammountBet ? ammountBet : 100}
+                    onChange={(e: any) => setAmmountBet(Number(e.target.value))}
+                  />
                 </div>
               </div>
-
-              <div className="BettingAmount">
-                <input
-                  type="number"
-                  min="100"
-                  step="1"
-                  placeholder="Enter amount"
-                  value={ammountBet ? ammountBet : 100}
-                  onChange={(e: any) => setAmmountBet(Number(e.target.value))}
-                />
-              </div>
-            </div>
+            )}
           </div>
           <button className="betButton">Bet</button>
         </div>
         <div className="ChatContainer">
           <div className="ChatMessages">
-            {db.FakeGroupChatMessages.map((message: ChatMessage) => {
-              return <GroupMessageEl {...message} />;
-            })}
+            {isLoading ? (
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "5px",
+                }}
+              >
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <Skeleton
+                    height="50px"
+                    width="100%"
+                    dark={true}
+                    index={index}
+                    borderRadius={5}
+                    animation={index % 2 === 0 ? "Shine" : "Wave"}
+                    bgColor="var(--bg_color_super_light)"
+                  />
+                ))}
+              </div>
+            ) : (
+              db.FakeGroupChatMessages.map((message: ChatMessage) => {
+                return <GroupMessageEl {...message} />;
+              })
+            )}
           </div>
           <div className="Chat-input">
             <div className="Chat-input-icons">

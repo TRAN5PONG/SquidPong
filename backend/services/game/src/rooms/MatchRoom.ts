@@ -64,16 +64,18 @@ export class MatchRoom extends Room<MatchState> {
       return true;
     }
 
-    if (spectators.includes(options.userId)) {
+    if (options.spectate)
+    {
+      // auto assign spectator role
       _client.meta = { role: "spectator", userId: options.userId };
       return true;
     }
-
     return false;
   }
 
   onJoin = async (client: Client, options: any) => {
     const _client = client as any;
+
 
     // prints ID of the client that just joined
     console.log(

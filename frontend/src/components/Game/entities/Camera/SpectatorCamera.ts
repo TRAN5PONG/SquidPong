@@ -39,7 +39,7 @@ export const cameraModes: CameraMode[] = [
   {
     mode_name: "overview Top",
     alpha: 0,
-    beta: -Math.PI,
+    beta: -Math.PI ,
     radius: 10,
   },
   {

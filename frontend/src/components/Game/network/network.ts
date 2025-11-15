@@ -41,6 +41,13 @@ interface NetworkEvents {
   "host:migrated": (data: { oldHostId: string; newHostId: string }) => void;
 }
 
+interface SpectateEvents {
+  "game:paused": (data: { by: string; remainingPauseTime: number }) => void;
+  "game:resumed": () => void;
+  "game:ended": (data: { winnerId: string }) => void;
+  "game:started": (data: { startTime: number }) => void;
+}
+
 export class Network {
   private client: Client;
   public room: Room<MatchState> | null = null;
@@ -62,7 +69,11 @@ export class Network {
   // Events
   private eventListeners: Map<keyof NetworkEvents, Function[]> = new Map();
 
-  constructor(serverUrl: string, match: Match) {
+  constructor(
+    serverUrl: string,
+    match: Match,
+    mode: "spectate" | "play" = "play"
+  ) {
     this.serverUrl = serverUrl;
     this.client = new Client(serverUrl);
     this.match = match;
@@ -72,7 +83,7 @@ export class Network {
     this.players[match.opponent2.id] = match.opponent2;
   }
 
-  // Join
+  // Join as player
   async join(userId: string) {
     if (!this.match) throw new Error("Match data is required to join");
     try {
@@ -89,6 +100,43 @@ export class Network {
       console.error("Join error:", err);
       throw err;
     }
+  }
+  async spectate(userId: string) {
+    if (!this.match) throw new Error("Match data is required to spectate");
+    try {
+      this.room = await this.client.joinById<MatchState>(this.match?.id, {
+        spectate: true,
+        userId,
+      });
+      this.setupSpectateListeners();
+      this.roomIsReady = true;
+      return this.room;
+    } catch (err) {
+      console.error("Spectate join error:", err);
+      throw err;
+    }
+  }
+
+  // Setup Spectate event listeners
+  private setupSpectateListeners() {
+    if (!this.room) return;
+
+    this.room.onMessage("game:paused", (data) => {
+      this.emit("game:paused", data);
+    });
+    this.room.onMessage("game:resumed", () => {
+      this.emit("game:resumed");
+    });
+    this.room.onMessage("game:ended", (data) => {
+      this.emit("game:ended", data);
+    });
+    this.room.onMessage("game:started", (data) => {
+      this.emit("game:started", data);
+    });
+    this.room.onMessage("opponent:paddle", (data) => {
+      this.emit("opponent:paddle", data);
+      // console.log("Opponent Paddle Data:", data);
+    });
   }
 
   // Setup Match listeners
@@ -116,7 +164,7 @@ export class Network {
             else this.emit("player:disconnected", playerId);
           }
         });
-      },
+      }
     );
 
     $(this.room.state as any).players.onChange(
@@ -128,7 +176,7 @@ export class Network {
           this.players[playerId].pauseRequests = 0;
           this.emit("player:disconnected", playerId);
         }
-      },
+      }
     );
     // P
     // Match States
@@ -141,7 +189,7 @@ export class Network {
       (newWinnerId: string | null) => {
         this.winnerId = newWinnerId;
         this.emit("winner:declared", newWinnerId);
-      },
+      }
     );
     $(this.room.state as any).listen("countdown", (countdown: number) => {
       this.countdown =
@@ -155,7 +203,7 @@ export class Network {
       "lastHitPlayer",
       (lastHitPlayer: string) => {
         this.emit("lastHitPlayer:updated", lastHitPlayer);
-      },
+      }
     );
     $(this.room.state as any).listen("serveState", (serveState: string) => {
       this.emit("serveState:changed", serveState);
@@ -173,7 +221,7 @@ export class Network {
           scores: allScores,
           pointBy: playerId,
         });
-      },
+      }
     );
     $(this.room.state as any).listen("currentServer", (currentServer) => {
       this.emit("serve:Turn", currentServer);
