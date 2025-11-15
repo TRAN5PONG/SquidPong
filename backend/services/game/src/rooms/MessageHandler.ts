@@ -5,8 +5,8 @@ import { ScoringHandler } from "./ScoringHandler";
 export class MessageHandler {
   constructor(
     private room: MatchRoom,
-    private scoringHandler: ScoringHandler,
-  ) { }
+    private scoringHandler: ScoringHandler
+  ) {}
 
   setupMessageHandlers() {
     // Player ready
@@ -70,7 +70,7 @@ export class MessageHandler {
 
   private handlePaddleUpdate(client: Client, message: any) {
     const _client = client as any;
-
+    const player = this.room.state.players.get(_client.matchPlayerId);
     // Broadcast to everyone except the sender
     this.room.broadcast(
       "opponent:paddle",
@@ -78,9 +78,9 @@ export class MessageHandler {
         position: message.position,
         velocity: message.velocity,
         rotation: message.rotation,
-        playerId: _client.matchPlayerId,
+        playerId: player?.id,
       },
-      { except: client },
+      { except: client }
     );
   }
   // TODO:
@@ -129,7 +129,7 @@ export class MessageHandler {
     this.room.state.phase = "ended";
     this.room.state.winnerId =
       Array.from(this.room.state.players.values()).find(
-        (p) => p.id !== player.id,
+        (p) => p.id !== player.id
       )?.id || null;
 
     this.room.broadcast("game:ended", { winnerId: this.room.state.winnerId });

@@ -83,10 +83,10 @@ export class Paddle extends BasePaddle {
     this.clampedZ =
       this.mesh?.position.z || (this.side === "LEFT" ? -2.8 : 2.8);
 
-    if (this.isLocal) {
-      this.setupPaddlePlane();
-      this.enableLiveMouseTracking();
-    }
+    // if (this.isLocal) {
+    //   this.setupPaddlePlane();
+    //   this.enableLiveMouseTracking();
+    // }
   }
   private setupPaddlePlane(): void {
     if (!this.mesh) return;
@@ -134,33 +134,33 @@ export class Paddle extends BasePaddle {
     });
   }
 
-  public update() {
-    if (!this.mesh) return;
+  // public update() {
+  //   if (!this.mesh) return;
 
-    const targetPos = new Vector3(
-      this.clampedX,
-      this.mesh.position.y,
-      this.clampedZ,
-    );
-    const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.8);
-    this.mesh.position.copyFrom(interpolated);
+  //   const targetPos = new Vector3(
+  //     this.clampedX,
+  //     this.mesh.position.y,
+  //     this.clampedZ,
+  //   );
+  //   const interpolated = Vector3.Lerp(this.mesh.position, targetPos, 0.8);
+  //   this.mesh.position.copyFrom(interpolated);
 
-    // Smooth rotation
-    const boundaries = this.getBoundaries();
-    const pct =
-      (interpolated.x - boundaries.x.min) /
-      (boundaries.x.max - boundaries.x.min);
-    const centered = pct * 2 - 1;
-    const targetRot = centered * -(Math.PI / 2);
-    this.mesh.rotation.z = Scalar.Lerp(this.mesh.rotation.z, targetRot, 0.2);
+  //   // Smooth rotation
+  //   const boundaries = this.getBoundaries();
+  //   const pct =
+  //     (interpolated.x - boundaries.x.min) /
+  //     (boundaries.x.max - boundaries.x.min);
+  //   const centered = pct * 2 - 1;
+  //   const targetRot = centered * -(Math.PI / 2);
+  //   this.mesh.rotation.z = Scalar.Lerp(this.mesh.rotation.z, targetRot, 0.2);
 
-    // Sync with physics
-    this.paddle_physics?.setPaddleTargetPosition(
-      interpolated.x,
-      interpolated.y,
-      interpolated.z,
-    );
-  }
+  //   // Sync with physics
+  //   this.paddle_physics?.setPaddleTargetPosition(
+  //     interpolated.x,
+  //     interpolated.y,
+  //     interpolated.z,
+  //   );
+  // }
 
   // TEST:
   public updateVisual(alpha: number) {
@@ -175,6 +175,13 @@ export class Paddle extends BasePaddle {
     const targetRot = centered * -(Math.PI / 2);
     this.mesh.rotation.z = targetRot;
   }
+
+  public updatePaddlePosition(x: number, y: number, z: number) {
+    if (!this.mesh) return;
+
+    this.mesh.position.set(x, y, z);
+  }
+
 
   public getBoundaries() {
     return {
