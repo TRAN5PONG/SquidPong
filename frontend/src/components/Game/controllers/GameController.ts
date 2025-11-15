@@ -32,6 +32,8 @@ export class GameController {
   private scene: Scene;
   // Sync
   private paddleSyncTimer: ReturnType<typeof setInterval> | null = null;
+  private ballSyncTimer: ReturnType<typeof setInterval> | null = null;
+
   private currentTick: number = 0;
   private lastCollisionTick: number = 0;
   public MyTurnToServe: boolean = false;
@@ -373,6 +375,37 @@ export class GameController {
     }, 1000 / 30);
   }
 
+  private startBallSync(): void {
+    // Only host sends ball state
+    if (!this.net.isHost()) return;
+
+    // Avoid multiple intervals
+    if (this.ballSyncTimer) return;
+
+    this.ballSyncTimer = setInterval(() => {
+      if (!this.net || !this.ball || !this.physics) return;
+
+      const pos = this.physics.getBallPosition();
+      const vel = this.physics.getBallVelocity();
+
+      this.net.sendMessage("Ball:state", {
+        position: { x: pos.x, y: pos.y, z: pos.z },
+        velocity: { x: vel.x, y: vel.y, z: vel.z },
+        tick: this.currentTick,
+      });
+    }, 1000 / 30); // 30 FPS
+  }
+
+  private stopBallSync(): void {
+    if (this.ballSyncTimer) {
+      clearInterval(this.ballSyncTimer);
+      this.ballSyncTimer = null;
+    }
+  }
+
+  /*
+   * Stop sending of local paddle state
+   */
   private stopPaddleSync(): void {
     if (this.paddleSyncTimer) {
       clearInterval(this.paddleSyncTimer);
@@ -629,10 +662,12 @@ export class GameController {
   // ==================== Game state methods =================
   public pauseGame(): void {
     this.stopPaddleSync();
+    this.stopBallSync();
   }
 
   public resumeGame(): void {
     this.startPaddleSync();
+    this.startBallSync();
   }
 
   public resetRound(data: ballResetMessage): void {
@@ -713,5 +748,6 @@ export class GameController {
     // console.log(`Time Elapsed: ${ timeMin }m ${ timeSec } s`);
 
     this.startPaddleSync();
+    this.startBallSync();
   }
 }

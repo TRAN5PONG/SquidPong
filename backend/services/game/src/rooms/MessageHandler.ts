@@ -5,8 +5,8 @@ import { ScoringHandler } from "./ScoringHandler";
 export class MessageHandler {
   constructor(
     private room: MatchRoom,
-    private scoringHandler: ScoringHandler
-  ) {}
+    private scoringHandler: ScoringHandler,
+  ) { }
 
   setupMessageHandlers() {
     // Player ready
@@ -24,6 +24,11 @@ export class MessageHandler {
       this.handleBallHit(client, message);
     });
 
+    // ball state update from host
+    this.room.onMessage("Ball:state", (client, message) => {
+      //TODO: Broadcast to all spectators except the players
+      // this.room.broadcast("Ball:state", message, { except: client });
+    });
     // ball serve event from host
     this.room.onMessage("Ball:Serve", (client, message) => {
       this.handleBallServe(client, message);
@@ -80,7 +85,7 @@ export class MessageHandler {
         rotation: message.rotation,
         playerId: player?.id,
       },
-      { except: client }
+      { except: client },
     );
   }
   // TODO:
@@ -129,7 +134,7 @@ export class MessageHandler {
     this.room.state.phase = "ended";
     this.room.state.winnerId =
       Array.from(this.room.state.players.values()).find(
-        (p) => p.id !== player.id
+        (p) => p.id !== player.id,
       )?.id || null;
 
     this.room.broadcast("game:ended", { winnerId: this.room.state.winnerId });

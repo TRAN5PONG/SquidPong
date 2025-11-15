@@ -72,7 +72,7 @@ export class Network {
   constructor(
     serverUrl: string,
     match: Match,
-    mode: "spectate" | "play" = "play"
+    mode: "spectate" | "play" = "play",
   ) {
     this.serverUrl = serverUrl;
     this.client = new Client(serverUrl);
@@ -164,7 +164,7 @@ export class Network {
             else this.emit("player:disconnected", playerId);
           }
         });
-      }
+      },
     );
 
     $(this.room.state as any).players.onChange(
@@ -176,7 +176,7 @@ export class Network {
           this.players[playerId].pauseRequests = 0;
           this.emit("player:disconnected", playerId);
         }
-      }
+      },
     );
     // P
     // Match States
@@ -189,7 +189,7 @@ export class Network {
       (newWinnerId: string | null) => {
         this.winnerId = newWinnerId;
         this.emit("winner:declared", newWinnerId);
-      }
+      },
     );
     $(this.room.state as any).listen("countdown", (countdown: number) => {
       this.countdown =
@@ -203,7 +203,7 @@ export class Network {
       "lastHitPlayer",
       (lastHitPlayer: string) => {
         this.emit("lastHitPlayer:updated", lastHitPlayer);
-      }
+      },
     );
     $(this.room.state as any).listen("serveState", (serveState: string) => {
       this.emit("serveState:changed", serveState);
@@ -221,7 +221,7 @@ export class Network {
           scores: allScores,
           pointBy: playerId,
         });
-      }
+      },
     );
     $(this.room.state as any).listen("currentServer", (currentServer) => {
       this.emit("serve:Turn", currentServer);
