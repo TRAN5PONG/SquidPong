@@ -1,15 +1,83 @@
 export interface GameCharacter {
   id: string;
-  name: string; // Name of the character
-  description: string; // Description of the character
-  image: string; // Image URL of the character
-  avatar: string; // Avatar URL of the character
-  price: number; // Price of the character in in-game currency
-  spinControl: number; // Spin control value of the character
-  reflexSpeed: number; // Reflex speed value of the character
-  powerShot: number; // Power shot value of the character
+  name: string;
+  description: string;
+  image: string;
+  avatar: string;
+  price: number;
+  spinControl: number;
+  reflexSpeed: number;
+  powerShot: number;
 }
+
 export const characters: GameCharacter[] = [
+  {
+    id: "Tbib",
+    name: "Tbib",
+    description: "A fierce warrior with a burning passion for victory.",
+    image: "/characters/green_m2.webp",
+    avatar: "/characters/green_m2_avatar.png",
+    price: 0,
+    spinControl: 88,
+    reflexSpeed: 92,
+    powerShot: 85,
+  },
+  {
+    id: "Med",
+    name: "Med",
+    description: "A skilled fighter with a sharp mind and quick reflexes.",
+    image: "/characters/green_m1.webp",
+    avatar: "/characters/green_m1_avatar.png",
+    price: 200,
+    spinControl: 80,
+    reflexSpeed: 85,
+    powerShot: 90,
+  },
+  {
+    id: "Ryu",
+    name: "Ryu",
+    description: "A legendary fighter known for his mastery of martial arts.",
+    image: "/characters/green_f1.webp",
+    avatar: "/characters/green_f1_avatar.png",
+    price: 200,
+    spinControl: 90,
+    reflexSpeed: 95,
+    powerShot: 100,
+  },
+  {
+    id: "7ama9a",
+    name: "7ama9a",
+    description: "A brave hero with a heart of gold and a spirit of adventure.",
+    image: "/characters/green_f2.webp",
+    avatar: "/characters/green_f2_avatar.png",
+    price: 200,
+    spinControl: 82,
+    reflexSpeed: 87,
+    powerShot: 90,
+  },
+  {
+    id: "M-nachit",
+    name: "M-nachit",
+    description: "A lightning-fast prodigy who dominates the court with style.",
+    image: "/characters/green_m3.webp",
+    avatar: "/characters/green_m3_avatar.png",
+    price: 200,
+    spinControl: 89,
+    reflexSpeed: 84,
+    powerShot: 93,
+  },
+  {
+    id: "Mira",
+    name: "Mira",
+    description:
+      "A master of precision and grace, striking with perfect timing.",
+    image: "/characters/green_f3.webp",
+    avatar: "/characters/green_f3_avatar.png",
+    price: 200,
+    spinControl: 95,
+    reflexSpeed: 80,
+    powerShot: 88,
+  },
   {
     id: "Zero",
     name: "Zero",
@@ -22,81 +90,27 @@ export const characters: GameCharacter[] = [
     powerShot: 80,
   },
   {
-    id: "Taizen",
-    name: "Taizen",
+    id: "Zenitsu",
+    name: "Zenitsu",
     description:
       "A powerful warrior with a strong will and unmatched strength.",
     image: "/characters/guard.webp",
     avatar: "/characters/guard_avatar.png",
-    price: 1500,
+    price: 1000,
     spinControl: 75,
     reflexSpeed: 80,
     powerShot: 95,
   },
   {
-    id: "Kira",
-    name: "Kira",
-    description: "A skilled fighter with a sharp mind and quick reflexes.",
-    image: "/characters/green_m1.webp",
-    avatar: "/characters/green_m1_avatar.png",
-    price: 1200,
-    spinControl: 80,
-    reflexSpeed: 85,
-    powerShot: 90,
-  },
-  {
-    id: "Ryu",
-    name: "Ryu",
-    description: "A legendary fighter known for his MASTERy of martial arts.",
-    image: "/characters/green_f1.webp",
-    avatar: "/characters/green_f1_avatar.png",
-    price: 2000,
+    id: "Bssita",
+    name: "Bssita",
+    description:
+      "An eerie doll-like challenger that mimics every move you make.",
+    image: "/characters/doll.png",
+    avatar: "/characters/doll_avatar.png",
+    price: 1000,
     spinControl: 90,
-    reflexSpeed: 95,
-    powerShot: 100,
-  },
-  {
-    id: "Akira",
-    name: "Akira",
-    description: "A fierce warrior with a burning passion for victory.",
-    image: "/characters/green_m2.webp",
-    avatar: "/characters/green_m2_avatar.png",
-    price: 1800,
-    spinControl: 88,
     reflexSpeed: 92,
     powerShot: 85,
-  },
-  {
-    id: "Sora",
-    name: "Sora",
-    description: "A brave hero with a heart of GOLD and a spirit of adventure.",
-    image: "/characters/green_f2.webp",
-    avatar: "/characters/green_f2_avatar.png",
-    price: 1600,
-    spinControl: 82,
-    reflexSpeed: 87,
-    powerShot: 90,
-  },
-  {
-    id: "Sora",
-    name: "Sora",
-    description: "A brave hero with a heart of GOLD and a spirit of adventure.",
-    image: "/characters/green_m3.webp",
-    avatar: "/characters/green_m3_avatar.png",
-    price: 1600,
-    spinControl: 82,
-    reflexSpeed: 87,
-    powerShot: 90,
-  },
-  {
-    id: "Sora",
-    name: "Sora",
-    description: "A brave hero with a heart of GOLD and a spirit of adventure.",
-    image: "/characters/green_f3.webp",
-    avatar: "/characters/green_f3_avatar.png",
-    price: 1600,
-    spinControl: 12,
-    reflexSpeed: 87,
-    powerShot: 90,
   },
 ];
