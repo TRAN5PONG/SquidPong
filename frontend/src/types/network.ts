@@ -28,6 +28,7 @@ export interface BallHitMessage {
   applySpin?: boolean; // Whether to apply spin
   tick: number; // tick when the hit happened
   playerId: string; // who hit the ball
+  applyEffect?: boolean; // Whether to apply hit effect
 }
 
 export interface PaddleState {
