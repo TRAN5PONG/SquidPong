@@ -137,7 +137,7 @@ export async function updateProfileHandler(req: FastifyRequest, res: FastifyRepl
   const Token = headers['x-secret-token'];
   const cacheKey = `profile:${userId}`; 
 
-  const body = req.body as { level?: number , status?: string };
+  const body = req.body as { score?: number , level? : number , status?: string };
   let profile;
   
   try 
@@ -162,19 +162,24 @@ export async function updateProfileHandler(req: FastifyRequest, res: FastifyRepl
     {
       profile = await prisma.profile.findUnique({ where: { userId } });
       if(!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
-      await redis.set(cacheKey, {status: profile.status, level: profile.level, 
+      await redis.set(cacheKey, {status: profile.status, score: profile.score, 
               avatar: profile.avatar, username : profile.username, 
               firstName : profile.firstName , lastName : profile.lastName ,  });
     }
     else
       profile = await redis.get(cacheKey);
     
-    const new_level = body.level !== undefined ? profile.level + body.level : Number(profile.level);
-    const { newRankTier, newRankDivision , newLevel } = getPromotedRank(profile, new_level);
+    const new_score = profile.score + (body.score || 0);
+    console.log("New Score Calculated:", new_score);
+    
+    const { newRankTier, newRankDivision , newScore } = getPromotedRank(profile, new_score);
 
+    const newLevel = (Math.sign(body.score || 0) === 1) ? (profile.level + ((body.score || 0) / 10)) : profile.level + (body.level || 0);
+    
     await redis.update(cacheKey, '$', {
       ...(body.status && { status: body.status }),
-      level: newLevel,
+      score : newScore,
+      level :newLevel,
       rankTier: newRankTier,
       rankDivision: newRankDivision
     });

@@ -98,6 +98,7 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply) {
             replyTo: { include: { sender: true } },
           },
         },
+        group : true,
       },
     });
     if (!fullChat) throw new Error(chatMessages.FETCH_NOT_FOUND);
@@ -111,6 +112,7 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply) {
     const newData = {
       id: fullChat.id,
       unreadCount,
+      group: fullChat.group || null,
       lastMessage: fullChat.messages[fullChat.messages.length - 1] || null,
       participants: fullChat.members.map((m: any) => m.user),
       messages: fullChat.messages,
@@ -673,7 +675,7 @@ export async function removeReactionHandler(
 
 export async function markMessagesAsRead( req: FastifyRequest, res: FastifyReply)
 {
-  const respond: ApiResponse<{ updatedCount: number }> = {
+  const respond: ApiResponse<null> = {
     success: true,
     message: "Messages marked as read successfully",
   };
@@ -711,8 +713,8 @@ export async function markMessagesAsRead( req: FastifyRequest, res: FastifyReply
     };
     await sendDataToQueue(dataToSend, "eventhub");
 
-    respond.data = { updatedCount: result.count };
-  } catch (error) {
+  } 
+  catch (error) {
     sendError(res, error);
   }
 
