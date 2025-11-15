@@ -479,7 +479,7 @@ export class GameController {
       ).length();
 
       let applyEffect = false;
-      if (ballSpeed > 14) {
+      if (ballSpeed > 13.5) {
         this.ball.activateFireEffect();
         applyEffect = true;
       } else {
