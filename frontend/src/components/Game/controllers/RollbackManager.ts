@@ -92,6 +92,7 @@ export class RollbackManager {
     syncInfo: BallSyncInfo,
     position: Vec3,
     velocity: Vec3,
+    applyEffect: boolean = true,
     spin?: Vec3,
     applySpin: boolean = true,
   ): void {
@@ -103,12 +104,13 @@ export class RollbackManager {
           position,
           velocity,
           spin,
+          applySpin,
         );
         break;
       case BallSyncResult.APPLY_IMMEDIATELY:
       case BallSyncResult.FUTURE_TICK_WARNING:
       case BallSyncResult.SNAP_DIRECTLY:
-        this.applyState(position, velocity, spin, applySpin);
+        this.applyState(position, velocity, applyEffect, spin, applySpin);
         break;
     }
   }
@@ -120,13 +122,14 @@ export class RollbackManager {
     position: Vec3,
     velocity: Vec3,
     spin?: Vec3,
+    applyEffect: boolean = false,
   ): void {
     this.isRollbackInProgress = true;
 
     const rollbackBase = this.getHistoryAtTick(receivedTick);
     if (!rollbackBase) {
       console.warn(`⚠️ Rollback failed: No history for tick ${receivedTick}`);
-      this.applyState(position, velocity, spin);
+      this.applyState(position, velocity, applyEffect, spin);
       this.clearHistory();
       this.recordState(currentTick);
       this.isRollbackInProgress = false;
@@ -138,7 +141,7 @@ export class RollbackManager {
     this.physics.setBallSpin(...rollbackBase.spin);
 
     // Apply received state
-    this.applyState(position, velocity, spin);
+    this.applyState(position, velocity, applyEffect, spin);
 
     // Clear future history
     this.clearHistoryAfterTick(receivedTick);
@@ -168,6 +171,7 @@ export class RollbackManager {
   private applyState(
     position: Vec3,
     velocity: Vec3,
+    applyEffect: boolean,
     spin?: Vec3,
     applySpin = true,
   ): void {
@@ -178,6 +182,9 @@ export class RollbackManager {
       this.physics.setApplySpin(applySpin);
     } else this.physics.setApplySpin(false);
     this.ball.setMeshPosition(this.physics.getBallPosition());
+    if (applyEffect) {
+      this.ball.deactivateFireEffect();
+    }
   }
 
   // ============== Helpers ==============

@@ -97,6 +97,7 @@ export class GameController {
         syncInfo,
         data.position,
         data.velocity,
+        data.applyEffect,
         data.spin,
         data.applySpin,
       );
@@ -455,6 +456,7 @@ export class GameController {
           paddleSpeed,
           paddleVelocity.x,
         );
+
         this.physics.setBallSpin(0, spinCalc.spinY, 0);
         this.physics.setApplySpin(spinCalc.applySpin);
 
@@ -479,6 +481,22 @@ export class GameController {
       );
       this.physics.ball.body.applyImpulse(impulse, true);
 
+      const ballSpeed = new Vector3(
+        ball.linvel().x,
+        ball.linvel().y,
+        ball.linvel().z,
+      ).length();
+
+      let applyEffect = true;
+      if (ballSpeed > 14) {
+        this.ball.activateFireEffect();
+        applyEffect = true;
+      } else {
+        this.ball.deactivateFireEffect();
+      }
+
+      console.log("ball speed before hit:", ballSpeed.toFixed(2));
+
       const actualVel = ball.linvel();
       const hitMsg: BallHitMessage = {
         position: {
@@ -495,6 +513,7 @@ export class GameController {
         applySpin: this.physics.getApplySpin(),
         tick: this.currentTick,
         playerId: this.net.getPlayerId()!,
+        applyEffect: applyEffect,
       };
 
       if (isServe) {
@@ -625,13 +644,13 @@ export class GameController {
     let applySpin = false;
 
     if (paddleSpeed >= 28) {
-      const clampedPaddleVelX = Math.max(-29, Math.min(29, paddleVelocityX));
+      const clampedPaddleVelX = Math.max(-28, Math.min(28, paddleVelocityX));
 
       if (Math.abs(clampedPaddleVelX) > 26) {
         if (clampedPaddleVelX > 26) {
-          spinY = ((clampedPaddleVelX - 26) / (29 - 26)) * 6;
+          spinY = ((clampedPaddleVelX - 26) / (28 - 26)) * 8;
         } else if (clampedPaddleVelX < -26) {
-          spinY = ((clampedPaddleVelX + 26) / (-29 + 26)) * -6;
+          spinY = ((clampedPaddleVelX + 26) / (-28 + 26)) * -8;
         }
 
         spinY = -spinY;
@@ -669,6 +688,7 @@ export class GameController {
 
   public resetRound(data: ballResetMessage): void {
     this.physics.reset(data, true);
+    this.ball.deactivateFireEffect();
 
     this.gameState = GameState.WAITING_FOR_SERVE;
     this.isLocalServing = false;
@@ -734,7 +754,7 @@ export class GameController {
     // this.updateLocalPaddle();
 
     this.physics.ball.setPosition("PREV");
-    this.physics.Step(1 / 60);
+    this.physics.Step();
     this.physics.ball.setPosition("CURR");
     this.rollbackManager?.recordState(this.currentTick);
     this.incrementTick();
