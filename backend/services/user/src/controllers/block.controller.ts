@@ -10,10 +10,6 @@ import { mergeProfileWithRedis } from '../utils/utils';
 import { blockUserInChat , unblockUserInChat } from '../integration/chat.restapi';
 
 
-
-
-
-
 enum FriendshipStatus {
   PENDING = "PENDING",
   ACCEPTED = "ACCEPTED",
@@ -21,7 +17,33 @@ enum FriendshipStatus {
   BLOCKED = "BLOCKED",
 }
 
-const { BLOCKED, ACCEPTED } = FriendshipStatus;
+const { BLOCKED, ACCEPTED, PENDING } = FriendshipStatus;
+
+// Helper function to check if any block exists between two users
+async function hasBlockBetweenUsers(userId: number, targetId: number): Promise<boolean> 
+{
+  const blocks = await prisma.blockedUser.findMany({
+    where: {
+      OR: [
+        { blockerId: userId, blockedId: targetId, isBlocked: true },
+        { blockerId: targetId, blockedId: userId, isBlocked: true },
+      ],
+    },
+  });
+  return blocks.length > 0;
+}
+
+// Helper function to check if user has blocked target
+async function hasUserBlockedTarget(blockerId: number, blockedId: number): Promise<boolean> 
+{
+  const block = await prisma.blockedUser.findUnique({
+    where: {
+      blockerId_blockedId: { blockerId, blockedId },
+    },
+  });
+  return block !== null && block.isBlocked;
+}
+
 
 // ----------------- BLOCK USER -----------------
 export async function blockUserHandler(req: FastifyRequest, res: FastifyReply) 
@@ -32,30 +54,45 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
   const userId = Number(headers['x-user-id']);
   const blockId = Number((req.params as any).blockId);
 
-  console.log("userId:", userId, "blockId:", blockId);
   try 
   {
-    await iSameUser(userId , blockId);
+    if(userId === blockId) throw new Error(BlockMessages.BLOCK_FAILED + ' You cannot block yourself.');
 
-    const existingFriendship = await prisma.friendship.findFirst({
+    const existingBlock = await prisma.blockedUser.findUnique({
+      where: {
+        blockerId_blockedId: { blockerId: userId, blockedId: blockId },
+      },
+    });
+
+    if (existingBlock && existingBlock.isBlocked)
+      throw new Error(BlockMessages.BLOCK_FAILED + ' You already blocked this user.');
+
+    await prisma.blockedUser.create({
+      data: { 
+        blockerId: userId, 
+        blockedId: blockId, 
+        isBlocked: true,
+      },
+    });
+
+    const friendship = await prisma.friendship.findFirst({
       where: {
         OR: [
           { senderId: userId, receiverId: blockId },
           { senderId: blockId, receiverId: userId },
         ],
-        status: ACCEPTED,
       },
     });
-    if(!existingFriendship)
-      throw new Error(BlockMessages.BLOCK_NO_FRIEND);
 
-    await prisma.friendship.update({
-      where: { id: existingFriendship.id},
-      data: { senderId: userId, receiverId: blockId, status: BLOCKED},
-    });
+    if (friendship) 
+    {
+      await prisma.friendship.update({ 
+        where: { id: friendship.id },
+        data: { status: BLOCKED }
+      });
+    }
 
-    // Block user in chat service
-    // await blockUserInChat(userId, blockId);
+    await blockUserInChat(userId, blockId);
   } 
   catch (error) {
     sendError(res, error);
@@ -78,29 +115,44 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
   
   try 
   {
-    await iSameUser(userId , blockId);
-    const existingFriendship = await prisma.friendship.findFirst({
+    await iSameUser(userId, blockId);
+    
+    const existingBlock = await prisma.blockedUser.findUnique({
       where: {
-        senderId: userId, receiverId: blockId,
+        blockerId_blockedId: { blockerId: userId, blockedId: blockId },
+      },
+    });
+    
+    if (!existingBlock || !existingBlock.isBlocked)
+      throw new Error(BlockMessages.UNBLOCK_NOT_FOUND);
+
+    // Pause the block (set isBlocked to false) instead of deleting for audit history
+    await prisma.blockedUser.update({
+      where: {
+        blockerId_blockedId: { blockerId: userId, blockedId: blockId },
+      },
+      data: { isBlocked: false},
+    });
+
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { senderId: userId, receiverId: blockId },
+          { senderId: blockId, receiverId: userId },
+        ],
         status: BLOCKED,
       },
     });
-    if(!existingFriendship)
-      throw new Error(BlockMessages.UNBLOCK_NOT_FOUND);
 
-    await prisma.friendship.update({
-      where: { id: existingFriendship.id},
-      data: { status: ACCEPTED },
-    });
-
-    // Unblock user in chat service
-    try {
-      await unblockUserInChat(userId, blockId);
-      console.log(`Successfully unblocked user ${blockId} in chat for user ${userId}`);
-    } catch (chatError) {
-      console.error('Failed to unblock user in chat service:', chatError);
-      // Continue even if chat service fails - user is already unblocked in DB
+    if (friendship) 
+    {
+      await prisma.friendship.update({ 
+        where: { id: friendship.id },
+        data: { status: ACCEPTED }
+      });
     }
+
+    await unblockUserInChat(userId, blockId);
   } 
   catch (error) {
     sendError(res, error);
@@ -108,6 +160,7 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
 
   return res.send(respond);
 }
+
 
 
 export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyReply) 
@@ -118,12 +171,17 @@ export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyRe
   
   try 
   {
-    const friendships = await prisma.friendship.findMany({
-      where: { senderId: userId, status: BLOCKED }
+    const blockedRecords = await prisma.blockedUser.findMany({
+      where: { 
+        blockerId: userId,
+        isBlocked: true,
+      }
     });
 
-    const friendIds = friendships.map((f:any) => f.receiverId);
-    const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
+    const blockedUserIds = blockedRecords.map((record: any) => record.blockedId);
+    const profiles = await prisma.profile.findMany({ 
+      where: { userId: { in: blockedUserIds } } 
+    });
     const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
     respond.data = mergedProfiles;
   } 
@@ -132,4 +190,76 @@ export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyRe
   }
   return res.send(respond);
 }
+
+
+// ----------------- GET USERS WHO BLOCKED ME -----------------
+export async function getUsersWhoBlockedMeHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<any> = { 
+    success: true, 
+    message: "Users who blocked you fetched successfully", 
+    data: null 
+  };
+  const headers = req.headers as any;
+  const userId = Number(headers['x-user-id']);
+  
+  try 
+  {
+    // Find all users who have blocked the current user
+    const blockRecords = await prisma.blockedUser.findMany({
+      where: { 
+        blockedId: userId,
+        isBlocked: true,
+      }
+    });
+
+    const blockerUserIds = blockRecords.map((record: any) => record.blockerId);
+    
+    const profiles = await prisma.profile.findMany({ 
+      where: { userId: { in: blockerUserIds } } 
+    });
+    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
+    respond.data = mergedProfiles;
+  } 
+  catch (error) {
+    return sendError(res, error);
+  }
+  return res.send(respond);
+}
+
+
+// ----------------- CHECK IF INTERACTION IS ALLOWED -----------------
+// Helper endpoint for other services to check if interaction is allowed
+export async function checkInteractionAllowedHandler(req: FastifyRequest, res: FastifyReply) 
+{
+  const respond: ApiResponse<{ allowed: boolean, reason?: string }> = { 
+    success: true, 
+    message: "Interaction check completed",
+    data: { allowed: true }
+  };
+  
+  const { senderId, receiverId } = req.body as { senderId: number; receiverId: number };
+  
+  try 
+  {
+    const hasBlock = await hasBlockBetweenUsers(senderId, receiverId);
+    
+    if (hasBlock) 
+    {
+      respond.data = { 
+        allowed: false, 
+        reason: "Blocked: One or both users have blocked each other" 
+      };
+    }
+  } 
+  catch (error) {
+    return sendError(res, error);
+  }
+  
+  return res.send(respond);
+}
+
+
+// Export helper functions for use in other controllers
+export { hasBlockBetweenUsers, hasUserBlockedTarget };
 
