@@ -7,7 +7,7 @@ export class PaddleCamera extends Camera {
     this.setupPosition();
   }
 
-  protected setupPosition(): void {
+  public setupPosition(): void {
     const cam = this.getCamera();
 
     cam.alpha = Math.PI / 2;

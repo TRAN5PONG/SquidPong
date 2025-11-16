@@ -5,6 +5,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math";
 // Camera base
 export abstract class Camera {
   protected camera: ArcRotateCamera;
+  public scene: Scene;
 
   constructor(
     scene: Scene,
@@ -22,12 +23,13 @@ export abstract class Camera {
       scene
     );
 
+    this.scene = scene;
     this.camera.allowUpsideDown = false;
     this.camera.lowerRadiusLimit = 1;
     this.camera.upperRadiusLimit = 100;
   }
 
-  protected abstract setupPosition(): void;
+  public abstract setupPosition(): void;
 
   getCamera() {
     return this.camera;
@@ -40,4 +42,7 @@ export abstract class Camera {
   dispose() {
     this.camera.dispose();
   }
+
+
+
 }

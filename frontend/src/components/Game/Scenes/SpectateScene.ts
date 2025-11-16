@@ -12,6 +12,7 @@ import { MatchState } from "../network/GameState";
 import { Paddle } from "../entities/Paddle/GamePaddle";
 import { Vec3 } from "@/types/network";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Debug } from "../entities/Debug";
 
 export class SpectateScene {
   match!: Match;
@@ -19,6 +20,7 @@ export class SpectateScene {
   engine: Engine;
   scene: Scene;
   // Entities
+  debug: Debug;
   hostPaddle: Paddle;
   guestPaddle: Paddle;
   ball: Ball;
@@ -57,13 +59,14 @@ export class SpectateScene {
     try {
       // camera
       this.camera = new SpectatorCamera(this.scene);
+      this.camera.attach(this.canvas);
       // light
       this.light = new Light(this.scene);
       // arena
       this.arena = new Arena(this.scene, this.light);
       // paddles
-      this.hostPaddle = new Paddle(this.scene, "LEFT", true, null);
-      this.guestPaddle = new Paddle(this.scene, "RIGHT", true, null);
+      this.hostPaddle = new Paddle(this.scene, "LEFT", true);
+      this.guestPaddle = new Paddle(this.scene, "RIGHT", true);
       // ball
       this.ball = new Ball(this.scene);
 
@@ -71,6 +74,10 @@ export class SpectateScene {
       this.net = new Network("ws://10.13.3.5:4005", this.match, "spectate");
       this.room = await this.net.spectate(this.userId);
       this.onPaddleMove();
+
+      // Debugging tools
+      // this.debug = new Debug(this.scene, this.engine);
+      // this.debug.ShowDebuger();
 
       // load
       await Promise.all([
