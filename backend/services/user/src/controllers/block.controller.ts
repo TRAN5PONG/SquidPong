@@ -126,7 +126,6 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
     if (!existingBlock || !existingBlock.isBlocked)
       throw new Error(BlockMessages.UNBLOCK_NOT_FOUND);
 
-    // Pause the block (set isBlocked to false) instead of deleting for audit history
     await prisma.blockedUser.update({
       where: {
         blockerId_blockedId: { blockerId: userId, blockedId: blockId },
@@ -134,23 +133,35 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
       data: { isBlocked: false},
     });
 
-    const friendship = await prisma.friendship.findFirst({
+    const reverseBlock = await prisma.blockedUser.findUnique({
       where: {
-        OR: [
-          { senderId: userId, receiverId: blockId },
-          { senderId: blockId, receiverId: userId },
-        ],
-        status: BLOCKED,
+        blockerId_blockedId: { blockerId: blockId, blockedId: userId },
       },
     });
 
-    if (friendship) 
+    const isStillBlockedByOther = reverseBlock && reverseBlock.isBlocked;
+
+    if (!isStillBlockedByOther) 
     {
-      await prisma.friendship.update({ 
-        where: { id: friendship.id },
-        data: { status: ACCEPTED }
+      const friendship = await prisma.friendship.findFirst({
+        where: {
+          OR: [
+            { senderId: userId, receiverId: blockId },
+            { senderId: blockId, receiverId: userId },
+          ],
+          status: BLOCKED,
+        },
       });
+
+      if (friendship) 
+      {
+        await prisma.friendship.update({ 
+          where: { id: friendship.id },
+          data: { status: ACCEPTED }
+        });
+      }
     }
+    // else: if other user still has us blocked, keep friendship as BLOCKED
 
     await unblockUserInChat(userId, blockId);
   } 

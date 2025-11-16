@@ -386,32 +386,6 @@ export async function unblockFriendInChatHandler(req: FastifyRequest,res: Fastif
   return res.send(respond);
 }
 
-export async function deleteAccountHandler(
-  req: FastifyRequest,
-  res: FastifyReply
-) {
-  const respond: ApiResponse<null> = {
-    success: true,
-    message: "Account deleted successfully",
-  };
-  const headers = req.headers as { "x-user-id": string };
-  const userId = headers["x-user-id"];
-
-  try {
-    checkSecretToken(req);
-
-    await prisma.user.update({
-      where: { userId },
-      data: { isDeleted: true },
-    });
-
-    console.log(`User ${userId} marked as deleted in chat service`);
-  } catch (error) {
-    sendError(res, error);
-  }
-
-  return res.send(respond);
-}
 
 // ------------------- Message Endpoints -------------------
 

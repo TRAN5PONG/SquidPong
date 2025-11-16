@@ -1,13 +1,15 @@
 import { RouteHandlerMethod , FastifySchema  } from 'fastify';
 
 import {
-  blockUserHandler, unblockUserHandler, removeUserHandler, deleteAccountHandler, 
+  blockUserHandler, unblockUserHandler, removeUserHandler,
   blockFriendInChatHandler, unblockFriendInChatHandler,
   createChat, removeChat, getChatById, getRecentChats,
   sendMessageHandler, editMessageHandler, deleteMessageHandler, 
   replyToMessageHandler, addReactionHandler, removeReactionHandler,
   markMessagesAsRead
 } from '../controllers/chat.controller';
+
+import { deleteAccountHandler } from '../controllers/user.controller';
 import { createUser, updateUser } from '../controllers/user.controller';
 import {
   createGroup, updateGroupInfo, updateGroupImage, removeGroup, getGroupById, getGoupes,

@@ -7,10 +7,17 @@ import app from '../app';
 
 
 
-export const onlineUsers = new Map<string, WebSocket>();
+// Track a set of WebSocket connections per userId so multiple devices/tabs are supported
+export const onlineUsers = new Map<string, Set<WebSocket>>();
 
-async function updatestatus(userId: string , status: string)
+async function updatestatus(userId: string , status: 'ONLINE' | 'OFFLINE', updateLastSeen: boolean = false)
 {
+  const body: any = { status };
+  if (updateLastSeen) {
+    // instruct user service to update the `lastSeen` timestamp
+    body.updateLastSeen = true;
+  }
+
   await fetch(`http://user:4002/api/user/realtime`, { 
     method: "PUT", 
     headers: {
@@ -18,10 +25,9 @@ async function updatestatus(userId: string , status: string)
       'x-secret-token': process.env.SECRET_TOKEN || '',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ status : status})
-    });
+    body: JSON.stringify(body)
+  });
 }
-
 
 
 export async function handleWsConnect(ws: any, req: FastifyRequest) 
@@ -29,8 +35,15 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
   try 
   {
     const userId = ws.userId;
-    const socketKey = `socket:${userId}`;
-    onlineUsers.set(socketKey , ws)
+    // add socket to the user's socket set
+    const userKey = `${userId}`;
+    let sockets = onlineUsers.get(userKey);
+    if (!sockets) {
+      sockets = new Set<WebSocket>();
+      onlineUsers.set(userKey, sockets);
+    }
+    sockets.add(ws);
+    // mark user as online in redis (set membership by userId)
     await redis.sadd('online_users', userId);
 
 
@@ -39,7 +52,8 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
     
     
     console.log(` Client connected: ${userId}`);
-    await updatestatus(userId , "ONLINE");
+
+    await updatestatus(userId, 'ONLINE', false);
     
   }
   catch (error) 
@@ -86,11 +100,26 @@ async function onClientDisconnect(ws: any)
 
   try 
   {
-    onlineUsers.delete(`socket:${userId}`);
-    await redis.srem('online_users', userId);
-
-    console.log(`Client disconnected: ${userId}`);
-    await updatestatus(userId , "OFFLINE");
+    const userKey = `${userId}`;
+    const sockets = onlineUsers.get(userKey);
+    if (sockets) {
+      sockets.delete(ws);
+      if (sockets.size === 0) {
+        // no more active sockets for this user
+        onlineUsers.delete(userKey);
+        await redis.srem('online_users', userId);
+        console.log(`Client disconnected (last socket): ${userId}`);
+        // Update status to OFFLINE and update lastSeen timestamp
+        await updatestatus(userId, 'OFFLINE', true);
+      } else {
+        console.log(`Client disconnected (still active sockets): ${userId}`);
+      }
+    } else {
+      console.log(`Client disconnected but no socket set found for user: ${userId}`);
+      // defensively remove from redis and set offline
+      await redis.srem('online_users', userId);
+      await updatestatus(userId, 'OFFLINE', true);
+    }
 
   }
   catch (error) 
@@ -144,19 +173,22 @@ export function sendWsMessage(msg: any)
 
     for (const userId of to) 
     {
-      
-    const socketKey = `socket:${userId}`;
-    const socket = onlineUsers.get(socketKey);
+      const sockets = onlineUsers.get(`${userId}`);
+      if (!sockets || sockets.size === 0) {
+        console.log(`User ${userId} is not connected via WebSocket.`);
+        continue;
+      }
 
-    if (!socket)
-    {
-      console.log(`User ${userId} is not connected via WebSocket.`);
-      continue;
+      for (const socket of sockets) {
+        try {
+          if ((socket as any).readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(data));
+          }
+        } catch (err) {
+          console.error(`Failed sending ws message to user ${userId} socket:`, err);
+        }
+      }
     }
-
-    if (socket.readyState === WebSocket.OPEN)
-      socket.send(JSON.stringify(data));
-  }
 
 
   } 

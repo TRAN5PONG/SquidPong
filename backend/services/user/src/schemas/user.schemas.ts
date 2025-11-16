@@ -251,9 +251,9 @@ export const updateProfileDBSchema: FastifySchema = {
         type: 'string',
         description: 'Banner image URL'
       },
-      status: {
+      customStatus: {
         type: 'string',
-        enum: ['ONLINE', 'IDLE', 'DO_NOT_DISTURB' , 'OFFLINE'],
+        enum: ['ONLINE', 'IDLE', 'DO_NOT_DISTURB'],
         description: 'User status'
       },
       playerCharacters: {
