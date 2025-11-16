@@ -170,6 +170,47 @@ export const rejectFriendRequestSchema: FastifySchema = {
   }
 };
 
+export const cancelFriendRequestSchema: FastifySchema = {
+  description: 'Cancel outgoing friend request',
+  tags: ['Friend Management'],
+  summary: 'Cancel Friend Request',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID from authentication token'
+      }
+    },
+    required: ['x-user-id']
+  },
+  body: {
+    type: 'object',
+    properties: {
+      receiverId: {
+        type: 'number',
+        description: 'ID of the user to whom the friend request was sent'
+      }
+    },
+    required: ['receiverId'],
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Friend request cancelled successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Invalid receiver ID'
+    },
+    404: {
+      ...errorResponse,
+      description: 'Friend request not found'
+    }
+  }
+};
+
 // =============================================
 // FRIENDS LIST SCHEMAS
 // =============================================
