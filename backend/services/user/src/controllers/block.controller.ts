@@ -56,7 +56,17 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
 
   try 
   {
-    if(userId === blockId) throw new Error(BlockMessages.BLOCK_FAILED + ' You cannot block yourself.');
+    await iSameUser(userId, blockId);
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { senderId: userId, receiverId: blockId },
+          { senderId: blockId, receiverId: userId},
+        ],
+      },
+    });
+    if (!friendship) throw new Error(BlockMessages.BLOCK_FAILED + ' You can only block your friends.');
+
 
     const existingBlock = await prisma.blockedUser.findUnique({
       where: {
@@ -72,15 +82,6 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
         blockerId: userId, 
         blockedId: blockId, 
         isBlocked: true,
-      },
-    });
-
-    const friendship = await prisma.friendship.findFirst({
-      where: {
-        OR: [
-          { senderId: userId, receiverId: blockId },
-          { senderId: blockId, receiverId: userId },
-        ],
       },
     });
 
@@ -126,11 +127,10 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
     if (!existingBlock || !existingBlock.isBlocked)
       throw new Error(BlockMessages.UNBLOCK_NOT_FOUND);
 
-    await prisma.blockedUser.update({
+    await prisma.blockedUser.delete({
       where: {
         blockerId_blockedId: { blockerId: userId, blockedId: blockId },
       },
-      data: { isBlocked: false},
     });
 
     const reverseBlock = await prisma.blockedUser.findUnique({
@@ -161,7 +161,6 @@ export async function unblockUserHandler(req: FastifyRequest, res: FastifyReply)
         });
       }
     }
-    // else: if other user still has us blocked, keep friendship as BLOCKED
 
     await unblockUserInChat(userId, blockId);
   } 
@@ -190,6 +189,7 @@ export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyRe
     });
 
     const blockedUserIds = blockedRecords.map((record: any) => record.blockedId);
+    console.log('Blocked User IDs:', blockedUserIds);
     const profiles = await prisma.profile.findMany({ 
       where: { userId: { in: blockedUserIds } } 
     });
