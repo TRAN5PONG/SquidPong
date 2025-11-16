@@ -91,7 +91,7 @@ export class SpectatorCamera extends Camera {
     this.setupPosition();
   }
 
-  protected setupPosition(): void {
+  public setupPosition(): void {
     this.pivot = new TransformNode("cameraPivot");
     this.getCamera().parent = this.pivot;
     this.applyModeImmediate(this.mode);
