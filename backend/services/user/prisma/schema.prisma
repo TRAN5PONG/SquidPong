@@ -13,6 +13,7 @@ enum UserStatus {
   OFFLINE
   IDLE
   DO_NOT_DISTURB
+  INVISIBLE
 }
 
 enum RankDivision {
@@ -99,15 +100,17 @@ model Profile {
   firstName String
   lastName  String
 
-  status    UserStatus   @default(OFFLINE)
-  lastSeen  DateTime     @default(now())
-  avatar    String        @default("/uploads/user/avatar/default.png")
-  banner    String        @default("http://localhost:4000/api/user/banners/default.png")
+  status       UserStatus   @default(OFFLINE)  // Actual connection state (ONLINE/OFFLINE)
+  customStatus UserStatus   @default(ONLINE)   // User's preferred display status
   
-  bio       String        @default("Just here to have fun, level up, and make some epic memories!")
+  lastSeen     DateTime     @default(now())
+  avatar       String        @default("/uploads/user/avatar/default.png")
+  banner       String        @default("http://localhost:4000/api/user/banners/default.png")
+  
+  bio          String        @default("Just here to have fun, level up, and make some epic memories!")
 
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   isVerified    Boolean    @default(false)
   isDeleted     Boolean    @default(false)

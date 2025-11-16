@@ -12,10 +12,13 @@ datasource db {
 enum UserStatus {
   ONLINE
   OFFLINE
+}
+
+enum UserCustomStatus {
+  ONLINE
   IDLE
   DO_NOT_DISTURB
 }
-
 enum NotificationStatus {
   UNREAD
   READ
@@ -51,6 +54,7 @@ model User {
   avatar      String   @default("")
 
   status      UserStatus   @default(OFFLINE)
+  customStatus  UserCustomStatus   @default(ONLINE)
 
   isDeleted   Boolean  @default(false)
 
