@@ -78,8 +78,6 @@ export class Game {
 
     this.engine = new Engine(canvas, true, { adaptToDeviceRatio: true });
     this.scene = new Scene(this.engine);
-
-
   }
 
   /****
@@ -94,14 +92,14 @@ export class Game {
       // Camera
       this.camera = new GameCamera(
         this.scene,
-        this.userId === this.hostId ? 1 : -1
+        this.userId === this.hostId ? 1 : -1,
       );
       this.camera.GameIntroAnimation();
 
       // this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network(`ws://10.13.3.1:4005`, this.match);
+      this.net = new Network(`ws://10.13.10.6:4005`, this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
@@ -117,7 +115,7 @@ export class Game {
         {
           color: paddleColors[0],
           // texture: paddleTextures[1],
-        }
+        },
       );
       this.guestPaddle = new Paddle(
         this.scene,
@@ -125,7 +123,7 @@ export class Game {
         this.userId === this.guestId,
         {
           color: paddleColors[1],
-        }
+        },
       );
 
       this.localPaddle =
@@ -140,7 +138,7 @@ export class Game {
         this.ball,
         this.physics,
         this.net,
-        this.scene
+        this.scene,
       );
 
       // Debugging tools

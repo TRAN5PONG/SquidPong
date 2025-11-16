@@ -52,44 +52,51 @@ export class ScoringHandler {
     this.room.broadcast("Ball:Reset", serveMsg);
   }
 
-  handlePointEnd() {
+  handlePointEnd(bounceData?: {
+    lastTableBounceSide: "LEFT" | "RIGHT" | null;
+    serverSideBounced: boolean;
+    lastHitPlayerId: string | null;
+  }) {
     if (this.isProcessingPoint) {
-      console.log("⚠️ Already processing point end - ignoring duplicate");
       return;
     }
 
     this.isProcessingPoint = true;
+
     const lastHitter = this.room.state.lastHitPlayer;
     const playerIds = Array.from(this.room.state.players.keys());
 
     let pointWinner: string | null = null;
 
     if (!lastHitter) {
-      // Ball went out without anyone hitting it - server fault
       const server = this.room.state.currentServer;
       pointWinner = playerIds.find((id) => id !== server) || null;
-      console.log(`⚠️ Ball out with no hitter - Server ${server} faulted`);
     } else {
-      // Last hitter hit it out - opponent gets the point
-      pointWinner = playerIds.find((id) => id !== lastHitter) || null;
-      console.log(
-        `⚠️ Player ${lastHitter} hit ball out - Opponent ${pointWinner} gets point`,
-      );
+      const lastHitterSide = this.getPlayerSide(lastHitter);
+      const opponentSide = lastHitterSide === "LEFT" ? "RIGHT" : "LEFT";
+
+      const bouncedOnOpponentSide =
+        bounceData?.lastTableBounceSide === opponentSide;
+
+      if (bouncedOnOpponentSide && bounceData?.serverSideBounced) {
+        // Ball successfully bounced on opponent's side after bouncing on server's side
+        // Last hitter wins the point
+        pointWinner = lastHitter;
+      } else {
+        // Ball went out without bouncing on opponent's side correctly
+        // Opponent gets the point
+        pointWinner = playerIds.find((id) => id !== lastHitter) || null;
+      }
     }
 
     if (!pointWinner) {
       this.isProcessingPoint = false;
-      console.error("❌ Could not determine point winner!");
       return;
     }
 
-    // Award the point
     this.incrementScore(pointWinner);
 
     this.serveCount++;
-    console.log(
-      `📊 Serve count: ${this.serveCount}/${this.SERVES_PER_TURN} for server ${this.room.state.currentServer}`,
-    );
 
     if (this.serveCount >= this.SERVES_PER_TURN) {
       const nextServerId = playerIds.find(
@@ -98,15 +105,20 @@ export class ScoringHandler {
       this.room.state.currentServer =
         nextServerId || this.room.state.currentServer;
       this.serveCount = 0;
-      console.log(
-        `🔄 Switching server to ${this.room.state.currentServer} (completed ${this.SERVES_PER_TURN} serves)`,
-      );
     }
 
     setTimeout(() => {
       this.isProcessingPoint = false;
       this.resetBallForServe(this.room.state.currentServer!);
     }, 3000);
+  }
+
+  private getPlayerSide(playerId: string): "LEFT" | "RIGHT" | null {
+    const player = this.room.state.players.get(playerId);
+    if (!player) return null;
+
+    // Host is always RIGHT, Guest is always LEFT
+    return playerId === this.room.state.hostPlayerId ? "RIGHT" : "LEFT";
   }
 
   private async addMatchStats() {

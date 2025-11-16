@@ -39,10 +39,7 @@ interface NetworkEvents {
   "Ball:Toss": (data: ballTossMessage) => void;
   "host:assigned": (data: { hostPlayerId: string }) => void;
   "host:migrated": (data: { oldHostId: string; newHostId: string }) => void;
-  
 }
-
-
 
 export class Network {
   private client: Client;
@@ -86,6 +83,7 @@ export class Network {
       this.room = await this.client.joinById<MatchState>(this.match?.id, {
         userId,
       });
+
       this.setupMatchListeners();
       this.roomIsReady = true;
       this.userId = userId;
@@ -112,7 +110,6 @@ export class Network {
       throw err;
     }
   }
-
 
   // Setup Match listeners
   private setupMatchListeners() {
@@ -199,6 +196,7 @@ export class Network {
       },
     );
     $(this.room.state as any).listen("currentServer", (currentServer) => {
+      console.log("Current server changed to:", currentServer);
       this.emit("serve:Turn", currentServer);
     });
 
@@ -206,6 +204,11 @@ export class Network {
       this.hostPlayerId = hostPlayerId;
     });
 
+    $(this.room.state as any).listen("phase", (phase: string) => {
+      if (phase === "playing") {
+        this.emit("game:started", { startTime: this.room?.state.gameStartAt });
+      }
+    });
     this.room.onMessage("host:assigned", (data) => {
       this.emit("host:assigned", data);
       this.hostPlayerId = data.hostPlayerId;
@@ -245,9 +248,9 @@ export class Network {
     this.room.onMessage("game:ended", (data) => {
       this.emit("game:ended", data);
     }); // todo : it seems that its working without adding this
-    this.room.onMessage("game:started", (data) => {
-      this.emit("game:started", data);
-    });
+    // this.room.onMessage("game:started", (data) => {
+    //   this.emit("game:started", data);
+    // });
     this.room.onMessage("opponent:paddle", (data) => {
       this.emit("opponent:paddle", data);
     });
