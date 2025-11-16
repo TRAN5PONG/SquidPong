@@ -73,7 +73,7 @@ export class Paddle extends BasePaddle {
   public getBoundaries() {
     return {
       x: { min: -3, max: 3 },
-      z: this.side === "LEFT" ? { min: -5, max: -1.5 } : { min: 1.5, max: 5 },
+      z: this.side === "LEFT" ? { min: -8, max: -1.5 } : { min: 1.5, max: 8 },
     };
   }
 

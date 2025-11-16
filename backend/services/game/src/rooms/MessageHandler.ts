@@ -5,8 +5,8 @@ import { ScoringHandler } from "./ScoringHandler";
 export class MessageHandler {
   constructor(
     private room: MatchRoom,
-    private scoringHandler: ScoringHandler
-  ) {}
+    private scoringHandler: ScoringHandler,
+  ) { }
 
   setupMessageHandlers() {
     // Player ready
@@ -31,7 +31,7 @@ export class MessageHandler {
         (c) => {
           const _c = c as any;
           return _c.matchPlayerId !== undefined; // Players have matchPlayerId set
-        }
+        },
       );
 
       // Broadcast to spectators only (exclude all players)
@@ -44,7 +44,7 @@ export class MessageHandler {
 
     // Ball out event
     this.room.onMessage("Ball:Out", (client, message) => {
-      this.scoringHandler.handlePointEnd();
+      this.scoringHandler.handlePointEnd(message);
     });
 
     // Ball toss event
@@ -93,13 +93,14 @@ export class MessageHandler {
         rotation: message.rotation,
         playerId: player?.id,
       },
-      { except: client }
+      { except: client },
     );
   }
-  // TODO:
 
   private handleBallHit(client: Client, message: any) {
     this.room.state.lastHitPlayer = message.playerId;
+
+    console.log(`Ball hit by player ${message.playerId}`);
     this.room.state.serveState = "in_play";
     this.room.broadcast("Ball:HitMessage", message, { except: client });
   }
@@ -108,13 +109,10 @@ export class MessageHandler {
     this.room.state.lastHitPlayer = message.playerId;
     this.room.state.serveState = "in_play";
 
-    console.log(`🎾 Ball served by player ${message.playerId}`);
     this.room.broadcast("Ball:Serve", message, { except: client });
   }
 
   private handleBallToss(client: Client, message: any) {
-    console.log(`🎾 Ball toss by player ${message.playerId}`);
-
     // this.room.state.serveState = "in_play";
     this.room.broadcast("Ball:Toss", message, { except: client });
   }
@@ -142,7 +140,7 @@ export class MessageHandler {
     this.room.state.phase = "ended";
     this.room.state.winnerId =
       Array.from(this.room.state.players.values()).find(
-        (p) => p.id !== player.id
+        (p) => p.id !== player.id,
       )?.id || null;
 
     this.room.broadcast("game:ended", { winnerId: this.room.state.winnerId });

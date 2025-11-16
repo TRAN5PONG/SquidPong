@@ -64,13 +64,11 @@ export class MatchRoom extends Room<MatchState> {
       return true;
     }
 
-    if (options.spectate)
-    {
+    if (options.spectate) {
       // auto assign spectator role
       _client.meta = { role: "spectator", userId: options.userId };
       return true;
     }
-
 
     console.log("reachs");
     return false;
@@ -78,7 +76,6 @@ export class MatchRoom extends Room<MatchState> {
 
   onJoin = async (client: Client, options: any) => {
     const _client = client as any;
-
 
     // prints ID of the client that just joined
     console.log(
@@ -111,6 +108,7 @@ export class MatchRoom extends Room<MatchState> {
       let player = this.state.players.get(matchPlayer.id);
 
       if (player) {
+        this.sendGameStateToPlayer(client, matchPlayer.id);
         player.isConnected = true;
       } else {
         player = new Player();
@@ -222,7 +220,7 @@ export class MatchRoom extends Room<MatchState> {
 
     this.state.gameStartAt = Date.now();
     this.state.phase = "playing";
-    this.broadcast("game:started", { startTime: this.state.gameStartAt });
+    // this.broadcast("game:started", { startTime: this.state.gameStartAt });
   }
 
   handlePause(client: Client) {
@@ -362,4 +360,6 @@ export class MatchRoom extends Room<MatchState> {
       console.log(`⚠️ No remaining players to assign as host`);
     }
   }
+
+  private sendGameStateToPlayer(client: Client, playerId: string) { }
 }
