@@ -3,6 +3,7 @@ import fs from 'fs';
 import { pipeline } from 'stream/promises';
 import prisma from '../db/database';
 import { redis } from '../integration/redis.integration';
+import { getVisibleStatus } from './statusHelper';
 
 import path from 'path';
 import crypto from 'crypto';
@@ -58,11 +59,23 @@ export async function fetchAndEnsureUser(userId: string)
   let user;
   const key = `profile:${userId}`;
 
-  if(await redis.exists(key))
-    return await redis.get(key);
+  if(await redis.exists(key)) {
+    user = await redis.get(key);
+    // Compute visible status
+    if (user.status && user.customStatus) {
+      user.status = getVisibleStatus(user.status, user.customStatus);
+    }
+    return user;
+  }
 
   user = await prisma.user.findUnique({ where: { userId }});
   if(!user) throw new Error('User not found ');
+  
+  // Compute visible status before returning
+  if (user.status && user.customStatus) {
+    user.status = getVisibleStatus(user.status, user.customStatus);
+  }
+  
   return user;
 }
 
