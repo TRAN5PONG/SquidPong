@@ -74,18 +74,27 @@ function sendWsMessage(msg: any)
   console.log("Target IDs:", targetIds);
 
   targetIds.forEach((userId: string) => {
-    const socketKey = `socket:${userId}`;
-    const clientWs = onlineUsers.get(socketKey);
+    const userKey = `${userId}`;
+    const sockets = onlineUsers.get(userKey);
 
-    if (clientWs && clientWs.readyState === clientWs.OPEN) 
-      {
-      console.log("Sending to client UserID:", userId);
-      clientWs.send(JSON.stringify(data)); // send full data object
-    } 
-    else
+    if (!sockets || sockets.size === 0) {
       console.log(`User ${userId} is offline or socket not available`);
+      return;
+    }
+
+    // Send to all sockets for this user (multi-device support)
+    sockets.forEach((clientWs) => {
+      try {
+        if ((clientWs as any).readyState === (clientWs as any).OPEN) 
+        {
+          console.log("Sending to client UserID:", userId);
+          clientWs.send(JSON.stringify(data)); // send full data object
+        }
+      } catch (err) {
+        console.error(`Failed to send message to user ${userId}:`, err);
+      }
+    });
   });
 
-  // Acknowledge the message in the queue
   channel.ack(msg);
 }

@@ -216,15 +216,19 @@ export function getPromotedRank(profileRedis: any, newScore: number)
 
 
 
+
 export async function mergeProfileWithRedis(profile: any): Promise<any> 
 {
   const cacheKey = `profile:${profile.userId}`;
+  let mergedProfile = profile;
+  
   if (await redis.exists(cacheKey)) 
   {
     const redisProfile = await redis.get(cacheKey);
-    return { ...profile, ...redisProfile };
+    mergedProfile = { ...profile, ...redisProfile };
   }
-  return profile;
+  
+  return mergedProfile;
 }
 
 
