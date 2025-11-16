@@ -92,9 +92,9 @@ export class RollbackManager {
     syncInfo: BallSyncInfo,
     position: Vec3,
     velocity: Vec3,
-    applyEffect: boolean = true,
+    applyEffect: boolean,
+    applySpin: boolean,
     spin?: Vec3,
-    applySpin: boolean = true,
   ): void {
     switch (syncInfo.result) {
       case BallSyncResult.ROLLBACK_NEEDED:
@@ -103,14 +103,15 @@ export class RollbackManager {
           syncInfo.currentTick,
           position,
           velocity,
-          spin,
+          applyEffect,
           applySpin,
+          spin,
         );
         break;
       case BallSyncResult.APPLY_IMMEDIATELY:
       case BallSyncResult.FUTURE_TICK_WARNING:
       case BallSyncResult.SNAP_DIRECTLY:
-        this.applyState(position, velocity, applyEffect, spin, applySpin);
+        this.applyState(position, velocity, applyEffect, applySpin, spin);
         break;
     }
   }
@@ -121,15 +122,16 @@ export class RollbackManager {
     currentTick: number,
     position: Vec3,
     velocity: Vec3,
+    applyEffect: boolean,
+    applySpin: boolean,
     spin?: Vec3,
-    applyEffect: boolean = false,
   ): void {
     this.isRollbackInProgress = true;
 
     const rollbackBase = this.getHistoryAtTick(receivedTick);
     if (!rollbackBase) {
       console.warn(`⚠️ Rollback failed: No history for tick ${receivedTick}`);
-      this.applyState(position, velocity, applyEffect, spin);
+      this.applyState(position, velocity, applyEffect, applySpin, spin);
       this.clearHistory();
       this.recordState(currentTick);
       this.isRollbackInProgress = false;
@@ -141,7 +143,7 @@ export class RollbackManager {
     this.physics.setBallSpin(...rollbackBase.spin);
 
     // Apply received state
-    this.applyState(position, velocity, applyEffect, spin);
+    this.applyState(position, velocity, applyEffect, applySpin, spin);
 
     // Clear future history
     this.clearHistoryAfterTick(receivedTick);
@@ -172,8 +174,8 @@ export class RollbackManager {
     position: Vec3,
     velocity: Vec3,
     applyEffect: boolean,
+    applySpin: boolean,
     spin?: Vec3,
-    applySpin = true,
   ): void {
     this.physics.setBallPosition(position.x, position.y, position.z);
     this.physics.setBallVelocity(velocity.x, velocity.y, velocity.z);
@@ -183,7 +185,7 @@ export class RollbackManager {
     } else this.physics.setApplySpin(false);
     this.ball.setMeshPosition(this.physics.getBallPosition());
     if (applyEffect) {
-      this.ball.deactivateFireEffect();
+      this.ball.activateFireEffect();
     }
   }
 
