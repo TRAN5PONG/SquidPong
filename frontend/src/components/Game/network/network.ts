@@ -1,7 +1,12 @@
 import { Client, getStateCallbacks, Room } from "colyseus.js";
 import { MatchPhase, MatchState } from "./GameState";
 import { Match, MatchPlayer } from "@/types/game/game";
-import { BallHitMessage, BallResetMessage, Vec3 } from "@/types/network";
+import {
+  BallHitMessage,
+  ballResetMessage,
+  ballTossMessage,
+  Vec3,
+} from "@/types/network";
 
 interface NetworkEvents {
   "player:connected": (playerId: string, player: MatchPlayer) => void;
@@ -19,8 +24,21 @@ interface NetworkEvents {
   "Ball:HitMessage": (data: BallHitMessage) => void;
   "game:StartAt": (startAt: number) => void;
   "Ball:Serve": (data: BallHitMessage) => void;
-  "Ball:Reset": (data: BallResetMessage) => void;
-  "ball:last-hit": (playerId: string | null) => void;
+  "Ball:Reset": (data: ballResetMessage) => void;
+  "score:update": (data: {
+    scores: { playerId: string; newScore: number };
+    pointBy: string;
+  }) => void;
+  "round:ended": (data: {
+    pointBy: string;
+    scores: Record<string, number>;
+  }) => void;
+  "serve:Turn": (serverId: string) => void;
+  "lastHitPlayer:updated": (lastHitPlayer: string) => void;
+  "serveState:changed": (serveState: "waiting_for_serve" | "in_play") => void;
+  "Ball:Toss": (data: ballTossMessage) => void;
+  "host:assigned": (data: { hostPlayerId: string }) => void;
+  "host:migrated": (data: { oldHostId: string; newHostId: string }) => void;
 }
 
 export class Network {
@@ -36,12 +54,19 @@ export class Network {
   private winnerId: string | null = null;
   private phase: MatchPhase = "waiting";
   private countdown: number | null = null;
+  private userId: string | null = null;
 
   public lastHitPlayer: string | null = null;
+  public hostPlayerId: string | null = null;
+
   // Events
   private eventListeners: Map<keyof NetworkEvents, Function[]> = new Map();
 
-  constructor(serverUrl: string, match: Match) {
+  constructor(
+    serverUrl: string,
+    match: Match,
+    mode: "spectate" | "play" = "play",
+  ) {
     this.serverUrl = serverUrl;
     this.client = new Client(serverUrl);
     this.match = match;
@@ -51,18 +76,37 @@ export class Network {
     this.players[match.opponent2.id] = match.opponent2;
   }
 
-  // Join
+  // Join as player
   async join(userId: string) {
     if (!this.match) throw new Error("Match data is required to join");
     try {
       this.room = await this.client.joinById<MatchState>(this.match?.id, {
         userId,
       });
+
+      this.setupMatchListeners();
+      this.roomIsReady = true;
+      this.userId = userId;
+
+      console.log("Player Id joisned:", this.getPlayerId());
+      return this.room;
+    } catch (err) {
+      console.error("Join error:", err);
+      throw err;
+    }
+  }
+  async spectate(userId: string) {
+    if (!this.match) throw new Error("Match data is required to spectate");
+    try {
+      this.room = await this.client.joinById<MatchState>(this.match?.id, {
+        spectate: true,
+        userId,
+      });
       this.setupMatchListeners();
       this.roomIsReady = true;
       return this.room;
     } catch (err) {
-      console.error("Join error:", err);
+      console.error("Spectate join error:", err);
       throw err;
     }
   }
@@ -94,17 +138,7 @@ export class Network {
         });
       },
     );
-    // Last Hit Player
-    $(this.room.state as any).listen(
-      "lastHitPlayer",
-      (playerId: string | null) => {
-        console.log("🎾 Last ball hit by:", playerId);
-        this.lastHitPlayer = playerId;
 
-        // TODO:: prevent double hit or show a glow on your paddle
-        this.emit("ball:last-hit", playerId);
-      },
-    );
     $(this.room.state as any).players.onChange(
       (_: MatchPlayer, playerId: string) => {
         if (this.players[playerId]) {
@@ -137,6 +171,61 @@ export class Network {
     $(this.room.state as any).listen("game:StartAt", (startAt: number) => {
       this.emit("game:StartAt", startAt);
     });
+    $(this.room.state as any).listen(
+      "lastHitPlayer",
+      (lastHitPlayer: string) => {
+        this.emit("lastHitPlayer:updated", lastHitPlayer);
+      },
+    );
+    $(this.room.state as any).listen("serveState", (serveState: string) => {
+      this.emit("serveState:changed", serveState);
+    });
+    // Listen to score changes properly
+    $(this.room.state as any).scores.onChange(
+      (score: number, playerId: string) => {
+        // Emit score update event
+        const allScores: Record<string, number> = {};
+        this.room!.state.scores.forEach((s, pId) => {
+          allScores[pId] = s;
+        });
+
+        this.emit("score:update", {
+          scores: allScores,
+          pointBy: playerId,
+        });
+      },
+    );
+    $(this.room.state as any).listen("currentServer", (currentServer) => {
+      console.log("Current server changed to:", currentServer);
+      this.emit("serve:Turn", currentServer);
+    });
+
+    $(this.room.state as any).listen("hostPlayerId", (hostPlayerId: string) => {
+      this.hostPlayerId = hostPlayerId;
+    });
+
+    $(this.room.state as any).listen("phase", (phase: string) => {
+      if (phase === "playing") {
+        this.emit("game:started", { startTime: this.room?.state.gameStartAt });
+      }
+    });
+    this.room.onMessage("host:assigned", (data) => {
+      this.emit("host:assigned", data);
+      this.hostPlayerId = data.hostPlayerId;
+    });
+
+    this.room.onMessage(
+      "host:migrated",
+      (data: { oldHostId: string; newHostId: string }) => {
+        this.hostPlayerId = data.newHostId;
+
+        console.log(
+          "Host migrated: ========================= ",
+          data.newHostId,
+        );
+        this.emit("host:migrated", data);
+      },
+    );
 
     this.room.onMessage("game:paused", (data) => {
       this.emit("game:paused", data);
@@ -156,18 +245,16 @@ export class Network {
     this.room.onMessage("game:give-up-denied", (reason) => {
       this.emit("game:pause-denied", reason);
     });
-    // this.room.onMessage("game:ended", (data) => {
-    //   this.emit("game:ended", data);
-    // }); // todo : it seems that its working without adding this
-    this.room.onMessage("game:started", (data) => {
-      this.emit("game:started", data);
-    });
+    this.room.onMessage("game:ended", (data) => {
+      this.emit("game:ended", data);
+    }); // todo : it seems that its working without adding this
+    // this.room.onMessage("game:started", (data) => {
+    //   this.emit("game:started", data);
+    // });
     this.room.onMessage("opponent:paddle", (data) => {
       this.emit("opponent:paddle", data);
-      // console.log("Opponent Paddle Data:", data);
     });
     this.room.onMessage("Ball:HitMessage", (data: BallHitMessage) => {
-      // this.gameState = GameState.IN_PLAY; // TODO: should be set by serve only
       this.emit("Ball:HitMessage", data);
     });
 
@@ -175,8 +262,17 @@ export class Network {
       this.emit("Ball:Serve", data);
     });
 
-    this.room.onMessage("Ball:Reset", (data: BallResetMessage) => {
+    // move ball to serve position
+    this.room.onMessage("Ball:Reset", (data: ballResetMessage) => {
       this.emit("Ball:Reset", data);
+    });
+
+    this.room.onMessage("round:ended", (data) => {
+      this.emit("round:ended", data);
+    });
+
+    this.room.onMessage("Ball:Toss", (data: ballTossMessage) => {
+      this.emit("Ball:Toss", data);
     });
   }
 
@@ -195,6 +291,16 @@ export class Network {
   }
   getPlayers() {
     return this.players;
+  }
+
+  // Get local player ID
+  getPlayerId(): string | null {
+    for (const playerId in this.players) {
+      if (this.players[playerId].userId === this.userId) {
+        return playerId;
+      }
+    }
+    return null;
   }
 
   // debugging
@@ -269,5 +375,9 @@ export class Network {
   dispose() {
     this.leave();
     this.eventListeners.clear();
+  }
+
+  isHost(): boolean {
+    return this.hostPlayerId === this.getPlayerId();
   }
 }

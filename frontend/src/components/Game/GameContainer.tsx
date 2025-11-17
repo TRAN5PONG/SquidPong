@@ -165,13 +165,16 @@ const GameContiner = () => {
   };
   const onReady = () => {
     if (!netRef.current) return;
-
+    
+    gameRef.current?.camera.setupPosition();
     netRef.current.sendMessage("player:ready");
   };
   const onReset = () => {
     if (!netRef.current) return;
 
-    netRef.current.sendMessage("game:reset");
+    gameRef.current?.camera.playCameraAnimations();
+
+    // netRef.current.sendMessage("game:reset");
   };
 
   // if (notFound) return <NotFound />;
