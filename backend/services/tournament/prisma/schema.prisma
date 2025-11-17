@@ -1,7 +1,6 @@
-
-
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -9,14 +8,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Tournament {
+  id               String           @id @default(cuid())
+  name             String
+  description      String?
+  organizerId      String
+  maxPlayers       Int
+  currentRound     TournamentRound?
+  status           TournamentStatus @default(REGISTRATION)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  winnerId         String?
+  participationFee Int?
 
-model User {
-  id            Int     @id @default(autoincrement())
-  name          String  @unique
-  email         String  @unique
-  auth_provider String  @default("local")
-  ver_code      String  @default("999")
-  is_verified   Boolean @default(false)  
-  password      String  
+  // Relations
+  participants TournamentPlayer[]
+  rounds       TournamentRoundData[]
+}
 
+model TournamentRoundData {
+  id           String          @id @default(cuid())
+  name         TournamentRound
+  order        Int // 1 = Qualifiers, 2 = Round of 16, etc.
+  tournamentId String
+
+  // Relations
+  tournament Tournament        @relation(fields: [tournamentId], references: [id])
+  matches    TournamentMatch[]
+}
+
+model TournamentMatch {
+  id             String     @id @default(cuid())
+  roundId        String
+  opponent1Id    String?
+  opponent2Id    String?
+  opponent1Score Int        @default(0)
+  opponent2Score Int        @default(0)
+  winnerId       String?
+  status         GameStatus @default(PENDING)
+  deadline       DateTime?
+
+  // Relations
+  round     TournamentRoundData @relation(fields: [roundId], references: [id])
+  opponent1 TournamentPlayer?   @relation("MatchOpponent1", fields: [opponent1Id], references: [id])
+  opponent2 TournamentPlayer?   @relation("MatchOpponent2", fields: [opponent2Id], references: [id])
+}
+
+model TournamentPlayer {
+  id              String  @id @default(cuid())
+  userId          String
+  bracketPosition Int?
+  isEliminated    Boolean @default(false)
+  isReady         Boolean @default(false)
+  tournamentId    String
+
+  firstName    String
+  lastName     String
+  avatar       String
+  isVerified   Boolean @default(false)
+  rankDivision String
+
+  // Relations
+  tournament         Tournament        @relation(fields: [tournamentId], references: [id])
+  matchesAsOpponent1 TournamentMatch[] @relation("MatchOpponent1")
+  matchesAsOpponent2 TournamentMatch[] @relation("MatchOpponent2")
+
+  @@unique([userId, tournamentId])
+}
+
+enum TournamentRound {
+  QUALIFIERS
+  ROUND_OF_16
+  QUARTER_FINALS
+  SEMI_FINALS
+  FINAL
+}
+
+enum TournamentStatus {
+  REGISTRATION
+  READY
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum GameStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }

@@ -21,6 +21,7 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
     '/api/auth/health',
     '/api/chat/health',
     '/api/notify/health',
+    '/api/tournament/health',
 
     '/api/auth/signup', 
     '/api/auth/verify-email', 

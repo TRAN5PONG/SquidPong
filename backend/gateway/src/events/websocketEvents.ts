@@ -70,7 +70,7 @@ async function onChatNotificationMessage(this:any , message: any)
   try
   {
     const senderId = this.userId;
-    const allowedTypes = ['chat', 'notification'  , 'game'];
+    const allowedTypes = ['chat', 'notification'  , 'game' , 'tournament'];
 
     const incomingSocketData = JSON.parse(message.toString());
     if (!incomingSocketData.type) throw new Error('Message type is required');
