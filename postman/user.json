@@ -1,37 +1,36 @@
 {
 	"info": {
-		"_postman_id": "45a6e743-a029-4b55-80d2-7c51b52255a9",
+		"_postman_id": "user-service-complete",
 		"name": "SquidPong - User Service",
-		"description": "User profile, friends, and blocking endpoints",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "40559190"
+		"description": "Complete User Service API with all endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "User Profile",
+			"name": "Profile Management",
 			"item": [
 				{
-					"name": "Create Profile",
+					"name": "Create Profile (Internal)",
 					"request": {
 						"method": "POST",
 						"header": [
 							{
-								"key": "Content-Type",
-								"value": "application/json"
+								"key": "x-secret-token",
+								"value": "{{SECRET_TOKEN}}"
 							},
 							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"user1\",\n  \"firstName\": \"User\",\n  \"lastName\": \"One\",\n  \"avatar\": \"https://example.com/avatar1.jpg\"\n}"
+							"raw": "{\n  \"userId\": 1,\n  \"username\": \"testuser\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"avatar\": \"http://localhost:4433/api/user/avatars/default.png\"\n}"
 						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/user/me",
+							"raw": "{{baseUrl}}/api/user/me",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -43,20 +42,23 @@
 					"response": []
 				},
 				{
-					"name": "Get Current User",
+					"name": "Get Current User Profile",
 					"request": {
 						"method": "GET",
 						"header": [
 							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
 								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}",
-								"type": "text"
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{BASE_URL}}/api/user/me",
+							"raw": "{{baseUrl}}/api/user/me",
 							"host": [
-								"{{BASE_URL}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -68,133 +70,31 @@
 					"response": []
 				},
 				{
-					"name": "Get User by ID",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{userBaseUrl}}/api/user/id/1",
-							"host": [
-								"{{userBaseUrl}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"id",
-								"1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get User by Username",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{userBaseUrl}}/api/user/username/user3",
-							"host": [
-								"{{userBaseUrl}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"username",
-								"user3"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Users",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{userBaseUrl}}/api/user/all?page=1&limit=10",
-							"host": [
-								"{{userBaseUrl}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"all"
-							],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Search Users",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{userBaseUrl}}/api/user/search?q=user",
-							"host": [
-								"{{userBaseUrl}}"
-							],
-							"path": [
-								"api",
-								"user",
-								"search"
-							],
-							"query": [
-								{
-									"key": "q",
-									"value": "user"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Profile (DB)",
+					"name": "Update Profile (Database)",
 					"request": {
 						"method": "PUT",
 						"header": [
 							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							},
 							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"bio\": \"My new bio\"\n}"
+							"raw": "{\n  \"username\": \"newusername\",\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"isVerified\": true,\n  \"customStatus\": \"Ready to play!\",\n  \"playerCharacters\": [\"character1\", \"character2\"],\n  \"playerPaddles\": [\"paddle1\", \"paddle2\"],\n  \"playerSelectedCharacter\": \"character1\",\n  \"playerSelectedPaddle\": \"paddle1\",\n  \"preferences\": {\n    \"notifications\": {\n      \"friendRequests\": true,\n      \"messages\": true,\n      \"gameInvites\": true,\n      \"tournamentInvites\": false\n    }\n  }\n}"
 						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/user/db",
+							"raw": "{{baseUrl}}/api/user/db",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -206,27 +106,35 @@
 					"response": []
 				},
 				{
-					"name": "Update Profile (Realtime)",
+					"name": "Update Profile (Real-time)",
 					"request": {
 						"method": "PUT",
 						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "x-secret-token",
+								"value": "{{SECRET_TOKEN}}"
+							},
 							{
 								"key": "Content-Type",
 								"value": "application/json"
 							},
 							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"status\": \"online\"\n}"
+							"raw": "{\n  \"score\": 100,\n  \"level\": 5,\n  \"status\": \"ONLINE\"\n}"
 						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/user/realtime",
+							"raw": "{{baseUrl}}/api/user/realtime",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -238,13 +146,17 @@
 					"response": []
 				},
 				{
-					"name": "Update Avatar",
+					"name": "Update Profile Avatar",
 					"request": {
 						"method": "PUT",
 						"header": [
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"body": {
@@ -258,9 +170,9 @@
 							]
 						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/user/avatar",
+							"raw": "{{baseUrl}}/api/user/avatar",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -279,12 +191,20 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "x-secret-token",
+								"value": "{{SECRET_TOKEN}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{userBaseUrl}}/api/user/me",
+							"raw": "{{baseUrl}}/api/user/me",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -294,11 +214,139 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get User by Username",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/username/{{username}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"username",
+								"{{username}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/id/{{targetUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"id",
+								"{{targetUserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/all",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/search?query=test&limit=10&offset=0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"search"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "test"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
 		{
-			"name": "Friends",
+			"name": "Friend Management",
 			"item": [
 				{
 					"name": "Send Friend Request",
@@ -306,22 +354,26 @@
 						"method": "POST",
 						"header": [
 							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							},
 							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+							"raw": "{\n  \"receiverId\": 2\n}"
 						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/friend/request",
+							"raw": "{{baseUrl}}/api/friend/request",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -338,22 +390,26 @@
 						"method": "POST",
 						"header": [
 							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							},
 							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+							"raw": "{\n  \"senderId\": 2\n}"
 						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/friend/accept",
+							"raw": "{{baseUrl}}/api/friend/accept",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -370,22 +426,26 @@
 						"method": "POST",
 						"header": [
 							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							},
 							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+							"raw": "{\n  \"senderId\": 2\n}"
 						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/friend/reject",
+							"raw": "{{baseUrl}}/api/friend/reject",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -402,22 +462,26 @@
 						"method": "PUT",
 						"header": [
 							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							},
 							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"friendId\": \"{{friendId}}\"\n}"
+							"raw": "{\n  \"receiverId\": 2\n}"
 						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/friend/cancel",
+							"raw": "{{baseUrl}}/api/friend/cancel",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -436,12 +500,16 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{userBaseUrl}}/api/friend/pending",
+							"raw": "{{baseUrl}}/api/friend/pending",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -456,23 +524,26 @@
 					"name": "Get Friends List",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
 						"url": {
-							"raw": "{{userBaseUrl}}/api/friend/all-friends/:username",
+							"raw": "{{baseUrl}}/api/friend/all-friends/{{username}}",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"friend",
 								"all-friends",
-								":username"
-							],
-							"variable": [
-								{
-									"key": "username",
-									"value": "user1"
-								}
+								"{{username}}"
 							]
 						}
 					},
@@ -486,54 +557,54 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{userBaseUrl}}/api/friend/:friendId",
+							"raw": "{{baseUrl}}/api/friend/{{friendId}}",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"friend",
-								":friendId"
-							],
-							"variable": [
-								{
-									"key": "friendId",
-									"value": "{{friendId}}"
-								}
+								"{{friendId}}"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Verify Friendship",
+					"name": "Verify Friendship (Internal)",
 					"request": {
 						"method": "GET",
 						"header": [
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "x-secret-token",
+								"value": "{{SECRET_TOKEN}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{userBaseUrl}}/api/friend/verify/:friendId",
+							"raw": "{{baseUrl}}/api/friend/verify/{{friendId}}",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"friend",
 								"verify",
-								":friendId"
-							],
-							"variable": [
-								{
-									"key": "friendId",
-									"value": "{{friendId}}"
-								}
+								"{{friendId}}"
 							]
 						}
 					},
@@ -542,8 +613,36 @@
 			]
 		},
 		{
-			"name": "Blocking",
+			"name": "Block Management",
 			"item": [
+				{
+					"name": "Get Blocked Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/blocked/all",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"blocked",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
 				{
 					"name": "Block User",
 					"request": {
@@ -552,23 +651,21 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{userBaseUrl}}/api/blocked/:blockId",
+							"raw": "{{baseUrl}}/api/blocked/{{blockId}}",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"blocked",
-								":blockId"
-							],
-							"variable": [
-								{
-									"key": "blockId",
-									"value": "{{friendId}}"
-								}
+								"{{blockId}}"
 							]
 						}
 					},
@@ -582,85 +679,21 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
-							}
-						],
-						"url": {
-							"raw": "{{userBaseUrl}}/api/blocked/:blockId",
-							"host": [
-								"{{userBaseUrl}}"
-							],
-							"path": [
-								"api",
-								"blocked",
-								":blockId"
-							],
-							"variable": [
-								{
-									"key": "blockId",
-									"value": "{{friendId}}"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Blocked Users",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							}
-						],
-						"url": {
-							"raw": "{{userBaseUrl}}/api/blocked/all",
-							"host": [
-								"{{userBaseUrl}}"
-							],
-							"path": [
-								"api",
-								"blocked",
-								"all"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Notifications",
-			"item": [
-				{
-					"name": "Send Notification",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
 							},
 							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"recipientId\": \"{{friendId}}\",\n  \"type\": \"FRIEND_REQUEST\",\n  \"message\": \"You have a new friend request\"\n}"
-						},
 						"url": {
-							"raw": "{{userBaseUrl}}/api/user/notification/send",
+							"raw": "{{baseUrl}}/api/blocked/{{blockId}}",
 							"host": [
-								"{{userBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"user",
-								"notification",
-								"send"
+								"blocked",
+								"{{blockId}}"
 							]
 						}
 					},
@@ -671,18 +704,43 @@
 	],
 	"variable": [
 		{
-			"key": "userBaseUrl",
-			"value": "http://localhost:4003",
+			"key": "baseUrl",
+			"value": "http://localhost:4433",
 			"type": "string"
 		},
 		{
 			"key": "userId",
-			"value": "",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "targetUserId",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "testuser",
 			"type": "string"
 		},
 		{
 			"key": "friendId",
-			"value": "",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "blockId",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "SECRET_TOKEN",
+			"value": "your-secret-token-here",
+			"type": "string"
+		},
+		{
+			"key": "JWT_USER1",
+			"value": "your-jwt-token-here",
 			"type": "string"
 		}
 	]
