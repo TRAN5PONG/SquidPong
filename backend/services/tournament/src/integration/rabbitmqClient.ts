@@ -1,7 +1,5 @@
 import amqp from "amqplib";
 
-import { sendEmailMessage } from "../utils/verification_messenger";
-
 let connection: any;
 let channel: any;
 
@@ -10,17 +8,18 @@ const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://rabbitmq:5672";
 
 export async function initRabbitMQ() 
 {
-  try {
+  try 
+  {
     connection = await amqp.connect(rabbitmqUrl);
     channel = await connection.createChannel();
 
-    await channel.assertQueue("emailhub");
+    await channel.assertQueue("tournament");
 
     console.log("Connected to RabbitMQ");
-  } catch (err) {
+  } 
+  catch (err) {
     console.error("Failed to connect to RabbitMQ, retrying in 5s:", err);
     setTimeout(() => {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       initRabbitMQ();
     }, 5000);
   }
@@ -42,20 +41,21 @@ export async function sendDataToQueue(data: any, queue: string)
 
 
 
-export async function receiveFromQueue(queue: string)
+export async function receiveFromQueue()
 {
 
+  const queue = "tournament";
   try 
   {
-      channel.consume(queue, async (msg:any) =>{
-
-      if (msg !== null)
-        {
-          const data = JSON.parse(msg.content.toString());
-          channel.ack(msg);
-          if(queue == "emailhub")
-            sendEmailMessage(data)
-        }
+    channel.consume(queue, async (msg:any) =>{
+          
+    if (msg !== null)
+      {
+        const data = JSON.parse(msg.content.toString());
+        console.log("Received message from tournament queue:", data);
+        channel.ack(msg);
+        
+      }
 
     });
 

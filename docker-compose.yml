@@ -156,7 +156,6 @@ services:
     env_file:
       - ./backend/services/game/.env
     ports:
-      - "4005:4005"
       - "5005:5555"
     volumes:
       - ./backend/services/game/src:/game/src
@@ -166,24 +165,24 @@ services:
         condition: service_healthy
     networks: 
       - web
-  # tournament:
-  #   build: ./backend/services/tournament
-  #   image: tournament-image
-  #   container_name: tournament
-  #   restart: always
-  #   command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
-  #   env_file:
-  #     - ./backend/services/tournament/.env
-  #   ports:
-  #     - "5006:5555"
-  #   volumes:
-  #     - ./backend/services/tournament/src:/tournament/src
-  #     - ./backend/services/tournament/prisma:/tournament/prisma
-  #   depends_on:
-  #     rabbitmq:
-  #       condition: service_healthy
-  #   networks: 
-  #     - web
+  tournament:
+    build: ./backend/services/tournament
+    image: tournament-image
+    container_name: tournament
+    restart: always
+    command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
+    env_file:
+      - ./backend/services/tournament/.env
+    ports:
+      - "5006:5555"
+    volumes:
+      - ./backend/services/tournament/src:/tournament/src
+      - ./backend/services/tournament/prisma:/tournament/prisma
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: 
+      - web
 
 networks:
   web:
