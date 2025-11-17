@@ -110,6 +110,12 @@ export class MatchRoom extends Room<MatchState> {
       if (player) {
         this.sendGameStateToPlayer(client, matchPlayer.id);
         player.isConnected = true;
+
+        if (this.state.phase === "paused") {
+          this.state.phase = "paused";
+        } else if (this.allPlayersReady() && this.state.phase === "waiting") {
+          this.state.phase = "playing";
+        }
       } else {
         player = new Player();
         player.id = matchPlayer.id;
@@ -129,10 +135,6 @@ export class MatchRoom extends Room<MatchState> {
       if (this.state.players.size === 2 && !this.state.currentServer) {
         const playerIds = Array.from(this.state.players.keys());
         this.state.currentServer = playerIds[0];
-
-        console.log(
-          `=========================== Initial server set to player ${this.state.currentServer}`,
-        );
       }
     } else {
       const spectator = new Spectator();
@@ -154,6 +156,7 @@ export class MatchRoom extends Room<MatchState> {
           clearTimeout(player.pauseTimeout);
         }
         player.isConnected = false;
+        this.state.phase = "waiting";
 
         if (this.state.hostPlayerId === _client.matchPlayerId) {
           await this.migrateHost(_client.matchPlayerId);

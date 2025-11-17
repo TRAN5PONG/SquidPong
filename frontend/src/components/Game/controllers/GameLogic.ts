@@ -37,7 +37,6 @@ export class GameLogic {
   private isPointEnded: boolean = false;
 
   // Constants
-  private readonly FIRE_EFFECT_THRESHOLD: number = 12.5;
   private readonly SERVE_VELOCITY_Y: number = 2.5;
   private readonly SPIN_THRESHOLD: number = 28;
   private readonly SPIN_ACTIVATION_THRESHOLD: number = 26;
@@ -75,7 +74,6 @@ export class GameLogic {
         this.getCurrentTick(),
         data.position,
         data.velocity,
-        data.applyEffect!,
         data.applySpin!,
         data.spin!,
       );
@@ -90,7 +88,6 @@ export class GameLogic {
         data.position,
         data.velocity,
         false,
-        false,
         data.spin!,
       );
     });
@@ -104,7 +101,6 @@ export class GameLogic {
         this.getCurrentTick(),
         data.position,
         data.velocity,
-        false,
         false,
         { x: 0, y: 0, z: 0 },
       );
@@ -225,22 +221,31 @@ export class GameLogic {
       (ballVel.y - currentVel.y) * mass,
       (ballVel.z - currentVel.z) * mass,
     );
+
+    const paddlePos = paddle.translation();
+    const ballPos = ball.translation();
+
+    // TEST:
+    const r = {
+      x: ballPos.x - paddlePos.x,
+      y: ballPos.y - paddlePos.y,
+      z: ballPos.z - paddlePos.z,
+    };
+
+    // Angular impulse = r × v (cross product)
+    const angImpulse = {
+      x: r.y * paddleVelocity.z - r.z * paddleVelocity.y,
+      y: r.z * paddleVelocity.x - r.x * paddleVelocity.z,
+      z: r.x * paddleVelocity.y - r.y * paddleVelocity.x,
+    };
+
+    // scale down so it doesn't spin insanely
+    angImpulse.x *= 0.4;
+    angImpulse.y *= 0.4;
+    angImpulse.z *= 0.4;
+
     this.physics.ball.body.applyImpulse(impulse, true);
-
-    // Handle fire effect
-    const ballSpeed = new Vector3(
-      ball.linvel().x,
-      ball.linvel().y,
-      ball.linvel().z,
-    ).length();
-
-    let applyEffect = false;
-    if (ballSpeed > this.FIRE_EFFECT_THRESHOLD) {
-      this.ball.activateSmokeEffect();
-      applyEffect = true;
-    } else {
-      this.ball.deactivateSmokeEffect();
-    }
+    this.physics.ball.body.applyTorqueImpulse(angImpulse, true);
 
     // Send network message
     const actualVel = ball.linvel();
@@ -259,7 +264,6 @@ export class GameLogic {
       applySpin: this.physics.getApplySpin(),
       tick: this.getCurrentTick(),
       playerId: this.playerId,
-      applyEffect: applyEffect,
     };
 
     this.net.sendMessage(isServe ? "Ball:Serve" : "Ball:HitMessage", hitMsg);
@@ -332,6 +336,7 @@ export class GameLogic {
         }
         spinY = -spinY;
         applySpin = true;
+        this.ball.activateSmokeEffect();
       }
     }
 
@@ -349,9 +354,9 @@ export class GameLogic {
     });
   }
 
-  public resetRound(data: ballResetMessage): void {
-    this.physics.reset(data, true);
-    this.ball.deactivateFireEffect();
+  public resetRound(data?: ballResetMessage): void {
+    this.physics.reset(true, data);
+    this.ball.deactivateSmokeEffect();
 
     this.gameState = GameState.WAITING_FOR_SERVE;
     this.isLocalServing = false;

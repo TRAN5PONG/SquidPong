@@ -21,9 +21,8 @@ export class Ball {
       .setCcdEnabled(true);
 
     this.body = world.createRigidBody(bodyDesc);
-    this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-    this.body.setGravityScale(0, true);
 
+    this.freeze();
     const colliderDesc = RAPIER.ColliderDesc.ball(constants.BALL.radius)
       .setRestitution(0.8)
       .setFriction(0)
@@ -79,5 +78,30 @@ export class Ball {
     } else {
       this.collider.setEnabled(false);
     }
+  }
+  public freeze(): void {
+    // stop movement
+    this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+    // disable gravity
+    this.body.setGravityScale(0, true);
+
+    // lock movement & rotation
+    this.body.lockTranslations(true, true);
+    this.body.lockRotations(true, true);
+  }
+
+  public unfreeze(): void {
+    // unlock movement
+    this.body.lockTranslations(false, true);
+    this.body.lockRotations(false, true);
+
+    // restore gravity
+    this.body.setGravityScale(1, true);
+
+    // ensure no weird leftover velocity
+    this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
   }
 }

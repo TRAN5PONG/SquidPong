@@ -170,7 +170,6 @@ export class NetworkSync {
     currentTick: number,
     position: { x: number; y: number; z: number },
     velocity: { x: number; y: number; z: number },
-    applyEffect: boolean,
     applySpin: boolean,
     spin: { x: number; y: number; z: number },
   ): void {
@@ -179,7 +178,6 @@ export class NetworkSync {
       syncInfo,
       position,
       velocity,
-      applyEffect,
       applySpin,
       spin,
     );

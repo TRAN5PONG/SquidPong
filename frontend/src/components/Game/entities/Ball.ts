@@ -1,4 +1,3 @@
-// Ball.ts - Refactored with Fire and Smoke effects
 import { Scene } from "@babylonjs/core/scene";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
@@ -6,6 +5,7 @@ import { AbstractMesh, Vector3 } from "@babylonjs/core";
 import { ParticleSystem } from "@babylonjs/core/Particles/particleSystem";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
+import * as BABYLON from "@babylonjs/core";
 
 export enum EffectType {
   FIRE = "fire",
@@ -75,10 +75,13 @@ export class Ball {
 
       this.meshGroup = group;
       this.mesh.scaling.scaleInPlace(this.BALL_SCALE);
+      this.applyTexture();
 
       // Setup both particle effects
       // this.setupFireEffect();
       this.setupSmokeEffect();
+
+      this.mesh.rotationQuaternion = new BABYLON.Quaternion();
 
       console.log("Ball loaded with Fire and Smoke effects!");
     } catch (error) {
@@ -86,6 +89,26 @@ export class Ball {
     }
   }
 
+  private applyTexture() {
+    if (!this.mesh) return;
+
+    const tex = new Texture("/models/cross.jpg", this.scene);
+
+    const mat = this.mesh.material;
+
+    if (mat && (mat as any).albedoTexture !== undefined) {
+      (mat as any).albedoTexture = tex;
+    } else if (mat && (mat as any).diffuseTexture !== undefined) {
+      (mat as any).diffuseTexture = tex;
+    } else {
+      // Create new PBR material
+      const pbr = new BABYLON.PBRMaterial("ballMat", this.scene);
+      pbr.albedoTexture = tex;
+      this.mesh.material = pbr;
+    }
+
+    console.log("🎨 Texture applied to ball!");
+  }
   // ================= Position Management =================
   setMeshPosition(pos: Vector3): void {
     if (this.mesh) this.mesh.position.copyFrom(pos);
