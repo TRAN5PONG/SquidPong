@@ -58,9 +58,7 @@ const notificationSchema = {
 // =============================================
 
 export const getNotificationHistorySchema: FastifySchema = {
-  description: 'Get notification history for the current user',
-  tags: ['Notifications'],
-  summary: 'Get Notification History',
+
   headers: {
     type: 'object',
     properties: {
@@ -92,9 +90,7 @@ export const getNotificationHistorySchema: FastifySchema = {
 };
 
 export const markNotificationAsReadSchema: FastifySchema = {
-  description: 'Mark a specific notification as read',
-  tags: ['Notifications'],
-  summary: 'Mark Notification as Read',
+
   headers: {
     type: 'object',
     properties: {
@@ -128,9 +124,7 @@ export const markNotificationAsReadSchema: FastifySchema = {
 };
 
 export const markNotificationAsReadAllSchema: FastifySchema = {
-  description: 'Mark all notifications as read for the current user',
-  tags: ['Notifications'],
-  summary: 'Mark All Notifications as Read',
+
   headers: {
     type: 'object',
     properties: {
@@ -154,9 +148,7 @@ export const markNotificationAsReadAllSchema: FastifySchema = {
 };
 
 export const deleteNotificationSchema: FastifySchema = {
-  description: 'Delete a specific notification',
-  tags: ['Notifications'],
-  summary: 'Delete Notification',
+
   headers: {
     type: 'object',
     properties: {
@@ -190,9 +182,7 @@ export const deleteNotificationSchema: FastifySchema = {
 };
 
 export const deleteAllNotificationsSchema: FastifySchema = {
-  description: 'Delete all notifications for the current user',
-  tags: ['Notifications'],
-  summary: 'Delete All Notifications',
+
   headers: {
     type: 'object',
     properties: {
@@ -220,9 +210,7 @@ export const deleteAllNotificationsSchema: FastifySchema = {
 // =============================================
 
 export const createUserNotifySchema: FastifySchema = {
-  description: 'Create user in notify service (internal service call)',
-  tags: ['User Management'],
-  summary: 'Create Notify User',
+
   headers: {
     type: 'object',
     properties: {
@@ -277,9 +265,7 @@ export const createUserNotifySchema: FastifySchema = {
 };
 
 export const updateUserNotifySchema: FastifySchema = {
-  description: 'Update user in notify service (internal service call)',
-  tags: ['User Management'],
-  summary: 'Update Notify User',
+
   headers: {
     type: 'object',
     properties: {
@@ -346,9 +332,7 @@ export const updateUserNotifySchema: FastifySchema = {
 };
 
 export const deleteUserNotifySchema: FastifySchema = {
-  description: 'Delete user from notify service (internal service call)',
-  tags: ['User Management'],
-  summary: 'Delete Notify User',
+
   headers: {
     type: 'object',
     properties: {
