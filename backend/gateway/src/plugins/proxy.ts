@@ -20,6 +20,7 @@ const services : ServiceConfig[]  =
     { name: 'group',  prefix: '/api/group', upstream: 'http://chat:4003' },
     { name: 'game', prefix: '/api/game', upstream: 'http://game:4005' },
     { name: 'notify', prefix: '/api/notify', upstream: 'http://notify:4004' },
+    {name : 'tournament' , prefix: '/api/tournament' , upstream: 'http://tournament:4006' },
     // { name: 'room', prefix: '/api/room', upstream: 'http://game:4005' }
 ];
 
@@ -31,7 +32,7 @@ export default async function registerProxy(app: FastifyInstance)
     {
     try 
     {
-      app.register(fastifyHttpProxy, {
+      await app.register(fastifyHttpProxy, {
         upstream: service.upstream,
         prefix: service.prefix,
         rewritePrefix: service.prefix,

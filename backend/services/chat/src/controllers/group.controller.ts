@@ -53,15 +53,22 @@ export async function createGroup(req: FastifyRequest, res: FastifyReply)
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
-   const { name, desc, type } = req.body as { name: string; desc: string , type?: TypeofGoup   };
+   let {matchId ,  name, desc, type } = req.body as { name: string; desc: string , type?: TypeofGoup , matchId?: string  };
 
    try
    {
+      if(matchId !== undefined)
+      {
+         name = `Match Group - ${matchId}`;
+         desc = `Group for match ID: ${matchId}`;
+         type = PUBLIC_G;
+      }
 
       const group = await prisma.group.create({
          data: {
             name,
             desc,
+            matchId,
             type: type || PUBLIC_G,
             members: {
                create: {
@@ -81,9 +88,7 @@ export async function createGroup(req: FastifyRequest, res: FastifyReply)
                },
             },
          },
-         include: {
-            chat: true,
-         },
+         include: {chat: true},
       });
 
       respond.data = group;
@@ -111,6 +116,8 @@ export async function updateGroupInfo(req: FastifyRequest, res: FastifyReply)
    {
       const group = await checkUserAndFetchGroup(Number(groupId));
       
+      if(group.matchId) throw new Error(GroupMessages.CANNOT_UPDATE_MATCH_GROUP);
+
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role === MEMBER) 
          throw new Error(GroupMessages.UPDATED_FAILED); 
@@ -155,6 +162,8 @@ export async function updateGroupImage(req: FastifyRequest, res: FastifyReply)
       include: { members: true } });
     if (!group) throw new Error(GroupMessages.NOT_FOUND);
    
+    if(group.matchId) throw new Error(GroupMessages.CANNOT_UPDATE_MATCH_GROUP);
+
     const requester = group.members.find((m:any) => m.userId === userId);
     if (!requester || requester.role === MEMBER) throw new Error(GroupMessages.UPDATED_FAILED);
    
@@ -190,6 +199,8 @@ export async function updateMember(req: FastifyRequest, res: FastifyReply)
       if(memberId != Number(userId)) throw new Error(GroupMessages.CANNOT_CHANGE_OWN_ROLE);
       const group = await checkUserAndFetchGroup(Number(groupId));
    
+      if(group.matchId) throw new Error(GroupMessages.CANNOT_UPDATE_MATCH_GROUP);
+
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role !== OWNER) throw new Error(GroupMessages.NOT_HAVE_PERMISSION); 
 
@@ -236,6 +247,8 @@ export async function removeGroupMember(req: FastifyRequest, res: FastifyReply)
       if(memberId === Number(userId)) throw new Error(GroupMessages.MEMBER_REMOVED_FAILED);
       const group = await checkUserAndFetchGroup(Number(groupId));
 
+      if(group.matchId) throw new Error(GroupMessages.CANNOT_UPDATE_MATCH_GROUP);
+
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role === MEMBER)
          throw new Error(GroupMessages.MEMBER_REMOVED_FAILED);
@@ -269,16 +282,16 @@ export async function leaveGroup (req: FastifyRequest, res: FastifyReply)
    const userId = headers['x-user-id'];
 
    const { groupId } = req.params as { groupId: string  };
+   const { matchId } = req.params as { matchId?: string  };
 
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId));
+      const group = await checkUserAndFetchGroup(Number(groupId) , matchId );
 
       const member = group.members.find((m:any) => m.userId === userId);
-      if (!member) 
-         throw new Error(GroupMessages.LEFT_FAILED); 
+      if (!member) throw new Error(GroupMessages.NOT_A_MEMBER); 
 
-      if(member.role === OWNER)
+      if(member.role === OWNER && group.matchId !== undefined && group.matchId !== matchId)
          throw new Error(GroupMessages.CANNOT_LEAVE_OWNER);
 
       await prisma.groupMember.delete({ where: { id: member.id }});
@@ -305,12 +318,12 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
    const userId = headers['x-user-id'];
 
    const { groupId } = req.params as { groupId: string  };
+   const { matchId } = req.params as { matchId?: string  };
 
-   
    try 
    {
+      const group = await checkUserAndFetchGroup(Number(groupId) , matchId );
       const user = await fetchAndEnsureUser(userId);
-      const group = await checkUserAndFetchGroup(Number(groupId));
 
       const alreadyMember = group.members.some((m:any) => m.userId === userId);
       if (alreadyMember) throw new Error(GroupMessages.MEMBER_ALREADY_IN_GROUP); 
@@ -478,7 +491,6 @@ export async function rejectJoinRequest (req: FastifyRequest, res: FastifyReply)
 
 
 
-/** 8️⃣ Fetch Group Info / Members / Search */
 export async function getGroupById(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.FETCH_SUCCESS };
@@ -486,10 +498,12 @@ export async function getGroupById(req: FastifyRequest, res: FastifyReply)
    const userId = headers['x-user-id'];
 
    const { groupId } = req.params as { groupId: string };
+   const { matchId } = req.params as { matchId?: string  };
 
+   console.log('Fetching group with ID:', groupId, 'and matchId:', matchId);
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId));
+      const group = await checkUserAndFetchGroup(Number(groupId) , matchId );
 
       const isMember = group.members.some((m:any) => m.userId === userId);
       if (!isMember) 
@@ -513,10 +527,11 @@ export async function listGroupMembers(req: FastifyRequest, res: FastifyReply)
    const userId = headers['x-user-id'];
 
    const { groupId } = req.params as { groupId: string };
+   const { matchId } = req.params as { matchId?: string  };
 
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId));
+      const group = await checkUserAndFetchGroup(Number(groupId) , matchId );
       
       const isMember = group.members.some((m:any) => m.userId === userId);
       if (!isMember) 
@@ -535,28 +550,19 @@ export async function listGroupMembers(req: FastifyRequest, res: FastifyReply)
 
 export async function getGoupes (req: FastifyRequest, res: FastifyReply)
 {
-   const respond: ApiResponse<{ groups: { id: string; name: string; desc: string , type : string; members: number }[] }> = { success: true, message: GroupMessages.FETCH_SUCCESS, data: { groups: [] } };
+   const respond: ApiResponse<any> = { success: true, message: GroupMessages.FETCH_SUCCESS, data: { groups: [] } };
    const { search } = req.query as { search?: string };
 
    try 
    {
       const groups = await prisma.group.findMany({
         where: {
-          type: PUBLIC_G,
           name: { startsWith: search ?? ''},
         },
         include: { members: true },
       });
 
-      respond.data = {
-        groups: groups.map((g: any) => ({
-          id: String(g.id),
-          name: g.name,
-          desc: g.desc ?? '',
-          type: g.type,
-          members: g.members.length,
-        })),
-      };
+      respond.data = groups;
    } 
    catch (error) 
    {
@@ -570,21 +576,22 @@ export async function getGoupes (req: FastifyRequest, res: FastifyReply)
 /** 9️⃣ Messages */
 export async function getGroupMessages(req: FastifyRequest, res: FastifyReply) 
 {
-   const respond: ApiResponse<null> = { success: true, message: GroupMessages.FETCH_SUCCESS };
+   const respond: ApiResponse<any> = { success: true, message: GroupMessages.FETCH_SUCCESS };
    const headers = req.headers as { 'x-user-id': string };
    const userId = headers['x-user-id'];
 
    const { groupId } = req.params as { groupId: string };
+   const { matchId } = req.params as { matchId?: string  };
 
    try 
    {
-      const group = await checkUserAndFetchGroup(Number(groupId));
+      const group = await checkUserAndFetchGroup(Number(groupId) , matchId );
       
       const isMember = group.members.some((m:any) => m.userId === userId);
       if (!isMember) 
          throw new Error(GroupMessages.FETCH_NOT_FOUND); 
 
-      respond.data = group.chat.messages as any;
+      respond.data = group;
    } 
    catch (error)
    {
