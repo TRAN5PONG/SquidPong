@@ -14,6 +14,7 @@ import { MatchPhase, MatchState } from "./network/GameState";
 import { Network } from "./network/network";
 import { Game } from "./Scenes/GameScene";
 import { db } from "@/db";
+import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -113,6 +114,9 @@ const GameContiner = () => {
   const [matchPhase, setMatchPhase] = useState<MatchPhase>("waiting");
   const [winnerId, setWinnerId] = useState<string | null>(null);
 
+    const {  ambianceSound } = useSounds();
+
+
   // == Get Match
   useEffect(() => {
     if (!matchId) return;
@@ -171,9 +175,8 @@ const GameContiner = () => {
   };
   const onReset = () => {
     if (!netRef.current) return;
-
     gameRef.current?.camera.playCameraAnimations();
-
+    ambianceSound.play();
     // netRef.current.sendMessage("game:reset");
   };
 

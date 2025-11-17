@@ -4,15 +4,22 @@ import {
   TransformNode,
   AbstractMesh,
   LoadAssetContainerAsync,
-  DynamicTexture,
   StandardMaterial,
 } from "@babylonjs/core";
 
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import { GridMaterial } from "@babylonjs/materials/grid";
 import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
-import "@babylonjs/inspector"; // For Babylon.js built-in inspector
+import "@babylonjs/inspector";
 import { Light } from "@/components/Game/entities/Light";
+
+import {
+  AdvancedDynamicTexture,
+  TextBlock,
+  Rectangle,
+  StackPanel,
+  Button,
+  Control,
+} from "@babylonjs/gui";
 
 export class Arena {
   private Mesh: TransformNode | null = null;
@@ -20,90 +27,141 @@ export class Arena {
   private scene: Scene;
   private TableBaseMesh: AbstractMesh | null = null;
   private BoardMesh: AbstractMesh | null = null;
-  private boardTexture: DynamicTexture | null = null;
-  private meshesToCastShadows: string[] = [
-    "BedRow_RoofMetal_0",
-    "BedRow.001_RoofMetal_0",
-    "BedRow.002_RoofMetal_0",
-    "BlueWalls_BlueWalls_0",
-    "BrickWalls_BrickWalls_0",
-  ];
-  private meshesToReceiveShadows: string[] = [
-    "BlueWalls_BlueWalls_0",
-    "BrickWalls_BrickWalls_0",
-    "StackableSheets.003_BedSheets_0",
-  ];
+
+  private boardGUI: AdvancedDynamicTexture | null = null;
+  private boardText1: TextBlock | null = null;
+  private gameStatusText: TextBlock | null = null;
+  private playersNamesText: TextBlock | null = null;
 
   constructor(scene: Scene, light: Light) {
     this.scene = scene;
     this.Light = light;
   }
 
-  private initializeBoardText() {
+  // ---------------------------
+  //  GUI BOARD INITIALIZATION
+  // ---------------------------
+  private initializeBoardGUI() {
     if (!this.BoardMesh) return;
 
-    // Create a dynamic texture with high resolution for crisp text
-    this.boardTexture = new DynamicTexture(
-      "boardTexture",
-      { width: 1024, height: 512 }, // Adjust based on your board size
-      this.scene,
-      false, // Don't generate mipmaps for sharper text
+    // 🔥 Fix the upside-down text by inverting V coordinates
+    const uvs = this.BoardMesh.getVerticesData("uv");
+    if (uvs) {
+      const newUVs = new Float32Array(uvs.length);
+      for (let i = 0; i < uvs.length; i += 2) {
+        newUVs[i] = uvs[i]; // Keep U the same
+        newUVs[i + 1] = 1 - uvs[i + 1]; // 🔥 Flip V coordinate
+      }
+      this.BoardMesh.setVerticesData("uv", newUVs);
+    }
+
+    this.boardGUI = AdvancedDynamicTexture.CreateForMesh(
+      this.BoardMesh,
+      2048,
+      1024,
+      true
     );
 
-    // Create or get material
-    let material = this.BoardMesh.material as StandardMaterial;
-    if (!material || !(material instanceof StandardMaterial)) {
-      material = new StandardMaterial("boardMaterial", this.scene);
-      this.BoardMesh.material = material;
+    this.boardGUI.background = "transparent";
+
+    const container = new Rectangle();
+    container.width = 1;
+    container.height = 1;
+    container.thickness = 0;
+    container.background = "black";
+    this.boardGUI.addControl(container);
+
+    this.boardText1 = this.setupBoardText(
+      "line1",
+      "Welcome to the Arena!",
+      120,
+      "rgb(33, 136, 85)",
+      "black",
+      2,
+      "Pixel LCD7",
+      undefined,
+      -300,
+      true
+    );
+    this.gameStatusText = this.setupBoardText(
+      "line2",
+      "--------- Get Ready! ---------",
+      80,
+      "red",
+      "black",
+      2,
+      "Pixel LCD7",
+      undefined,
+      -100,
+      true
+    );
+    this.playersNamesText = this.setupBoardText(
+      "line3",
+      "HOST VS GUEST",
+      130,
+      "rgb(33, 136, 85)",
+      "#5C5C5C",
+      2,
+      "Pixel LCD7",
+      undefined,
+      undefined,
+      true
+    );
+
+    container.addControl(this.boardText1);
+    // container.addControl(this.gameStatusText);
+    container.addControl(this.playersNamesText);
+
+    // 🔥 SET THESE ALIGNMENT PROPERTIES!
+    // this.boardText1.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    // this.boardText1.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    // this.boardText1.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    // this.boardText1.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+
+    // Now the offset will work
+  }
+
+  private setupBoardText(
+    headline: string,
+    value: string,
+    size: number,
+    color: string,
+    outlineColor: string,
+    outlineWidth: number,
+    fontFamily: string,
+    left?: number,
+    top?: number,
+    isCentered?: boolean
+  ): TextBlock {
+    const text = new TextBlock(headline, value);
+    text.fontSize = size;
+    text.color = color;
+    text.outlineColor = outlineColor;
+    text.outlineWidth = outlineWidth;
+    text.fontFamily = fontFamily;
+
+    if (isCentered) {
+      text.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+      text.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+      text.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+      text.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
     }
 
-    // Apply the dynamic texture to the material
-    material.diffuseTexture = this.boardTexture;
-    material.emissiveTexture = this.boardTexture; // Makes text glow/visible without lighting
-    material.emissiveColor = new Color3(1, 1, 1); // Full brightness
-    material.specularColor = new Color3(0, 0, 0); // No specular reflection
+    if (left !== undefined) text.left = left;
+    if (top !== undefined) text.top = top;
 
-    // Draw initial text
-    this.updateBoardText("Welcome!", "Ping Pong Arena");
-  }
-  updateBoardText(line1: string, line2?: string) {
-    if (!this.boardTexture) return;
-
-    // Get the texture context
-    const ctx = this.boardTexture.getContext();
-    const size = this.boardTexture.getSize();
-
-    // Clear previous content
-    ctx.clearRect(0, 0, size.width, size.height);
-
-    // Optional: Add background color
-    ctx.fillStyle = "white"; // Dark background
-    ctx.fillRect(0, 0, size.width, size.height);
-
-    // Set text style
-    ctx.fillStyle = "white";
-    ctx.font = "bold 80px Arial";
-    // ctx.textAlign = "center";
-    // ctx.textBaseline = "middle";
-
-    // Draw first line
-    ctx.fillText(line1, size.width / 2, size.height / 2 - 60);
-
-    // Draw second line if provided
-    if (line2) {
-      ctx.font = "60px Arial"; // Smaller font for second line
-      ctx.fillText(line2, size.width / 2, size.height / 2 + 60);
-    }
-
-    // Update the texture
-    this.boardTexture.update();
+    return text;
   }
 
+  // ---------------------------
+  //  LOAD ARENA MODEL
+  // ---------------------------
   async Load() {
     const Container = await LoadAssetContainerAsync(
       "/models/Lobby.glb",
-      this.scene,
+      this.scene
     );
+
     Container.addAllToScene();
 
     const ObjGroup = new TransformNode("ArenaGroup", this.scene);
@@ -112,22 +170,25 @@ export class Arena {
       if (mesh.name !== "__root__") {
         mesh.parent = ObjGroup;
       }
+
       if (mesh.name === "Chabka") {
         this.TableBaseMesh = mesh as AbstractMesh;
       }
-      if (mesh.name === "Board_RoofMetal_0")
+
+      if (mesh.name === "ScreenBoard") {
         this.BoardMesh = mesh as AbstractMesh;
-      // if (this.meshesToCastShadows.includes(mesh.name)) {
-      //   this.Light.addShadowCaster(mesh as AbstractMesh);
-      // }
-      // if (this.meshesToReceiveShadows.includes(mesh.name)) {
-      //   this.Light.setShadowReceiver(mesh as AbstractMesh, true);
-      // }
+      }
     });
+
     this.Mesh = ObjGroup;
+
+    // initialize GUI on board
+    this.initializeBoardGUI();
   }
 
-  // TableBase
+  // ----------------------------------
+  //  PHYSICS HELPER FOR TABLE BASE
+  // ----------------------------------
   getPhysicsInfo(): {
     position: { x: number; y: number; z: number };
     size: { x: number; y: number; z: number };
@@ -136,7 +197,7 @@ export class Arena {
 
     const pos = this.TableBaseMesh.getAbsolutePosition();
     const boundingInfo = this.TableBaseMesh.getBoundingInfo();
-    const size = boundingInfo.boundingBox.extendSize.scale(2); // full size
+    const size = boundingInfo.boundingBox.extendSize.scale(2);
 
     return {
       position: {
