@@ -71,7 +71,7 @@ export class SpectateScene {
       this.ball = new Ball(this.scene);
 
       // network
-      this.net = new Network("ws://10.13.3.5:4005", this.match, "spectate");
+      this.net = new Network("wss://10.13.249.173:4433/matches", this.match, "spectate");
       this.room = await this.net.spectate(this.userId);
       this.onPaddleMove();
 

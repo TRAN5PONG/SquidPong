@@ -99,7 +99,7 @@ export class Game {
       // this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network(`ws://10.13.10.6:4005`, this.match);
+      this.net = new Network(`wss://10.13.249.173:4433/matches`, this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
