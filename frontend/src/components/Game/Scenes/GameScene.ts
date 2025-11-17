@@ -96,12 +96,12 @@ export class Game {
         this.scene,
         this.userId === this.hostId ? 1 : -1
       );
-      this.camera.GameIntroAnimation();
+      // this.camera.GameIntroAnimation();
 
-      // this.camera.attach(this.canvas);
+      this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network(`ws://10.13.3.1:4005`, this.match);
+      this.net = new Network(`ws://10.13.3.5:4005`, this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
