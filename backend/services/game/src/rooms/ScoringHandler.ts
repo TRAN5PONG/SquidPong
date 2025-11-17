@@ -1,0 +1,288 @@
+import { MatchRoom } from "./MatchRoom";
+import { ballResetMessage } from "../types/match";
+import { prisma } from "../lib/prisma";
+
+export class ScoringHandler {
+  private SERVES_PER_TURN = 2;
+  private serveCount = 0;
+  private isProcessingPoint = false;
+
+  constructor(private room: MatchRoom) { }
+
+  incrementScore(playerId: string) {
+    const current = this.room.state.scores.get(playerId) || 0;
+
+    console.log(
+      `➕ Incrementing score for player ${playerId}. Current score: ${current}`,
+    );
+
+    this.room.state.scores.set(playerId, current + 1);
+
+    // const totalPoints = this.room.state.totalPointsScored;
+
+    const totalPoints = 30;
+
+    console.log(`🏆 Total points to win: ${totalPoints}`);
+
+    console.log(`Player ${playerId} scored a point. New score: ${current + 1}`);
+
+    // Check if game should end
+    if (current + 1 >= totalPoints) {
+      this.room.state.phase = "ended";
+      this.room.state.winnerId = playerId;
+      this.room.broadcast("game:ended", { winnerId: playerId });
+
+      // Add match stats when game ends
+      this.addMatchStats();
+    }
+  }
+
+  resetBallForServe(nextServerId: string) {
+    console.log(`🎾 Resetting ball for server: ${nextServerId}`);
+
+    this.room.state.serveState = "waiting_for_serve";
+    this.room.state.currentServer = nextServerId;
+    this.room.state.lastHitPlayer = null;
+
+    const serveMsg: ballResetMessage = {
+      position: { x: 0, y: 4, z: 0 },
+      velocity: { x: 0, y: 0, z: 0 },
+    };
+
+    this.room.broadcast("Ball:Reset", serveMsg);
+  }
+
+  handlePointEnd(bounceData?: {
+    lastTableBounceSide: "LEFT" | "RIGHT" | null;
+    serverSideBounced: boolean;
+    lastHitPlayerId: string | null;
+  }) {
+    if (this.isProcessingPoint) {
+      return;
+    }
+
+    this.isProcessingPoint = true;
+
+    const lastHitter = this.room.state.lastHitPlayer;
+    const playerIds = Array.from(this.room.state.players.keys());
+
+    let pointWinner: string | null = null;
+
+    if (!lastHitter) {
+      const server = this.room.state.currentServer;
+      pointWinner = playerIds.find((id) => id !== server) || null;
+    } else {
+      const lastHitterSide = this.getPlayerSide(lastHitter);
+      const opponentSide = lastHitterSide === "LEFT" ? "RIGHT" : "LEFT";
+
+      const bouncedOnOpponentSide =
+        bounceData?.lastTableBounceSide === opponentSide;
+
+      if (bouncedOnOpponentSide && bounceData?.serverSideBounced) {
+        // Ball successfully bounced on opponent's side after bouncing on server's side
+        // Last hitter wins the point
+        pointWinner = lastHitter;
+      } else {
+        // Ball went out without bouncing on opponent's side correctly
+        // Opponent gets the point
+        pointWinner = playerIds.find((id) => id !== lastHitter) || null;
+      }
+    }
+
+    if (!pointWinner) {
+      this.isProcessingPoint = false;
+      return;
+    }
+
+    this.incrementScore(pointWinner);
+
+    this.serveCount++;
+
+    if (this.serveCount >= this.SERVES_PER_TURN) {
+      const nextServerId = playerIds.find(
+        (id) => id !== this.room.state.currentServer,
+      );
+      this.room.state.currentServer =
+        nextServerId || this.room.state.currentServer;
+      this.serveCount = 0;
+    }
+
+    setTimeout(() => {
+      this.isProcessingPoint = false;
+      this.resetBallForServe(this.room.state.currentServer!);
+    }, 3000);
+  }
+
+  private getPlayerSide(playerId: string): "LEFT" | "RIGHT" | null {
+    const player = this.room.state.players.get(playerId);
+    if (!player) return null;
+
+    // Host is always RIGHT, Guest is always LEFT
+    return playerId === this.room.state.hostPlayerId ? "RIGHT" : "LEFT";
+  }
+
+  private async addMatchStats() {
+    try {
+      const matchId = this.room.metadata.matchId;
+      const match = await prisma.match.findUnique({
+        where: { id: matchId },
+        include: {
+          opponent1: { include: { User: { include: { stats: true } } } },
+          opponent2: { include: { User: { include: { stats: true } } } },
+        },
+      });
+
+      if (!match) {
+        console.error("❌ Match not found in addMatchStats()");
+        return;
+      }
+
+      // Calculate match duration
+      const matchDuration = Math.floor(
+        (Date.now() - this.room.state.gameStartAt) / 1000,
+      ); // in seconds
+
+      // Determine winner and loser
+      const winnerId = this.room.state.winnerId;
+      const player1 = match.opponent1;
+      const player2 = match.opponent2;
+
+      if (!player1 || !player2) {
+        console.error("❌ Missing one of the players");
+        return;
+      }
+
+      const winner = [player1, player2].find((p) => p.id === winnerId);
+      const loser = [player1, player2].find((p) => p.id !== winnerId);
+
+      // Update MatchPlayers
+      await prisma.matchPlayer.update({
+        where: { id: player1.id },
+        data: {
+          finalScore: this.room.state.scores.get(player1.id) || 0,
+          isWinner: player1.id === winnerId,
+        },
+      });
+
+      await prisma.matchPlayer.update({
+        where: { id: player2.id },
+        data: {
+          finalScore: this.room.state.scores.get(player2.id) || 0,
+          isWinner: player2.id === winnerId,
+        },
+      });
+
+      // Update Match itself
+      await prisma.match.update({
+        where: { id: matchId },
+        data: { status: "COMPLETED", winnerId },
+      });
+
+      // Update comprehensive stats for both players
+      const updates: Promise<any>[] = [];
+
+      if (winner?.userId) {
+        updates.push(this.updateUserStats(winner.userId, true, matchDuration));
+      }
+      if (loser?.userId) {
+        updates.push(this.updateUserStats(loser.userId, false, matchDuration));
+      }
+
+      await Promise.all(updates);
+
+      console.log(`✅ Match stats updated for match ${matchId}`);
+    } catch (err) {
+      console.error("❌ Error updating match stats:", err);
+    }
+  }
+
+  private async updateUserStats(
+    userId: string,
+    won: boolean,
+    matchDuration: number,
+  ): Promise<void> {
+    const existing = await prisma.userStats.findUnique({
+      where: { userId },
+    });
+
+    if (!existing) {
+      // Create new stats entry with all fields
+      await prisma.userStats.create({
+        data: {
+          userId,
+          score: won ? 10 : 5, // Award points (10 for win, 5 for loss)
+          totalMatches: 1,
+          // 1v1 Stats
+          played1v1: 1,
+          won1v1: won ? 1 : 0,
+          lost1v1: won ? 0 : 1,
+          // Tournament Stats (not applicable for 1v1)
+          playedTournament: 0,
+          wonTournament: 0,
+          lostTournament: 0,
+          // vs AI Stats (not applicable for 1v1)
+          playedVsAI: 0,
+          easyPlayed: 0,
+          easyWins: 0,
+          easyLosses: 0,
+          mediumPlayed: 0,
+          mediumWins: 0,
+          mediumLosses: 0,
+          hardPlayed: 0,
+          hardWins: 0,
+          hardLosses: 0,
+          // Streak Stats
+          winStreak: won ? 1 : 0,
+          loseStreak: won ? 0 : 1,
+          longestWinStreak: won ? 1 : 0,
+          // Performance
+          averageGameDuration: matchDuration,
+          totalPlayTime: matchDuration,
+        },
+      });
+    } else {
+      // Calculate new streaks
+      const newWinStreak = won ? existing.winStreak + 1 : 0;
+      const newLoseStreak = won ? 0 : existing.loseStreak + 1;
+      const newLongestWinStreak = Math.max(
+        existing.longestWinStreak,
+        newWinStreak,
+      );
+
+      // Calculate new average game duration
+      const totalMatches = existing.totalMatches + 1;
+      const totalDuration = existing.totalPlayTime + matchDuration;
+      const newAverageDuration = Math.floor(totalDuration / totalMatches);
+
+      // Update existing stats
+      await prisma.userStats.update({
+        where: { userId },
+        data: {
+          // Score update (add points for participation)
+          score: { increment: won ? 10 : 5 },
+
+          // Total matches
+          totalMatches: { increment: 1 },
+
+          // 1v1 Stats
+          played1v1: { increment: 1 },
+          won1v1: won ? { increment: 1 } : undefined,
+          lost1v1: !won ? { increment: 1 } : undefined,
+
+          // Streak Stats
+          winStreak: newWinStreak,
+          loseStreak: newLoseStreak,
+          longestWinStreak: newLongestWinStreak,
+
+          // Performance
+          totalPlayTime: { increment: matchDuration },
+          averageGameDuration: newAverageDuration,
+        },
+      });
+    }
+
+    console.log(
+      `✅ Updated stats for user ${userId}: ${won ? "WIN" : "LOSS"}, Duration: ${matchDuration}s`,
+    );
+  }
+}

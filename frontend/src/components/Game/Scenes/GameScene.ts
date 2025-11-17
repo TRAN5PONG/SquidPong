@@ -94,11 +94,12 @@ export class Game {
         this.scene,
         this.userId === this.hostId ? 1 : -1,
       );
-      this.camera.attach(this.canvas);
+      this.camera.GameIntroAnimation();
+
+      // this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network(`ws://10.13.4.3:4005`, this.match);
-
+      this.net = new Network(`ws://10.13.10.6:4005`, this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
@@ -111,7 +112,6 @@ export class Game {
         this.scene,
         "RIGHT",
         this.userId === this.hostId,
-        this.userId === this.hostId ? this.physics.paddle : null,
         {
           color: paddleColors[0],
           // texture: paddleTextures[1],
@@ -121,7 +121,6 @@ export class Game {
         this.scene,
         "LEFT",
         this.userId === this.guestId,
-        this.userId === this.guestId ? this.physics.paddle : null,
         {
           color: paddleColors[1],
         },
@@ -132,8 +131,6 @@ export class Game {
       this.opponentPaddle =
         this.userId === this.hostId ? this.guestPaddle : this.hostPaddle;
 
-      // TEST:
-      this.physics.setPaddleMesh(this.localPaddle);
       // Controller
       this.controller = new GameController(
         this.localPaddle,
@@ -145,7 +142,7 @@ export class Game {
       );
 
       // Debugging tools
-      this.debug = new Debug(this.scene, this.engine);
+      // this.debug = new Debug(this.scene, this.engine);
       // this.debug.ShowDebuger();
       // this.debug.ShowAxisLines();
       // this.debug.ShowGroundGrid();
@@ -188,7 +185,6 @@ export class Game {
       }
       // --- Compute interpolation factor for visuals ---
       const alpha = accumulator / FIXED_DT;
-      // Update visuals using interpolation
       this.controller.updateVisuals(alpha);
 
       this.scene.render();
