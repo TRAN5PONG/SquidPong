@@ -24,7 +24,13 @@ import {
   createChatSchema as newCreateChatSchema,
   removeChatSchema as newRemoveChatSchema,
   getChatByIdSchema as newGetChatByIdSchema,
-  getRecentChatsSchema as newGetRecentChatsSchema
+  getRecentChatsSchema as newGetRecentChatsSchema,
+  blockUserInChatSchema,
+  unblockUserInChatSchema,
+  removeUserFromChatSchema,
+  blockFriendInChatSchema,
+  unblockFriendInChatSchema,
+  markMessagesAsReadSchema
 } from '../schemas/chat.schemas';
 
 import {
@@ -80,19 +86,19 @@ export const chatRoutes : Route[] = [
 
   
 
-  { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats },
-  { method: 'POST',   url: '/api/chat/new',                handler: createChat  }, // createChatSchema         
-  { method: 'DELETE', url: '/api/chat/remove',     handler: removeChat  },          
-  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById  },
-  { method: 'PATCH',  url: '/api/chat/:chatId/read',       handler: markMessagesAsRead  },
+  { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats, schema: newGetRecentChatsSchema },
+  { method: 'POST',   url: '/api/chat/new',                handler: createChat, schema: newCreateChatSchema  }, // createChatSchema         
+  { method: 'DELETE', url: '/api/chat/remove',     handler: removeChat, schema: newRemoveChatSchema  },          
+  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById, schema: newGetChatByIdSchema  },
+  { method: 'PATCH',  url: '/api/chat/:chatId/read',       handler: markMessagesAsRead, schema: markMessagesAsReadSchema  },
 
-  { method: 'POST',   url: '/api/chat/block/:friendId',    handler: blockUserHandler  },
-  { method: 'POST',   url: '/api/chat/unblock/:friendId',  handler: unblockUserHandler  },
-  { method: 'DELETE', url: '/api/chat/user/:friendId',     handler: removeUserHandler },
+  { method: 'POST',   url: '/api/chat/block/:friendId',    handler: blockUserHandler, schema: blockUserInChatSchema  },
+  { method: 'POST',   url: '/api/chat/unblock/:friendId',  handler: unblockUserHandler, schema: unblockUserInChatSchema  },
+  { method: 'DELETE', url: '/api/chat/user/:friendId',     handler: removeUserHandler, schema: removeUserFromChatSchema },
   
   // Service-to-service endpoints (called from user-service)
-  { method: 'POST',   url: '/api/chat/block-friend',        handler: blockFriendInChatHandler },
-  { method: 'POST',   url: '/api/chat/unblock-friend',      handler: unblockFriendInChatHandler },
+  { method: 'POST',   url: '/api/chat/block-friend',        handler: blockFriendInChatHandler, schema: blockFriendInChatSchema },
+  { method: 'POST',   url: '/api/chat/unblock-friend',      handler: unblockFriendInChatHandler, schema: unblockFriendInChatSchema },
 ];
 
 
@@ -117,23 +123,23 @@ export const groupRoutes: Route[] = [
   { method: 'PATCH',  url: '/api/group/:groupId',              handler: updateGroupInfo },    
   { method: 'PUT',    url: '/api/group/:groupId/image',        handler: updateGroupImage },        
   { method: 'DELETE', url: '/api/group/:groupId',              handler: removeGroup },                
-  { method: 'GET',    url: '/api/group/:groupId',              handler: getGroupById },              
+  { method: 'GET',    url: '/api/group/:groupId/:matchId?',              handler: getGroupById },              
   { method: 'GET',    url: '/api/group',                       handler: getGoupes },                 
 
   // Members management
   { method: 'PATCH',  url: '/api/group/:groupId/members', handler: updateMember }, 
   { method: 'DELETE', url: '/api/group/:groupId/members', handler: removeGroupMember }, 
-  { method: 'POST',   url: '/api/group/:groupId/members/leave', handler: leaveGroup },            
+  { method: 'POST',   url: '/api/group/:groupId/:matchId/members/leave', handler: leaveGroup },            
   { method: 'GET',    url: '/api/group/:groupId/members',      handler: listGroupMembers },    
 
   // Join requests (for private group)
-  { method: 'POST',   url: '/api/group/:groupId/join-requests',           handler: requestJoinGroup },
+  { method: 'POST',   url: '/api/group/:groupId/:matchId/join-requests',           handler: requestJoinGroup },
   { method: 'GET',    url: '/api/group/:groupId/join-requests',           handler: getJoinRequests },
   { method: 'PATCH',  url: '/api/group/:groupId/join-requests/approve', handler: approveJoinRequest },
   { method: 'PATCH',  url: '/api/group/:groupId/join-requests/reject',  handler: rejectJoinRequest },
 
   // Admin/Owner invite users
   { method: 'POST',   url: '/api/group/:groupId/invite',                 handler: inviteUserToGroup },
-  { method: 'GET',    url: '/api/group/:groupId/messages',     handler: getGroupMessages },
+  { method: 'GET',    url: '/api/group/:groupId/:matchId/messages',     handler: getGroupMessages },
 
 ]

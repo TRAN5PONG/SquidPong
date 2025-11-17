@@ -1,10 +1,9 @@
 {
 	"info": {
-		"_postman_id": "ed4106e1-f3ab-46bb-9b64-5a3e71871bb2",
+		"_postman_id": "notify-service-complete",
 		"name": "SquidPong - Notify Service",
-		"description": "Notification management endpoints",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "40559190"
+		"description": "Complete Notify Service API with all endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -18,12 +17,16 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{notifyBaseUrl}}/api/notify/history?page=1&limit=20",
+							"raw": "{{baseUrl}}/api/notify/history?limit=20&offset=0",
 							"host": [
-								"{{notifyBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -32,12 +35,12 @@
 							],
 							"query": [
 								{
-									"key": "page",
-									"value": "1"
-								},
-								{
 									"key": "limit",
 									"value": "20"
+								},
+								{
+									"key": "offset",
+									"value": "0"
 								}
 							]
 						}
@@ -52,43 +55,45 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{notifyBaseUrl}}/api/notify/read/:notifyId",
+							"raw": "{{baseUrl}}/api/notify/read/{{notificationId}}",
 							"host": [
-								"{{notifyBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"notify",
 								"read",
-								":notifyId"
-							],
-							"variable": [
-								{
-									"key": "notifyId",
-									"value": "{{notifyId}}"
-								}
+								"{{notificationId}}"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Mark All as Read",
+					"name": "Mark All Notifications as Read",
 					"request": {
 						"method": "PATCH",
 						"header": [
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{notifyBaseUrl}}/api/notify/read-all",
+							"raw": "{{baseUrl}}/api/notify/read-all",
 							"host": [
-								"{{notifyBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -107,23 +112,21 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{notifyBaseUrl}}/api/notify/:notifyId",
+							"raw": "{{baseUrl}}/api/notify/{{notificationId}}",
 							"host": [
-								"{{notifyBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"notify",
-								":notifyId"
-							],
-							"variable": [
-								{
-									"key": "notifyId",
-									"value": "{{notifyId}}"
-								}
+								"{{notificationId}}"
 							]
 						}
 					},
@@ -137,12 +140,16 @@
 							{
 								"key": "x-user-id",
 								"value": "{{userId}}"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
 						"url": {
-							"raw": "{{notifyBaseUrl}}/api/notify/all",
+							"raw": "{{baseUrl}}/api/notify/all",
 							"host": [
-								"{{notifyBaseUrl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
@@ -154,22 +161,125 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "User Management (Internal)",
+			"item": [
+				{
+					"name": "Create User Notify",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-secret-token",
+								"value": "{{SECRET_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": 1,\n  \"username\": \"testuser\",\n  \"preferences\": {\n    \"notifications\": {\n      \"friendRequests\": true,\n      \"messages\": true,\n      \"gameInvites\": true,\n      \"tournamentInvites\": false\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Notify",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-secret-token",
+								"value": "{{SECRET_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"updateduser\",\n  \"preferences\": {\n    \"notifications\": {\n      \"friendRequests\": false,\n      \"messages\": true,\n      \"gameInvites\": true,\n      \"tournamentInvites\": true\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"{{userId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User Notify",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-secret-token",
+								"value": "{{SECRET_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"{{userId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"variable": [
 		{
-			"key": "notifyBaseUrl",
-			"value": "http://localhost:4004",
+			"key": "baseUrl",
+			"value": "http://localhost:4433",
 			"type": "string"
 		},
 		{
 			"key": "userId",
-			"value": "",
+			"value": "1",
 			"type": "string"
 		},
 		{
-			"key": "notifyId",
-			"value": "",
+			"key": "notificationId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "SECRET_TOKEN",
+			"value": "your-secret-token-here",
+			"type": "string"
+		},
+		{
+			"key": "JWT_USER1",
+			"value": "your-jwt-token-here",
 			"type": "string"
 		}
 	]

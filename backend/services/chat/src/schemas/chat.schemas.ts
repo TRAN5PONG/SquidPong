@@ -406,3 +406,231 @@ export const getRecentChatsSchema: FastifySchema = {
   },
   
 };
+
+export const blockUserInChatSchema: FastifySchema = {
+  description: 'Block a user in a specific chat',
+  tags: ['Private Chat'],
+  summary: 'Block User in Chat',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID from authentication token'
+      }
+    },
+    required: ['x-user-id']
+  },
+  params: {
+    type: 'object',
+    properties: {
+      friendId: {
+        type: 'string',
+        description: 'ID of the friend to block'
+      }
+    },
+    required: ['friendId']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'User blocked successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Invalid request or user not found'
+    }
+  }
+};
+
+export const unblockUserInChatSchema: FastifySchema = {
+  description: 'Unblock a user in a specific chat',
+  tags: ['Private Chat'],
+  summary: 'Unblock User in Chat',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID from authentication token'
+      }
+    },
+    required: ['x-user-id']
+  },
+  params: {
+    type: 'object',
+    properties: {
+      friendId: {
+        type: 'string',
+        description: 'ID of the friend to unblock'
+      }
+    },
+    required: ['friendId']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'User unblocked successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Invalid request or user not found'
+    }
+  }
+};
+
+export const removeUserFromChatSchema: FastifySchema = {
+  description: 'Remove a user and delete the chat (service-to-service)',
+  tags: ['Private Chat'],
+  summary: 'Remove User from Chat',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID from authentication token'
+      },
+      'x-secret-token': {
+        type: 'string',
+        description: 'Internal service authentication token'
+      }
+    },
+    required: ['x-user-id', 'x-secret-token']
+  },
+  params: {
+    type: 'object',
+    properties: {
+      friendId: {
+        type: 'string',
+        description: 'ID of the friend to remove'
+      }
+    },
+    required: ['friendId']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Chat removed successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Chat not found or invalid request'
+    }
+  }
+};
+
+export const blockFriendInChatSchema: FastifySchema = {
+  description: 'Block friend in chat (service-to-service call)',
+  tags: ['Private Chat'],
+  summary: 'Block Friend in Chat',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-secret-token': {
+        type: 'string',
+        description: 'Internal service authentication token'
+      }
+    },
+    required: ['x-secret-token']
+  },
+  body: {
+    type: 'object',
+    properties: {
+      userId: {
+        type: 'string',
+        description: 'User ID who is blocking'
+      },
+      friendId: {
+        type: 'string',
+        description: 'Friend ID to block'
+      }
+    },
+    required: ['userId', 'friendId']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Friend blocked in chat successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Chat not found or invalid request'
+    }
+  }
+};
+
+export const unblockFriendInChatSchema: FastifySchema = {
+  description: 'Unblock friend in chat (service-to-service call)',
+  tags: ['Private Chat'],
+  summary: 'Unblock Friend in Chat',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-secret-token': {
+        type: 'string',
+        description: 'Internal service authentication token'
+      }
+    },
+    required: ['x-secret-token']
+  },
+  body: {
+    type: 'object',
+    properties: {
+      userId: {
+        type: 'string',
+        description: 'User ID who is unblocking'
+      },
+      friendId: {
+        type: 'string',
+        description: 'Friend ID to unblock'
+      }
+    },
+    required: ['userId', 'friendId']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Friend unblocked in chat successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Chat not found or invalid request'
+    }
+  }
+};
+
+export const markMessagesAsReadSchema: FastifySchema = {
+  description: 'Mark all messages in a chat as read',
+  tags: ['Private Chat'],
+  summary: 'Mark Messages as Read',
+  headers: {
+    type: 'object',
+    properties: {
+      'x-user-id': {
+        type: 'string',
+        description: 'User ID from authentication token'
+      }
+    },
+    required: ['x-user-id']
+  },
+  params: {
+    type: 'object',
+    properties: {
+      chatId: {
+        type: 'string',
+        description: 'ID of the chat'
+      }
+    },
+    required: ['chatId']
+  },
+  response: {
+    200: {
+      ...successResponse,
+      description: 'Messages marked as read successfully'
+    },
+    400: {
+      ...errorResponse,
+      description: 'Chat not found or invalid request'
+    }
+  }
+};
