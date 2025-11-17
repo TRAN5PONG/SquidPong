@@ -88,7 +88,7 @@ export const routes: Route[] = [
     exact: true,
     showLoader: false,
   },
-  { path: "/spectate", component: Spectate, exact: true, showLoader: true },
+  { path: "/spectate", component: Spectate, exact: false, showLoader: true },
   { path: "/settings", component: Settings, exact: false, showLoader: false },
   {
     path: "/leaderboard",

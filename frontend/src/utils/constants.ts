@@ -24,9 +24,10 @@ export const constants = {
   PADDLE: {
     size: { width: 0.8, height: 0.6, length: 0.2 } as Size3D,
     position: {
-      left: { x: 0, y: 3, z: 5 } as Vector3,
-      right: { x: 0, y: 3, z: 5 } as Vector3,
-    },
+      x: 0,
+      y: 4,
+      z: 0,
+    } as Vector3,
   },
   NET: {
     size: {
