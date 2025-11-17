@@ -1,7 +1,6 @@
 import { db } from "@/db";
-import Zeroact from "@/lib/Zeroact";
+import Zeroact, { useEffect } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { Tournament } from "@/types/tournament";
 import {
   ChallengeIcon,
   CoinIcon,
@@ -10,6 +9,7 @@ import {
   TrophyIcon,
 } from "../Svg/Svg";
 import { useNavigate } from "@/contexts/RouterProvider";
+import { Tournament } from "@/types/game/tournament";
 
 const StyledTournaments = styled("div")`
   width: 100%;
@@ -52,6 +52,13 @@ const StyledTournaments = styled("div")`
 const Tournaments = () => {
   const [showCreateTournamentModal, setShowCreateTournamentModal] =
     Zeroact.useState(false);
+
+  /**
+   * effects
+   */
+  useEffect(() => {
+    
+  }, []);
 
   return (
     <StyledTournaments className="scroll-y">
@@ -216,13 +223,13 @@ const TournamentCard = (props: Tournament) => {
         </div>
         <div className="CardHeaderInfos">
           <h1 className="CardHeaderInfosName">{props.name}</h1>
-          <span className="CardHeaderInfosDesc">{props.desription}</span>
+          <span className="CardHeaderInfosDesc">{props.description}</span>
           <div className="CardBodyParticipants">
             <div className="CardBodyParticipantsAvatars">
               {props.participants.slice(0, 3).map((participant) => {
                 return (
                   <StyledTournamentCardAvatar
-                    avatar={participant.user.avatar}
+                    avatar={participant.avatar}
                   />
                 );
               })}
@@ -241,13 +248,13 @@ const TournamentCard = (props: Tournament) => {
         <div className="CardBodyTournamentStatus">
           <InfosIcon size={20} fill="rgba(255, 255, 255, 0.8)" />
           <span>
-            {props.status === "registration"
+            {props.status === "REGISTRATION"
               ? "Registration Open"
-              : props.status === "ready"
+              : props.status === "READY"
               ? "Ready to Start"
-              : props.status === "inProgress"
+              : props.status === "IN_PROGRESS"
               ? "In Progress"
-              : props.status === "completed"
+              : props.status === "COMPLETED"
               ? "Completed"
               : "Cancelled"}
           </span>
@@ -270,7 +277,7 @@ const TournamentCard = (props: Tournament) => {
 
       <button
         className={`CardBtn ${
-          props.status !== "registration" && props.status !== "completed"
+          props.status !== "REGISTRATION" && props.status !== "COMPLETED"
             ? "disabled"
             : ""
         }`}
@@ -278,13 +285,13 @@ const TournamentCard = (props: Tournament) => {
           navigate(`/tournament/${props.id}`);
         }}
       >
-        {props.status === "registration"
+        {props.status === "REGISTRATION"
           ? "Join"
-          : props.status === "ready"
+          : props.status === "READY"
           ? "full"
-          : props.status === "inProgress"
+          : props.status === "IN_PROGRESS"
           ? "full"
-          : props.status === "completed"
+          : props.status === "COMPLETED"
           ? "View Results"
           : "Cancelled"}
       </button>

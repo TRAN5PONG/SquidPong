@@ -9,7 +9,6 @@ import { checkSecretToken } from '../utils/helper';
 import app from '../app';
 
 
-
 export async function createChat(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<{chatId : number}> = { success: true, message: chatMessages.CREATED_SUCCESS };

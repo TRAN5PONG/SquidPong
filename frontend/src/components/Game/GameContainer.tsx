@@ -114,8 +114,7 @@ const GameContiner = () => {
   const [matchPhase, setMatchPhase] = useState<MatchPhase>("waiting");
   const [winnerId, setWinnerId] = useState<string | null>(null);
 
-    const {  ambianceSound } = useSounds();
-
+  const { ambianceSound } = useSounds();
 
   // == Get Match
   useEffect(() => {
@@ -157,24 +156,27 @@ const GameContiner = () => {
     netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
   }, [gameRef.current]);
 
-
   const onPause = () => {
     if (!netRef.current) return;
 
     netRef.current.sendMessage("game:pause");
   };
   const onGiveUp = () => {
-    if (!netRef.current) return;
-    netRef.current.sendMessage("player:give-up");
+    gameRef.current?.arena.updateTableEdgesMaterial(false);
+
+    // if (!netRef.current) return;
+    // netRef.current.sendMessage("player:give-up");
   };
   const onReady = () => {
-    if (!netRef.current) return;
-    
-    gameRef.current?.camera.setupPosition();
-    netRef.current.sendMessage("player:ready");
+    gameRef.current?.arena.stopTableEdgesPulse();
+    // if (!netRef.current) return;
+
+    // gameRef.current?.camera.setupPosition();
+    // netRef.current.sendMessage("player:ready");
   };
   const onReset = () => {
     if (!netRef.current) return;
+    gameRef.current?.arena.updateTableEdgesMaterial(true, true);
     gameRef.current?.camera.playCameraAnimations();
     ambianceSound.play();
     // netRef.current.sendMessage("game:reset");
@@ -193,8 +195,8 @@ const GameContiner = () => {
       <ScoreBoard
         net={netRef.current}
         match={match}
-        startCinematicCamera={() => { }}
-        resetCamera={() => { }}
+        startCinematicCamera={() => {}}
+        resetCamera={() => {}}
       />
       <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
         <button onClick={onReady}>Ready</button>
@@ -213,8 +215,8 @@ const GameContiner = () => {
       </h1>
       <div className="GameSettings">
         {matchPhase === "playing" ||
-          matchPhase === "paused" ||
-          matchPhase === "waiting" ? (
+        matchPhase === "paused" ||
+        matchPhase === "waiting" ? (
           <button className="GiveUpButton BtnSecondary" onClick={onGiveUp}>
             <GiveUpIcon size={20} fill="var(--main_color)" />
             Give up

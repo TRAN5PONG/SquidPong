@@ -5,6 +5,8 @@ import {
   AbstractMesh,
   LoadAssetContainerAsync,
   StandardMaterial,
+  Nullable,
+  Observer,
 } from "@babylonjs/core";
 
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
@@ -32,6 +34,11 @@ export class Arena {
   private boardText1: TextBlock | null = null;
   private gameStatusText: TextBlock | null = null;
   private playersNamesText: TextBlock | null = null;
+
+  // Table Edges Effect
+  private TableEdgesMesh: AbstractMesh | null = null;
+  private TableEdgesMaterial: StandardMaterial | null = null;
+  private pulseObserver: Nullable<Observer<Scene>> = null;
 
   constructor(scene: Scene, light: Light) {
     this.scene = scene;
@@ -178,6 +185,11 @@ export class Arena {
       if (mesh.name === "ScreenBoard") {
         this.BoardMesh = mesh as AbstractMesh;
       }
+
+      if (mesh.name === "TableEdges") {
+        this.TableEdgesMesh = mesh as AbstractMesh;
+        this.TableEdgesMaterial = mesh.material as StandardMaterial;
+      }
     });
 
     this.Mesh = ObjGroup;
@@ -211,5 +223,34 @@ export class Arena {
         z: size.z,
       },
     };
+  }
+
+  updateTableEdgesMaterial(isWon: boolean, intro?: boolean) {
+    if (!this.TableEdgesMesh) return;
+
+    const IntroColor = Color3.FromHexString("#fc287b");
+    const baseColor = intro
+      ? IntroColor
+      : isWon
+      ? new Color3(0, 1, 0)
+      : new Color3(1, 0, 0);
+    const mat = new StandardMaterial("pulseMat", this.scene);
+    this.TableEdgesMesh.material = mat;
+
+    this.pulseObserver = this.scene.onBeforeRenderObservable.add(() => {
+      const t = performance.now() * 0.005;
+      const intensity = (Math.sin(t) + 1) / 2; // [0..1]
+      mat.emissiveColor = baseColor.scale(intensity);
+    });
+  }
+  stopTableEdgesPulse() {
+    if (this.pulseObserver) {
+      this.scene.onBeforeRenderObservable.remove(this.pulseObserver);
+      this.pulseObserver = null;
+    }
+
+    if (this.TableEdgesMaterial && this.TableEdgesMesh) {
+      this.TableEdgesMesh.material = this.TableEdgesMaterial;
+    }
   }
 }

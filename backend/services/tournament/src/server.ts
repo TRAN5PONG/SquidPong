@@ -1,32 +1,27 @@
-import dotenv from 'dotenv';
-import path from 'path'
-// import app from './app'
-import { initRabbitMQ , receiveFromQueue } from './integration/rabbitmqClient';
+import Fastify from "fastify";
+import { initRabbitMQ, receiveFromQueue } from "./integration/rabbitmqClient";
+import { tournamentRoutes } from "./routes/tournamentRoutes";
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+const server = Fastify({ logger: true });
 
-// const port = Number(process.env.PORT);
-// const host = process.env.HOST;
+const start = async () => {
+  try {
+    // Register CORS plugin inside the async function
+    await server.register(import("@fastify/cors"), {
+      origin: true,
+    });
 
+    // Then register your routes
+    server.register(tournamentRoutes);
 
-// async function StartServer()
-// {
-//     try 
-//     {
-//         app.listen({port : port , host : host} , () => {console.log(`server listen on http://${host}:${port} ...`)})
-//     } 
-//     catch (error) 
-//     {
-//         console.log("error in server")
-//         process.exit(1);
-//     }
-// }
+    await server.listen({ port: 3000, host: "0.0.0.0" });
 
+    await initRabbitMQ();
+    await receiveFromQueue("emailhub");
+  } catch (err) {
+    server.log.error(err);
+    process.exit(1);
+  }
+};
 
-
-async function start() 
-{
-  await  initRabbitMQ();
-  await receiveFromQueue("emailhub") 
-}
 start();
