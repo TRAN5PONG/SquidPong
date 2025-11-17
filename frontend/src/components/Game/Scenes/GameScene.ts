@@ -78,8 +78,6 @@ export class Game {
 
     this.engine = new Engine(canvas, true, { adaptToDeviceRatio: true });
     this.scene = new Scene(this.engine);
-
-
   }
 
   /****
@@ -96,7 +94,6 @@ export class Game {
         this.scene,
         this.userId === this.hostId ? 1 : -1
       );
-      // this.camera.GameIntroAnimation();
 
       this.camera.attach(this.canvas);
 
@@ -151,10 +148,7 @@ export class Game {
 
       // Load assets
       await Promise.all([
-        this.arena.Load().then(() => {
-          // console.log("Arena loaded.", this.arena.getPhysicsInfo());
-        }),
-
+        this.arena.Load(),
         this.hostPaddle.Load(),
         this.guestPaddle.Load(),
         this.ball.Load(),
@@ -198,6 +192,8 @@ export class Game {
    */
   async start() {
     await this.Init();
+    this.arena.updateTableEdgesMaterial(true, true);
+    this.camera.GameIntroAnimation();
 
     this.isGameReady = true;
     this.startRenderLoop();

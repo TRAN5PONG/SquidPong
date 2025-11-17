@@ -1,5 +1,4 @@
-import { GameStatus } from "./game/game";
-import { User } from "./user";
+import { GameStatus } from "./game";
 
 export type TournamentRound =
   | "QUALIFIERS"
