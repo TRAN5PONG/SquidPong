@@ -8,6 +8,7 @@ interface SkeletonProps {
   index?: number;
   borderRadius?: number;
   gap?: number;
+  bgColor?: string;
   animation?: "Shine" | "Wave" | "hybrid";
 }
 const StyledSkeleton = styled("div")`
@@ -19,7 +20,11 @@ const StyledSkeleton = styled("div")`
     border-radius: ${(props: SkeletonProps) => props.borderRadius}px;
     height: ${(props: SkeletonProps) => props.height};
     background-color: ${(props: SkeletonProps) =>
-      props.dark ? "var(--bg_color_light)" : "gray"};
+      props.bgColor
+        ? props.bgColor
+        : props.dark
+        ? "var(--bg_color_light)"
+        : "gray"};
     position: relative;
     overflow: hidden;
   }
@@ -48,7 +53,7 @@ const Skeleton = (props: SkeletonProps) => {
   const {
     dark = true,
     width = "100%",
-    height= "20px",
+    height = "20px",
     borderRadius = 0,
     gap = 3,
     animation,
@@ -62,6 +67,7 @@ const Skeleton = (props: SkeletonProps) => {
       dark={dark}
       gap={gap}
       animation={animation}
+      bgColor={props.bgColor}
     >
       <div
         className={`Skeleton ${

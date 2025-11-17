@@ -92,8 +92,8 @@ export class RollbackManager {
     syncInfo: BallSyncInfo,
     position: Vec3,
     velocity: Vec3,
+    applySpin: boolean,
     spin?: Vec3,
-    applySpin: boolean = true,
   ): void {
     switch (syncInfo.result) {
       case BallSyncResult.ROLLBACK_NEEDED:
@@ -102,13 +102,14 @@ export class RollbackManager {
           syncInfo.currentTick,
           position,
           velocity,
+          applySpin,
           spin,
         );
         break;
       case BallSyncResult.APPLY_IMMEDIATELY:
       case BallSyncResult.FUTURE_TICK_WARNING:
       case BallSyncResult.SNAP_DIRECTLY:
-        this.applyState(position, velocity, spin, applySpin);
+        this.applyState(position, velocity, applySpin, spin);
         break;
     }
   }
@@ -119,6 +120,7 @@ export class RollbackManager {
     currentTick: number,
     position: Vec3,
     velocity: Vec3,
+    applySpin: boolean,
     spin?: Vec3,
   ): void {
     this.isRollbackInProgress = true;
@@ -126,7 +128,7 @@ export class RollbackManager {
     const rollbackBase = this.getHistoryAtTick(receivedTick);
     if (!rollbackBase) {
       console.warn(`⚠️ Rollback failed: No history for tick ${receivedTick}`);
-      this.applyState(position, velocity, spin);
+      this.applyState(position, velocity, applySpin, spin);
       this.clearHistory();
       this.recordState(currentTick);
       this.isRollbackInProgress = false;
@@ -138,7 +140,7 @@ export class RollbackManager {
     this.physics.setBallSpin(...rollbackBase.spin);
 
     // Apply received state
-    this.applyState(position, velocity, spin);
+    this.applyState(position, velocity, applySpin, spin);
 
     // Clear future history
     this.clearHistoryAfterTick(receivedTick);
@@ -168,15 +170,19 @@ export class RollbackManager {
   private applyState(
     position: Vec3,
     velocity: Vec3,
+    applySpin: boolean,
     spin?: Vec3,
-    applySpin = true,
   ): void {
     this.physics.setBallPosition(position.x, position.y, position.z);
     this.physics.setBallVelocity(velocity.x, velocity.y, velocity.z);
-    if (spin) {
+    if (applySpin && spin) {
       this.physics.setBallSpin(spin.x, spin.y, spin.z);
-      this.physics.setApplySpin(applySpin);
-    } else this.physics.setApplySpin(false);
+      this.physics.setApplySpin(true);
+      this.ball.activateSmokeEffect();
+    } else {
+      this.physics.setApplySpin(false);
+      this.ball.deactivateSmokeEffect();
+    }
     this.ball.setMeshPosition(this.physics.getBallPosition());
   }
 
@@ -226,5 +232,10 @@ export class RollbackManager {
 
   public isInProgress(): boolean {
     return this.isRollbackInProgress;
+  }
+
+  public reset(): void {
+    this.ballHistory = [];
+    this.isRollbackInProgress = false;
   }
 }

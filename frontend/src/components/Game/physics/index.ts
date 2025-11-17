@@ -2,6 +2,7 @@ import { useEffect, useRef } from "@/lib/Zeroact";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { constants } from "@/utils/constants";
+import { ballResetMessage } from "@/types/network";
 
 import { Ball } from "./Ball";
 import { Paddle } from "./Paddle";
@@ -18,14 +19,22 @@ export class Physics {
   public paddle!: Paddle;
   public floor!: Floor;
   public net!: Net;
+  public table!: Table;
 
   private ballSpin: Vector3 = new Vector3(0, 0, 0); // Angular velocity in rad/s
   private spinDecay: number = 0.98; // Spin decay factor per tick
   private appySpin: boolean = false;
 
+  // Visual speed boost system (NEW!)
+  private visualSpeedBoost: number = 1.8; // Multiplier for visual speed
+  private applySpeedBoost: boolean = false;
+  private readonly SPEED_BOOST_DECAY: number = 0.98; // How fast boost decays
+
   // TEST:
   private PaddleMesh: paddle | null = null;
   timestep = 1 / 60;
+
+  private PlayerId: string | null = null;
   // callback
   public onBallPaddleCollision?: (
     ball: RAPIER.RigidBody,
@@ -39,9 +48,10 @@ export class Physics {
     ball: RAPIER.RigidBody,
     net: RAPIER.RigidBody,
   ) => void;
-
-  // last collision detection time
-  private lastCollisioDetectionTime: number = 0;
+  public onBallTableCollision?: (
+    ball: RAPIER.RigidBody,
+    table: RAPIER.RigidBody,
+  ) => void;
 
   Impulse: RAPIER.Vector3 | null = null;
   // debug
@@ -58,7 +68,7 @@ export class Physics {
     this.eventQueue = new RAPIER.EventQueue(true);
 
     // Create entities
-    new Table(this.world);
+    this.table = new Table(this.world);
     this.floor = new Floor(this.world);
     this.net = new Net(this.world);
 
@@ -77,77 +87,11 @@ export class Physics {
     this.Impulse = impulse;
   }
 
-  calculateTargetZYVelocity(
-    ballPos: RAPIER.Vector,
-    paddlePos: RAPIER.Vector,
-  ): Vector3 {
-    const halfLength = constants.TABLE.size.length / 2;
-    const halfWidth = constants.TABLE.size.width / 2;
-    const tableSurfaceY =
-      constants.TABLE.position.y + constants.TABLE.size.height / 2;
-    const gravity = Math.abs(constants.Gravity.y); // positive value
-
-    // --- Compute Z target on opponent side ---
-    const safeMargin = 0.4;
-    const [zMin, zMax] =
-      paddlePos.z > 0
-        ? [-halfLength + safeMargin, 0.3 - safeMargin]
-        : [0.3 + safeMargin, halfLength - safeMargin];
-
-    const paddleVelocityZ = this.paddle.body.linvel().z * 0.15;
-    const targetZ = this.calculateTargetZFromVelocity(
-      paddleVelocityZ,
-      zMin,
-      zMax,
-    );
-    this.TargetZ = targetZ;
-
-    // --- Compute Y velocity to reach arc height ---
-    const minArcHeight = tableSurfaceY + constants.NET.size.height + 0.2;
-    const arcHeight = Math.max(minArcHeight, ballPos.y + 0.2);
-    const heightGain = Math.max(arcHeight - ballPos.y, 0.3);
-
-    const velocityY = Math.sqrt(2 * gravity * heightGain);
-    const timeUp = velocityY / gravity;
-    const timeDown = Math.sqrt((2 * (arcHeight - tableSurfaceY)) / gravity);
-    const totalFlightTime = timeUp + timeDown;
-
-    // --- Compute Z velocity to reach target Z ---
-    const velocityZ = (targetZ - ballPos.z) / totalFlightTime;
-
-    // --- Compute X target and velocity ---
-    const minX = -halfWidth + safeMargin;
-    const maxX = halfWidth - safeMargin;
-    let targetX = this.appySpin
-      ? paddlePos.x
-      : paddlePos.x + this.paddle.body.linvel().x * 0.05;
-    targetX = Math.max(minX, Math.min(maxX, targetX));
-
-    const velocityX = (targetX - ballPos.x) / totalFlightTime;
-    this.TargetX = targetX;
-
-    // --- Return final velocity vector ---
-    return new Vector3(velocityX, velocityY, velocityZ);
-  }
-
-  calculateTargetZFromVelocity(
-    paddleVelocityZ: number,
-    zMin: number,
-    zMax: number,
-  ): number {
-    const clamped = Math.max(-1, Math.min(1, paddleVelocityZ / 2)); // Normalize to [-1, 1]
-    const t = (clamped + 1) / 2; // Map to [0, 1]
-    return zMin + t * (zMax - zMin); // Map to [zMin, zMax]
-  }
-
-  // TEST:
-  public setPaddleMesh(paddle: paddle) {
-    this.PaddleMesh = paddle;
-  }
-  Step(dt: number) {
-    //TEST:
-    this.paddle.update(dt);
+  Step() {
+    this.paddle.update();
     this.applyMagnusEffect();
+    this.applyVisualSpeedBoost();
+
     this.world.step(this.eventQueue);
 
     this.eventQueue.drainCollisionEvents((h1, h2, started) => {
@@ -162,15 +106,13 @@ export class Physics {
     const paddleHandle = this.paddle.collider.handle;
     const floorHandle = this.floor.collider.handle;
     const netHandle = this.net.collider.handle;
+    const tableHandle = this.table.collider.handle;
 
     // Ball + Paddle
     if (
       (handle1 === ballHandle && handle2 === paddleHandle) ||
       (handle2 === ballHandle && handle1 === paddleHandle)
     ) {
-      if (now - this.lastCollisioDetectionTime < 150) return;
-      this.lastCollisioDetectionTime = now;
-
       this.onBallPaddleCollision?.(this.ball.body, this.paddle.body);
       return;
     }
@@ -192,6 +134,14 @@ export class Physics {
       this.onBallNetCollision?.(this.ball.body, this.net.body);
       return;
     }
+    // Ball + Table
+    if (
+      (handle1 === ballHandle && handle2 === tableHandle) ||
+      (handle2 === ballHandle && handle1 === tableHandle)
+    ) {
+      this.onBallTableCollision?.(this.ball.body, this.table.body);
+      return;
+    }
   }
 
   updatePaddleRotationZ(angleDeg: number) {
@@ -209,18 +159,22 @@ export class Physics {
     this.paddle.body.setNextKinematicRotation(quat);
   }
 
+  // ================= Magnus Effect =================
   private applyMagnusEffect(): void {
-    if (!this.getApplySpin()) return;
-
+    if (!this.appySpin) return;
+    const spinY = this.ballSpin.y;
+    if (spinY > -0.1 && spinY < 0.1) {
+      this.ballSpin.scaleInPlace(this.spinDecay);
+      return;
+    }
     const ballVel = this.ball.body.linvel();
-
-    let magnusForceX = this.ballSpin.y;
-    console.log("Spin Y (around Y axis):", this.ballSpin.y);
+    const spinTimestep = spinY * this.timestep;
+    // console.log("Spin Y (around Y axis):", this.ballSpin.y);
     this.ball.body.setLinvel(
       {
-        x: ballVel.x + magnusForceX * this.timestep,
+        x: ballVel.x + spinTimestep,
         y: ballVel.y, // No Y change
-        z: ballVel.z, // No Z change
+        z: ballVel.z + spinTimestep * 0.4,
       },
       true,
     );
@@ -228,18 +182,85 @@ export class Physics {
     // Decay spin
     this.ballSpin.scaleInPlace(this.spinDecay);
   }
+
+  // ================= Visual Speed Boost (NEW!) =================
+
+  private applyVisualSpeedBoost(): void {
+    if (!this.applySpeedBoost) return;
+
+    const ballVel = this.ball.body.linvel();
+
+    const boostAmount = this.visualSpeedBoost - 1.0; // 0.5 for 1.5x boost
+    const boostTimestep = boostAmount * this.timestep;
+
+    const velMagnitude = Math.sqrt(
+      ballVel.x * ballVel.x + ballVel.y * ballVel.y + ballVel.z * ballVel.z,
+    );
+
+    if (velMagnitude > 0.01) {
+      // Normalize and apply boost  (Find Direction)
+      const normX = ballVel.x / velMagnitude;
+      const normY = ballVel.y / velMagnitude;
+      const normZ = ballVel.z / velMagnitude;
+
+      this.ball.body.setLinvel(
+        {
+          x: ballVel.x + normX * boostTimestep * 10,
+          y: ballVel.y + normY * boostTimestep * 10,
+          z: ballVel.z + normZ * boostTimestep * 10,
+        },
+        true,
+      );
+    }
+
+    // Decay the boost multiplier over time
+    this.visualSpeedBoost *= this.SPEED_BOOST_DECAY;
+  }
+
+  // ================= Speed Boost Setters/Getters =================
+  public setApplySpeedBoost(apply: boolean): void {
+    this.applySpeedBoost = apply;
+  }
+
+  /**
+   * Get current speed boost multiplier
+   */
+  public getVisualSpeedBoost(): number {
+    return this.visualSpeedBoost;
+  }
+
+  /**
+   * Check if speed boost is active
+   */
+  public isSpeedBoostActive(): boolean {
+    return this.applySpeedBoost;
+  }
+
+  // ==== Reset ====
+  public reset(frozen: boolean, data?: ballResetMessage): void {
+    if (!data) {
+      // Default reset
+      data = {
+        position: { x: 0, y: 4, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+      };
+    }
+    this.ball.reset(data);
+    this.setBallFrozen(frozen);
+  }
   //  setters
   setBallVelocity(x: number, y: number, z: number) {
     this.ball.body.setLinvel({ x, y, z }, true);
   }
   public setBallFrozen(frozen: boolean) {
+    console.log("Setting ball frozen:", frozen);
     if (frozen) {
-      this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-      this.ball.body.setGravityScale(0, true);
+      this.ball.freeze();
     } else {
-      this.ball.body.setGravityScale(1, true);
+      this.ball.unfreeze();
     }
   }
+
   setBallPosition(x: number, y: number, z: number) {
     this.ball.body.setTranslation({ x, y, z }, true);
   }
@@ -271,6 +292,9 @@ export class Physics {
     this.appySpin = apply;
   }
 
+  public setPlayerId(playerId: string | null) {
+    this.PlayerId = playerId;
+  }
   // getters
   public getBallStatus(): Boolean {
     // return true if ball frozen
