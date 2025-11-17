@@ -49,6 +49,8 @@ export enum PollMessages {
 
 export enum GroupMessages {
 
+  NOT_A_MEMBER = 'You are not a member of this group.',
+    CANNOT_UPDATE_MATCH_GROUP = 'Cannot update a match-associated group.',
     NOT_FOUND = 'Group not found.',
     IMAGE_UPDATED_SUCCESS = 'Group image updated successfully.',
     CANNOT_CHANGE_OWN_ROLE = 'You cannot change your own role in the group.',

@@ -167,6 +167,8 @@ model Group {
   chatId    Int        @unique
   type      GroupType  @default(PRIVATE)
 
+  matchId      String? @unique
+
   members   GroupMember[]
   chat      Chat       @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
