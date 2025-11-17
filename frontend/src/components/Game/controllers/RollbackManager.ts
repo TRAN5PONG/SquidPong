@@ -92,7 +92,6 @@ export class RollbackManager {
     syncInfo: BallSyncInfo,
     position: Vec3,
     velocity: Vec3,
-    applyEffect: boolean,
     applySpin: boolean,
     spin?: Vec3,
   ): void {
@@ -103,7 +102,6 @@ export class RollbackManager {
           syncInfo.currentTick,
           position,
           velocity,
-          applyEffect,
           applySpin,
           spin,
         );
@@ -111,7 +109,7 @@ export class RollbackManager {
       case BallSyncResult.APPLY_IMMEDIATELY:
       case BallSyncResult.FUTURE_TICK_WARNING:
       case BallSyncResult.SNAP_DIRECTLY:
-        this.applyState(position, velocity, applyEffect, applySpin, spin);
+        this.applyState(position, velocity, applySpin, spin);
         break;
     }
   }
@@ -122,7 +120,6 @@ export class RollbackManager {
     currentTick: number,
     position: Vec3,
     velocity: Vec3,
-    applyEffect: boolean,
     applySpin: boolean,
     spin?: Vec3,
   ): void {
@@ -131,7 +128,7 @@ export class RollbackManager {
     const rollbackBase = this.getHistoryAtTick(receivedTick);
     if (!rollbackBase) {
       console.warn(`⚠️ Rollback failed: No history for tick ${receivedTick}`);
-      this.applyState(position, velocity, applyEffect, applySpin, spin);
+      this.applyState(position, velocity, applySpin, spin);
       this.clearHistory();
       this.recordState(currentTick);
       this.isRollbackInProgress = false;
@@ -143,7 +140,7 @@ export class RollbackManager {
     this.physics.setBallSpin(...rollbackBase.spin);
 
     // Apply received state
-    this.applyState(position, velocity, applyEffect, applySpin, spin);
+    this.applyState(position, velocity, applySpin, spin);
 
     // Clear future history
     this.clearHistoryAfterTick(receivedTick);
@@ -173,20 +170,20 @@ export class RollbackManager {
   private applyState(
     position: Vec3,
     velocity: Vec3,
-    applyEffect: boolean,
     applySpin: boolean,
     spin?: Vec3,
   ): void {
     this.physics.setBallPosition(position.x, position.y, position.z);
     this.physics.setBallVelocity(velocity.x, velocity.y, velocity.z);
-    if (spin) {
+    if (applySpin && spin) {
       this.physics.setBallSpin(spin.x, spin.y, spin.z);
-      this.physics.setApplySpin(applySpin);
-    } else this.physics.setApplySpin(false);
-    this.ball.setMeshPosition(this.physics.getBallPosition());
-    if (applyEffect) {
-      this.ball.activateFireEffect();
+      this.physics.setApplySpin(true);
+      this.ball.activateSmokeEffect();
+    } else {
+      this.physics.setApplySpin(false);
+      this.ball.deactivateSmokeEffect();
     }
+    this.ball.setMeshPosition(this.physics.getBallPosition());
   }
 
   // ============== Helpers ==============

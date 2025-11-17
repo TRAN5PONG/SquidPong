@@ -94,8 +94,19 @@ export class GameController {
       this.networkSync.startSync();
     });
 
+    this.net.on("phase:changed", (newPhase: string) => {
+      if (newPhase === "playing") {
+        this.hasGameStarted = true;
+        this.networkSync.startSync();
+      } else {
+        this.hasGameStarted = false;
+        this.networkSync.stopSync();
+        this.gameLogic.resetRound();
+      }
+    });
+
     // Mouse click to serve
-    this.scene.onPointerObservable.add((pointerInfo) => {
+    this.scene.onPointerObservable.add((pointerInfo: any) => {
       if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
         const event = pointerInfo.event as PointerEvent;
         if (
@@ -165,6 +176,11 @@ export class GameController {
         this.physics.ball.getCurrentPosition(),
         alpha,
       );
+
+      const rot = this.physics.ball.body.rotation();
+
+      this.ball.mesh.rotationQuaternion.set(rot.x, rot.y, rot.z, rot.w);
+
       this.ball.setMeshPosition(renderPos);
     }
   }

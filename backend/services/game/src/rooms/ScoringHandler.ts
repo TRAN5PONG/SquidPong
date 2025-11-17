@@ -20,7 +20,7 @@ export class ScoringHandler {
 
     // const totalPoints = this.room.state.totalPointsScored;
 
-    const totalPoints = 100;
+    const totalPoints = 30;
 
     console.log(`🏆 Total points to win: ${totalPoints}`);
 
@@ -137,6 +137,11 @@ export class ScoringHandler {
         return;
       }
 
+      // Calculate match duration
+      const matchDuration = Math.floor(
+        (Date.now() - this.room.state.gameStartAt) / 1000,
+      ); // in seconds
+
       // Determine winner and loser
       const winnerId = this.room.state.winnerId;
       const player1 = match.opponent1;
@@ -173,40 +178,15 @@ export class ScoringHandler {
         data: { status: "COMPLETED", winnerId },
       });
 
-      // Update stats if both have users
+      // Update comprehensive stats for both players
       const updates: Promise<any>[] = [];
 
-      const updateUserStats = async (userId: string, won: boolean) => {
-        const existing = await prisma.userStats.findUnique({
-          where: { userId },
-        });
-        if (!existing) {
-          // Create stats if missing
-          await prisma.userStats.create({
-            data: {
-              userId,
-              totalMatches: 1,
-              played1v1: 1,
-              won1v1: won ? 1 : 0,
-              lost1v1: won ? 0 : 1,
-            },
-          });
-        } else {
-          // Update existing stats
-          await prisma.userStats.update({
-            where: { userId },
-            data: {
-              totalMatches: { increment: 1 },
-              played1v1: { increment: 1 },
-              won1v1: won ? { increment: 1 } : undefined,
-              lost1v1: !won ? { increment: 1 } : undefined,
-            },
-          });
-        }
-      };
-
-      if (winner?.userId) updates.push(updateUserStats(winner.userId, true));
-      if (loser?.userId) updates.push(updateUserStats(loser.userId, false));
+      if (winner?.userId) {
+        updates.push(this.updateUserStats(winner.userId, true, matchDuration));
+      }
+      if (loser?.userId) {
+        updates.push(this.updateUserStats(loser.userId, false, matchDuration));
+      }
 
       await Promise.all(updates);
 
@@ -214,5 +194,95 @@ export class ScoringHandler {
     } catch (err) {
       console.error("❌ Error updating match stats:", err);
     }
+  }
+
+  private async updateUserStats(
+    userId: string,
+    won: boolean,
+    matchDuration: number,
+  ): Promise<void> {
+    const existing = await prisma.userStats.findUnique({
+      where: { userId },
+    });
+
+    if (!existing) {
+      // Create new stats entry with all fields
+      await prisma.userStats.create({
+        data: {
+          userId,
+          score: won ? 10 : 5, // Award points (10 for win, 5 for loss)
+          totalMatches: 1,
+          // 1v1 Stats
+          played1v1: 1,
+          won1v1: won ? 1 : 0,
+          lost1v1: won ? 0 : 1,
+          // Tournament Stats (not applicable for 1v1)
+          playedTournament: 0,
+          wonTournament: 0,
+          lostTournament: 0,
+          // vs AI Stats (not applicable for 1v1)
+          playedVsAI: 0,
+          easyPlayed: 0,
+          easyWins: 0,
+          easyLosses: 0,
+          mediumPlayed: 0,
+          mediumWins: 0,
+          mediumLosses: 0,
+          hardPlayed: 0,
+          hardWins: 0,
+          hardLosses: 0,
+          // Streak Stats
+          winStreak: won ? 1 : 0,
+          loseStreak: won ? 0 : 1,
+          longestWinStreak: won ? 1 : 0,
+          // Performance
+          averageGameDuration: matchDuration,
+          totalPlayTime: matchDuration,
+        },
+      });
+    } else {
+      // Calculate new streaks
+      const newWinStreak = won ? existing.winStreak + 1 : 0;
+      const newLoseStreak = won ? 0 : existing.loseStreak + 1;
+      const newLongestWinStreak = Math.max(
+        existing.longestWinStreak,
+        newWinStreak,
+      );
+
+      // Calculate new average game duration
+      const totalMatches = existing.totalMatches + 1;
+      const totalDuration = existing.totalPlayTime + matchDuration;
+      const newAverageDuration = Math.floor(totalDuration / totalMatches);
+
+      // Update existing stats
+      await prisma.userStats.update({
+        where: { userId },
+        data: {
+          // Score update (add points for participation)
+          score: { increment: won ? 10 : 5 },
+
+          // Total matches
+          totalMatches: { increment: 1 },
+
+          // 1v1 Stats
+          played1v1: { increment: 1 },
+          won1v1: won ? { increment: 1 } : undefined,
+          lost1v1: !won ? { increment: 1 } : undefined,
+
+          // Streak Stats
+          winStreak: newWinStreak,
+          loseStreak: newLoseStreak,
+          longestWinStreak: newLongestWinStreak,
+
+          // Performance
+          totalPlayTime: { increment: matchDuration },
+          averageGameDuration: newAverageDuration,
+        },
+      });
+    }
+
+    console.log(
+      `✅ Updated stats for user ${userId}: ${won ? "WIN" : "LOSS"}, Duration: ${matchDuration}s`,
+    );
   }
 }

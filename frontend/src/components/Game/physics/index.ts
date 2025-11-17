@@ -26,11 +26,9 @@ export class Physics {
   private appySpin: boolean = false;
 
   // Visual speed boost system (NEW!)
-  private visualSpeedBoost: number = 1.0; // Multiplier for visual speed
+  private visualSpeedBoost: number = 1.8; // Multiplier for visual speed
   private applySpeedBoost: boolean = false;
-  private readonly SPEED_BOOST_DECAY: number = 0.995; // How fast boost decays
-  private readonly MIN_SPEED_BOOST: number = 1.0; // Don't go below 1.0x
-  private readonly MAX_SPEED_BOOST: number = 2.0; // Max 2x speed boost
+  private readonly SPEED_BOOST_DECAY: number = 0.98; // How fast boost decays
 
   // TEST:
   private PaddleMesh: paddle | null = null;
@@ -92,7 +90,7 @@ export class Physics {
   Step() {
     this.paddle.update();
     this.applyMagnusEffect();
-    // this.applyVisualSpeedBoost();
+    this.applyVisualSpeedBoost();
 
     this.world.step(this.eventQueue);
 
@@ -190,33 +188,24 @@ export class Physics {
   private applyVisualSpeedBoost(): void {
     if (!this.applySpeedBoost) return;
 
-    // If boost is at minimum, stop applying
-    if (this.visualSpeedBoost <= this.MIN_SPEED_BOOST) {
-      this.visualSpeedBoost = this.MIN_SPEED_BOOST;
-      this.applySpeedBoost = false;
-      return;
-    }
-
     const ballVel = this.ball.body.linvel();
 
-    // Calculate boost amount (extra velocity to add)
     const boostAmount = this.visualSpeedBoost - 1.0; // 0.5 for 1.5x boost
     const boostTimestep = boostAmount * this.timestep;
 
-    // Apply boost in the direction of current velocity
     const velMagnitude = Math.sqrt(
       ballVel.x * ballVel.x + ballVel.y * ballVel.y + ballVel.z * ballVel.z,
     );
 
     if (velMagnitude > 0.01) {
-      // Normalize and apply boost
+      // Normalize and apply boost  (Find Direction)
       const normX = ballVel.x / velMagnitude;
       const normY = ballVel.y / velMagnitude;
       const normZ = ballVel.z / velMagnitude;
 
       this.ball.body.setLinvel(
         {
-          x: ballVel.x + normX * boostTimestep * 10, // Multiply by 10 for visible effect
+          x: ballVel.x + normX * boostTimestep * 10,
           y: ballVel.y + normY * boostTimestep * 10,
           z: ballVel.z + normZ * boostTimestep * 10,
         },
@@ -226,36 +215,11 @@ export class Physics {
 
     // Decay the boost multiplier over time
     this.visualSpeedBoost *= this.SPEED_BOOST_DECAY;
-
-    console.log("Speed boost active:", this.visualSpeedBoost.toFixed(3));
   }
 
   // ================= Speed Boost Setters/Getters =================
-  /**
-   * Set a visual speed boost multiplier
-   * @param boost - Multiplier (1.0 = normal, 1.5 = 50% faster, 2.0 = 2x faster)
-   */
-  public setVisualSpeedBoost(boost: number): void {
-    this.visualSpeedBoost = Math.max(
-      this.MIN_SPEED_BOOST,
-      Math.min(this.MAX_SPEED_BOOST, boost),
-    );
-    this.applySpeedBoost = this.visualSpeedBoost > this.MIN_SPEED_BOOST;
-
-    console.log(
-      "Visual speed boost set to:",
-      this.visualSpeedBoost.toFixed(2) + "x",
-    );
-  }
-
-  /**
-   * Enable/disable visual speed boost
-   */
   public setApplySpeedBoost(apply: boolean): void {
     this.applySpeedBoost = apply;
-    if (!apply) {
-      this.visualSpeedBoost = this.MIN_SPEED_BOOST;
-    }
   }
 
   /**
@@ -269,17 +233,18 @@ export class Physics {
    * Check if speed boost is active
    */
   public isSpeedBoostActive(): boolean {
-    return this.applySpeedBoost && this.visualSpeedBoost > this.MIN_SPEED_BOOST;
+    return this.applySpeedBoost;
   }
 
   // ==== Reset ====
-  public reset(data: ballResetMessage, frozen: boolean): void {
-    console.log(
-      "Resetting ball with data: ------------ ",
-      data,
-      "Frozen:",
-      frozen,
-    );
+  public reset(frozen: boolean, data?: ballResetMessage): void {
+    if (!data) {
+      // Default reset
+      data = {
+        position: { x: 0, y: 4, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+      };
+    }
     this.ball.reset(data);
     this.setBallFrozen(frozen);
   }
@@ -290,11 +255,9 @@ export class Physics {
   public setBallFrozen(frozen: boolean) {
     console.log("Setting ball frozen:", frozen);
     if (frozen) {
-      this.ball.body.setGravityScale(0, true);
-      this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      this.ball.freeze();
     } else {
-      this.ball.body.setLinvel({ x: 0, y: 0, z: 0 }, false);
-      this.ball.body.setGravityScale(1, true);
+      this.ball.unfreeze();
     }
   }
 
