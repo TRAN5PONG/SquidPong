@@ -27,6 +27,8 @@ export interface BallHitMessage {
   spin?: Vec3; // Add spin data
   applySpin?: boolean; // Whether to apply spin
   tick: number; // tick when the hit happened
+  playerId: string; // who hit the ball
+  applyEffect?: boolean; // Whether to apply hit effect
 }
 
 export interface PaddleState {
@@ -35,8 +37,14 @@ export interface PaddleState {
   velocity: { x: number; y: number; z: number };
 }
 
-export interface BallResetMessage {
-  position: Vec3;
-  velocity: Vec3;
-  lastHitPlayer: string | null;
+export interface ballResetMessage {
+  position: BallState;
+  velocity: BallState;
+}
+
+export interface ballTossMessage {
+  position: BallState;
+  velocity: BallState;
+  playerId: string;
+  tick: number;
 }

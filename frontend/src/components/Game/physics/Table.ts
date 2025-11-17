@@ -3,23 +3,28 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { constants } from "@/utils/constants";
 
 export class Table {
-    constructor(world: RAPIER.World) {
-        const body = world.createRigidBody(
-            RAPIER.RigidBodyDesc.fixed().setTranslation(
-                constants.TABLE.position.x,
-                constants.TABLE.position.y,
-                constants.TABLE.position.z
-            )
-        );
+  public body: RAPIER.RigidBody;
+  public collider: RAPIER.Collider;
 
-        const collider = RAPIER.ColliderDesc.cuboid(
-            constants.TABLE.size.width / 2,
-            constants.TABLE.size.height / 2,
-            constants.TABLE.size.length / 2
-        )
-            .setRestitution(0.8)
-            .setFriction(0);
+  constructor(world: RAPIER.World) {
+    this.body = world.createRigidBody(
+      RAPIER.RigidBodyDesc.fixed().setTranslation(
+        constants.TABLE.position.x,
+        constants.TABLE.position.y,
+        constants.TABLE.position.z,
+      ),
+    );
 
-        world.createCollider(collider, body);
-    }
+    const collider = RAPIER.ColliderDesc.cuboid(
+      constants.TABLE.size.width / 2,
+      constants.TABLE.size.height / 2,
+      constants.TABLE.size.length / 2,
+    )
+      .setRestitution(0.8)
+      .setFriction(0);
+
+    this.collider = world.createCollider(collider, this.body);
+    this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
+  }
 }
+
