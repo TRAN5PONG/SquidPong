@@ -1,22 +1,51 @@
 {
 	"info": {
-		"_postman_id": "chat-service-complete",
-		"name": "SquidPong - Chat Service",
-		"description": "Complete Chat Service API with all endpoints",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"_postman_id": "dcfee1ba-fed0-4d43-8b24-c1ca53888e0f",
+		"name": "Chat Service - Complete",
+		"description": "Complete Chat service endpoints including chats, messages, and groups. Uses {{baseUrl}} and {{JWT_USER1}} globals.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40559190"
 	},
 	"item": [
 		{
-			"name": "Private Chat",
+			"name": "Chat Management",
 			"item": [
 				{
-					"name": "Create Private Chat",
+					"name": "Get Recent Chats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chat/recent",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"recent"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create New Chat",
 					"request": {
 						"method": "POST",
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
 							},
 							{
 								"key": "Content-Type",
@@ -32,290 +61,27 @@
 							"raw": "{\n  \"friendId\": 2\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/chat/create",
+							"raw": "{{baseUrl}}/api/chat/new",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"chat",
-								"create"
+								"new"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Get All Private Chats",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/all",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"all"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Chat Details",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/{{chatId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"{{chatId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Chat By Friend ID",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/friend/{{friendId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"friend",
-								"{{friendId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Private Chat",
+					"name": "Remove Chat",
 					"request": {
 						"method": "DELETE",
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/{{chatId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"{{chatId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Block User In Chat",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/block/{{chatId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"block",
-								"{{chatId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Unblock User In Chat",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/unblock/{{chatId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"unblock",
-								"{{chatId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Remove User From Chat",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/remove/{{chatId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"remove",
-								"{{chatId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Block Friend In Chat",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/block-friend/{{chatId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"block-friend",
-								"{{chatId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Unblock Friend In Chat",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/chat/unblock-friend/{{chatId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"chat",
-								"unblock-friend",
-								"{{chatId}}"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Messages",
-			"item": [
-				{
-					"name": "Send Private Message",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
 							},
 							{
 								"key": "Content-Type",
@@ -328,141 +94,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"content\": \"Hello, how are you?\",\n  \"chatId\": 1\n}"
+							"raw": "{\n  \"chatId\": 123\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/message/private",
+							"raw": "{{baseUrl}}/api/chat/remove",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"message",
-								"private"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Send Group Message",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"content\": \"Hello group!\",\n  \"groupId\": 1\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/message/group",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"message",
-								"group"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Send Private File",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "file",
-									"type": "file",
-									"src": "/path/to/file.jpg"
-								},
-								{
-									"key": "chatId",
-									"value": "1",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/message/file/private",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"message",
-								"file",
-								"private"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Send Group File",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "file",
-									"type": "file",
-									"src": "/path/to/file.jpg"
-								},
-								{
-									"key": "groupId",
-									"value": "1",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/message/file/group",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"message",
-								"file",
-								"group"
+								"chat",
+								"remove"
 							]
 						}
 					},
@@ -475,7 +117,7 @@
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
 							},
 							{
 								"key": "Cookie",
@@ -483,64 +125,15 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/message/chat/{{chatId}}?limit=50&offset=0",
+							"raw": "{{baseUrl}}/api/chat/1/messages",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"message",
 								"chat",
-								"{{chatId}}"
-							],
-							"query": [
-								{
-									"key": "limit",
-									"value": "50"
-								},
-								{
-									"key": "offset",
-									"value": "0"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Group Messages",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/message/group/{{groupId}}?limit=50&offset=0",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"message",
-								"group",
-								"{{groupId}}"
-							],
-							"query": [
-								{
-									"key": "limit",
-									"value": "50"
-								},
-								{
-									"key": "offset",
-									"value": "0"
-								}
+								"1",
+								"messages"
 							]
 						}
 					},
@@ -553,7 +146,128 @@
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chat/1/read",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"1",
+								"read"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block User in Chat",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chat/block/2",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"block",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock User in Chat",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chat/unblock/2",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"unblock",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove User from Chat",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chat/user/2",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chat",
+								"user",
+								"2"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Messages",
+			"item": [
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
 							},
 							{
 								"key": "Content-Type",
@@ -566,17 +280,54 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"chatId\": 1\n}"
+							"raw": "{\n  \"chatId\": 1,\n  \"content\": \"Hello from Postman!\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/message/read",
+							"raw": "{{baseUrl}}/api/message/send",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"message",
-								"read"
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Message",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Updated message content\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/message/123/edit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"123",
+								"edit"
 							]
 						}
 					},
@@ -589,7 +340,7 @@
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
 							},
 							{
 								"key": "Cookie",
@@ -597,14 +348,125 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/message/{{messageId}}",
+							"raw": "{{baseUrl}}/api/message/123",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"message",
-								"{{messageId}}"
+								"123"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reply to Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is a reply\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/message/123/reply",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"123",
+								"reply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Reaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"emoji\": \"👍\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/message/123/reaction",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"123",
+								"reaction"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Reaction",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"emoji\": \"👍\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/message/123/reaction",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"message",
+								"123",
+								"reaction"
 							]
 						}
 					},
@@ -622,7 +484,11 @@
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
 							},
 							{
 								"key": "Cookie",
@@ -630,29 +496,8 @@
 							}
 						],
 						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "name",
-									"value": "My Group",
-									"type": "text"
-								},
-								{
-									"key": "description",
-									"value": "Group description",
-									"type": "text"
-								},
-								{
-									"key": "isPrivate",
-									"value": "false",
-									"type": "text"
-								},
-								{
-									"key": "avatar",
-									"type": "file",
-									"src": "/path/to/avatar.jpg"
-								}
-							]
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"My Group\",\n  \"description\": \"Group description\",\n  \"type\": \"PUBLIC\",\n  \"matchId\" : \"432432749832\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/group/create",
@@ -669,69 +514,49 @@
 					"response": []
 				},
 				{
-					"name": "Get All Groups",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/group/all",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"all"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Group Details",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/group/{{groupId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"{{groupId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Group",
+					"name": "Update Group Info",
 					"request": {
 						"method": "PUT",
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Group Name\",\n  \"description\": \"New description\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Group Image",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
 							},
 							{
 								"key": "Cookie",
@@ -742,36 +567,22 @@
 							"mode": "formdata",
 							"formdata": [
 								{
-									"key": "name",
-									"value": "Updated Group Name",
-									"type": "text"
-								},
-								{
-									"key": "description",
-									"value": "Updated description",
-									"type": "text"
-								},
-								{
-									"key": "isPrivate",
-									"value": "true",
-									"type": "text"
-								},
-								{
-									"key": "avatar",
+									"key": "image",
 									"type": "file",
-									"src": "/path/to/avatar.jpg"
+									"src": "/path/to/group-image.png"
 								}
 							]
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/group/{{groupId}}",
+							"raw": "{{baseUrl}}/api/group/1/image",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"group",
-								"{{groupId}}"
+								"1",
+								"image"
 							]
 						}
 					},
@@ -784,7 +595,7 @@
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
 							},
 							{
 								"key": "Cookie",
@@ -792,27 +603,27 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/group/{{groupId}}",
+							"raw": "{{baseUrl}}/api/group/2",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"group",
-								"{{groupId}}"
+								"2"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Join Group",
+					"name": "Get Group by ID",
 					"request": {
-						"method": "POST",
+						"method": "GET",
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
 							},
 							{
 								"key": "Cookie",
@@ -820,15 +631,188 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/group/join/{{groupId}}",
+							"raw": "{{baseUrl}}/api/group/1/432432749832",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"group",
-								"join",
-								"{{groupId}}"
+								"1",
+								"432432749832"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Groups",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/group",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/group/1/432432749832/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"1",
+								"432432749832",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invite User to Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group/1/invite",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"1",
+								"invite"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Group Members",
+			"item": [
+				{
+					"name": "Update Group Member",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"memberId\": 2,\n  \"role\": \"ADMIN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group/2/members",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"2",
+								"members"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Group Member",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"memberId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group/2/members",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"2",
+								"members"
 							]
 						}
 					},
@@ -837,77 +821,42 @@
 				{
 					"name": "Leave Group",
 					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/group/leave/{{groupId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"leave",
-								"{{groupId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Add Member to Group",
-					"request": {
 						"method": "POST",
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
+								"value": "1"
 							},
 							{
 								"key": "Cookie",
 								"value": "accessToken={{JWT_USER1}}"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": 2\n}"
-						},
 						"url": {
-							"raw": "{{baseUrl}}/api/group/member/{{groupId}}",
+							"raw": "{{baseUrl}}/api/group/1/432432749832/members/leave",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"group",
-								"member",
-								"{{groupId}}"
+								"1",
+								"432432749832",
+								"members",
+								"leave"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Remove Member from Group",
+					"name": "List Group Members",
 					"request": {
-						"method": "DELETE",
+						"method": "GET",
 						"header": [
 							{
 								"key": "x-user-id",
-								"value": "{{userId}}"
+								"value": "1"
 							},
 							{
 								"key": "Cookie",
@@ -915,279 +864,161 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/group/member/{{groupId}}/{{memberId}}",
+							"raw": "{{baseUrl}}/api/group/1/members",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"group",
-								"member",
-								"{{groupId}}",
-								"{{memberId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Promote Member to Admin",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": 2\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/group/promote/{{groupId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"promote",
-								"{{groupId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Demote Admin to Member",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": 2\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/group/demote/{{groupId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"demote",
-								"{{groupId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Mute Member in Group",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": 2\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/group/mute/{{groupId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"mute",
-								"{{groupId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Unmute Member in Group",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": 2\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/group/unmute/{{groupId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"unmute",
-								"{{groupId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Ban Member from Group",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": 2\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/group/ban/{{groupId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"ban",
-								"{{groupId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Unban Member from Group",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "x-user-id",
-								"value": "{{userId}}"
-							},
-							{
-								"key": "Cookie",
-								"value": "accessToken={{JWT_USER1}}"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/api/group/unban/{{groupId}}/{{memberId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"group",
-								"unban",
-								"{{groupId}}",
-								"{{memberId}}"
+								"1",
+								"members"
 							]
 						}
 					},
 					"response": []
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "http://localhost:4433",
-			"type": "string"
 		},
 		{
-			"key": "userId",
-			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "chatId",
-			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "friendId",
-			"value": "2",
-			"type": "string"
-		},
-		{
-			"key": "groupId",
-			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "messageId",
-			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "memberId",
-			"value": "2",
-			"type": "string"
-		},
-		{
-			"key": "JWT_USER1",
-			"value": "your-jwt-token-here",
-			"type": "string"
+			"name": "Group Join Requests",
+			"item": [
+				{
+					"name": "Request to Join Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER2}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/group/1/432432749832/join-requests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"1",
+								"432432749832",
+								"join-requests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Join Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/group/1/join-requests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"1",
+								"join-requests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Join Request",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"requestId\": 456\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group/1/join-requests/approve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"1",
+								"join-requests",
+								"approve"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Join Request",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "x-user-id",
+								"value": "1"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "accessToken={{JWT_USER1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"requestId\": 456\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group/1/join-requests/reject",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"group",
+								"1",
+								"join-requests",
+								"reject"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	]
 }
