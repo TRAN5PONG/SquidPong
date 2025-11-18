@@ -12,6 +12,7 @@ import {
 } from "@/types/network";
 import { BallTrajectory } from "../physics/ballTrajectory";
 import { GameState } from "./GameController";
+import { constants } from "../../../utils/constants";
 
 export class GameLogic {
   private net: Network;
@@ -41,6 +42,7 @@ export class GameLogic {
   private readonly SPIN_THRESHOLD: number = 28;
   private readonly SPIN_ACTIVATION_THRESHOLD: number = 26;
   private readonly MAX_SPIN: number = 8;
+  private readonly BALL_RADIUS: number = constants.BALL.radius;
 
   constructor(
     net: Network,
@@ -74,34 +76,35 @@ export class GameLogic {
         this.getCurrentTick(),
         data.position,
         data.velocity,
-        data.applySpin!,
+        data.angVelocity,
         data.spin!,
       );
     });
 
     // Ball serve messages
     this.net.on("Ball:Serve", (data: BallHitMessage) => {
+      this.gameState = GameState.IN_PLAY;
       this.physics.setBallFrozen(false);
       this.networkSync.applyNetworkBallState(
         data.tick,
         this.getCurrentTick(),
         data.position,
         data.velocity,
-        false,
+        data.angVelocity,
         data.spin!,
       );
     });
 
     // Ball toss messages
     this.net.on("Ball:Toss", (data: ballTossMessage) => {
-      this.physics.setBallFrozen(false);
       this.TossBallUp = true;
+      this.physics.setBallFrozen(false);
       this.networkSync.applyNetworkBallState(
         data.tick,
         this.getCurrentTick(),
         data.position,
         data.velocity,
-        false,
+        { x: 0, y: 0, z: 0 },
         { x: 0, y: 0, z: 0 },
       );
     });
@@ -123,11 +126,20 @@ export class GameLogic {
 
     // Serve state changes
     this.net.on("serveState:changed", (serveState: string) => {
-      this.gameState =
+      const newState =
         serveState === "in_play"
           ? GameState.IN_PLAY
           : GameState.WAITING_FOR_SERVE;
-      this.isLocalServing = false;
+
+      // // Only update if we're not actively serving
+      // if (!this.isLocalServing || newState === GameState.IN_PLAY) {
+      //   this.gameState = newState;
+      // }
+      //
+      // // Only reset isLocalServing when ball goes into play
+      // if (newState === GameState.IN_PLAY) {
+      //   this.isLocalServing = false;
+      // }
     });
   }
 
@@ -160,34 +172,169 @@ export class GameLogic {
   }
 
   // ================= Collision Handling =================
+  // private handleBallPaddleCollision(ball: any, paddle: any): void {
+  //   if (
+  //     this.lasthitPlayerId === this.playerId &&
+  //     this.gameState === GameState.IN_PLAY
+  //   ) {
+  //     return;
+  //   }
+  //
+  //   // TODO: Improve this for good performance
+  //   const paddleVelocity = new Vector3(
+  //     paddle.linvel().x,
+  //     paddle.linvel().y,
+  //     paddle.linvel().z,
+  //   );
+  //   const paddleSpeed = paddleVelocity.length();
+  //
+  //   this.lastTableBounceSide = null;
+  //   this.lastCollisionTick = this.getCurrentTick();
+  //
+  //   let ballVel: Vector3;
+  //   let isServe = false;
+  //
+  //   if (this.gameState === GameState.WAITING_FOR_SERVE) {
+  //     // === SERVE HIT ===
+  //     isServe = true;
+  //     ballVel = BallTrajectory.calculateTrajectory(
+  //       ball.translation(),
+  //       paddle.translation(),
+  //       paddleVelocity,
+  //       false,
+  //       paddleSpeed,
+  //       "serve",
+  //     );
+  //     this.physics.setBallSpin(0, 0, 0);
+  //     this.physics.setApplySpin(false);
+  //     this.gameState = GameState.IN_PLAY;
+  //   } else {
+  //     // === RALLY HIT ===
+  //     const spinCalc = this.calculateMagnusSpin(paddleSpeed, paddleVelocity.x);
+  //     this.physics.setBallSpin(0, spinCalc.spinY, 0);
+  //     this.physics.setApplySpin(spinCalc.applySpin);
+  //
+  //     ballVel = BallTrajectory.calculateTrajectory(
+  //       ball.translation(),
+  //       paddle.translation(),
+  //       paddleVelocity,
+  //       spinCalc.applySpin,
+  //       paddleSpeed,
+  //       "play",
+  //     );
+  //   }
+  //
+  //   // Apply impulse
+  //   const currentVel = ball.linvel();
+  //   const mass = ball.mass();
+  //   const dir = this.localPaddle.side === "LEFT" ? 1 : -1;
+  //
+  //   const impulse = new Vector3(
+  //     (ballVel.x - currentVel.x) * mass * dir,
+  //     (ballVel.y - currentVel.y) * mass,
+  //     (ballVel.z - currentVel.z) * mass,
+  //   );
+  //
+  //   const paddlePos = paddle.translation();
+  //   const ballPos = ball.translation();
+  //
+  //   // TEST:
+  //   // radius vector from paddle to ball Hit the center → no spin
+  //   // | Hit the top → topspin | Hit the bottom → backspin | Hit the sides → sidespin
+  //   const r = {
+  //     x: ballPos.x - paddlePos.x,
+  //     y: ballPos.y - paddlePos.y,
+  //     z: ballPos.z - paddlePos.z,
+  //   };
+  //
+  //   // Normalize r so spin depends only on the hit position
+  //   let rLength = Math.sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
+  //   if (rLength === 0) {
+  //     r.x = 0;
+  //     r.y = 1;
+  //     r.z = 0;
+  //     rLength = 1;
+  //   } else {
+  //     r.x /= rLength;
+  //     r.y /= rLength;
+  //     r.z /= rLength;
+  //   }
+  //
+  //   // Cross product r × v (rotation direction)
+  //   const ang = {
+  //     x: r.y * paddleVelocity.z - r.z * paddleVelocity.y,
+  //     y: r.z * paddleVelocity.x - r.x * paddleVelocity.z,
+  //     z: r.x * paddleVelocity.y - r.y * paddleVelocity.x,
+  //   };
+  //
+  //   const SPIN_SCALE = this.BALL_RADIUS * 0.9;
+  //   ang.x *= SPIN_SCALE;
+  //   ang.y *= SPIN_SCALE;
+  //   ang.z *= SPIN_SCALE;
+  //
+  //   this.physics.ball.body.applyImpulse(impulse, true);
+  //   this.physics.ball.body.applyTorqueImpulse(ang, true);
+  //
+  //   // Send network message
+  //   const actualVel = ball.linvel();
+  //   const hitMsg: BallHitMessage = {
+  //     position: {
+  //       x: ball.translation().x,
+  //       y: ball.translation().y,
+  //       z: ball.translation().z,
+  //     },
+  //     velocity: { x: actualVel.x, y: actualVel.y, z: actualVel.z },
+  //     spin: {
+  //       x: this.physics.getBallSpin().x,
+  //       y: this.physics.getBallSpin().y,
+  //       z: this.physics.getBallSpin().z,
+  //     },
+  //     applySpin: this.physics.getApplySpin(),
+  //     tick: this.getCurrentTick(),
+  //     playerId: this.playerId,
+  //   };
+  //
+  //   this.net.sendMessage(isServe ? "Ball:Serve" : "Ball:HitMessage", hitMsg);
+  // }
+  //
+  // OPTIMIZED VERSION - Reduces allocations and repeated calculations
+
   private handleBallPaddleCollision(ball: any, paddle: any): void {
+    // --- ignore double hits ---
     if (
       this.lasthitPlayerId === this.playerId &&
       this.gameState === GameState.IN_PLAY
-    ) {
+    )
       return;
-    }
 
-    const paddleVelocity = new Vector3(
-      paddle.linvel().x,
-      paddle.linvel().y,
-      paddle.linvel().z,
-    );
-    const paddleSpeed = paddleVelocity.length();
+    console.log("Ball-Paddle collision detected");
 
     this.lastTableBounceSide = null;
     this.lastCollisionTick = this.getCurrentTick();
+
+    // --- Get positions (read once) ---
+    const paddlePos = paddle.translation();
+    const ballPos = ball.translation();
+
+    // --- Get velocities (read once) ---
+    const paddleVel = paddle.linvel();
+    const ballCurrentVel = ball.linvel();
+
+    // --- Calculate paddle speed (inline, no sqrt until needed) ---
+    const paddleSpeedSq =
+      paddleVel.x ** 2 + paddleVel.y ** 2 + paddleVel.z ** 2;
+    const paddleSpeed = Math.sqrt(paddleSpeedSq);
 
     let ballVel: Vector3;
     let isServe = false;
 
     if (this.gameState === GameState.WAITING_FOR_SERVE) {
-      // === SERVE HIT ===
+      // === Serve hit ===
       isServe = true;
       ballVel = BallTrajectory.calculateTrajectory(
-        ball.translation(),
-        paddle.translation(),
-        paddleVelocity,
+        ballPos,
+        paddlePos,
+        paddleVel,
         false,
         paddleSpeed,
         "serve",
@@ -195,80 +342,98 @@ export class GameLogic {
       this.physics.setBallSpin(0, 0, 0);
       this.physics.setApplySpin(false);
       this.gameState = GameState.IN_PLAY;
-    } else {
-      // === RALLY HIT ===
-      const spinCalc = this.calculateMagnusSpin(paddleSpeed, paddleVelocity.x);
-      this.physics.setBallSpin(0, spinCalc.spinY, 0);
-      this.physics.setApplySpin(spinCalc.applySpin);
 
+      console.log("Serve hit detected, ballVel:", ballVel);
+    } else {
+      // === Rally hit ===
+      const spinCalc = this.calculateMagnusSpin(paddleSpeed, paddleVel.x);
+      this.physics.setBallSpin(0, spinCalc.spinY, 0);
+      // applySpin = spinCalc.applySpin;
+      // this.physics.setApplySpin(applySpin);
       ballVel = BallTrajectory.calculateTrajectory(
-        ball.translation(),
-        paddle.translation(),
-        paddleVelocity,
+        ballPos,
+        paddlePos,
+        paddleVel,
         spinCalc.applySpin,
         paddleSpeed,
         "play",
       );
     }
 
-    // Apply impulse
-    const currentVel = ball.linvel();
+    // --- Linear impulse (inline calculation) ---
     const mass = ball.mass();
     const dir = this.localPaddle.side === "LEFT" ? 1 : -1;
 
-    const impulse = new Vector3(
-      (ballVel.x - currentVel.x) * mass * dir,
-      (ballVel.y - currentVel.y) * mass,
-      (ballVel.z - currentVel.z) * mass,
+    const impulse = {
+      x: (ballVel.x - ballCurrentVel.x) * mass * dir,
+      y: (ballVel.y - ballCurrentVel.y) * mass,
+      z: (ballVel.z - ballCurrentVel.z) * mass,
+    };
+
+    // --- Radius vector (inline, avoid extra allocations) ---
+    let rx = ballPos.x - paddlePos.x;
+    let ry = ballPos.y - paddlePos.y;
+    let rz = ballPos.z - paddlePos.z;
+
+    // --- Normalize radius vector ---
+    let rLenSq = rx * rx + ry * ry + rz * rz;
+
+    if (rLenSq < 1e-6) {
+      // Hit dead center - use default up vector
+      rx = 0;
+      ry = 1;
+      rz = 0;
+    } else {
+      // Normalize
+      const rLen = Math.sqrt(rLenSq);
+      const invRLen = 1 / rLen; // Division is slower than multiplication
+      rx *= invRLen;
+      ry *= invRLen;
+      rz *= invRLen;
+    }
+
+    // --- Angular impulse: r × paddleVel (cross product) ---
+    const SPIN_SCALE = this.BALL_RADIUS * 0.9;
+
+    let angX = (ry * paddleVel.z - rz * paddleVel.y) * SPIN_SCALE;
+    let angY =
+      (rz * paddleVel.x - rx * paddleVel.z) * SPIN_SCALE - paddleVel.x * 0.5;
+    let angZ = (rx * paddleVel.y - ry * paddleVel.x) * SPIN_SCALE;
+
+    // --- Clamp max torque (inline) ---
+    const maxTorque = 1.5;
+    const angMagSq = angX * angX + angY * angY + angZ * angZ;
+
+    if (angMagSq > maxTorque * maxTorque) {
+      const scale = maxTorque / Math.sqrt(angMagSq);
+      angX *= scale;
+      angY *= scale;
+      angZ *= scale;
+    }
+
+    // --- Apply impulses ---
+    this.physics.ball.body.applyImpulse(impulse, true);
+    this.physics.ball.body.applyTorqueImpulse(
+      { x: angX, y: angY, z: angZ },
+      true,
     );
 
-    const paddlePos = paddle.translation();
-    const ballPos = ball.translation();
-
-    // TEST:
-    const r = {
-      x: ballPos.x - paddlePos.x,
-      y: ballPos.y - paddlePos.y,
-      z: ballPos.z - paddlePos.z,
-    };
-
-    // Angular impulse = r × v (cross product)
-    const angImpulse = {
-      x: r.y * paddleVelocity.z - r.z * paddleVelocity.y,
-      y: r.z * paddleVelocity.x - r.x * paddleVelocity.z,
-      z: r.x * paddleVelocity.y - r.y * paddleVelocity.x,
-    };
-
-    // scale down so it doesn't spin insanely
-    angImpulse.x *= 0.4;
-    angImpulse.y *= 0.4;
-    angImpulse.z *= 0.4;
-
-    this.physics.ball.body.applyImpulse(impulse, true);
-    this.physics.ball.body.applyTorqueImpulse(angImpulse, true);
-
-    // Send network message
-    const actualVel = ball.linvel();
+    // --- Send network update ---
     const hitMsg: BallHitMessage = {
-      position: {
-        x: ball.translation().x,
-        y: ball.translation().y,
-        z: ball.translation().z,
-      },
-      velocity: { x: actualVel.x, y: actualVel.y, z: actualVel.z },
+      position: ballPos, // Already have it, no need to read again
+      velocity: ball.linvel(), // Need fresh velocity after impulse
+      angVelocity: ball.angvel(),
       spin: {
         x: this.physics.getBallSpin().x,
         y: this.physics.getBallSpin().y,
         z: this.physics.getBallSpin().z,
       },
-      applySpin: this.physics.getApplySpin(),
-      tick: this.getCurrentTick(),
+      tick: this.lastCollisionTick, // Already calculated above
       playerId: this.playerId,
     };
 
     this.net.sendMessage(isServe ? "Ball:Serve" : "Ball:HitMessage", hitMsg);
   }
-
   private handleTableBounce(ball: any): void {
     const ballZ = ball.translation().z;
     const currentSide: "LEFT" | "RIGHT" = ballZ > 0 ? "RIGHT" : "LEFT";
@@ -362,6 +527,7 @@ export class GameLogic {
     this.isLocalServing = false;
     this.isPointEnded = false;
     this.TossBallUp = false;
+    this.physics.ball.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
     this.networkSync.reset();
     this.lastCollisionTick = 0;
@@ -371,11 +537,12 @@ export class GameLogic {
 
   public BallServe(ballPos: Vector3, currentTick: number): void {
     this.isLocalServing = true;
+    this.TossBallUp = true;
 
     const serveVelocity = new Vector3(0, this.SERVE_VELOCITY_Y, 0);
 
-    this.physics.setBallPosition(ballPos.x, ballPos.y, ballPos.z);
     this.physics.setBallFrozen(false);
+    this.physics.setBallPosition(ballPos.x, ballPos.y, ballPos.z);
     this.physics.setBallVelocity(
       serveVelocity.x,
       serveVelocity.y,
