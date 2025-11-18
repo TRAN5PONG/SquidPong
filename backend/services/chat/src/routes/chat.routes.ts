@@ -106,12 +106,12 @@ export const chatRoutes : Route[] = [
 
 // ------------------- Message Endpoints -------------------
 export const messageRoutes: Route[] = [
-  { method: 'POST',   url: '/api/message/send',                handler: sendMessageHandler },
-  { method: 'PATCH',  url: '/api/message/:messageId/edit',     handler: editMessageHandler },
-  { method: 'DELETE', url: '/api/message/:messageId',          handler: deleteMessageHandler },
-  { method: 'POST',   url: '/api/message/:messageId/reply',    handler: replyToMessageHandler },
-  { method: 'POST',   url: '/api/message/:messageId/reaction', handler: addReactionHandler },
-  { method: 'DELETE', url: '/api/message/:messageId/reaction', handler: removeReactionHandler },
+  { method: 'POST',   url: '/api/message/send',                handler: sendMessageHandler, schema: sendMessageSchema },
+  { method: 'PATCH',  url: '/api/message/:messageId/edit',     handler: editMessageHandler, schema: editMessageSchema },
+  { method: 'DELETE', url: '/api/message/:messageId',          handler: deleteMessageHandler, schema: deleteMessageSchema },
+  { method: 'POST',   url: '/api/message/:messageId/reply',    handler: replyToMessageHandler, schema: replyToMessageSchema },
+  { method: 'POST',   url: '/api/message/:messageId/reaction', handler: addReactionHandler, schema: addReactionSchema },
+  { method: 'DELETE', url: '/api/message/:messageId/reaction', handler: removeReactionHandler, schema: removeReactionSchema },
 ];
 
 
@@ -120,10 +120,10 @@ export const groupRoutes: Route[] = [
 
   // Group management
   { method: 'POST',   url: '/api/group/create',                       handler: createGroup },
-  { method: 'PATCH',  url: '/api/group/:groupId',              handler: updateGroupInfo },    
+  { method: 'PUT',  url: '/api/group/:groupId',              handler: updateGroupInfo },    
   { method: 'PUT',    url: '/api/group/:groupId/image',        handler: updateGroupImage },        
   { method: 'DELETE', url: '/api/group/:groupId',              handler: removeGroup },                
-  { method: 'GET',    url: '/api/group/:groupId/:matchId?',              handler: getGroupById },              
+  { method: 'GET',    url: '/api/group/:groupId/:matchId',              handler: getGroupById },              
   { method: 'GET',    url: '/api/group',                       handler: getGoupes },                 
 
   // Members management
