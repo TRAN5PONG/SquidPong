@@ -7,6 +7,7 @@ export const createTournamentSchema = {
       organizerId: { type: "string" },
       maxPlayers: { type: "number", enum: [4, 8, 16, 32] },
       description: { type: "string", nullable: true },
+      participationFee: { type: "number" },
     },
   },
 };
@@ -47,10 +48,19 @@ export const updateTournamentStatusSchema = {
     type: "object",
     required: ["nextStatus"],
     properties: {
-      nextStatus: { type: "string", enum: ["REGISTRATION", "READY", "IN_PROGRESS", "COMPLETED", "CANCELLED"] },
+      nextStatus: {
+        type: "string",
+        enum: [
+          "REGISTRATION",
+          "READY",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "CANCELLED",
+        ],
+      },
     },
   },
-}
+};
 export const StartTournamentSchema = {
   params: {
     type: "object",
@@ -59,7 +69,7 @@ export const StartTournamentSchema = {
       id: { type: "string" },
     },
   },
-}
+};
 export const LeaveTournamentSchema = {
   params: {
     type: "object",
@@ -75,7 +85,7 @@ export const LeaveTournamentSchema = {
       participantId: { type: "string" },
     },
   },
-}
+};
 export const reportMatchResultSchema = {
   params: {
     type: "object",
@@ -95,4 +105,4 @@ export const reportMatchResultSchema = {
       loserScore: { type: "number" },
     },
   },
-}
+};

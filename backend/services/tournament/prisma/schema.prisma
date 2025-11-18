@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -64,6 +63,7 @@ model TournamentPlayer {
 
   firstName    String
   lastName     String
+  userName     String
   avatar       String
   isVerified   Boolean @default(false)
   rankDivision String
