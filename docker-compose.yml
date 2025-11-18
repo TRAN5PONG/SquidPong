@@ -1,4 +1,4 @@
-version: "2.4"
+# version: "2.4"
 
 services:
   nginx:
@@ -108,44 +108,44 @@ services:
     networks:
       - web
 
-  notify:
-    build: ./backend/services/notify
-    image: notify-image
-    container_name: notify
-    restart: always
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
-    env_file:
-      - ./backend/services/notify/.env
-    ports:
-      - "5004:5555"
-    volumes:
-      - ./backend/services/notify/src:/notify/src
-      - ./backend/services/notify/prisma:/notify/prisma
-    networks: 
-      - web
+  # notify:
+  #   build: ./backend/services/notify
+  #   image: notify-image
+  #   container_name: notify
+  #   restart: always
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
+  #   env_file:
+  #     - ./backend/services/notify/.env
+  #   ports:
+  #     - "5004:5555"
+  #   volumes:
+  #     - ./backend/services/notify/src:/notify/src
+  #     - ./backend/services/notify/prisma:/notify/prisma
+  #   networks: 
+  #     - web
 
-  chat:
-    build: ./backend/services/chat
-    image: chat-image
-    container_name: chat
-    restart: always
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
-    env_file:
-      - ./backend/services/chat/.env
-    ports:
-      - "5003:5555"
-    volumes:
-      - ./backend/services/chat/uploads:/chat/uploads
-      - ./backend/services/chat/src:/chat/src
-      - ./backend/services/chat/prisma:/chat/prisma
-    networks: 
-      - web
+  # chat:
+  #   build: ./backend/services/chat
+  #   image: chat-image
+  #   container_name: chat
+  #   restart: always
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
+  #   env_file:
+  #     - ./backend/services/chat/.env
+  #   ports:
+  #     - "5003:5555"
+  #   volumes:
+  #     - ./backend/services/chat/uploads:/chat/uploads
+  #     - ./backend/services/chat/src:/chat/src
+  #     - ./backend/services/chat/prisma:/chat/prisma
+  #   networks: 
+  #     - web
 
   game:
     build: ./backend/services/game

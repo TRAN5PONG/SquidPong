@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "@/lib/Zeroact";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { constants } from "@/utils/constants";
@@ -10,8 +9,6 @@ import { Floor } from "./Floor";
 import { Net } from "./Net";
 import { Table } from "./Table";
 
-// TEST:import { Paddle } from "../entities/Paddle/GamePaddle";
-import { paddle } from "../entities/Paddle/GamePaddle";
 export class Physics {
   private world!: RAPIER.World;
   eventQueue: RAPIER.EventQueue = null!;
@@ -25,16 +22,13 @@ export class Physics {
   private spinDecay: number = 0.98; // Spin decay factor per tick
   private appySpin: boolean = false;
 
-  // Visual speed boost system (NEW!)
-  private visualSpeedBoost: number = 1.8; // Multiplier for visual speed
+  // Visual speed boost system
+  private visualSpeedBoost: number = 1.8;
   private applySpeedBoost: boolean = false;
   private readonly SPEED_BOOST_DECAY: number = 0.98; // How fast boost decays
 
-  // TEST:
-  private PaddleMesh: paddle | null = null;
   timestep = 1 / 60;
 
-  private PlayerId: string | null = null;
   // callback
   public onBallPaddleCollision?: (
     ball: RAPIER.RigidBody,
@@ -94,14 +88,13 @@ export class Physics {
 
     this.world.step(this.eventQueue);
 
-    this.eventQueue.drainCollisionEvents((h1, h2, started) => {
+    this.eventQueue.drainCollisionEvents((h1: any, h2: any, started: any) => {
       if (!started) return;
       this.handleCollision(h1, h2);
     });
   }
 
   private handleCollision(handle1: number, handle2: number) {
-    const now = performance.now();
     const ballHandle = this.ball.collider.handle;
     const paddleHandle = this.paddle.collider.handle;
     const floorHandle = this.floor.collider.handle;
@@ -161,7 +154,7 @@ export class Physics {
 
   // ================= Magnus Effect =================
   private applyMagnusEffect(): void {
-    if (!this.appySpin) return;
+    if (this.ballSpin.y == 0) return;
     const spinY = this.ballSpin.y;
     if (spinY > -0.1 && spinY < 0.1) {
       this.ballSpin.scaleInPlace(this.spinDecay);
@@ -169,7 +162,6 @@ export class Physics {
     }
     const ballVel = this.ball.body.linvel();
     const spinTimestep = spinY * this.timestep;
-    // console.log("Spin Y (around Y axis):", this.ballSpin.y);
     this.ball.body.setLinvel(
       {
         x: ballVel.x + spinTimestep,
@@ -246,6 +238,7 @@ export class Physics {
       };
     }
     this.ball.reset(data);
+    console.log("jj-2");
     this.setBallFrozen(frozen);
   }
   //  setters
@@ -253,7 +246,7 @@ export class Physics {
     this.ball.body.setLinvel({ x, y, z }, true);
   }
   public setBallFrozen(frozen: boolean) {
-    console.log("Setting ball frozen:", frozen);
+    console.log("Setting ball frozen: ", frozen);
     if (frozen) {
       this.ball.freeze();
     } else {
@@ -272,18 +265,6 @@ export class Physics {
       console.error("Collider not found for the ball body.");
     }
   }
-  public setPaddlePosition(x: number, y: number, z: number) {
-    if (!this.paddle.body) return;
-    this.paddle.body.setNextKinematicTranslation({ x, y, z });
-  }
-  public setPaddleZRotation(rotationZ: number) {
-    if (!this.paddle.body) return;
-
-    // Convert Z rotation to quaternion manually
-    const halfZ = rotationZ / 2;
-    const quat = { x: 0, y: 0, z: Math.sin(halfZ), w: Math.cos(halfZ) };
-    this.paddle.body.setNextKinematicRotation(quat);
-  }
 
   public setBallSpin(x: number, y: number, z: number): void {
     this.ballSpin.set(x, y, z);
@@ -292,9 +273,6 @@ export class Physics {
     this.appySpin = apply;
   }
 
-  public setPlayerId(playerId: string | null) {
-    this.PlayerId = playerId;
-  }
   // getters
   public getBallStatus(): Boolean {
     // return true if ball frozen

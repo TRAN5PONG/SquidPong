@@ -248,9 +248,9 @@ export class Network {
     this.room.onMessage("game:ended", (data) => {
       this.emit("game:ended", data);
     }); // todo : it seems that its working without adding this
-    // this.room.onMessage("game:started", (data) => {
-    //   this.emit("game:started", data);
-    // });
+    this.room.onMessage("game:started", (data) => {
+      this.emit("game:started", data);
+    });
     this.room.onMessage("opponent:paddle", (data) => {
       this.emit("opponent:paddle", data);
     });

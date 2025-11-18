@@ -30,6 +30,7 @@ export class Paddle {
       constants.PADDLE.size.length / 2,
     )
       .setDensity(4)
+      .setFriction(0)
       .setSensor(true); // Set as sensor to avoid physical collisions
 
     this.collider = world.createCollider(colliderDesc, this.body);
