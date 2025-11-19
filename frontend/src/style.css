@@ -4,6 +4,7 @@
 @import url('https://fonts.cdnfonts.com/css/michroma-2');
 @import url('https://fonts.cdnfonts.com/css/ungai');
 @import url('https://fonts.cdnfonts.com/css/game-of-squids');
+@import url('https://fonts.cdnfonts.com/css/pixel-lcd7');
 
 
 
@@ -70,6 +71,7 @@
   --span_font: 'Michroma', sans-serif;
   --samurai_font: 'Ungai', sans-serif;
   --squid_font: 'Game Of Squids', sans-serif;
+  --pixel_font: 'Pixel LCD7', sans-serif;
 
   /* Main Colors */
   --bg_color: rgb(19, 18, 23);
