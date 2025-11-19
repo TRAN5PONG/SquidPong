@@ -1,7 +1,6 @@
 import { db } from "@/db";
-import Zeroact from "@/lib/Zeroact";
+import Zeroact, { useEffect } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
-import { Tournament } from "@/types/tournament";
 import {
   ChallengeIcon,
   CoinIcon,
@@ -10,6 +9,14 @@ import {
   TrophyIcon,
 } from "../Svg/Svg";
 import { useNavigate } from "@/contexts/RouterProvider";
+import { Tournament } from "@/types/game/tournament";
+import {
+  createTournament,
+  getTournaments,
+  joinTournament,
+} from "@/api/tournament";
+import { useAppContext } from "@/contexts/AppProviders";
+import Skeleton from "../Skeleton/Skeleton";
 
 const StyledTournaments = styled("div")`
   width: 100%;
@@ -25,6 +32,13 @@ const StyledTournaments = styled("div")`
   justify-content: center;
   gap: 5px;
   position: relative;
+  .NoSPN {
+    font-family: var(--span_font);
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+    grid-column: span 2;
+    text-align: center;
+  }
   .CreateTournamentBtn {
     width: 400px;
     height: 50px;
@@ -52,16 +66,55 @@ const StyledTournaments = styled("div")`
 const Tournaments = () => {
   const [showCreateTournamentModal, setShowCreateTournamentModal] =
     Zeroact.useState(false);
+  const [tournaments, setTournaments] = Zeroact.useState<Tournament[]>([]);
+  const [isLoading, setIsLoading] = Zeroact.useState(true);
+  const [notFound, setNotFound] = Zeroact.useState(false);
+
+  /**
+   * Fetches
+   */
+  const fetchTournaments = async () => {
+    try {
+      const resp = await getTournaments();
+      if (resp.success && resp.data) {
+        if (resp.data.length === 0) setNotFound(true);
+        setTournaments(resp.data as Tournament[]);
+      } else throw new Error(resp.message);
+
+      setIsLoading(false);
+    } catch (err) {
+      setNotFound(true);
+      console.error("Failed to fetch tournaments:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTournaments();
+  }, []);
 
   return (
     <StyledTournaments className="scroll-y">
-      {db.FakeTournaments.map((tournament: Tournament) => {
-        return <TournamentCard {...tournament} />;
-      })}
+      {tournaments.length > 0 ? (
+        tournaments.map((tournament: Tournament) => {
+          return <TournamentCard {...tournament} />;
+        })
+      ) : isLoading ? (
+        Array.from({ length: 2 }).map((_, index) => (
+          <Skeleton
+            animation={index % 2 === 0 ? "Wave" : "Shine"}
+            borderRadius={5}
+            width="400px"
+            height="300px"
+          />
+        ))
+      ) : (
+        <span className="NoSPN">No tournaments available.</span>
+      )}
 
       {showCreateTournamentModal ? (
         <CreateTournamentModal
           onClose={() => setShowCreateTournamentModal(false)}
+          refreshTournaments={() => fetchTournaments()}
         />
       ) : (
         <button
@@ -95,6 +148,7 @@ const StyledTournamentCard = styled("div")`
     justify-content: center;
     gap: 10px;
     padding: 10px;
+    cursor: pointer;
     .CardHeaderAvatar {
       width: 100px;
       height: 100px;
@@ -208,22 +262,44 @@ const StyledTournamentCard = styled("div")`
 `;
 const TournamentCard = (props: Tournament) => {
   const navigate = useNavigate();
+  const { user, toasts } = useAppContext();
+
+  const isUserParticipant = props.participants.some(
+    (p) => Number(p.userId) === Number(user?.userId)
+  );
+
+  const handleJoinTournament = async () => {
+    try {
+      const resp = await joinTournament(props.id, user!.userId);
+
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Successfully joined the tournament.",
+        });
+        navigate(`/tournament/${props.id}`);
+      } else throw new Error(resp.message);
+    } catch (err) {
+      console.error("Failed to join tournament:", err);
+    }
+  };
   return (
     <StyledTournamentCard>
-      <div className="CardHeader">
+      <div
+        className="CardHeader"
+        onClick={() => navigate(`/tournament/${props.id}`)}
+      >
         <div className="CardHeaderAvatar">
           <TrophyIcon size={50} fill="var(--bg_color_super_light)" />
         </div>
         <div className="CardHeaderInfos">
           <h1 className="CardHeaderInfosName">{props.name}</h1>
-          <span className="CardHeaderInfosDesc">{props.desription}</span>
+          <span className="CardHeaderInfosDesc">{props.description}</span>
           <div className="CardBodyParticipants">
             <div className="CardBodyParticipantsAvatars">
               {props.participants.slice(0, 3).map((participant) => {
                 return (
-                  <StyledTournamentCardAvatar
-                    avatar={participant.user.avatar}
-                  />
+                  <StyledTournamentCardAvatar avatar={participant.avatar} />
                 );
               })}
               {props.participants.length > 3 && (
@@ -232,7 +308,7 @@ const TournamentCard = (props: Tournament) => {
                 </StyledTournamentCardAvatar>
               )}
             </div>
-            <span>have joined.</span>
+            <span>{props.participants.length > 0 && "have joined"}</span>
           </div>
         </div>
       </div>
@@ -241,13 +317,13 @@ const TournamentCard = (props: Tournament) => {
         <div className="CardBodyTournamentStatus">
           <InfosIcon size={20} fill="rgba(255, 255, 255, 0.8)" />
           <span>
-            {props.status === "registration"
+            {props.status === "REGISTRATION"
               ? "Registration Open"
-              : props.status === "ready"
+              : props.status === "READY"
               ? "Ready to Start"
-              : props.status === "inProgress"
+              : props.status === "IN_PROGRESS"
               ? "In Progress"
-              : props.status === "completed"
+              : props.status === "COMPLETED"
               ? "Completed"
               : "Cancelled"}
           </span>
@@ -270,28 +346,31 @@ const TournamentCard = (props: Tournament) => {
 
       <button
         className={`CardBtn ${
-          props.status !== "registration" && props.status !== "completed"
+          (props.status !== "REGISTRATION" && props.status !== "COMPLETED") ||
+          isUserParticipant
             ? "disabled"
             : ""
         }`}
-        onClick={() => {
-          navigate(`/tournament/${props.id}`);
+        onclick={() => {
+          handleJoinTournament();
         }}
       >
-        {props.status === "registration"
+        {isUserParticipant
+          ? "Joined"
+          : props.status === "REGISTRATION"
           ? "Join"
-          : props.status === "ready"
+          : props.status === "READY"
           ? "full"
-          : props.status === "inProgress"
+          : props.status === "IN_PROGRESS"
           ? "full"
-          : props.status === "completed"
+          : props.status === "COMPLETED"
           ? "View Results"
           : "Cancelled"}
       </button>
     </StyledTournamentCard>
   );
 };
-const StyledTournamentCardAvatar = styled("div")`
+export const StyledTournamentCardAvatar = styled("div")`
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -317,9 +396,27 @@ const StyledTournamentCardAvatar = styled("div")`
 
 interface CreateTournamentModalProps {
   onClose: () => void;
+  refreshTournaments?: () => void;
 }
 const CreateTournamentModal = (props: CreateTournamentModalProps) => {
   const modalRef = Zeroact.useRef<HTMLDivElement>(null);
+  /**
+   * States
+   */
+  const [tournamentName, setTournamentName] = Zeroact.useState("");
+  const [tournamentDescription, setTournamentDescription] =
+    Zeroact.useState("");
+  const [maxPlayers, setMaxPlayers] = Zeroact.useState(4);
+  const [participationFee, setParticipationFee] = Zeroact.useState(0);
+
+  /**
+   * Contexts
+   */
+  const { user, toasts } = useAppContext();
+
+  /**
+   * Modal management
+   */
   Zeroact.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -335,21 +432,80 @@ const CreateTournamentModal = (props: CreateTournamentModalProps) => {
     };
   }, []);
 
+  /**
+   * Fetches
+   */
+  const handleCreateTournament = async () => {
+    if (
+      !tournamentName ||
+      tournamentName.trim() === "" ||
+      maxPlayers <= 0 ||
+      participationFee < 0
+    )
+      return toasts.addToastToQueue({
+        type: "error",
+        message: "Please fill in all required fields correctly.",
+      });
+    if (!user) return;
+
+    try {
+      const resp = await createTournament(
+        tournamentName,
+        user.userId,
+        maxPlayers,
+        tournamentDescription,
+        participationFee
+      );
+
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Tournament created successfully.",
+        });
+        props.refreshTournaments && props.refreshTournaments();
+        props.onClose();
+      } else throw new Error(resp.message);
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message:
+          err.message || "An error occurred while creating the tournament.",
+      });
+    }
+  };
+
   return (
     <StyledCreateTournamentModal ref={modalRef}>
-      <input type="text" placeholder="Tournament Name" />
+      <input
+        type="text"
+        placeholder="Tournament Name"
+        value={tournamentName}
+        onChange={(e: any) => setTournamentName(e.target.value)}
+      />
 
-      <textarea placeholder="Tournament Description"></textarea>
+      <textarea
+        placeholder="Tournament Description"
+        value={tournamentDescription}
+        onChange={(e: any) => setTournamentDescription(e.target.value)}
+      ></textarea>
 
-      <select>
+      <select
+        value={maxPlayers}
+        onChange={(e: any) => setMaxPlayers(Number(e.target.value))}
+      >
         <option value="4">4 Players</option>
         <option value="8">8 Players</option>
         <option value="16">16 Players</option>
         <option value="32">32 Players</option>
       </select>
 
-      <input type="number" placeholder="Participation Fee (Coins)" />
-      <button className="CreateBtn">
+      <input
+        type="number"
+        placeholder="Participation Fee (Coins)"
+        value={participationFee}
+        onChange={(e: any) => setParticipationFee(Number(e.target.value))}
+      />
+      <button className="CreateBtn" onClick={handleCreateTournament}>
         <ChallengeIcon size={20} fill="var(--main_color)" />
         Create
       </button>

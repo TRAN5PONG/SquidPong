@@ -20,7 +20,7 @@ model Tournament {
   winnerId         String?
   participationFee Int?
 
-  // Relations
+  // Relations with cascading deletes
   participants TournamentPlayer[]
   rounds       TournamentRoundData[]
 }
@@ -31,8 +31,7 @@ model TournamentRoundData {
   order        Int // 1 = Qualifiers, 2 = Round of 16, etc.
   tournamentId String
 
-  // Relations
-  tournament Tournament        @relation(fields: [tournamentId], references: [id])
+  tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   matches    TournamentMatch[]
 }
 
@@ -47,10 +46,10 @@ model TournamentMatch {
   status         GameStatus @default(PENDING)
   deadline       DateTime?
 
-  // Relations
-  round     TournamentRoundData @relation(fields: [roundId], references: [id])
-  opponent1 TournamentPlayer?   @relation("MatchOpponent1", fields: [opponent1Id], references: [id])
-  opponent2 TournamentPlayer?   @relation("MatchOpponent2", fields: [opponent2Id], references: [id])
+  // Relations with cascading deletes
+  round     TournamentRoundData @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  opponent1 TournamentPlayer?   @relation("MatchOpponent1", fields: [opponent1Id], references: [id], onDelete: SetNull)
+  opponent2 TournamentPlayer?   @relation("MatchOpponent2", fields: [opponent2Id], references: [id], onDelete: SetNull)
 }
 
 model TournamentPlayer {
@@ -68,8 +67,7 @@ model TournamentPlayer {
   isVerified   Boolean @default(false)
   rankDivision String
 
-  // Relations
-  tournament         Tournament        @relation(fields: [tournamentId], references: [id])
+  tournament         Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   matchesAsOpponent1 TournamentMatch[] @relation("MatchOpponent1")
   matchesAsOpponent2 TournamentMatch[] @relation("MatchOpponent2")
 
