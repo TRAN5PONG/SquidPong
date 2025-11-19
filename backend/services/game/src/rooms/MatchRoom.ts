@@ -111,9 +111,7 @@ export class MatchRoom extends Room<MatchState> {
         this.sendGameStateToPlayer(client, matchPlayer.id);
         player.isConnected = true;
 
-        if (this.state.phase === "paused") {
-          this.state.phase = "paused";
-        } else if (this.allPlayersReady() && this.state.phase === "waiting") {
+        if (this.allPlayersReady() && this.state.phase === "waiting") {
           this.state.phase = "playing";
         }
       } else {

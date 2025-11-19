@@ -2,14 +2,12 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Physics } from "@/components/Game/physics";
 import { Ball } from "../entities/Ball";
 import { Vec3, BallHistory } from "@/types/network";
-import { GameState } from "./GameController";
 
 export interface RollbackState {
   position: Vector3;
   velocity: Vector3;
   spin: Vector3;
   tick: number;
-  applySpin: boolean;
 }
 
 export enum BallSyncResult {
@@ -92,7 +90,7 @@ export class RollbackManager {
     syncInfo: BallSyncInfo,
     position: Vec3,
     velocity: Vec3,
-    applySpin: boolean,
+    angVelocity: Vec3,
     spin?: Vec3,
   ): void {
     switch (syncInfo.result) {
@@ -102,14 +100,14 @@ export class RollbackManager {
           syncInfo.currentTick,
           position,
           velocity,
-          applySpin,
+          angVelocity,
           spin,
         );
         break;
       case BallSyncResult.APPLY_IMMEDIATELY:
       case BallSyncResult.FUTURE_TICK_WARNING:
       case BallSyncResult.SNAP_DIRECTLY:
-        this.applyState(position, velocity, applySpin, spin);
+        this.applyState(position, velocity, angVelocity, spin);
         break;
     }
   }
@@ -120,7 +118,7 @@ export class RollbackManager {
     currentTick: number,
     position: Vec3,
     velocity: Vec3,
-    applySpin: boolean,
+    angVelocity: Vec3,
     spin?: Vec3,
   ): void {
     this.isRollbackInProgress = true;
@@ -128,7 +126,7 @@ export class RollbackManager {
     const rollbackBase = this.getHistoryAtTick(receivedTick);
     if (!rollbackBase) {
       console.warn(`⚠️ Rollback failed: No history for tick ${receivedTick}`);
-      this.applyState(position, velocity, applySpin, spin);
+      this.applyState(position, velocity, angVelocity, spin);
       this.clearHistory();
       this.recordState(currentTick);
       this.isRollbackInProgress = false;
@@ -138,9 +136,13 @@ export class RollbackManager {
     this.physics.setBallPosition(...rollbackBase.position);
     this.physics.setBallVelocity(...rollbackBase.velocity);
     this.physics.setBallSpin(...rollbackBase.spin);
+    this.physics.ball.body.setAngvel(
+      { x: angVelocity.x, y: angVelocity.y, z: angVelocity.z },
+      true,
+    );
 
     // Apply received state
-    this.applyState(position, velocity, applySpin, spin);
+    this.applyState(position, velocity, angVelocity, spin);
 
     // Clear future history
     this.clearHistoryAfterTick(receivedTick);
@@ -170,17 +172,19 @@ export class RollbackManager {
   private applyState(
     position: Vec3,
     velocity: Vec3,
-    applySpin: boolean,
+    angVelocity: Vec3,
     spin?: Vec3,
   ): void {
     this.physics.setBallPosition(position.x, position.y, position.z);
     this.physics.setBallVelocity(velocity.x, velocity.y, velocity.z);
-    if (applySpin && spin) {
+    this.physics.ball.body.setAngvel(
+      { x: angVelocity.x, y: angVelocity.y, z: angVelocity.z },
+      true,
+    );
+    if (spin && spin.y !== 0) {
       this.physics.setBallSpin(spin.x, spin.y, spin.z);
-      this.physics.setApplySpin(true);
       this.ball.activateSmokeEffect();
     } else {
-      this.physics.setApplySpin(false);
       this.ball.deactivateSmokeEffect();
     }
     this.ball.setMeshPosition(this.physics.getBallPosition());
