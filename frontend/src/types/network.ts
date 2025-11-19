@@ -24,8 +24,8 @@ export interface BallHistory {
 export interface BallHitMessage {
   position: Vec3; // position of the ball at hit time
   velocity: Vec3; // the velocity you wanted the ball to have after hit
+  angVelocity: Vec3;
   spin?: Vec3; // Add spin data
-  applySpin?: boolean; // Whether to apply spin
   tick: number; // tick when the hit happened
   playerId: string; // who hit the ball
   applyEffect?: boolean; // Whether to apply hit effect

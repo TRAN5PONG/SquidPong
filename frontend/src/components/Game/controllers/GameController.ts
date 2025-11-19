@@ -54,7 +54,6 @@ export class GameController {
     this.net = net;
     this.scene = scene;
     this.playerId = this.net.getPlayerId()!;
-    this.physics.setPlayerId(this.playerId);
 
     const boundaries = this.localPaddle.getBoundaries();
     this.paddleZMin = boundaries.z.min;
@@ -62,7 +61,7 @@ export class GameController {
 
     // Debug
     this.debugMeshes = new DebugMeshManager(this.scene);
-
+    // this.debugMeshes.createMeshes();
     // Initialize delegated modules
     this.networkSync = new NetworkSync(
       this.net,
@@ -219,6 +218,13 @@ export class GameController {
 
     this.networkSync.updateVisualsOpponentPaddle();
     this.updateVisualsBall(alpha);
+
+    // debug
+    // this.debugMeshes.updateBall(this.ball.getMeshPosition());
+    // this.debugMeshes.updatePaddle(
+    //   this.localPaddle.getMeshPosition(),
+    //   this.localPaddle.getMeshRotation(),
+    // );
   }
 
   public pauseGame(): void {
@@ -229,9 +235,9 @@ export class GameController {
     this.networkSync.startSync();
   }
 
-  public startPlay(): void {
-    this.gameLogic.gameState = GameState.WAITING_FOR_SERVE;
-  }
+  // public startPlay(): void {
+  //   this.gameLogic.gameState = GameState.WAITING_FOR_SERVE;
+  // }
 
   // ==================== Main update =================
   public fixedUpdate(): void {
