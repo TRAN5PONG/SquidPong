@@ -101,15 +101,21 @@ export const leaveTournament = async (
 };
 export const launchTournament = async (id: string): Promise<ApiResponse> => {
   const response = await fetch(
-    `${API_BASE_URL}/tournament/tournaments/${id}/start`,
+    `${API_BASE_URL}/tournament/tournaments/${id}/launch`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       credentials: "include",
     }
   );
+
+  const data = await response.json();
+  return data;
+};
+export const deleteTournament = async (id: string): Promise<ApiResponse> => {
+  const response = await fetch(`${API_BASE_URL}/tournament/tournaments/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
 
   const data = await response.json();
   return data;

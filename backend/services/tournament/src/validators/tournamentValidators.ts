@@ -64,9 +64,9 @@ export const updateTournamentStatusSchema = {
 export const StartTournamentSchema = {
   params: {
     type: "object",
-    required: ["id"],
+    required: ["tournamentId"],
     properties: {
-      id: { type: "string" },
+      tournamentId: { type: "string" },
     },
   },
 };

@@ -34,7 +34,7 @@ const tournamentRoutes: Route[] = [
   { method: 'POST', url: '/api/tournament/tournaments/:tournamentId/leave', handler: tournamentController.leaveTournament, schema: LeaveTournamentSchema },
 
   // Core
-  { method: 'POST', url: '/api/tournament/tournaments/:id/start', handler: tournamentController.startTournament, schema: StartTournamentSchema },
+  { method: 'POST', url: '/api/tournament/tournaments/:tournamentId/launch', handler: tournamentController.launchTournament, schema: StartTournamentSchema },
   { method: 'POST', url: '/api/tournament/tournaments/:tournamentId/reportMatchResult/:matchId', handler: tournamentController.reportMatchResult, schema: reportMatchResultSchema },
 ];
 

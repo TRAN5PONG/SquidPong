@@ -1,5 +1,4 @@
-import { GameStatus } from "./game/game";
-import { User } from "./user";
+import { GameStatus } from "./game";
 
 export type TournamentRound =
   | "QUALIFIERS"
@@ -65,6 +64,7 @@ export interface TournamentPlayer {
   tournamentId: string;
   firstName: string;
   lastName: string;
+  userName: string;
   avatar: string;
   isVerified: boolean;
   rankDivision: string;
