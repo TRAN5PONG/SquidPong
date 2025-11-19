@@ -87,6 +87,7 @@ export class NetworkSync {
       const pos = this.ball.getMeshPosition();
       this.net.sendMessage("Ball:state", {
         position: { x: pos.x, y: pos.y, z: pos.z },
+        effects: this.ball.getActiveEffects(),
       });
     }, 1000 / this.BALL_SYNC_RATE);
   }
@@ -170,7 +171,7 @@ export class NetworkSync {
     currentTick: number,
     position: { x: number; y: number; z: number },
     velocity: { x: number; y: number; z: number },
-    applySpin: boolean,
+    angVelocity: { x: number; y: number; z: number },
     spin: { x: number; y: number; z: number },
   ): void {
     const syncInfo = this.rollbackManager.analyzeSync(tick, currentTick);
@@ -178,7 +179,7 @@ export class NetworkSync {
       syncInfo,
       position,
       velocity,
-      applySpin,
+      angVelocity,
       spin,
     );
   }

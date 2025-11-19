@@ -20,11 +20,10 @@ export class Table {
       constants.TABLE.size.height / 2,
       constants.TABLE.size.length / 2,
     )
-      .setRestitution(0.8)
+      .setRestitution(0.6)
       .setFriction(0);
 
     this.collider = world.createCollider(collider, this.body);
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
   }
 }
-
