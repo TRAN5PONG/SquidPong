@@ -166,6 +166,7 @@ const GameContiner = () => {
   const onReady = () => {
     if (!netRef.current) return;
     
+    gameRef.current?.arena.stopTableEdgesPulse();
     gameRef.current?.camera.setupPosition();
     netRef.current.sendMessage("player:ready");
   };

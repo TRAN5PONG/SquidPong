@@ -94,18 +94,19 @@ export class Game {
         this.scene,
         this.userId === this.hostId ? 1 : -1,
       );
-      this.camera.GameIntroAnimation();
 
       // this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network(`wss://10.13.3.10:4433/matches`, this.match);
+      this.net = new Network(`wss://10.13.2.4:4433/matches`, this.match);
       this.room = await this.net.join(this.userId);
 
       // Entities
       this.ball = new Ball(this.scene);
       this.light = new Light(this.scene);
       this.arena = new Arena(this.scene, this.light);
+
+
 
       // Paddles setup
       this.hostPaddle = new Paddle(
@@ -196,6 +197,9 @@ export class Game {
    */
   async start() {
     await this.Init();
+    this.arena.updateTableEdgesMaterial(true, true);
+    this.camera.GameIntroAnimation();
+
 
     this.isGameReady = true;
     this.startRenderLoop();
