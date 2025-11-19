@@ -259,18 +259,18 @@ export class Ball {
     }
   }
 
-  // // ================= Combined Effect Control =================
-  // public activateEffect(type: EffectType): void {
-  //   switch (type) {
-  //     case EffectType.FIRE:
-  //       this.activateFireEffect();
-  //       break;
-  //     case EffectType.SMOKE:
-  //       this.activateSmokeEffect();
-  //       break;
-  //   }
-  // }
-  //
+  // ================= Combined Effect Control =================
+  public activateEffect(type: EffectType): void {
+    switch (type) {
+      case EffectType.FIRE:
+        this.activateFireEffect();
+        break;
+      case EffectType.SMOKE:
+        this.activateSmokeEffect();
+        break;
+    }
+  }
+
   // public deactivateEffect(type: EffectType): void {
   //   switch (type) {
   //     case EffectType.FIRE:
@@ -282,10 +282,10 @@ export class Ball {
   //   }
   // }
   //
-  // public deactivateAllEffects(): void {
-  //   this.deactivateFireEffect();
-  //   this.deactivateSmokeEffect();
-  // }
+  public deactivateAllEffects(): void {
+    this.deactivateFireEffect();
+    this.deactivateSmokeEffect();
+  }
 
   // ================= State Getters =================
   public isEffectActive(type: EffectType): boolean {
@@ -297,6 +297,13 @@ export class Ball {
       default:
         return false;
     }
+  }
+
+  public getActiveEffects(): EffectType[] {
+    const activeEffects: EffectType[] = [];
+    if (this.isFireActive) activeEffects.push(EffectType.FIRE);
+    if (this.isSmokeActive) activeEffects.push(EffectType.SMOKE);
+    return activeEffects;
   }
 
   // ================= Cleanup =================
