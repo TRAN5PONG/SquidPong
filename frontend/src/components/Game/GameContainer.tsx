@@ -193,6 +193,7 @@ const GameContiner = () => {
         match={match}
         startCinematicCamera={() => { }}
         resetCamera={() => { }}
+        TableAnimation={gameRef.current?.arena.updateTableEdgesMaterial}
       />
       <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
         <button onClick={onReady}>Ready</button>

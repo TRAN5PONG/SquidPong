@@ -87,6 +87,7 @@ export class NetworkSync {
       const pos = this.ball.getMeshPosition();
       this.net.sendMessage("Ball:state", {
         position: { x: pos.x, y: pos.y, z: pos.z },
+        effects: this.ball.getActiveEffects(),
       });
     }, 1000 / this.BALL_SYNC_RATE);
   }
