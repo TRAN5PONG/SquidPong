@@ -14,6 +14,7 @@ import {
   shuffleArray,
   validateTournamentStatus,
 } from "../utils/tournament";
+import { sendDataToQueue } from "../integration/rabbitmqClient";
 
 export async function createTournament(
   request: FastifyRequest,
@@ -127,6 +128,15 @@ export async function deleteTournament(
     const tournament = await prisma.tournament.delete({
       where: { id },
     });
+
+    // Send message to game service to delete related games
+    await sendDataToQueue(
+      {
+        event: "tournament-deleted",
+        tournamentId: id,
+      },
+      "game"
+    );
 
     return reply.code(200).send({
       success: true,
@@ -493,18 +503,33 @@ export async function launchTournament(
           matchIndex < matchesInThisRound;
           matchIndex++
         ) {
-          const opponent1Id =
-            roundIndex === 0 ? shuffledPlayers[matchIndex * 2].id : null;
-          const opponent2Id =
-            roundIndex === 0 ? shuffledPlayers[matchIndex * 2 + 1].id : null;
+          const opponent1 =
+            roundIndex === 0 ? shuffledPlayers[matchIndex * 2] : null;
+          const opponent2 =
+            roundIndex === 0 ? shuffledPlayers[matchIndex * 2 + 1] : null;
 
           allMatches.push({
             roundId: round.id,
-            opponent1Id,
-            opponent2Id,
+            opponent1Id: opponent1 ? opponent1.id : null,
+            opponent2Id: opponent2 ? opponent2.id : null,
+            opponent1Score: 0,
+            opponent2Score: 0,
             status: GameStatus.PENDING,
-            deadline: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+            deadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
           });
+
+          // Hit game service to create game for roundIndex 0 matches
+          if (roundIndex === 0) {
+            await sendDataToQueue(
+              {
+                event: "tournament-match-created",
+                tournamentId: tournamentId,
+                opponent1Id: opponent1?.userId,
+                opponent2Id: opponent2?.userId,
+              },
+              "game"
+            );
+          }
         }
       }
 
@@ -551,6 +576,111 @@ export async function launchTournament(
     return reply.code(statusCode).send({
       message: error.message || "Failed to start tournament.",
       success: false,
+    });
+  }
+}
+
+export async function resetTournament(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const { tournamentId } = request.params as { tournamentId: string };
+
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId },
+    });
+
+    // Reset tournament data
+    await prisma.$transaction(async (tx: any) => {
+      // Delete matches
+      await tx.tournamentMatch.deleteMany({
+        where: { round: { tournamentId } },
+      });
+
+      // Delete rounds
+      await tx.tournamentRoundData.deleteMany({
+        where: { tournamentId },
+      });
+
+      // Reset participants
+      await tx.tournamentPlayer.updateMany({
+        where: { tournamentId },
+        data: {
+          isEliminated: false,
+          bracketPosition: null,
+        },
+      });
+
+      // Reset tournament status
+      await tx.tournament.update({
+        where: { id: tournamentId },
+        data: {
+          status: TournamentStatus.READY,
+          currentRound: null,
+        },
+      });
+
+      // hit game service to delete all games related to this tournament
+      await sendDataToQueue(
+        {
+          event: "tournament-reset",
+          tournamentId: tournamentId,
+        },
+        "game"
+      );
+    });
+
+    return reply.code(200).send({
+      message: "Tournament has been reset successfully2.",
+      success: true,
+    });
+  } catch (error: any) {
+    return reply.code(500).send({
+      message: "Failed to reset tournament.",
+      success: false,
+    });
+  }
+}
+
+export async function setTournamentMatchId(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  try {
+    const { tournamentId, tournamentMatchId } = request.params as {
+      tournamentId: string;
+      tournamentMatchId: string;
+    };
+
+    const { gameMatchId } = request.body as { gameMatchId: string };
+
+    // Update ONLY this match of this tournament
+    const updated = await prisma.tournamentMatch.updateMany({
+      where: {
+        id: tournamentMatchId,
+        round: { tournamentId: tournamentId },
+      },
+      data: {
+        matchId: gameMatchId,
+      },
+    });
+
+    if (updated.count === 0) {
+      return reply.code(404).send({
+        success: false,
+        message: "Tournament match not found",
+      });
+    }
+
+    return reply.code(200).send({
+      success: true,
+      message: "Game match ID linked successfully",
+    });
+  } catch (error: any) {
+    return reply.code(500).send({
+      success: false,
+      message: error.message,
     });
   }
 }

@@ -111,6 +111,18 @@ export const launchTournament = async (id: string): Promise<ApiResponse> => {
   const data = await response.json();
   return data;
 };
+export const resetTournament = async (id: string): Promise<ApiResponse> => {
+  const response = await fetch(
+    `${API_BASE_URL}/tournament/tournaments/${id}/reset`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
+
+  const data = await response.json();
+  return data;
+};
 export const deleteTournament = async (id: string): Promise<ApiResponse> => {
   const response = await fetch(`${API_BASE_URL}/tournament/tournaments/${id}`, {
     method: "DELETE",

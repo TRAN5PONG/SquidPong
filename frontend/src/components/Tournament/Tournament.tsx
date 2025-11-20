@@ -6,6 +6,7 @@ import {
   CoinIcon,
   DeleteIcon,
   GroupIcon,
+  LiveIcon,
   PendingIcon,
   ScoreIcon,
   SignOutIcon,
@@ -18,7 +19,7 @@ import NotFound from "../NotFound/NotFound";
 import { getRankMetaData } from "@/utils/game";
 import { timeAgo, timeUntil } from "@/utils/time";
 import {
-  TournamentMatch,
+  TournamentMatch as TournamentMatchType,
   Tournament as TournamentType,
   TournamentPlayer as TournamentPlayerType,
   TournamentStatus,
@@ -31,12 +32,14 @@ import {
   joinTournament,
   launchTournament,
   leaveTournament,
+  resetTournament,
 } from "@/api/tournament";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { useAppContext } from "@/contexts/AppProviders";
 import { Button } from "@babylonjs/inspector/components/Button";
 import { StyledTournamentCardAvatar } from "./Tournaments";
 import { Length } from "@babylonjs/core";
+import Avatar from "./Avatar";
 
 const StyledTournament = styled("div")`
   width: 100vw;
@@ -63,6 +66,7 @@ const StyledTournament = styled("div")`
     padding: 0px 10%;
     position: relative;
     margin-top: 55px;
+    gap: 10px;
     position: relative;
     &:after {
       width: 100%;
@@ -85,13 +89,17 @@ const StyledTournament = styled("div")`
     }
 
     .LogoContainer {
-      width: 300px;
-      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 200px;
+      height: 250px;
+      background-color: rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
       .TrophyImg {
-        width: 70%;
+        width: 90%;
         height: auto;
       }
     }
@@ -261,7 +269,6 @@ const StyledTournament = styled("div")`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
     overflow: hidden;
     z-index: 999;
     .NavItem {
@@ -277,7 +284,7 @@ const StyledTournament = styled("div")`
         background-color: rgba(255, 255, 255, 0.03);
       }
       &.active {
-        background-color: var(--main_color);
+        background-color: var(--bg_color_super_light);
         font-weight: 600;
       }
     }
@@ -286,7 +293,6 @@ const StyledTournament = styled("div")`
   .OverviewMode {
     flex: 1;
     min-height: 100vh;
-    overflow-y: auto;
     width: 100%;
     display: flex;
     align-items: center;
@@ -300,6 +306,11 @@ const StyledTournament = styled("div")`
       display: flex;
       justify-content: center;
       align-items: center;
+      background: linear-gradient(
+        0deg,
+        var(--bg_color_super_light) 0%,
+        transparent 100%
+      );
 
       .TournamentBrackeContainer {
         display: flex;
@@ -333,6 +344,7 @@ const StyledTournament = styled("div")`
           .TrophyIcon {
             position: absolute;
             top: -20px;
+            z-index: 3;
           }
           .FinalText {
             padding: 0px 10px;
@@ -368,7 +380,6 @@ const StyledTournament = styled("div")`
           justify-content: center;
           gap: 3px;
           position: relative;
-
           &:before {
             position: absolute;
             content: "";
@@ -387,7 +398,7 @@ const StyledTournament = styled("div")`
             border: 1px solid var(--main_color);
             border-left: none;
             right: -15px;
-            z-index: -1;
+            z-index: 1;
           }
 
           &[players-count="4"] {
@@ -470,7 +481,7 @@ const StyledTournament = styled("div")`
             border: 1px solid var(--main_color);
             border-right: none;
             left: -40px;
-            z-index: -1;
+            z-index: 1;
           }
           &:nth-child(even) {
             &:before {
@@ -484,6 +495,30 @@ const StyledTournament = styled("div")`
           }
         }
       }
+    }
+  }
+  .MatchesMode {
+    flex: 1;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0px 10%;
+
+    .MatchesList {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        0deg,
+        var(--bg_color_super_light) 0%,
+        transparent 100%
+      );
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
     }
   }
   .PlayersMode {
@@ -613,6 +648,23 @@ const Tournament = () => {
       });
     }
   };
+  const handleResetTournament = async () => {
+    try {
+      const resp = await resetTournament(tournamentId!);
+      if (resp.success && resp.data) {
+        setTournament(resp.data);
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Tournament reset successfully",
+        });
+      } else throw new Error(resp.message || "Failed to reset tournament");
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "Error resetting tournament",
+      });
+    }
+  };
   const handleParticipateInTournament = async () => {
     try {
       const resp = await joinTournament(tournamentId!, user!.userId);
@@ -646,7 +698,7 @@ const Tournament = () => {
       lastName: "",
     };
   const renderRoundGames = (
-    Matches: TournamentMatch[],
+    Matches: TournamentMatchType[],
     reverse = false,
     round: number
   ) => {
@@ -705,7 +757,9 @@ const Tournament = () => {
             <h1 className="TournamentTitle">{tournament.name}</h1>
             <div className="TournamentParticipantsInfo">
               {tournament.participants.slice(0, 3).map((participant) => {
-                return <StyledTournamentCardAvatar avatar={participant.avatar} />;
+                return (
+                  <StyledTournamentCardAvatar avatar={participant.avatar} />
+                );
               })}
               {tournament.participants.length > 3 && (
                 <StyledTournamentCardAvatar className="Extra">
@@ -799,6 +853,14 @@ const Tournament = () => {
               >
                 <ChallengeIcon fill="white" size={20} />
                 Launch
+              </button>
+            )}
+            {isOrganizer && (
+              <button
+                className="LaunchTournamentBtn"
+                onClick={handleResetTournament}
+              >
+                Reset
               </button>
             )}
           </div>
@@ -908,7 +970,13 @@ const Tournament = () => {
           </div>
         </div>
       ) : currentMode === "MATCHES" ? (
-        <div className="MatchesMode"></div>
+        <div className="MatchesMode">
+          <div className="MatchesList">
+            {Array.from({ length: 5 }).map((_, index) => {
+              return <TournamentMatch key={index} />;
+            })}
+          </div>
+        </div>
       ) : (
         <div className="PlayersMode">
           {/* <div className="PlayersList">
@@ -934,6 +1002,8 @@ const StyledTournamentPlayer = styled("div")`
   justify-content: center;
   border-bottom: none;
   overflow: hidden;
+  z-index: 2;
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
   .TournamentPlayerAvatar {
     width: 33px;
     height: 33px;
@@ -1049,6 +1119,195 @@ const TournamentPlayer = (
         <img className="Right__rank" src={rankMetadata?.image} />
       </div>
     </StyledTournamentPlayer>
+  );
+};
+const StyleTournamentMatch = styled("div")`
+  width: 70%;
+  height: 70px;
+  background-color: var(--bg_color);
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px;
+  display: flex;
+  gap: 10px;
+  position: relative;
+
+  &:after {
+    position: absolute;
+    content: "";
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(202, 47, 60, 0) 0%,
+      rgba(202, 47, 60, 1) 50%,
+      rgba(202, 47, 60, 0) 100%
+    );
+    z-index: 1;
+  }
+  .GameStatus {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 30px;
+    padding: 0px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    span {
+      font-size: 0.7rem;
+      font-family: var(--span_font);
+      text-transform: uppercase;
+    }
+  }
+  .Opponent {
+    height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 15px;
+    z-index: 2;
+
+    .OpponentInfo {
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      .OpponentUsername {
+        font-size: 1.2rem;
+        font-family: var(--squid_font);
+        font-weight: 500;
+      }
+    }
+    &.reverse {
+      flex-direction: row;
+      .OpponentAvatar {
+        background-image: linear-gradient(
+            -20deg,
+            var(--main_color) 0%,
+            transparent 100%
+          ),
+          url("https://fbi.cults3d.com/uploaders/14684840/illustration-file/e52ddf50-dd29-45fc-b7a6-5fca62a84f18/jett-avatar.jpg");
+      }
+      .OpponentInfo {
+        flex-direction: row;
+      }
+    }
+  }
+  .MiddleEl {
+    height: 100%;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    gap: 10px;
+
+    .Score {
+      width: 40px;
+      height: 40px;
+      background-color: rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 600;
+      font-family: var(--squid_font);
+      color: rgb(255, 160, 168);
+      border-radius: 5px;
+    }
+    .Round {
+      position: absolute;
+      bottom: 0px;
+      font-size: 0.6rem;
+      font-family: var(--span_font);
+      color: rgba(255, 255, 255, 0.6);
+    }
+  }
+
+  .LiveNowIndicator {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    z-index: 3;
+    .LiveIndicator {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      padding: 2px 5px;
+      border-radius: 3px;
+      background-color: transparent;
+
+      svg {
+        animation: Wave 2s infinite;
+      }
+      span {
+        font-size: 0.8rem;
+        font-family: var(--span_font);
+        color: rgba(255, 0, 0, 0.7);
+        margin-bottom: 3px;
+      }
+      &:hover {
+        background-color: rgba(255, 0, 0, 0.1);
+      }
+    }
+  }
+`;
+interface TournamentMatchProps {
+  matchData: TournamentMatchType;
+}
+const TournamentMatch = () => {
+  const opponent1Rank = getRankMetaData("DIAMOND", "III");
+  const opponent2Rank = getRankMetaData("PLATINUM", "II");
+
+  const isLive = true;
+
+  return (
+    <StyleTournamentMatch>
+      <div className="GameStatus">
+        <span>ongoing</span>
+      </div>
+      <div className="Opponent">
+        <Avatar rank={opponent1Rank ? opponent1Rank : undefined} />
+
+        <div className="OpponentInfo">
+          <span className="OpponentUsername">Player1</span>
+        </div>
+      </div>
+      <div className="MiddleEl">
+        <div className="Opponent1Score Score">2</div>
+        <ChallengeIcon fill="rgba(255,255,255, 0.7)" size={30} />
+        <div className="Opponent2Score Score">11</div>
+        <span className="Round">ROUND - 1</span>
+      </div>
+      <div className="Opponent reverse">
+        <Avatar rank={opponent1Rank ? opponent1Rank : undefined} />
+
+        <div className="OpponentInfo">
+          <span className="OpponentUsername">Player1</span>
+        </div>
+      </div>
+
+      <div className="LiveNowIndicator">
+        <span>Live Now!</span>
+        <div className="LiveIndicator">
+          <span>watch</span>
+          <LiveIcon fill="red" size={12} />
+        </div>
+      </div>
+    </StyleTournamentMatch>
   );
 };
 
