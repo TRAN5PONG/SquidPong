@@ -64,8 +64,8 @@ model MatchSpectator {
   userId   String
   username String
 
-  match   Match  @relation(fields: [matchId], references: [id])
-  user    User   @relation(fields: [userId], references: [id])
+  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   matchId String
 }
 
@@ -96,28 +96,28 @@ model MatchPlayer {
   // Relations
   matchAsOpponent1 Match? @relation("Opponent1")
   matchAsOpponent2 Match? @relation("Opponent2")
-  User             User?  @relation(fields: [userId], references: [id])
+  User             User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Match {
-  id          String     @id @default(cuid())
-  mode        GameMode
-  status      GameStatus
-  roomId      String?    @unique
-  duration    Int
-  createdAt   DateTime   @default(now())
-  confirmedAt DateTime?
-  winnerId    String?
+  id           String     @id @default(cuid())
+  tournamentId String?
+  mode         GameMode
+  status       GameStatus
+  roomId       String?    @unique
+  duration     Int
+  createdAt    DateTime   @default(now())
+  confirmedAt  DateTime?
+  winnerId     String?
 
   // Relations
-  opponent1   MatchPlayer @relation("Opponent1", fields: [opponent1Id], references: [id])
-  opponent1Id String      @unique
-
+  opponent1   MatchPlayer  @relation("Opponent1", fields: [opponent1Id], references: [id])
+  opponent1Id String       @unique
   opponent2   MatchPlayer? @relation("Opponent2", fields: [opponent2Id], references: [id])
   opponent2Id String?      @unique
 
   spectators   MatchSpectator[]
-  bets         Bet[]
+  bets         Bet[] 
   matchSetting MatchSetting?    @relation("MatchToSetting")
   // Link back to invitation that created this match
   invitation   Invitation?      @relation("InvitationMatch")
@@ -133,11 +133,11 @@ model MatchSetting {
   createdAt        DateTime      @default(now())
   requiredCurrency Int // Coins required to start the match
 
-  match Match @relation("MatchToSetting", fields: [matchId], references: [id])
+  match Match @relation("MatchToSetting", fields: [matchId], references: [id], onDelete: Cascade)
 }
 
 model User {
-  id     String @id
+  id     String @id @default(cuid())
   userId Int    @unique // id from GM
 
   createdAt DateTime @default(now())

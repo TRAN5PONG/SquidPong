@@ -36,8 +36,10 @@ model TournamentRoundData {
 }
 
 model TournamentMatch {
-  id             String     @id @default(cuid())
+  id String @id @default(cuid())
+
   roundId        String
+  matchId        String? // link to game service match
   opponent1Id    String?
   opponent2Id    String?
   opponent1Score Int        @default(0)
