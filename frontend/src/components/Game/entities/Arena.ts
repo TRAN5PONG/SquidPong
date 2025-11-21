@@ -1,3 +1,5 @@
+// Arena.ts - Replace the decal system with dynamic impact effects
+
 import { useEffect, useState } from "@/lib/Zeroact";
 import {
   Scene,
@@ -18,10 +20,15 @@ import {
   AdvancedDynamicTexture,
   TextBlock,
   Rectangle,
-  StackPanel,
-  Button,
   Control,
 } from "@babylonjs/gui";
+
+// Impact effect interface
+interface ImpactEffect {
+  mesh: AbstractMesh;
+  startTime: number;
+  duration: number;
+}
 
 export class Arena {
   private Mesh: TransformNode | null = null;
@@ -40,9 +47,16 @@ export class Arena {
   private TableEdgesMaterial: StandardMaterial | null = null;
   private pulseObserver: Nullable<Observer<Scene>> = null;
 
+  // Impact Effects System
+  private impactEffects: ImpactEffect[] = [];
+  private impactObserver: Nullable<Observer<Scene>> = null;
+
   constructor(scene: Scene, light: Light) {
     this.scene = scene;
     this.Light = light;
+
+    // Start impact animation loop
+    this.startImpactAnimationLoop();
   }
 
   // ---------------------------
@@ -51,13 +65,12 @@ export class Arena {
   private initializeBoardGUI() {
     if (!this.BoardMesh) return;
 
-    // 🔥 Fix the upside-down text by inverting V coordinates
     const uvs = this.BoardMesh.getVerticesData("uv");
     if (uvs) {
       const newUVs = new Float32Array(uvs.length);
       for (let i = 0; i < uvs.length; i += 2) {
-        newUVs[i] = uvs[i]; // Keep U the same
-        newUVs[i + 1] = 1 - uvs[i + 1]; // 🔥 Flip V coordinate
+        newUVs[i] = uvs[i];
+        newUVs[i + 1] = 1 - uvs[i + 1];
       }
       this.BoardMesh.setVerticesData("uv", newUVs);
     }
@@ -66,7 +79,7 @@ export class Arena {
       this.BoardMesh,
       2048,
       1024,
-      true
+      true,
     );
 
     this.boardGUI.background = "transparent";
@@ -88,7 +101,7 @@ export class Arena {
       "Pixel LCD7",
       undefined,
       -300,
-      true
+      true,
     );
     this.gameStatusText = this.setupBoardText(
       "line2",
@@ -100,7 +113,7 @@ export class Arena {
       "Pixel LCD7",
       undefined,
       -100,
-      true
+      true,
     );
     this.playersNamesText = this.setupBoardText(
       "line3",
@@ -112,20 +125,11 @@ export class Arena {
       "Pixel LCD7",
       undefined,
       undefined,
-      true
+      true,
     );
 
     container.addControl(this.boardText1);
-    // container.addControl(this.gameStatusText);
     container.addControl(this.playersNamesText);
-
-    // 🔥 SET THESE ALIGNMENT PROPERTIES!
-    // this.boardText1.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    // this.boardText1.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-    // this.boardText1.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-    // this.boardText1.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-
-    // Now the offset will work
   }
 
   private setupBoardText(
@@ -138,7 +142,7 @@ export class Arena {
     fontFamily: string,
     left?: number,
     top?: number,
-    isCentered?: boolean
+    isCentered?: boolean,
   ): TextBlock {
     const text = new TextBlock(headline, value);
     text.fontSize = size;
@@ -166,7 +170,7 @@ export class Arena {
   async Load() {
     const Container = await LoadAssetContainerAsync(
       "/models/Lobby.glb",
-      this.scene
+      this.scene,
     );
 
     Container.addAllToScene();
@@ -178,7 +182,8 @@ export class Arena {
         mesh.parent = ObjGroup;
       }
 
-      if (mesh.name === "Chabka") {
+      if (mesh.name === "TableBase") {
+        console.log("Found TableBase mesh:", mesh);
         this.TableBaseMesh = mesh as AbstractMesh;
       }
 
@@ -194,7 +199,6 @@ export class Arena {
 
     this.Mesh = ObjGroup;
 
-    // initialize GUI on board
     this.initializeBoardGUI();
   }
 
@@ -228,22 +232,22 @@ export class Arena {
   updateTableEdgesMaterial(isWon: boolean, intro?: boolean) {
     if (!this.TableEdgesMesh) return;
 
-
     const IntroColor = Color3.FromHexString("#fc287b");
     const baseColor = intro
       ? IntroColor
       : isWon
-      ? new Color3(0, 1, 0)
-      : new Color3(1, 0, 0);
+        ? new Color3(0, 1, 0)
+        : new Color3(1, 0, 0);
     const mat = new StandardMaterial("pulseMat", this.scene);
     this.TableEdgesMesh.material = mat;
 
     this.pulseObserver = this.scene.onBeforeRenderObservable.add(() => {
       const t = performance.now() * 0.005;
-      const intensity = (Math.sin(t) + 1) / 2; // [0..1]
+      const intensity = (Math.sin(t) + 1) / 2;
       mat.emissiveColor = baseColor.scale(intensity);
     });
   }
+
   stopTableEdgesPulse() {
     if (this.pulseObserver) {
       this.scene.onBeforeRenderObservable.remove(this.pulseObserver);
@@ -253,5 +257,106 @@ export class Arena {
     if (this.TableEdgesMaterial && this.TableEdgesMesh) {
       this.TableEdgesMesh.material = this.TableEdgesMaterial;
     }
+  }
+
+  // ----------------------------------
+  //  IMPACT EFFECT SYSTEM
+  // ----------------------------------
+
+  /**
+   * Create impact effect at contact point
+   */
+  createImpact(point: Vector3, normal: Vector3, index: number) {
+    if (!this.TableBaseMesh) return;
+
+    // Create expanding ring effect
+    const ring = MeshBuilder.CreateTorus(
+      "impact_" + Date.now(),
+      {
+        diameter: 0.01,
+        thickness: 0.06,
+        tessellation: 8,
+      },
+      this.scene,
+    );
+
+    // Position slightly above table surface to avoid z-fighting
+    ring.position = point.add(normal.scale(0.001));
+
+    // Orient ring to face upward (perpendicular to normal)
+    ring.lookAt(point.add(normal));
+
+    // Create glowing material
+    const mat = new StandardMaterial("impactMat_" + Date.now(), this.scene);
+    mat.emissiveColor = new Color3(1, 0.05, 0.5);
+    mat.diffuseColor = new Color3(1, 0.05, 0.5);
+    mat.alpha = 1.0;
+    mat.disableLighting = true;
+
+    ring.material = mat;
+
+    // Add to effects list
+    this.impactEffects.push({
+      mesh: ring,
+      startTime: performance.now(),
+      duration: 500, // 500ms animation
+    });
+
+    console.log("✅ Impact effect created at", point);
+  }
+
+  /**
+   * Animation loop for impact effects
+   */
+  private startImpactAnimationLoop() {
+    this.impactObserver = this.scene.onBeforeRenderObservable.add(() => {
+      const now = performance.now();
+
+      // Update all active effects
+      for (let i = this.impactEffects.length - 1; i >= 0; i--) {
+        const effect = this.impactEffects[i];
+        const elapsed = now - effect.startTime;
+        const progress = Math.min(elapsed / effect.duration, 1.0);
+
+        if (progress >= 1.0) {
+          effect.mesh.dispose();
+          this.impactEffects.splice(i, 1);
+        } else {
+          const ring = effect.mesh;
+          const mat = ring.material as StandardMaterial;
+
+          // Expand ring
+          const scale = 1 + progress * 6;
+          ring.scaling.set(scale, scale, 1);
+
+          // Fade out
+          const fadeOut = 1 - progress;
+          mat.alpha = fadeOut * fadeOut;
+          const brightness = fadeOut;
+          mat.emissiveColor = new Color3(
+            brightness,
+            brightness * 0.05,
+            brightness * 0.5,
+          );
+        }
+      }
+    });
+  }
+
+  /**
+   * Cleanup
+   */
+  dispose() {
+    // Stop animation loop
+    if (this.impactObserver) {
+      this.scene.onBeforeRenderObservable.remove(this.impactObserver);
+      this.impactObserver = null;
+    }
+
+    // Dispose all active effects
+    for (const effect of this.impactEffects) {
+      effect.mesh.dispose();
+    }
+    this.impactEffects = [];
   }
 }

@@ -18,9 +18,9 @@ export class ScoringHandler {
 
     this.room.state.scores.set(playerId, current + 1);
 
-    // const totalPoints = this.room.state.totalPointsScored;
+    const totalPoints = this.room.state.totalPointsScored;
 
-    const totalPoints = 30;
+    // const totalPoints = 30;
 
     console.log(`🏆 Total points to win: ${totalPoints}`);
 
