@@ -13,6 +13,7 @@ import {
 import { BallTrajectory } from "../physics/ballTrajectory";
 import { GameState } from "./GameController";
 import { constants } from "../../../utils/constants";
+import { Arena } from "../entities/Arena";
 
 export class GameLogic {
   private net: Network;
@@ -23,6 +24,7 @@ export class GameLogic {
   private playerId: string;
   private networkSync: NetworkSync;
   private getCurrentTickFn: () => number;
+  private arena: Arena;
 
   // Game state
   public gameState: GameState = GameState.WAITING_FOR_SERVE;
@@ -42,7 +44,6 @@ export class GameLogic {
   private readonly SPIN_THRESHOLD: number = 28;
   private readonly SPIN_ACTIVATION_THRESHOLD: number = 26;
   private readonly MAX_SPIN: number = 8;
-  private readonly BALL_RADIUS: number = constants.BALL.radius;
 
   constructor(
     net: Network,
@@ -52,6 +53,7 @@ export class GameLogic {
     opponentPaddle: Paddle,
     playerId: string,
     networkSync: NetworkSync,
+    arena: Arena,
     getCurrentTickFn: () => number,
   ) {
     this.net = net;
@@ -62,6 +64,7 @@ export class GameLogic {
     this.playerId = playerId;
     this.networkSync = networkSync;
     this.getCurrentTickFn = getCurrentTickFn;
+    this.arena = arena;
 
     this.setupPhysicsCallbacks();
     this.setupNetworkListeners();
@@ -163,15 +166,20 @@ export class GameLogic {
       }
     };
 
-    this.physics.onBallTableCollision = (ball) => {
-      console.log("Ball hit the table");
+    this.physics.onBallTableCollision = (
+      ball,
+      table,
+      contactPoint,
+      contactNormal,
+    ) => {
+      this.arena.createImpact(contactPoint, contactNormal, 0);
       if (this.shouldSendEvent()) {
         this.handleTableBounce(ball);
       }
     };
   }
 
-  // ================= Collision Handling ================= 
+  // ================= Collision Handling =================
   private handleBallPaddleCollision(ball: any, paddle: any): void {
     // --- ignore double hits ---
     if (
@@ -179,8 +187,6 @@ export class GameLogic {
       this.gameState === GameState.IN_PLAY
     )
       return;
-
-    console.log("Ball-Paddle collision detected");
 
     this.lastTableBounceSide = null;
     this.lastCollisionTick = this.getCurrentTick();
@@ -243,12 +249,12 @@ export class GameLogic {
       z: (ballVel.z - ballCurrentVel.z) * mass,
     };
 
-    // radius vector from paddle to ball Hit the center → no spin 
+    // radius vector from paddle to ball Hit the center → no spin
     // | Hit the top → topspin | Hit the bottom → backspin | Hit the sides → sidespin
     let rx = ballPos.x - paddlePos.x;
     let ry = ballPos.y - paddlePos.y;
     let rz = ballPos.z - paddlePos.z;
-    
+
     // Normalize r so spin depends only on the hit position
     let rLenSq = rx * rx + ry * ry + rz * rz;
 
@@ -265,23 +271,23 @@ export class GameLogic {
       rz *= invRLen;
     }
 
-    const SPIN_SCALE = this.BALL_RADIUS * 0.9; 
-    
-    // Cross product r × v (rotation direction) 
+    const SPIN_SCALE = 0.5;
+
+    // Cross product r × v (rotation direction)
     let angX = (ry * paddleVel.z - rz * paddleVel.y) * SPIN_SCALE;
-    let angY = (rz * paddleVel.x - rx * paddleVel.z) * SPIN_SCALE - paddleVel.x * 0.5;
+    let angY = (rz * paddleVel.x - rx * paddleVel.z) * SPIN_SCALE;
     let angZ = (rx * paddleVel.y - ry * paddleVel.x) * SPIN_SCALE;
 
-    // --- Clamp max torque (inline) ---
-    const maxTorque = 1.5;
-    const angMagSq = angX * angX + angY * angY + angZ * angZ;
-
-    if (angMagSq > maxTorque * maxTorque) {
-      const scale = maxTorque / Math.sqrt(angMagSq);
-      angX *= scale;
-      angY *= scale;
-      angZ *= scale;
-    }
+    // // --- Clamp max torque (inline) ---
+    // const maxTorque = 1.5;
+    // const angMagSq = angX * angX + angY * angY + angZ * angZ;
+    //
+    // if (angMagSq > maxTorque * maxTorque) {
+    //   const scale = maxTorque / Math.sqrt(angMagSq);
+    //   angX *= scale;
+    //   angY *= scale;
+    //   angZ *= scale;
+    // }
 
     // --- Apply impulses ---
     this.physics.ball.body.applyImpulse(impulse, true);
@@ -300,7 +306,7 @@ export class GameLogic {
         y: this.physics.getBallSpin().y,
         z: this.physics.getBallSpin().z,
       },
-      tick: this.lastCollisionTick, 
+      tick: this.lastCollisionTick,
       playerId: this.playerId,
     };
 

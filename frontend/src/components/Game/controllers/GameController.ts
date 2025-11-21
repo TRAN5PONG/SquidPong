@@ -9,7 +9,7 @@ import { Physics } from "../physics";
 import { NetworkSync } from "./NetworkSync";
 import { GameLogic } from "./GameLogic";
 import { DebugMeshManager } from "../DebugMeshManager";
-
+import { Arena } from "../entities/Arena";
 export enum GameState {
   WAITING_FOR_SERVE,
   IN_PLAY,
@@ -23,6 +23,7 @@ export class GameController {
   private physics: Physics;
   private scene: Scene;
   private playerId: string;
+  private arena: Arena;
 
   // Delegated modules
   private networkSync: NetworkSync;
@@ -43,6 +44,7 @@ export class GameController {
     localPaddle: Paddle,
     opponentPaddle: Paddle,
     ball: Ball,
+    arena: Arena,
     physics: Physics,
     net: Network,
     scene: Scene,
@@ -54,6 +56,7 @@ export class GameController {
     this.net = net;
     this.scene = scene;
     this.playerId = this.net.getPlayerId()!;
+    this.arena = arena;
 
     const boundaries = this.localPaddle.getBoundaries();
     this.paddleZMin = boundaries.z.min;
@@ -80,6 +83,7 @@ export class GameController {
       this.opponentPaddle,
       this.playerId,
       this.networkSync,
+      this.arena,
       () => this.currentTick,
     );
 

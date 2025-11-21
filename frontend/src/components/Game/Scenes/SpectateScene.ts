@@ -36,6 +36,16 @@ export class SpectateScene {
   hostId: string;
   guestId: string;
 
+  private ballTargetPosition: Vector3 = Vector3.Zero();
+  private ballCurrentPosition: Vector3 = Vector3.Zero();
+  private ballLerpAlpha: number = 0.15;
+
+  private hostTargetPosition: Vector3 = Vector3.Zero();
+  private hostCurrentPosition: Vector3 = Vector3.Zero();
+  private guestTargetPosition: Vector3 = Vector3.Zero();
+  private guestCurrentPosition: Vector3 = Vector3.Zero();
+  private paddleLerpAlpha: number = 0.2;
+
   constructor(canvas: HTMLCanvasElement, match: Match, userId: string) {
     this.canvas = canvas;
     this.match = match;
@@ -72,7 +82,7 @@ export class SpectateScene {
 
       // network
       this.net = new Network(
-        "wss://10.13.249.173:4433/matches",
+        "wss://10.13.3.3:4433/matches",
         this.match,
         "spectate",
       );
@@ -101,35 +111,29 @@ export class SpectateScene {
    */
   private onPaddleMove() {
     this.room.onMessage("opponent:paddle", (data: any) => {
-      if (data.playerId === this.hostId) {
-        // host paddle
-        this.hostPaddle.updatePaddlePosition(
-          data.position.x,
-          data.position.y,
-          data.position.z,
-        );
-      } else if (data.playerId === this.guestId) {
-        // guest paddle
-        this.guestPaddle.updatePaddlePosition(
-          data.position.x,
-          data.position.y,
-          data.position.z,
-        );
-      }
-    });
-  }
-
-  private onBallMove() {
-    this.room.onMessage("Ball:state", (data: any) => {
-      const newPos = new Vector3(
+      const targetPos = new Vector3(
         data.position.x,
         data.position.y,
         data.position.z,
       );
-      this.ball.setMeshPosition(newPos);
+
+      if (data.playerId === this.hostId) {
+        this.hostTargetPosition = targetPos;
+      } else if (data.playerId === this.guestId) {
+        this.guestTargetPosition = targetPos;
+      }
     });
   }
-
+  private onBallMove() {
+    this.room.onMessage("Ball:state", (data: any) => {
+      console.log("Ball state data:", data); // Debug log
+      this.ballTargetPosition = new Vector3(
+        data.position.x,
+        data.position.y,
+        data.position.z,
+      );
+    });
+  }
   /**
    * RENDER LOOP
    */
@@ -137,6 +141,37 @@ export class SpectateScene {
     await this.init();
 
     this.engine.runRenderLoop(() => {
+      // Interpolate ball position
+      this.ballCurrentPosition = Vector3.Lerp(
+        this.ballCurrentPosition,
+        this.ballTargetPosition,
+        this.ballLerpAlpha,
+      );
+      this.ball.setMeshPosition(this.ballCurrentPosition);
+
+      // Interpolate paddle positions
+      this.hostCurrentPosition = Vector3.Lerp(
+        this.hostCurrentPosition,
+        this.hostTargetPosition,
+        this.paddleLerpAlpha,
+      );
+      this.hostPaddle.updatePaddlePosition(
+        this.hostCurrentPosition.x,
+        this.hostCurrentPosition.y,
+        this.hostCurrentPosition.z,
+      );
+
+      this.guestCurrentPosition = Vector3.Lerp(
+        this.guestCurrentPosition,
+        this.guestTargetPosition,
+        this.paddleLerpAlpha,
+      );
+      this.guestPaddle.updatePaddlePosition(
+        this.guestCurrentPosition.x,
+        this.guestCurrentPosition.y,
+        this.guestCurrentPosition.z,
+      );
+
       this.scene.render();
     });
 
@@ -144,7 +179,6 @@ export class SpectateScene {
       this.engine.resize();
     });
   }
-
   /**
    * Getters
    */

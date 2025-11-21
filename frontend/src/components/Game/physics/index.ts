@@ -45,6 +45,8 @@ export class Physics {
   public onBallTableCollision?: (
     ball: RAPIER.RigidBody,
     table: RAPIER.RigidBody,
+    contactPoint: Vector3,
+    contactNormal: Vector3,
   ) => void;
 
   Impulse: RAPIER.Vector3 | null = null;
@@ -132,7 +134,18 @@ export class Physics {
       (handle1 === ballHandle && handle2 === tableHandle) ||
       (handle2 === ballHandle && handle1 === tableHandle)
     ) {
-      this.onBallTableCollision?.(this.ball.body, this.table.body);
+      const ballPos = this.ball.body.translation();
+      const contactPoint = new Vector3(ballPos.x, ballPos.y - 0.05, ballPos.z);
+      const contactNormal = new Vector3(0, 1, 0); // Upward normal
+
+      // Call callback
+      this.onBallTableCollision?.(
+        this.ball.body,
+        this.table.body,
+        contactPoint,
+        contactNormal,
+      );
+
       return;
     }
   }
