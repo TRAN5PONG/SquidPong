@@ -91,15 +91,16 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 
 
 // STEP 2 - Verify TwoFA (App or Email)
-export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply) {
+export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply) 
+{
   const respond: ApiResponse<null> = { success: true, message: TwoFA.TWO_FA_ENABLE_SUCCESS };
   const { code, twoFAToken } = req.body as { code: string, twoFAToken: string };
-  const methodParam = (req.params as any).method;
 
   let userId: number;
   let twoFAMethod: string;
 
-  try {
+  try 
+  {
 
     const redisKey = `2fa:token:${twoFAToken}`;
     const tokenData = await redis.get(redisKey);
@@ -109,12 +110,8 @@ export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply)
     userId = parsedData.userId;
     twoFAMethod = parsedData.twoFAMethod;
 
-    // Remove token after use
-
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error(UserProfileMessage.USER_NOT_FOUND);
-
-    if (user.twoFAMethod != methodParam) throw new Error(`2FA is enabled via ${user.twoFAMethod} .`);
 
     if (twoFAMethod == AUTHENTICATOR)
       verifyAuthenticatorCode(userId, user.twoFASecret!, code);
