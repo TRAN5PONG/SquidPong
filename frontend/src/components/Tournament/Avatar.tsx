@@ -3,7 +3,7 @@ import { styled } from "@/lib/Zerostyle";
 import { Rank } from "@/types/game/rank";
 
 const StyledAvatar = styled("div")`
-  width: 50px;
+  min-width: 50px;
   height: 60px;
   position: relative;
   &::before {
@@ -26,7 +26,7 @@ const StyledAvatar = styled("div")`
     height: calc(100% + 8px);
     z-index: 4;
     opacity: 0.7;
-    clip-path: polygon(90% 42%, 100% 70%, 50% 100%, 0 70%, 7% 45%);
+    clip-path: polygon(93% 42%, 100% 70%, 50% 100%, 0 70%, 7% 45%);
     z-index: -1;
   }
   .Lines {
@@ -34,14 +34,12 @@ const StyledAvatar = styled("div")`
     top: -10px;
     left: -5px;
     z-index: 2;
-    transform: rotate(-15deg);
     display: flex;
-    justify-content: center;
     align-items: center;
-    .BadgeIcon {
-      width: 16px;
+    .AvatarBadgeIconIMG {
+      height: 20px;
     }
-    .BadgeTier {
+    .AvatarBadgeTierSPN {
       color: rgba(255, 255, 255, 0.9);
       font-size: 1rem;
       font-weight: bold;
@@ -57,7 +55,7 @@ const StyledAvatar = styled("div")`
     width: 100%;
     height: 100%;
     clip-path: polygon(100% 0, 100% 70%, 50% 100%, 0 70%, 0 0);
-	background-color: rgba(255,255,255,1);
+    background-color: rgba(255, 255, 255, 1);
     background-image: url(${(props: { avatarUrl: string }) => props.avatarUrl});
     background-size: cover;
     background-position: center;
@@ -66,7 +64,7 @@ const StyledAvatar = styled("div")`
 `;
 
 interface AvatarProps {
-  avatarUrl: string;
+  avatarUrl?: string;
   rank?: Rank;
 }
 const Avatar = ({
@@ -78,8 +76,8 @@ const Avatar = ({
       <div className="Frame" />
       {rank && (
         <div className="Lines">
-          <img className="BadgeIcon" src={rank.image} />
-          <span className="BadgeTier">{rank.tier}</span>
+          <img className="AvatarBadgeIconIMG" src={rank.image} />
+          <span className="AvatarBadgeTierSPN">{rank.tier}</span>
         </div>
       )}
     </StyledAvatar>

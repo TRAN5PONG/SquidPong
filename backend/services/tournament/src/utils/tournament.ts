@@ -1,4 +1,6 @@
 import { TournamentStatus, TournamentRound } from "@prisma/client";
+import prisma from "../db/database";
+import { sendDataToQueue } from "../integration/rabbitmqClient";
 
 export function validateTournamentStatus(status: TournamentStatus) {
   const statusMessages: Record<TournamentStatus, string> = {
@@ -52,7 +54,10 @@ export function buildBrackets(players: { id: string }[]) {
 
   return { rounds };
 }
-export function getRoundName(order: number, totalRounds: number): TournamentRound {
+export function getRoundName(
+  order: number,
+  totalRounds: number
+): TournamentRound {
   const roundNames = [
     TournamentRound.QUALIFIERS,
     TournamentRound.ROUND_OF_16,
@@ -65,3 +70,33 @@ export function getRoundName(order: number, totalRounds: number): TournamentRoun
   const index = roundNames.length - (totalRounds - order + 1);
   return roundNames[index] || TournamentRound.QUALIFIERS;
 }
+
+export async function assignWinnerToNextMatch(tx: any, match: any, winnerId: string) {
+  if (!match.nextTournamentMatchId) return;
+
+  const nextMatch = await tx.tournamentMatch.findUnique({
+    where: { id: match.nextTournamentMatchId },
+  });
+  if (!nextMatch) return;
+
+  if (nextMatch.opponent1Id && nextMatch.opponent2Id) {
+    await sendDataToQueue(
+      {
+        event: "tournament-match-created",
+        tournamentId: nextMatch.tournamentId,
+        tournamentMatchId: nextMatch.id,
+        opponent1Id: nextMatch.opponent1?.userId,
+        opponent2Id: nextMatch.opponent2?.userId,
+      },
+      "game"
+    );
+  }
+
+  const field = nextMatch.opponent1Id === null ? "opponent1Id" : "opponent2Id";
+
+  await tx.tournamentMatch.update({
+    where: { id: nextMatch.id },
+    data: { [field]: winnerId },
+  });
+}
+

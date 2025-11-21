@@ -38,15 +38,16 @@ model TournamentRoundData {
 model TournamentMatch {
   id String @id @default(cuid())
 
-  roundId        String
-  matchId        String? // link to game service match
-  opponent1Id    String?
-  opponent2Id    String?
-  opponent1Score Int        @default(0)
-  opponent2Score Int        @default(0)
-  winnerId       String?
-  status         GameStatus @default(PENDING)
-  deadline       DateTime?
+  roundId               String
+  matchId               String? // link to game service match
+  nextTournamentMatchId String? // link to the next match in the bracket
+  opponent1Id           String?
+  opponent2Id           String?
+  opponent1Score        Int        @default(0)
+  opponent2Score        Int        @default(0)
+  winnerId              String?
+  status                GameStatus @default(PENDING)
+  deadline              DateTime?
 
   // Relations with cascading deletes
   round     TournamentRoundData @relation(fields: [roundId], references: [id], onDelete: Cascade)

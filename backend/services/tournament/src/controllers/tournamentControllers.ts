@@ -10,6 +10,7 @@ import {
 } from "@prisma/client";
 import { getUser } from "../utils/user";
 import {
+  assignWinnerToNextMatch,
   getRoundName,
   shuffleArray,
   validateTournamentStatus,
@@ -473,6 +474,9 @@ export async function launchTournament(
       console.log(`Creating ${totalRounds} rounds for ${maxPlayers} players`);
 
       const createdRounds = [];
+      const createdMatchesByRound: { roundIndex: number; matches: any[] }[] =
+        [];
+
       for (let i = 1; i <= totalRounds; i++) {
         const round = await tx.tournamentRoundData.create({
           data: {
@@ -482,21 +486,13 @@ export async function launchTournament(
           },
         });
         createdRounds.push(round);
-        console.log(`Created round ${i}: ${round.name}`);
       }
-
-      const allMatches = [];
 
       for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
         const round = createdRounds[roundIndex];
 
-        // Calculate matches per round (e.g., 4 players: round 1 = 2 matches, round 2 = 1 match)
         const matchesInThisRound = Math.pow(2, totalRounds - roundIndex - 1);
-        console.log(
-          `Round ${roundIndex + 1} (${
-            round.name
-          }): ${matchesInThisRound} matches`
-        );
+        const roundMatches: any[] = [];
 
         for (
           let matchIndex = 0;
@@ -508,22 +504,25 @@ export async function launchTournament(
           const opponent2 =
             roundIndex === 0 ? shuffledPlayers[matchIndex * 2 + 1] : null;
 
-          allMatches.push({
-            roundId: round.id,
-            opponent1Id: opponent1 ? opponent1.id : null,
-            opponent2Id: opponent2 ? opponent2.id : null,
-            opponent1Score: 0,
-            opponent2Score: 0,
-            status: GameStatus.PENDING,
-            deadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          const createdMatch = await tx.tournamentMatch.create({
+            data: {
+              roundId: round.id,
+              opponent1Id: opponent1 ? opponent1.id : null,
+              opponent2Id: opponent2 ? opponent2.id : null,
+              opponent1Score: 0,
+              opponent2Score: 0,
+              status: GameStatus.PENDING,
+              deadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            },
           });
 
-          // Hit game service to create game for roundIndex 0 matches
+          roundMatches.push(createdMatch);
           if (roundIndex === 0) {
             await sendDataToQueue(
               {
                 event: "tournament-match-created",
-                tournamentId: tournamentId,
+                tournamentId,
+                tournamentMatchId: createdMatch.id,
                 opponent1Id: opponent1?.userId,
                 opponent2Id: opponent2?.userId,
               },
@@ -531,10 +530,28 @@ export async function launchTournament(
             );
           }
         }
+        createdMatchesByRound.push({
+          roundIndex,
+          matches: roundMatches,
+        });
       }
 
-      console.log(`Creating ${allMatches.length} total matches`);
-      await tx.tournamentMatch.createMany({ data: allMatches });
+      // Link matches to their next matches
+      for (let i = 0; i < createdMatchesByRound.length - 1; i++) {
+        const currentRound = createdMatchesByRound[i];
+        const nextRound = createdMatchesByRound[i + 1];
+
+        for (let j = 0; j < currentRound.matches.length; j++) {
+          const currentMatch = currentRound.matches[j];
+          const nextMatchIndex = Math.floor(j / 2);
+          const nextMatch = nextRound.matches[nextMatchIndex];
+
+          await tx.tournamentMatch.update({
+            where: { id: currentMatch.id },
+            data: { nextTournamentMatchId: nextMatch.id },
+          });
+        }
+      }
 
       const updatedTournament = await tx.tournament.update({
         where: { id: tournamentId },
@@ -653,7 +670,7 @@ export async function setTournamentMatchId(
       tournamentMatchId: string;
     };
 
-    const { gameMatchId } = request.body as { gameMatchId: string };
+    const { matchId } = request.body as { matchId: string };
 
     // Update ONLY this match of this tournament
     const updated = await prisma.tournamentMatch.updateMany({
@@ -662,7 +679,7 @@ export async function setTournamentMatchId(
         round: { tournamentId: tournamentId },
       },
       data: {
-        matchId: gameMatchId,
+        matchId: matchId,
       },
     });
 
@@ -688,4 +705,100 @@ export async function setTournamentMatchId(
 export async function reportMatchResult(
   request: FastifyRequest,
   reply: FastifyReply
-) {}
+) {
+  const { matchId, tournamentId } = request.params as {
+    matchId: string;
+    tournamentId: string;
+  };
+  const { winnerId, loserId, winnerScore, loserScore } = request.body as {
+    winnerId: string;
+    loserId: string;
+    winnerScore: number;
+    loserScore: number;
+  };
+
+  try {
+    const match = await prisma.tournamentMatch.findUnique({
+      where: { id: matchId },
+      include: { round: true },
+    });
+
+    if (!match) return reply.code(404).send({ message: "Match not found." });
+    if (match.round.tournamentId !== tournamentId)
+      return reply
+        .code(400)
+        .send({ message: "Match does not belong to this tournament." });
+    if (match.status === GameStatus.COMPLETED)
+      return reply.code(400).send({ message: "Match already completed." });
+
+    if (![match.opponent1Id, match.opponent2Id].includes(winnerId))
+      return reply.code(400).send({ message: "Invalid winner." });
+    if (![match.opponent1Id, match.opponent2Id].includes(loserId))
+      return reply.code(400).send({ message: "Invalid loser." });
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Update match with winner, loser, and scores
+      const updatedMatch = await tx.tournamentMatch.update({
+        where: { id: matchId },
+        data: {
+          status: GameStatus.COMPLETED,
+          winnerId,
+          opponent1Score:
+            match.opponent1Id === winnerId ? winnerScore : loserScore,
+          opponent2Score:
+            match.opponent2Id === winnerId ? winnerScore : loserScore,
+        },
+      });
+
+      // advance winner to next match
+      await assignWinnerToNextMatch(tx, match, winnerId);
+
+      // Update players
+      await tx.tournamentPlayer.update({
+        where: { id: loserId },
+        data: { isEliminated: true },
+      });
+
+      await tx.tournamentPlayer.update({
+        where: { id: winnerId },
+        data: { isReady: false },
+      });
+
+      // Check if all matches in this round are completed
+      const matchesInRound = await tx.tournamentMatch.findMany({
+        where: { roundId: match.roundId },
+      });
+
+      const allCompleted = matchesInRound.every(
+        (m) => m.status === GameStatus.COMPLETED
+      );
+      // i should advance the winner to the next match here i guess
+
+      if (allCompleted) {
+        // Check if tournament is finished
+        const remainingPlayers = await tx.tournamentPlayer.findMany({
+          where: { tournamentId, isEliminated: false },
+        });
+
+        if (remainingPlayers.length === 1) {
+          await tx.tournament.update({
+            where: { id: tournamentId },
+            data: {
+              status: TournamentStatus.COMPLETED,
+              winnerId: remainingPlayers[0].id,
+            },
+          });
+        }
+      }
+
+      return updatedMatch;
+    });
+
+    return reply.code(200).send(result);
+  } catch (error: any) {
+    return reply
+      .code(400)
+      .send({ message: error.message || "Error reporting match result." });
+  }
+}
+
