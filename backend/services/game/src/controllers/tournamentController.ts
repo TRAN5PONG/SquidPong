@@ -16,6 +16,7 @@ export async function TournamentMatch(
   const opponent1User = await getUser(opponent1Id);
   const opponent2User = await getUser(opponent2Id);
 
+
   if (!opponent1User || !opponent2User) {
     throw new Error("User not found");
   }
@@ -28,7 +29,6 @@ export async function TournamentMatch(
         userId: opponent1User.userId,
       },
     });
-
     const localOpponent2 = await tx.user.upsert({
       where: { userId: opponent2User.userId },
       update: {},
@@ -49,7 +49,6 @@ export async function TournamentMatch(
         rankDivision: opponent1User.rankDivision,
       },
     });
-
     const matchPlayer2 = await tx.matchPlayer.create({
       data: {
         userId: localOpponent2.id,
@@ -83,9 +82,11 @@ export async function TournamentMatch(
       },
     });
 
+    console.log("============================================================");
+
     // link matchId to tournament match
     const isUpdated: any = await fetch(
-      `http://tournament:4002/api/tournament/${tournamentId}/matches/${tournamentMatchId}/link`,
+      `http://tournament:4006/api/tournament/tournaments/${tournamentId}/matches/${tournamentMatchId}/link`,
       {
         method: "PUT",
         headers: {
@@ -94,14 +95,10 @@ export async function TournamentMatch(
         body: JSON.stringify({ matchId: match.id }),
       }
     );
-
-    if (!isUpdated.success) {
-      throw new Error("Failed to link match to tournament match");
-    }
-
     return match;
   });
 
+  console.log("Tournament match created:", result);
   return result;
 }
 // via api endpoint
@@ -109,5 +106,15 @@ export async function onTournamentDelete(tournamentId: string) {
   // delete all games related to this tournament
   await prisma.match.deleteMany({
     where: { tournamentId: tournamentId },
+  });
+}
+
+export async function onTournamentReset(tournamentId: string) {
+  // reset all games related to this tournament
+  await prisma.match.updateMany({
+    where: { tournamentId: tournamentId },
+    data: {
+      status: "CANCELLED",
+    },
   });
 }

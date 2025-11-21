@@ -128,7 +128,6 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
   return updatedMatch;
 }
 
-
 export async function createMatchPlayer(
   remoteUserId: number, // from user-management service
   localUserId: string, // from game DB
@@ -482,5 +481,101 @@ export async function startGame(matchId: string, playerId: string) {
   } catch (error) {
     console.error("Error starting game:", error);
     throw error;
+  }
+}
+
+export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { tournamentId, matchId } = request.params as {
+      tournamentId: string;
+      matchId: string;
+    };
+    const { winnerId, loserId, winnerScore, loserScore } = request.body as {
+      winnerId: string;
+      loserId: string;
+      winnerScore: number;
+      loserScore: number;
+    };
+
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      include: {
+        opponent1: true,
+        opponent2: true,
+      },
+    });
+
+    if (!match) {
+      return reply
+        .status(404)
+        .send({ error: "Match not found", success: false });
+    }
+
+    // set match as completed
+    const matchDuration = match.duration; // Assuming duration is already tracked
+
+    const player1 = match.opponent1;
+    const player2 = match.opponent2;
+
+    const winner =
+      player1.id === winnerId
+        ? player1
+        : player2?.id === winnerId
+        ? player2
+        : null;
+    const loser =
+      player1.id === loserId
+        ? player1
+        : player2?.id === loserId
+        ? player2
+        : null;
+
+    if (!winner || !loser) {
+      return reply
+        .status(400)
+        .send({ error: "Invalid winner or loser ID", success: false });
+    }
+
+    await prisma.matchPlayer.update({
+      where: { id: winner.id },
+      data: {
+        finalScore: winnerScore,
+        isWinner: true,
+      },
+    });
+
+    await prisma.matchPlayer.update({
+      where: { id: loser.id },
+      data: {
+        finalScore: loserScore,
+        isWinner: false,
+      },
+    });
+
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { status: "COMPLETED", winnerId },
+    });
+
+    // update tournament match if its related to tournament
+    const resp = fetch(
+      `http://tournament:4003/api/tournament/tournaments/${tournamentId}/reportMatchResult/${match.tournamentMatchId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          winnerId: winnerId,
+          loserId: loserId,
+          winnerScore: winnerScore,
+          loserScore: loserScore,
+        }),
+      }
+    );
+
+    return reply
+      .status(200)
+      .send({ success: true, message: "Match ended successfully" });
+  } catch (error) {
+    reply.status(500).send({ error: "Failed to end match", success: false });
   }
 }

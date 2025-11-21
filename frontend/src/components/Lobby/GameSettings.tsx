@@ -43,6 +43,8 @@ import { socketManager } from "@/utils/socket";
 import { getUserCurrentMatch } from "@/api/match";
 import { useSounds } from "@/contexts/SoundProvider";
 import { getUserFriends, MiniUser, SearchUsers } from "@/api/user";
+import Avatar from "../Tournament/Avatar";
+import { get } from "http";
 
 const StyledGameSettings = styled("div")`
   width: 450px;
@@ -171,23 +173,24 @@ const StyledGameSettings = styled("div")`
     }
     .GameCard {
       width: 100%;
+      height: 100px;
       padding: 5px;
       margin-left: -60px;
       margin-bottom: 50px;
       padding: 10px;
       display: flex;
-      flex-direction: column;
       gap: 5px;
       position: relative;
-      transform: skew(-10deg);
+      transform: skew(0deg);
+      align-items: center;
+      justify-content: center;
+      align-items: center;
       .VSText {
         font-family: var(--squid_font);
         color: rgba(255, 255, 255, 0.8);
-        font-size: 1rem;
+        font-size: 2rem;
         text-align: center;
         width: 100%;
-        margin-top: 10px;
-        position: absolute;
         left: 0;
         width: 60px;
         height: 20px;
@@ -195,8 +198,6 @@ const StyledGameSettings = styled("div")`
         justify-content: center;
         align-items: center;
         z-index: 3;
-        top: 50%;
-        transform: translateY(-100%);
         background-image: linear-gradient(
           -90deg,
           rgba(141, 172, 245, 0) 3%,
@@ -205,27 +206,17 @@ const StyledGameSettings = styled("div")`
         );
       }
       .Player {
-        width: 100%;
         display: flex;
-        gap: 5px;
-
-        .Avatar {
-          min-width: 40px;
-          min-height: 40px;
-          background-color: rgb(75, 90, 126);
-          border-radius: 5px;
-          background-position: center;
-          background-size: cover;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
+        align-items: center;
+        flex: 1;
+        gap: 10px;
         .PlayerInfo {
           display: flex;
           gap: 5px;
           flex-direction: column;
           align-items: flex-start;
           width: 100%;
+          height: 100%;
           span {
             margin: 0;
           }
@@ -238,63 +229,34 @@ const StyledGameSettings = styled("div")`
             justify-content: center;
             color: white;
             gap: 5px;
-
-            .OpponentRankIcon {
-              width: 16px;
-              height: 16px;
-            }
           }
           .PlayerInfoStatus {
-            font-size: 0.8rem;
+            font-family: var(--span_font);
             color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            line-height: 1rem;
             margin-left: 10px;
           }
         }
-        .InvitePerson {
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-left: 10px;
-          svg {
-            fill: rgba(255, 255, 255, 0.5);
-            transition: fill 0.2s ease-in-out;
-            cursor: pointer;
-          }
-          &:hover {
-            svg {
-              fill: rgba(255, 255, 255, 0.8);
-            }
-          }
-        }
+
         h2 {
-          font-family: var(--span_font);
+          font-family: var(--squid_font);
           color: rgba(255, 255, 255, 0.8);
           font-weight: 500;
-          font-size: 1.1rem;
+          font-size: 1.2rem;
           line-height: 1rem;
-          margin-left: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 5px;
         }
-        span {
-          font-family: var(--span_font);
-          color: rgba(255, 255, 255, 0.5);
-          font-size: 0.8rem;
-          line-height: 1rem;
-          margin-left: 10px;
-        }
       }
       .Player.Opponent1 {
-        .Avatar {
-          background-image: url(${(props: any) => props.oponentOneAvatar});
-        }
-      }
-      .Player.Opponent2 {
-        .Avatar {
-          background-image: url(${(props: any) => props.oponentTwoAvatar});
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        align-items: center;
+        .PlayerInfo {
+          align-items: flex-end;
         }
       }
     }
@@ -741,7 +703,13 @@ const GameSettings = (props: GameSettingsProps) => {
           }`}
         >
           <div className="Player Opponent1">
-            <div className="Avatar" />
+            <Avatar
+              avatarUrl={userPlayer?.avatarUrl || user?.avatar}
+              rank={
+                getRankMetaData(user?.rankDivision!, user?.rankTier!) ||
+                undefined
+              }
+            />
             <div className="PlayerInfo">
               <h2>{userPlayer?.username || user?.username}</h2>
               <span className="PlayerInfoStatus">
@@ -751,33 +719,20 @@ const GameSettings = (props: GameSettingsProps) => {
           </div>
           <span className="VSText">VS</span>
           <div className="Player Opponent2">
-            <div className="Avatar">
-              {!currentMatch && (
-                <PersonIcon size={30} fill="rgba(255, 255, 255, 0.4)" />
+            <Avatar
+              avatarUrl={OpponentPlayer?.avatarUrl}
+              rank={getRankMetaData(
+                OpponentPlayer?.rankDivision,
+                OpponentPlayer?.rankTier
               )}
-            </div>
+            />
             <div className="PlayerInfo">
               <h2>
-                {props.selectedMode === "1vsAI" ? (
-                  "AI Opponent"
-                ) : OpponentPlayer?.username ? (
-                  <span className="PlayerInfoName">
-                    {OpponentPlayer?.username}
-                    <img
-                      className="OpponentRankIcon"
-                      src={
-                        getRankMetaData(
-                          OpponentPlayer?.rankDivision,
-                          OpponentPlayer?.rankTier
-                        )?.image
-                      }
-                    />
-
-                    {OpponentPlayer.isResigned && "(Resigned)"}
-                  </span>
-                ) : (
-                  <span>No Opponent</span>
-                )}
+                {props.selectedMode === "1vsAI"
+                  ? "AI Opponent"
+                  : OpponentPlayer?.username
+                  ? OpponentPlayer?.username
+                  : "No Opponent"}
               </h2>
               <span className="PlayerInfoStatus">
                 {OpponentPlayer?.isReady || props.selectedMode === "1vsAI"
@@ -787,22 +742,6 @@ const GameSettings = (props: GameSettingsProps) => {
                   : "Not Ready"}
               </span>
             </div>
-            {props.selectedMode === "ONE_VS_ONE" && (
-              <div
-                className="InvitePerson"
-                onClick={() => {
-                  if (currentMatch) {
-                    errorSound.play();
-                    toasts.addToastToQueue({
-                      type: "info",
-                      message: "You are already in a match.",
-                    });
-                  } else setIsInviteOponentOpen(true);
-                }}
-              >
-                <AddIcon fill="white" size={25} />
-              </div>
-            )}
           </div>
         </div>
         <div className="ActionBtns">
@@ -1507,8 +1446,7 @@ const InviteOponent = (props: InviteOponentProps) => {
     };
 
     if (ModalMode === "InvitationsList") getUserInvitations();
-    else if (ModalMode === "SelectOponent")
-    {
+    else if (ModalMode === "SelectOponent") {
       getFriendsList();
     }
   }, [ModalMode]);

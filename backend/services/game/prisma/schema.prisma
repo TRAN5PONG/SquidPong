@@ -100,15 +100,16 @@ model MatchPlayer {
 }
 
 model Match {
-  id           String     @id @default(cuid())
-  tournamentId String?
-  mode         GameMode
-  status       GameStatus
-  roomId       String?    @unique
-  duration     Int
-  createdAt    DateTime   @default(now())
-  confirmedAt  DateTime?
-  winnerId     String?
+  id                String     @id @default(cuid())
+  tournamentId      String?
+  tournamentMatchId String?
+  mode              GameMode
+  status            GameStatus
+  roomId            String?    @unique
+  duration          Int
+  createdAt         DateTime   @default(now())
+  confirmedAt       DateTime?
+  winnerId          String?
 
   // Relations
   opponent1   MatchPlayer  @relation("Opponent1", fields: [opponent1Id], references: [id])
@@ -117,7 +118,7 @@ model Match {
   opponent2Id String?      @unique
 
   spectators   MatchSpectator[]
-  bets         Bet[] 
+  bets         Bet[]
   matchSetting MatchSetting?    @relation("MatchToSetting")
   // Link back to invitation that created this match
   invitation   Invitation?      @relation("InvitationMatch")

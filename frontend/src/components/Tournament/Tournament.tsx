@@ -378,7 +378,7 @@ const StyledTournament = styled("div")`
           flex-direction: column;
           position: relative;
           justify-content: center;
-          gap: 3px;
+          gap: 30px;
           position: relative;
           &:before {
             position: absolute;
@@ -686,7 +686,7 @@ const Tournament = () => {
   if (!tournament) return <h1>loading</h1>;
 
   // Render Round Games
-  const getPlayer = (id: string) =>
+  const getPlayer = (id: string | undefined) =>
     tournament.participants.find((p) => p.id === id) || {
       id: "",
       userId: "",
@@ -740,6 +740,12 @@ const Tournament = () => {
     const totalRounds = Math.log2(maxPlayers);
     return Math.pow(2, totalRounds - roundIndex - 1);
   };
+
+  /**
+   * Final match
+   */
+  const FinalMatch =
+    tournament.rounds?.find((r) => r.name === "FINAL")?.matches?.[0] ?? null;
 
   const isOrganizer = Number(user?.userId) === Number(tournament.organizerId);
   const isParticipant = tournament.participants.find(
@@ -955,8 +961,11 @@ const Tournament = () => {
             </div>
             <div className="FinalGame">
               <div className="FinalScoreBoard">
-                <TournamentPlayer isEliminated={true} />
-                <TournamentPlayer reversed />
+                <TournamentPlayer {...getPlayer(FinalMatch?.opponent1Id)} />
+                <TournamentPlayer
+                  reversed
+                  {...getPlayer(FinalMatch?.opponent2Id)}
+                />
                 <TrophyIcon
                   fill="var(--main_color)"
                   size={65}
@@ -1001,9 +1010,10 @@ const StyledTournamentPlayer = styled("div")`
   border: 1px solid rgba(255, 255, 255, 0.1);
   justify-content: center;
   border-bottom: none;
-  overflow: hidden;
+  /* overflow: hidden; */
   z-index: 2;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+  background-color: var(--main_color);
   .TournamentPlayerAvatar {
     width: 33px;
     height: 33px;
@@ -1078,27 +1088,10 @@ const TournamentPlayer = (
 
   return (
     <StyledTournamentPlayer
-      // avatar={props?.user?.avatar}
-      avatar={
-        props?.avatar ||
-        "https://fbi.cults3d.com/uploaders/14684840/illustration-file/e52ddf50-dd29-45fc-b7a6-5fca62a84f18/jett-avatar.jpg"
-      }
       className="GlassMorphism BorderBottomEffect"
       reversed={isReversed}
     >
-      <div
-        className={`TournamentPlayerAvatar ${
-          props?.isEliminated ? "Eliminated" : ""
-        }`}
-      >
-        {props?.isVerified && (
-          <VerifiedIcon
-            size={10}
-            fill={"#ac2b2b"}
-            className="TournamentPlayerAvatarVerified"
-          />
-        )}
-      </div>
+      <Avatar avatarUrl={props?.avatar || undefined} />
       <div
         className="TournamentPlayerInfo"
         onClick={() => navigate(`/user/${props?.userName}`)}
