@@ -16,7 +16,6 @@ export async function TournamentMatch(
   const opponent1User = await getUser(opponent1Id);
   const opponent2User = await getUser(opponent2Id);
 
-
   if (!opponent1User || !opponent2User) {
     throw new Error("User not found");
   }
@@ -66,6 +65,7 @@ export async function TournamentMatch(
       data: {
         opponent1Id: matchPlayer1.id,
         opponent2Id: matchPlayer2.id,
+        tournamentMatchId: tournamentMatchId,
         mode: "TOURNAMENT",
         status: "WAITING",
         duration: 0,
@@ -81,8 +81,6 @@ export async function TournamentMatch(
         requiredCurrency: 0,
       },
     });
-
-    console.log("============================================================");
 
     // link matchId to tournament match
     const isUpdated: any = await fetch(
@@ -108,7 +106,6 @@ export async function onTournamentDelete(tournamentId: string) {
     where: { tournamentId: tournamentId },
   });
 }
-
 export async function onTournamentReset(tournamentId: string) {
   // reset all games related to this tournament
   await prisma.match.updateMany({

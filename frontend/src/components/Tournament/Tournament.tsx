@@ -522,19 +522,68 @@ const StyledTournament = styled("div")`
     }
   }
   .PlayersMode {
-    flex: 1;
-    width: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
     padding: 0px 10%;
+
     .PlayersList {
       padding: 10px 0px;
-      height: 100%;
-      flex: 1;
       display: flex;
       flex-direction: column;
       gap: 5px;
+      .TournamentPlayer {
+        width: 400px;
+        height: 60px;
+        background-color: var(--bg_color_super_light);
+        border-radius: 5px;
+        padding: 2px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        gap: 10px;
+        overflow: hidden;
+        .TournamentPlayerAvatar {
+          width: 55px;
+          height: 100%;
+          background-color: lightgray;
+          border-radius: 5px;
+          background-size: cover;
+          background-position: center;
+        }
+        .TournamentPlayerInfo {
+          display: flex;
+          flex-direction: column;
+          .UserFullName {
+            font-family: var(--squid_font);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            .EliminatedSPN {
+              font-size: 0.8rem;
+              color: var(--main_color);
+            }
+          }
+          .UserName {
+            font-family: var(--span_font);
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: -5px;
+            font-size: 0.8rem;
+          }
+        }
+        .UserRankInfo {
+          width: 60px;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: auto;
+          img {
+            height: 90%;
+          }
+        }
+      }
     }
   }
   .TournamentPlayers {
@@ -565,7 +614,7 @@ const Tournament = () => {
   );
   const [currentMode, setCurrentMode] = Zeroact.useState<
     "OVERVIEW" | "MATCHES" | "PLAYERS"
-  >("OVERVIEW");
+  >("MATCHES");
 
   /**
    * Contexts
@@ -681,6 +730,43 @@ const Tournament = () => {
       console.error("Error participating in tournament:", err);
     }
   };
+  const handleTournamentMatchEnded = async (
+    matchId: string,
+    winnerId: string,
+    loserId: string
+  ) => {
+    try {
+      alert(matchId);
+      const resp = await fetch(
+        `https://10.13.3.5:4433/api/game/tournament/${tournamentId}/match/${matchId}/end`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            winnerId,
+            loserId,
+            winnerScore: 10,
+            loserScore: 5,
+          }),
+        }
+      );
+      const data = await resp.json();
+      if (data.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Tournament match updated successfully",
+        });
+      } else
+        throw new Error(data.message || "Failed to update tournament match");
+    } catch (err) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: "Error updating tournament match",
+      });
+    }
+  };
 
   if (isTournamentNotFound) return <NotFound />;
   if (!tournament) return <h1>loading</h1>;
@@ -708,6 +794,7 @@ const Tournament = () => {
     const matches = Matches.map((game) => {
       const player1 = getPlayer(game.opponent1Id);
       const player2 = getPlayer(game.opponent2Id);
+      console.log("Rendering game:", game.matchId);
 
       return (
         <div
@@ -717,6 +804,13 @@ const Tournament = () => {
           data-round={round + 1}
           players-count={playersCount}
           key={`${game.opponent1Id}-${game.opponent2Id}`}
+          onClick={() =>
+            handleTournamentMatchEnded(
+              game.matchId,
+              player1.userId,
+              player2.userId
+            )
+          }
         >
           <TournamentPlayer
             {...player1}
@@ -959,7 +1053,16 @@ const Tournament = () => {
                 );
               }).reverse()}
             </div>
-            <div className="FinalGame">
+            <div
+              className="FinalGame"
+              onClick={() =>
+                handleTournamentMatchEnded(
+                  FinalMatch!.matchId,
+                  getPlayer(FinalMatch?.opponent1Id).userId,
+                  getPlayer(FinalMatch?.opponent2Id).userId
+                )
+              }
+            >
               <div className="FinalScoreBoard">
                 <TournamentPlayer {...getPlayer(FinalMatch?.opponent1Id)} />
                 <TournamentPlayer
@@ -981,18 +1084,51 @@ const Tournament = () => {
       ) : currentMode === "MATCHES" ? (
         <div className="MatchesMode">
           <div className="MatchesList">
-            {Array.from({ length: 5 }).map((_, index) => {
-              return <TournamentMatch key={index} />;
-            })}
+            {tournament.rounds?.map((r) =>
+              r.matches.map((m, index) => (
+                <TournamentMatch
+                  key={index}
+                  matchData={m}
+                  getPlayer={getPlayer}
+                  roundName={r.name}
+                />
+              ))
+            )}
           </div>
         </div>
       ) : (
         <div className="PlayersMode">
-          {/* <div className="PlayersList">
-            {Array.from({ length: 5 }).map((el, index) => (
-              <TournamentPlayer {...el} toBeDisplayed />
+          <div className="PlayersList">
+            {tournament.participants.map((p) => (
+              <div className="TournamentPlayer" key={p.id}>
+                <div
+                  className="TournamentPlayerAvatar"
+                  style={{ backgroundImage: `url(${p.avatar})` }}
+                />
+                <div className="TournamentPlayerInfo">
+                  <span className="UserFullName">
+                    {p.firstName} {p.lastName}
+                    {p.isVerified && (
+                      <VerifiedIcon fill="var(--main_color)" size={16} />
+                    )}
+                    <span className="EliminatedSPN">
+                      {p.isEliminated ? " (Eliminated)" : ""}
+                    </span>
+                  </span>
+                  <span className="UserName">@{p.userName}</span>
+                </div>
+
+                <div className="UserRankInfo">
+                  <img
+                    src={
+                      getRankMetaData(p.rankDivision as RankDivision, "I")
+                        ?.image
+                    }
+                  />
+                </div>
+              </div>
             ))}
-          </div> */}
+          </div>
         </div>
       )}
     </StyledTournament>
@@ -1014,28 +1150,19 @@ const StyledTournamentPlayer = styled("div")`
   z-index: 2;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
   background-color: var(--main_color);
-  .TournamentPlayerAvatar {
-    width: 33px;
-    height: 33px;
-    border-radius: 4px;
-    background-color: lightgray;
-    background-image: url(${(props: { avatar?: string }) => props.avatar});
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    .TournamentPlayerAvatarVerified {
-      position: absolute;
-      bottom: 0px;
-      right: -3px;
+  &.Eliminated {
+    .AvatarContainer {
+      filter: grayscale(1);
     }
   }
-  .TournamentPlayerAvatar.Eliminated {
-    opacity: 0.5;
-    filter: grayscale(1);
+
+  .AvatarContainer {
+    margin-left: ${(props: { reversed: boolean }) =>
+      !props.reversed ? "-30px" : "0px"};
+    margin-right: ${(props: { reversed: boolean }) =>
+      props.reversed ? "-30px" : "0px"};
   }
+
   .TournamentPlayerInfo {
     flex: 1;
     display: flex;
@@ -1064,8 +1191,9 @@ const StyledTournamentPlayer = styled("div")`
     display: flex;
     align-items: center;
     justify-content: center;
-    .Right__rank {
-      height: 25px;
+    span {
+      font-family: var(--squid_font);
+      font-size: 1.3rem;
     }
   }
 `;
@@ -1088,10 +1216,15 @@ const TournamentPlayer = (
 
   return (
     <StyledTournamentPlayer
-      className="GlassMorphism BorderBottomEffect"
+      className={`GlassMorphism BorderBottomEffect ${
+        props?.isEliminated ? "Eliminated" : ""
+      }`}
       reversed={isReversed}
     >
-      <Avatar avatarUrl={props?.avatar || undefined} />
+      <div className="AvatarContainer">
+        <Avatar avatarUrl={props?.avatar || undefined} />
+      </div>
+
       <div
         className="TournamentPlayerInfo"
         onClick={() => navigate(`/user/${props?.userName}`)}
@@ -1103,13 +1236,12 @@ const TournamentPlayer = (
         >
           <span>{props?.userName}</span>
         </h3>
-        {/* {!props?.isReady && props?.userId && !props?.toBeDisplayed && (
+        {!props?.isReady && props?.userId && !props?.toBeDisplayed && (
           <PendingIcon fill="white" size={18} />
-        )} */}
+        )}
       </div>
       <div className="Right__">
         <span>{props?.Score}</span>
-        <img className="Right__rank" src={rankMetadata?.image} />
       </div>
     </StyledTournamentPlayer>
   );
@@ -1260,46 +1392,62 @@ const StyleTournamentMatch = styled("div")`
 `;
 interface TournamentMatchProps {
   matchData: TournamentMatchType;
+  getPlayer: (id: string | undefined) => any;
+  roundName: string;
+  key: number;
 }
-const TournamentMatch = () => {
-  const opponent1Rank = getRankMetaData("DIAMOND", "III");
-  const opponent2Rank = getRankMetaData("PLATINUM", "II");
+const TournamentMatch = ({
+  matchData,
+  key,
+  getPlayer,
+  roundName,
+}: TournamentMatchProps) => {
+  const opponent1 = getPlayer(matchData.opponent1Id);
+  const opponent2 = getPlayer(matchData.opponent2Id);
+  const opponent1Rank = getRankMetaData(opponent1.rankDivision, "III");
+  const opponent2Rank = getRankMetaData(opponent2.rankDivision, "II");
 
   const isLive = true;
 
   return (
-    <StyleTournamentMatch>
+    <StyleTournamentMatch key={key}>
       <div className="GameStatus">
-        <span>ongoing</span>
+        <span>{matchData.status}</span>
       </div>
       <div className="Opponent">
-        <Avatar rank={opponent1Rank ? opponent1Rank : undefined} />
+        <Avatar rank={opponent1Rank ? opponent1Rank : undefined} avatarUrl={opponent1.avatar}/>
 
         <div className="OpponentInfo">
-          <span className="OpponentUsername">Player1</span>
+          <span className="OpponentUsername">
+            {opponent1.firstName + " " + opponent1.lastName}
+          </span>
         </div>
       </div>
       <div className="MiddleEl">
-        <div className="Opponent1Score Score">2</div>
+        <div className="Opponent1Score Score">{matchData.opponent1Score}</div>
         <ChallengeIcon fill="rgba(255,255,255, 0.7)" size={30} />
-        <div className="Opponent2Score Score">11</div>
-        <span className="Round">ROUND - 1</span>
+        <div className="Opponent2Score Score">{matchData.opponent2Score}</div>
+        <span className="Round">{roundName}</span>
       </div>
       <div className="Opponent reverse">
-        <Avatar rank={opponent1Rank ? opponent1Rank : undefined} />
+        <Avatar rank={opponent2Rank ? opponent2Rank : undefined} avatarUrl={opponent2.avatar}/>
 
         <div className="OpponentInfo">
-          <span className="OpponentUsername">Player1</span>
+          <span className="OpponentUsername">
+            {opponent2.firstName + " " + opponent2.lastName}
+          </span>
         </div>
       </div>
 
-      <div className="LiveNowIndicator">
-        <span>Live Now!</span>
-        <div className="LiveIndicator">
-          <span>watch</span>
-          <LiveIcon fill="red" size={12} />
+      {matchData.status === "IN_PROGRESS" && (
+        <div className="LiveNowIndicator">
+          <span>Live Now!</span>
+          <div className="LiveIndicator">
+            <span>watch</span>
+            <LiveIcon fill="red" size={12} />
+          </div>
         </div>
-      </div>
+      )}
     </StyleTournamentMatch>
   );
 };

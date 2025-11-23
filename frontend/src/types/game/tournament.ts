@@ -45,6 +45,7 @@ export interface Round {
 export interface TournamentMatch {
   id: string;
   tournamentId: string;
+  matchId: string;
   round: TournamentRound;
   status: GameStatus;
   opponent1Id: string;
