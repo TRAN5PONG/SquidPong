@@ -217,7 +217,6 @@ const Navbar = () => {
   const fetchConversations = async () => {
     try {
       const resp = await getConversations();
-      console.log("Fetched conversations:", resp);
       if (resp.success && resp.data) {
         setConversations(resp.data);
         setIsConversationsON(
@@ -238,7 +237,6 @@ const Navbar = () => {
         duration: 5000,
         onClick() {
           try {
-            console.log("Notification clicked:", data); // TODO
             markNotificationAsRead(data.id);
           } catch (error) {}
         },
@@ -252,7 +250,6 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!user) return;
-    console.log(user);
     fetchNotifications();
     fetchConversations();
   }, [user]);

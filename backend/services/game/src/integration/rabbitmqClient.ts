@@ -4,18 +4,23 @@ import {
   startGame,
   toggleReadyStatus,
 } from "../controllers/matchController";
+import {
+  onTournamentDelete,
+  onTournamentReset,
+  TournamentMatch,
+} from "../controllers/tournamentController";
 
 let connection: any;
 let channel: any;
 
 export async function initRabbitMQ() {
   try {
-  const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://rabbitmq:5672";
+    const rabbitmqUrl = process.env.RABBITMQ_URL || "amqp://rabbitmq:5672";
     connection = await amqp.connect(rabbitmqUrl);
     channel = await connection.createChannel();
 
     await channel.assertQueue("game");
-    
+
     // Add connection error handling
     connection.on("error", (err: any) => {
       console.error("RabbitMQ connection error:", err);
@@ -50,39 +55,6 @@ export async function sendDataToQueue(data: any, queue: string) {
   }
 }
 
-// export async function receiveFromQueue(queue: string) {
-//   try
-//   {
-//     if (!channel) {
-//       console.error("RabbitMQ channel not available");
-//       return;
-//     }
-
-//     await channel.consume(queue, receiveAndDeliver, { noAck: false });
-//     console.log(`🎧 Listening for messages on queue: ${queue}`);
-//   } catch (error) {
-//     console.error("Error setting up consumer:", error);
-//   }
-// }
-
-// function receiveAndDeliver(msg: any)
-// {
-//   if (msg === null) return;
-
-//   try
-//   {
-//     const data = JSON.parse(msg.content.toString());
-//     console.log("📥 Received game message:", data);
-
-//   }
-//   catch (error)
-//   {
-//     console.error("Error processing message:", error);
-//     // Reject message and don't requeue on parsing errors
-//     channel.nack(msg, false, false);
-//   }
-// }
-
 export async function receiveFromQueue(queue: string) {
   channel.consume(queue, recieveHandler);
 }
@@ -90,12 +62,12 @@ export async function receiveFromQueue(queue: string) {
 function recieveHandler(msg: any) {
   if (msg === null) return;
 
-  try 
-  {
-
+  try {
     const data = JSON.parse(msg.content.toString());
-    console.log("========================", data);
-    const response = processMacthMessage(data);
+    console.log("GOT DATA:", data);
+
+    if (data.tournamentId) processTournamentMessage(data);
+    else processMatchMessage(data);
 
     channel.ack(msg);
   } catch (error) {
@@ -105,7 +77,7 @@ function recieveHandler(msg: any) {
   }
 }
 
-async function processMacthMessage(data: any) {
+async function processMatchMessage(data: any) {
   if (!data.event) {
     console.error("Invalid message format: missing type");
     return;
@@ -150,5 +122,29 @@ async function processMacthMessage(data: any) {
       return;
   }
 }
+async function processTournamentMessage(data: any) {
+  if (!data.event) {
+    console.error("Invalid message format: missing type");
+    return;
+  }
+  switch (data.event) {
+    case "tournament-match-created":
+      TournamentMatch(
+        data.tournamentId,
+        data.tournamentMatchId,
+        data.opponent1Id,
+        data.opponent2Id
+      );
+      break;
+    case "tournament-deleted":
+      onTournamentDelete(data.tournamentId);
+      break;
+    case "tournament-reset":
+      onTournamentReset(data.tournamentId);
+      break;
 
-async function getGMuserId(userId: string) {}
+    default:
+      console.error("Unknown event type:", data.event);
+      return;
+  }
+}
