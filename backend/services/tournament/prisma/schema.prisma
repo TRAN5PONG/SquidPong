@@ -78,7 +78,7 @@ model TournamentPlayer {
 }
 
 enum TournamentRound {
-  QUALIFIERS
+  QUALIFIERS // i will be rremove this later
   ROUND_OF_16
   QUARTER_FINALS
   SEMI_FINALS

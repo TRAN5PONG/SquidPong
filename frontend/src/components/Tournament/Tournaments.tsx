@@ -496,7 +496,6 @@ const CreateTournamentModal = (props: CreateTournamentModalProps) => {
         <option value="4">4 Players</option>
         <option value="8">8 Players</option>
         <option value="16">16 Players</option>
-        <option value="32">32 Players</option>
       </select>
 
       <input

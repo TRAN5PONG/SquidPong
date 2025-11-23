@@ -12,7 +12,7 @@ export type TournamentStatus =
   | "IN_PROGRESS"
   | "COMPLETED"
   | "CANCELLED";
-export type TournamentMaxPlayers = 4 | 8 | 16 | 32;
+export type TournamentMaxPlayers = 4 | 8 | 16
 
 export interface Tournament {
   id: string;

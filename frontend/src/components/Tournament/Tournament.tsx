@@ -301,7 +301,6 @@ const StyledTournament = styled("div")`
     .TournamentBracket {
       width: 100%;
       height: 100%;
-      overflow: hidden;
       position: relative;
       display: flex;
       justify-content: center;
@@ -1158,9 +1157,9 @@ const StyledTournamentPlayer = styled("div")`
 
   .AvatarContainer {
     margin-left: ${(props: { reversed: boolean }) =>
-      !props.reversed ? "-30px" : "0px"};
+      !props.reversed ? "-10px" : "0px"};
     margin-right: ${(props: { reversed: boolean }) =>
-      props.reversed ? "-30px" : "0px"};
+      props.reversed ? "-10px" : "0px"};
   }
 
   .TournamentPlayerInfo {
