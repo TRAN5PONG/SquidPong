@@ -1,6 +1,6 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
-import { Color4 } from "@babylonjs/core";
+import { Color4, HemisphericLight, SpotLight, Vector3 } from "@babylonjs/core";
 
 import { Light } from "../entities/Light";
 import { AnimateAutoRotate, AnimateRotation } from "@/utils/gsap";
@@ -15,7 +15,6 @@ export class CustomizeScene {
 
   // Entities
   paddle: CustomizePaddle;
-  light: Light;
   camera: PaddleCamera;
 
   // State
@@ -34,7 +33,6 @@ export class CustomizeScene {
     this.scene = new Scene(this.engine);
 
     // entities
-    this.light = new Light(this.scene);
     this.paddle = new CustomizePaddle(this.scene);
 
     // camera
@@ -43,6 +41,12 @@ export class CustomizeScene {
 
     // scene defaults
     this.scene.clearColor = new Color4(0, 0, 0, 0);
+
+    const light = new HemisphericLight(
+      "hemiLight",
+      new Vector3(0, 1, 0),
+      this.scene
+    );
 
     // Start
     this.paddle.ready.then(() => {

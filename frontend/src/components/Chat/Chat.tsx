@@ -530,6 +530,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
           messageInput
         );
         if (resp.success && resp.data) {
+          console.log("message sentasddddd============", resp);
           msgSentSound.play();
           setMessageInput("");
           if (inputRef.current) {
@@ -565,12 +566,10 @@ const MaximizedConv = (props: MaximizedConvProps) => {
   useEffect(() => {
     console.log(props.conversation);
     // set chatting with
-    if (props.conversation.group)
-    {
+    if (props.conversation.group) {
       console.log("group found", props.conversation.group);
       setChattingWith(props.conversation.group);
-    }
-    else {
+    } else {
       const participant = props.conversation.participants.find(
         (p) => p.userId !== props.userId
       );
@@ -579,6 +578,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
   }, []);
   useEffect(() => {
     if (!inputRef.current) return;
+
     inputRef.current.addEventListener("focus", () => {
       markConvAsRead();
       props.setConversations((prevs) =>
@@ -596,7 +596,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
-  }, [props.conversation.messages]);
+  }, [props.conversation.messages, messagesRef.current]);
 
   if (!chattingWith) return null;
 

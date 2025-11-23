@@ -68,6 +68,7 @@ export class BasePaddle {
 
   setColor(HexColor: string) {
     if (!this.mainMesh) return;
+
     const color: Color3 = this.hextoColor3(HexColor);
 
     let mat = this.mainMesh.material as StandardMaterial;

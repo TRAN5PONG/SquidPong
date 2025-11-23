@@ -92,8 +92,6 @@ export function AppProvider({ children }: { children: ZeroactNode[] }) {
     setModalState((prev) => ({ ...prev, show: false, resolve: null }));
   };
 
-
-
   return (
     <AppContext.Provider
       value={{
