@@ -22,11 +22,11 @@ export const constants = {
     size: { width: 40, height: 0.1, length: 40 } as Size3D,
   },
   PADDLE: {
-    size: { width: 0.8, height: 0.6, length: 0.2 } as Size3D,
+    size: { width: 0.8, height: 0.8, length: 0.2 } as Size3D,
     position: {
       x: 0,
-      y: 4,
-      z: 0,
+      y: 2.8,
+      z: 2.8,
     } as Vector3,
   },
   NET: {

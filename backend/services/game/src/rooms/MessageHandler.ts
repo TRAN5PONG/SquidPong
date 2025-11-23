@@ -39,6 +39,7 @@ export class MessageHandler {
     });
     // ball serve event from host
     this.room.onMessage("Ball:Serve", (client, message) => {
+      console.log("Received Ball:Serve message from host");
       this.handleBallServe(client, message);
     });
 
