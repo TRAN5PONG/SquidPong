@@ -60,19 +60,26 @@ const StyledAvatar = styled("div")`
     background-size: cover;
     background-position: center;
     z-index: -1;
+    filter: ${(props: { preview?: boolean }) =>
+      props.preview ? "grayscale(100%) blur(0.7px)" : "none"};
   }
 `;
 
 interface AvatarProps {
   avatarUrl?: string;
   rank?: Rank;
+  preview?: boolean;
 }
 const Avatar = ({
   avatarUrl = "https://fbi.cults3d.com/uploaders/14684840/illustration-file/e52ddf50-dd29-45fc-b7a6-5fca62a84f18/jett-avatar.jpg",
   rank,
+  preview,
 }: AvatarProps) => {
   return (
-    <StyledAvatar avatarUrl={avatarUrl}>
+    <StyledAvatar
+      avatarUrl={avatarUrl}
+      preview={preview}
+    >
       <div className="Frame" />
       {rank && (
         <div className="Lines">

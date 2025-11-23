@@ -517,7 +517,12 @@ export async function launchTournament(
           });
 
           roundMatches.push(createdMatch);
+          console.log(roundIndex);
           if (roundIndex === 0) {
+            console.log(
+              "Sending tournament-match-created for match:",
+              createdMatch.id
+            );
             await sendDataToQueue(
               {
                 event: "tournament-match-created",
@@ -722,6 +727,27 @@ export async function reportMatchResult(
       where: { id: matchId },
       include: { round: true },
     });
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: { participants: true },
+    });
+    if (!tournament)
+      return reply.code(404).send({ message: "Tournament not found." });
+
+    const winnerPlayer = tournament.participants.find(
+      (p) => p.userId === winnerId
+    );
+    const loserPlayer = tournament.participants.find(
+      (p) => p.userId === loserId
+    );
+    if (!winnerPlayer)
+      return reply
+        .code(404)
+        .send({ message: "Winner not found in tournament." });
+    if (!loserPlayer)
+      return reply
+        .code(404)
+        .send({ message: "Loser not found in tournament." });
 
     if (!match) return reply.code(404).send({ message: "Match not found." });
     if (match.round.tournamentId !== tournamentId)
@@ -731,36 +757,31 @@ export async function reportMatchResult(
     if (match.status === GameStatus.COMPLETED)
       return reply.code(400).send({ message: "Match already completed." });
 
-    if (![match.opponent1Id, match.opponent2Id].includes(winnerId))
-      return reply.code(400).send({ message: "Invalid winner." });
-    if (![match.opponent1Id, match.opponent2Id].includes(loserId))
-      return reply.code(400).send({ message: "Invalid loser." });
-
     const result = await prisma.$transaction(async (tx) => {
       // Update match with winner, loser, and scores
       const updatedMatch = await tx.tournamentMatch.update({
         where: { id: matchId },
         data: {
           status: GameStatus.COMPLETED,
-          winnerId,
+          winnerId: winnerPlayer.id,
           opponent1Score:
-            match.opponent1Id === winnerId ? winnerScore : loserScore,
+            match.opponent1Id === winnerPlayer.id ? winnerScore : loserScore,
           opponent2Score:
-            match.opponent2Id === winnerId ? winnerScore : loserScore,
+            match.opponent2Id === winnerPlayer.id ? winnerScore : loserScore,
         },
       });
 
       // advance winner to next match
-      await assignWinnerToNextMatch(tx, match, winnerId);
+      await assignWinnerToNextMatch(tx, match, tournamentId, winnerPlayer.id);
 
       // Update players
       await tx.tournamentPlayer.update({
-        where: { id: loserId },
+        where: { id: loserPlayer.id },
         data: { isEliminated: true },
       });
 
       await tx.tournamentPlayer.update({
-        where: { id: winnerId },
+        where: { id: winnerPlayer.id },
         data: { isReady: false },
       });
 
@@ -794,11 +815,14 @@ export async function reportMatchResult(
       return updatedMatch;
     });
 
-    return reply.code(200).send(result);
+    return reply.code(200).send({
+      message: "Match result reported successfully.",
+      data: result,
+      success: true,
+    });
   } catch (error: any) {
     return reply
       .code(400)
       .send({ message: error.message || "Error reporting match result." });
   }
 }
-

@@ -483,7 +483,6 @@ export async function startGame(matchId: string, playerId: string) {
     throw error;
   }
 }
-
 export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { tournamentId, matchId } = request.params as {
@@ -511,22 +510,19 @@ export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
         .send({ error: "Match not found", success: false });
     }
 
-    // set match as completed
-    const matchDuration = match.duration; // Assuming duration is already tracked
-
     const player1 = match.opponent1;
     const player2 = match.opponent2;
 
     const winner =
-      player1.id === winnerId
+      player1.gmUserId === winnerId
         ? player1
-        : player2?.id === winnerId
+        : player2?.gmUserId === winnerId
         ? player2
         : null;
     const loser =
-      player1.id === loserId
+      player1.gmUserId === loserId
         ? player1
-        : player2?.id === loserId
+        : player2?.gmUserId === loserId
         ? player2
         : null;
 
@@ -536,46 +532,54 @@ export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
         .send({ error: "Invalid winner or loser ID", success: false });
     }
 
-    await prisma.matchPlayer.update({
-      where: { id: winner.id },
-      data: {
-        finalScore: winnerScore,
-        isWinner: true,
-      },
-    });
+    await prisma.$transaction(async (tx) => {
+      await tx.matchPlayer.update({
+        where: { id: winner.id },
+        data: {
+          finalScore: winnerScore,
+          isWinner: true,
+        },
+      });
 
-    await prisma.matchPlayer.update({
-      where: { id: loser.id },
-      data: {
-        finalScore: loserScore,
-        isWinner: false,
-      },
-    });
+      await tx.matchPlayer.update({
+        where: { id: loser.id },
+        data: {
+          finalScore: loserScore,
+          isWinner: false,
+        },
+      });
 
-    await prisma.match.update({
-      where: { id: matchId },
-      data: { status: "COMPLETED", winnerId },
-    });
+      await tx.match.update({
+        where: { id: matchId },
+        data: { status: "COMPLETED", winnerId: winner.id },
+      });
 
-    // update tournament match if its related to tournament
-    const resp = fetch(
-      `http://tournament:4003/api/tournament/tournaments/${tournamentId}/reportMatchResult/${match.tournamentMatchId}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          winnerId: winnerId,
-          loserId: loserId,
-          winnerScore: winnerScore,
-          loserScore: loserScore,
-        }),
-      }
-    );
+      // update tournament match if its related to tournament
+      const resp = await fetch(
+        `http://tournament:4006/api/tournament/tournaments/${tournamentId}/reportMatchResult/${match.tournamentMatchId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            winnerId: winnerId,
+            loserId: loserId,
+            winnerScore: winnerScore,
+            loserScore: loserScore,
+          }),
+        }
+      );
+
+      const tournamentResp = await resp.json();
+      console.log("tournamentResp ========", tournamentResp);
+      if (!tournamentResp.success)
+        throw new Error("Failed to report match result to tournament service");
+    });
 
     return reply
       .status(200)
       .send({ success: true, message: "Match ended successfully" });
   } catch (error) {
+    console.log("========", error);
     reply.status(500).send({ error: "Failed to end match", success: false });
   }
 }

@@ -62,20 +62,19 @@ export async function receiveFromQueue(queue: string) {
 function recieveHandler(msg: any) {
   if (msg === null) return;
 
-  try 
-  {
+  try {
     const data = JSON.parse(msg.content.toString());
-    console.log("========================", data);
+    console.log("GOT DATA:", data);
+
     if (data.tournamentId) processTournamentMessage(data);
     else processMatchMessage(data);
 
     channel.ack(msg);
-  } 
-  catch (error) {
+  } catch (error) {
     console.error("Error processing message:", error);
     // Reject message and don't requeue on parsing errors
     channel.nack(msg, false, false);
-  } 
+  }
 }
 
 async function processMatchMessage(data: any) {
@@ -130,7 +129,6 @@ async function processTournamentMessage(data: any) {
   }
   switch (data.event) {
     case "tournament-match-created":
-      console.log("Processing tournament-match-created event");
       TournamentMatch(
         data.tournamentId,
         data.tournamentMatchId,

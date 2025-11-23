@@ -71,32 +71,58 @@ export function getRoundName(
   return roundNames[index] || TournamentRound.QUALIFIERS;
 }
 
-export async function assignWinnerToNextMatch(tx: any, match: any, winnerId: string) {
+export async function assignWinnerToNextMatch(
+  tx: any,
+  match: any,
+  tournamentId: string,
+  winnerId: string
+) {
   if (!match.nextTournamentMatchId) return;
 
   const nextMatch = await tx.tournamentMatch.findUnique({
     where: { id: match.nextTournamentMatchId },
+    include: {
+      opponent1: true,
+      opponent2: true,
+    },
   });
+
   if (!nextMatch) return;
 
-  if (nextMatch.opponent1Id && nextMatch.opponent2Id) {
+  // Determine which slot to fill
+  let field: "opponent1Id" | "opponent2Id";
+
+  if (!nextMatch.opponent1Id) {
+    field = "opponent1Id";
+  } else if (!nextMatch.opponent2Id) {
+    field = "opponent2Id";
+  } else {
+    // Already full → do nothing
+    return;
+  }
+
+  // Assign winner
+  const updatedNextMatch = await tx.tournamentMatch.update({
+    where: { id: nextMatch.id },
+    data: { [field]: winnerId },
+    include: {
+      opponent1: true,
+      opponent2: true,
+    },
+  });
+
+  // If now FULL → notify game service
+  if (updatedNextMatch.opponent1Id && updatedNextMatch.opponent2Id) {
+    console.log("---->", updatedNextMatch);
     await sendDataToQueue(
       {
         event: "tournament-match-created",
-        tournamentId: nextMatch.tournamentId,
-        tournamentMatchId: nextMatch.id,
-        opponent1Id: nextMatch.opponent1?.userId,
-        opponent2Id: nextMatch.opponent2?.userId,
+        tournamentId,
+        tournamentMatchId: updatedNextMatch.id,
+        opponent1Id: updatedNextMatch.opponent1.userId,
+        opponent2Id: updatedNextMatch.opponent2.userId,
       },
       "game"
     );
   }
-
-  const field = nextMatch.opponent1Id === null ? "opponent1Id" : "opponent2Id";
-
-  await tx.tournamentMatch.update({
-    where: { id: nextMatch.id },
-    data: { [field]: winnerId },
-  });
 }
-

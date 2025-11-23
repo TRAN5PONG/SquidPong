@@ -210,6 +210,7 @@ const StyledGameSettings = styled("div")`
         align-items: center;
         flex: 1;
         gap: 10px;
+        position: relative;
         .PlayerInfo {
           display: flex;
           gap: 5px;
@@ -258,6 +259,11 @@ const StyledGameSettings = styled("div")`
         .PlayerInfo {
           align-items: flex-end;
         }
+      }
+      .Player.Opponent2 .InviteIcon {
+        cursor: pointer;
+        position: absolute;
+        left: 10px;
       }
     }
     .GameCard.Hide {
@@ -725,7 +731,20 @@ const GameSettings = (props: GameSettingsProps) => {
                 OpponentPlayer?.rankDivision,
                 OpponentPlayer?.rankTier
               )}
+              preview={!OpponentPlayer?.avatarUrl}
             />
+            {props.selectedMode === "ONE_VS_ONE" && !OpponentPlayer && (
+              <a
+              onClick={() => setIsInviteOponentOpen(true)}
+              className="InviteIcon"
+              >
+                <AddIcon
+                  fill="rgba(255, 255, 255, 0.8)"
+                  size={30}
+                  
+                />
+              </a>
+            )}
             <div className="PlayerInfo">
               <h2>
                 {props.selectedMode === "1vsAI"
