@@ -71,9 +71,14 @@ export class SpectateScene {
       this.ball = new Ball(this.scene);
 
       // network
-      this.net = new Network("wss://10.13.249.173:4433/matches", this.match, "spectate");
+      this.net = new Network(
+        "wss://10.13.249.173:4433/matches",
+        this.match,
+        "spectate",
+      );
       this.room = await this.net.spectate(this.userId);
       this.onPaddleMove();
+      this.onBallMove();
 
       // Debugging tools
       // this.debug = new Debug(this.scene, this.engine);
@@ -101,22 +106,25 @@ export class SpectateScene {
         this.hostPaddle.updatePaddlePosition(
           data.position.x,
           data.position.y,
-          data.position.z
+          data.position.z,
         );
       } else if (data.playerId === this.guestId) {
         // guest paddle
         this.guestPaddle.updatePaddlePosition(
           data.position.x,
           data.position.y,
-          data.position.z
+          data.position.z,
         );
       }
     });
+  }
+
+  private onBallMove() {
     this.room.onMessage("Ball:state", (data: any) => {
       const newPos = new Vector3(
         data.position.x,
         data.position.y,
-        data.position.z
+        data.position.z,
       );
       this.ball.setMeshPosition(newPos);
     });

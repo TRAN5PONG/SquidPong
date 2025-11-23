@@ -115,12 +115,11 @@ export async function updateGroupInfo(req: FastifyRequest, res: FastifyReply)
    try 
    {
       const group = await checkUserAndFetchGroup(Number(groupId));
-      
       if(group.matchId) throw new Error(GroupMessages.CANNOT_UPDATE_MATCH_GROUP);
 
       const requester = group.members.find((m:any) => m.userId === userId);
       if (!requester || requester.role === MEMBER) 
-         throw new Error(GroupMessages.UPDATED_FAILED); 
+         throw new Error(GroupMessages.NOT_HAVE_PERMISSION); 
 
       if(type && requester.role !== OWNER)
       {
@@ -131,9 +130,9 @@ export async function updateGroupInfo(req: FastifyRequest, res: FastifyReply)
       await prisma.group.update({
          where: { id: Number(groupId) },
          data: {
-            name: name || group.name,
-            desc: desc || group.desc,
-            type: type || group.type,
+            ...(name && { name }),
+            ...(desc && { desc }),
+            ...(type && { type}),
          },
       });
    } 
@@ -196,7 +195,6 @@ export async function updateMember(req: FastifyRequest, res: FastifyReply)
 
    try 
    {
-      if(memberId != Number(userId)) throw new Error(GroupMessages.CANNOT_CHANGE_OWN_ROLE);
       const group = await checkUserAndFetchGroup(Number(groupId));
    
       if(group.matchId) throw new Error(GroupMessages.CANNOT_UPDATE_MATCH_GROUP);
@@ -319,11 +317,10 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
 
    const { groupId } = req.params as { groupId: string  };
    const { matchId } = req.params as { matchId?: string  };
-
+   
    try 
    {
       const group = await checkUserAndFetchGroup(Number(groupId) , matchId );
-      const user = await fetchAndEnsureUser(userId);
 
       const alreadyMember = group.members.some((m:any) => m.userId === userId);
       if (alreadyMember) throw new Error(GroupMessages.MEMBER_ALREADY_IN_GROUP); 
@@ -332,8 +329,8 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
       {
          await prisma.groupMember.create({
             data: {
-               groupId: Number(groupId),
-               userId: user.id, 
+               groupId: group.id,
+               userId, 
                role: MEMBER,
                status: PENDING,
             },
@@ -345,8 +342,8 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
       {
          await prisma.groupMember.create({
             data: {
-               groupId: Number(groupId),
-               userId: user.id,
+               groupId: group.id,
+               userId,
                role: MEMBER,
                status: APPROVED,
             },
@@ -355,7 +352,7 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
          await prisma.chatMember.create({
             data: {
                chatId : Number(group.chatId),
-               userId: user.id,
+               userId,
             },
          });
       }
@@ -500,7 +497,6 @@ export async function getGroupById(req: FastifyRequest, res: FastifyReply)
    const { groupId } = req.params as { groupId: string };
    const { matchId } = req.params as { matchId?: string  };
 
-   console.log('Fetching group with ID:', groupId, 'and matchId:', matchId);
    try 
    {
       const group = await checkUserAndFetchGroup(Number(groupId) , matchId );
@@ -613,7 +609,8 @@ export async function removeGroup(req: FastifyRequest, res: FastifyReply)
    try 
    {
       const group = await checkUserAndFetchGroup(Number(groupId));
-
+      if(group.matchId) throw new Error(GroupMessages.CANNOT_UPDATE_MATCH_GROUP);
+      
       const member = group.members.find((m:any) => m.userId === userId);
       if (!member || member.role !== OWNER)
          throw new Error(GroupMessages.DELETED_FAILED); 

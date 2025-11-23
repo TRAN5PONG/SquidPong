@@ -152,12 +152,6 @@ const twofaRoutes: Route[] = [
     // schema: disable2FASchema,
   },
 
-  {
-    method: "GET",
-    url: "/api/2fa/:method/status",
-    handler: twofaController.statusTwoFAHandler,
-    // schema: status2FASchema,
-  },
 ];
 
 
