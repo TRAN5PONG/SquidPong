@@ -1,8 +1,8 @@
 import { PlayerStats, User, UserPreferences } from "./types/user";
 import { Conversation, ChatMessage, ConversationDetails } from "./types/chat";
 import { NotificationEl } from "./types/notification";
-import { Tournament, TournamentPlayer } from "./types/tournament";
 import { Match, MatchPlayer } from "./types/game/game";
+import { Tournament, TournamentPlayer } from "./types/game/tournament";
 
 const FakeStats: PlayerStats = {
   matchHistory: [],
@@ -572,58 +572,98 @@ const FakeTournamentPlayers: TournamentPlayer[] = [
     isReady: true,
   },
 ];
-const FakeTournaments: Tournament[] = [
-  {
-    id: "tournament1",
-    name: "Weekly Tournament",
-    desription: "A fun weekly tournament for all players.",
-    maxPlayers: 32,
-    bracketPositions: Array(32).fill(null),
-    organizerId: User1.id,
-    participants: FakeTournamentPlayers,
-    status: "registration",
-  },
-  {
-    id: "tournament2",
-    name: "Monthly Tournament",
-    desription: "The ultimate Tournament for top players.",
-    maxPlayers: 16,
-    bracketPositions: Array(16).fill(null),
-    organizerId: User2.id,
-    participants: FakeTournamentPlayers,
-    status: "cancelled",
-  },
-  {
-    id: "tournament3",
-    name: "Summer Showdown",
-    desription: "A summer-themed tournament with exciting prizes.",
-    maxPlayers: 8,
-    bracketPositions: Array(64).fill(null),
-    organizerId: User3.id,
-    participants: FakeTournamentPlayers,
-    status: "inProgress",
-  },
-  {
-    id: "tournament4",
-    name: "Winter Clash",
-    desription: "A winter-themed tournament with epic battles.",
-    maxPlayers: 4,
-    bracketPositions: Array(16).fill(null),
-    organizerId: User4.id,
-    participants: FakeTournamentPlayers,
-    status: "completed",
-  },
-  {
-    id: "tournament5",
-    name: "Spring Cup",
-    desription: "A spring-themed cup for casual players.",
-    maxPlayers: 4,
-    bracketPositions: Array(64).fill(null),
-    organizerId: User1.id,
-    participants: FakeTournamentPlayers,
-    status: "ready",
-  },
-];
+const FakeTournaments: Tournament = {
+  id: "tournament1",
+  name: "Weekly Tournament",
+  description: "A fun weekly tournament for all players.",
+  maxPlayers: 16,
+  organizerId: User1.id,
+  participants: FakeTournamentPlayers,
+  status: "REGISTRATION",
+  createdAt: new Date(),
+  updatedAt: new Date(),
+
+  rounds: [
+    // ROUND OF 16
+    {
+      id: "round1",
+      name: "ROUND_OF_16",
+      order: 1,
+      tournamentId: "tournament1",
+      tournament: null as any,
+      matches: Array.from({ length: 8 }).map((_, i) => ({
+        id: `r1m${i + 1}`,
+        tournamentId: "tournament1",
+        round: "ROUND_OF_16",
+        status: "PENDING",
+        opponent1Id: "",
+        opponent2Id: "",
+        opponent1Score: 0,
+        opponent2Score: 0,
+      })),
+    },
+
+    // QUARTER FINALS
+    {
+      id: "round2",
+      name: "QUARTER_FINALS",
+      order: 2,
+      tournamentId: "tournament1",
+      tournament: null as any,
+      matches: Array.from({ length: 4 }).map((_, i) => ({
+        id: `r2m${i + 1}`,
+        tournamentId: "tournament1",
+        round: "QUARTER_FINALS",
+        status: "PENDING",
+        opponent1Id: "",
+        opponent2Id: "",
+        opponent1Score: 0,
+        opponent2Score: 0,
+      })),
+    },
+
+    // SEMI FINALS
+    {
+      id: "round3",
+      name: "SEMI_FINALS",
+      order: 3,
+      tournamentId: "tournament1",
+      tournament: null as any,
+      matches: Array.from({ length: 2 }).map((_, i) => ({
+        id: `r3m${i + 1}`,
+        tournamentId: "tournament1",
+        round: "SEMI_FINALS",
+        status: "PENDING",
+        opponent1Id: "",
+        opponent2Id: "",
+        opponent1Score: 0,
+        opponent2Score: 0,
+      })),
+    },
+
+    // FINAL
+    {
+      id: "round4",
+      name: "FINAL",
+      order: 4,
+      tournamentId: "tournament1",
+      tournament: null as any,
+      matches: [
+        {
+          id: "r4m1",
+          tournamentId: "tournament1",
+          round: "FINAL",
+          status: "PENDING",
+          opponent1Id: "",
+          opponent2Id: "",
+          opponent1Score: 0,
+          opponent2Score: 0,
+        },
+      ],
+    },
+  ],
+};
+
 const FakeGroupChatMessages: ChatMessage[] = [
   {
     from: User1,

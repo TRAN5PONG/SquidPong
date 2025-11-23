@@ -250,7 +250,7 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
                 <div className="SearchPlayerInfos">
                   <span className="SearchPlayerInfosFullName">
                     {player.firstName + " " + player.lastName}
-                    {player.isVerified &&  (
+                    {player.isVerified && (
                       <VerifiedIcon fill="var(--main_color)" size={15} />
                     )}
                   </span>
@@ -280,7 +280,11 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
       </div>
       <h1 className="SearchCatg">Tournaments</h1>
       <div className="SearchCatgContainer">
-        {db.FakeTournaments.map((tournament) => {
+        {Array.from({ length: 2 }, () => ({
+          id: Math.random().toString(36).substring(7),
+          name: "Sample Tournament",
+          status: "registration",
+        })).map((tournament) => {
           return (
             <StyledSearchTournamentBox
               onClick={() => {

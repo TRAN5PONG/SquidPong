@@ -24,6 +24,7 @@ import {
   createMatch,
   getMatch,
   getCurrenMatch,
+  EndMatch,
 } from "../controllers/matchController";
 import {
   matchesParamsValidators,
@@ -72,5 +73,32 @@ export async function matchRoutes(server: FastifyInstance) {
       },
     },
     getCurrenMatch
+  );
+  // End game
+  server.post(
+    "/api/game/tournament/:tournamentId/match/:matchId/end",
+    {
+      schema: {
+        params: {
+          type: "object",
+          properties: {
+            tournamentId: { type: "string" },
+            matchId: { type: "string" },
+          },
+          required: ["matchId", "tournamentId"],
+        },
+        body: {
+          type: "object",
+          properties: {
+            winnerId: { type: "string" },
+            loserId: { type: "string" },
+            winnerScore: { type: "number" },
+            loserScore: { type: "number" },
+          },
+          required: ["winnerId", "loserId", "winnerScore", "loserScore"],
+        },
+      },
+    },
+    EndMatch
   );
 }
