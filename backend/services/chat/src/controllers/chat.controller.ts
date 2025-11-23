@@ -455,6 +455,7 @@ export async function sendMessageHandler(req: FastifyRequest,res: FastifyReply)
       },
       include: { sender: true, reactions: true },
     });
+    console.log("===========", data);
 
     // Only send to queue if not blocked
     if (shouldDeliver) 

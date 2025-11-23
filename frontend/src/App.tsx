@@ -154,19 +154,23 @@ const App = () => {
   const { modal, setUser, user } = useAppContext();
 
   useEffect(() => {
-    if (!socketManager.isConntected()) {
-      socketManager.connect(`${import.meta.env.VITE_IP}`);
-    }
     const initializeAuth = async () => {
       try {
         const userData = await getUserProfile();
-        setUser(userData.data!);
+        if (userData.success && userData.data) setUser(userData.data);
+        else throw new Error("No valid session");
       } catch (error) {
         console.log("No valid session found");
       }
     };
-    initializeAuth();
-  }, [user]);
+    if (!user) initializeAuth();
+
+    if (!socketManager.isConntected()) {
+      socketManager.connect(`${import.meta.env.VITE_IP}`);
+    } else {
+      console.log("Socket already connected.");
+    }
+  }, []);
 
   return (
     <StyledApp>

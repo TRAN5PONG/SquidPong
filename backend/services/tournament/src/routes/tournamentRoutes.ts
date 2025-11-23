@@ -116,6 +116,20 @@ const tournamentRoutes: Route[] = [
     handler: tournamentController.reportMatchResult,
     schema: reportMatchResultSchema,
   },
+{
+  method: "GET",
+  url: "/api/tournament/tournaments/search",
+  schema: {
+    querystring: {
+      type: "object",
+      properties: {
+        query: { type: "string" },
+      },
+      required: ["query"],
+    },
+  },
+  handler: tournamentController.searchTournaments,
+}
 ];
 
 export { tournamentRoutes };

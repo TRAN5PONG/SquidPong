@@ -826,3 +826,40 @@ export async function reportMatchResult(
       .send({ message: error.message || "Error reporting match result." });
   }
 }
+
+export async function searchTournaments(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const { query } = request.query as { query: string };
+
+    console.log("QUERY:", query);
+
+    const tournaments = await prisma.tournament.findMany({
+      where: {
+        name: {
+          contains: query.toLowerCase(),
+        },
+      },
+      include: {
+        participants: true,
+        rounds: {
+          include: { matches: true },
+        },
+      },
+    });
+
+    return reply.code(200).send({
+      message: "Tournaments fetched successfully.",
+      success: true,
+      data: tournaments,
+    });
+  } catch (error: any) {
+    return reply.code(400).send({
+      message:
+        error.message || "An error occurred while searching tournaments.",
+      success: false,
+    });
+  }
+}

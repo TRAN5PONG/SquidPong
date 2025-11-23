@@ -31,6 +31,24 @@ export const getTournament = async (
   const data = await response.json();
   return data;
 };
+export const searchTournaments = async (
+  query: string
+): Promise<ApiResponse<Tournament[]>> => {
+  const response = await fetch(
+    `${API_BASE_URL}/tournament/tournaments/search?query=${encodeURIComponent(
+      query
+    )}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  const data = await response.json();
+  return data;
+};
 
 /**
  * Tournament management

@@ -86,19 +86,19 @@ export const chatRoutes : Route[] = [
 
   
 
-  { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats, schema: newGetRecentChatsSchema },
-  { method: 'POST',   url: '/api/chat/new',                handler: createChat, schema: newCreateChatSchema  }, // createChatSchema         
-  { method: 'DELETE', url: '/api/chat/remove',     handler: removeChat, schema: newRemoveChatSchema  },          
-  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById, schema: newGetChatByIdSchema  },
-  { method: 'PATCH',  url: '/api/chat/:chatId/read',       handler: markMessagesAsRead, schema: markMessagesAsReadSchema  },
+  { method: 'GET',    url: '/api/chat/recent',             handler: getRecentChats },
+  { method: 'POST',   url: '/api/chat/new',                handler: createChat }, // createChatSchema         
+  { method: 'DELETE', url: '/api/chat/remove',     handler: removeChat  },          
+  { method: 'GET',    url: '/api/chat/:chatId/messages',   handler: getChatById  },
+  { method: 'PATCH',  url: '/api/chat/:chatId/read',       handler: markMessagesAsRead },
 
-  { method: 'POST',   url: '/api/chat/block/:friendId',    handler: blockUserHandler, schema: blockUserInChatSchema  },
-  { method: 'POST',   url: '/api/chat/unblock/:friendId',  handler: unblockUserHandler, schema: unblockUserInChatSchema  },
-  { method: 'DELETE', url: '/api/chat/user/:friendId',     handler: removeUserHandler, schema: removeUserFromChatSchema },
+  { method: 'POST',   url: '/api/chat/block/:friendId',    handler: blockUserHandler },
+  { method: 'POST',   url: '/api/chat/unblock/:friendId',  handler: unblockUserHandler  },
+  { method: 'DELETE', url: '/api/chat/user/:friendId',     handler: removeUserHandler },
   
   // Service-to-service endpoints (called from user-service)
-  { method: 'POST',   url: '/api/chat/block-friend',        handler: blockFriendInChatHandler, schema: blockFriendInChatSchema },
-  { method: 'POST',   url: '/api/chat/unblock-friend',      handler: unblockFriendInChatHandler, schema: unblockFriendInChatSchema },
+  { method: 'POST',   url: '/api/chat/block-friend',        handler: blockFriendInChatHandler },
+  { method: 'POST',   url: '/api/chat/unblock-friend',      handler: unblockFriendInChatHandler},
 ];
 
 
@@ -106,12 +106,12 @@ export const chatRoutes : Route[] = [
 
 // ------------------- Message Endpoints -------------------
 export const messageRoutes: Route[] = [
-  { method: 'POST',   url: '/api/message/send',                handler: sendMessageHandler, schema: sendMessageSchema },
-  { method: 'PATCH',  url: '/api/message/:messageId/edit',     handler: editMessageHandler, schema: editMessageSchema },
-  { method: 'DELETE', url: '/api/message/:messageId',          handler: deleteMessageHandler, schema: deleteMessageSchema },
-  { method: 'POST',   url: '/api/message/:messageId/reply',    handler: replyToMessageHandler, schema: replyToMessageSchema },
-  { method: 'POST',   url: '/api/message/:messageId/reaction', handler: addReactionHandler, schema: addReactionSchema },
-  { method: 'DELETE', url: '/api/message/:messageId/reaction', handler: removeReactionHandler, schema: removeReactionSchema },
+  { method: 'POST',   url: '/api/message/send',                handler: sendMessageHandler},
+  { method: 'PATCH',  url: '/api/message/:messageId/edit',     handler: editMessageHandler },
+  { method: 'DELETE', url: '/api/message/:messageId',          handler: deleteMessageHandler },
+  { method: 'POST',   url: '/api/message/:messageId/reply',    handler: replyToMessageHandler},
+  { method: 'POST',   url: '/api/message/:messageId/reaction', handler: addReactionHandler },
+  { method: 'DELETE', url: '/api/message/:messageId/reaction', handler: removeReactionHandler},
 ];
 
 
