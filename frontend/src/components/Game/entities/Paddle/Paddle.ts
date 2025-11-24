@@ -30,7 +30,7 @@ export class BasePaddle {
     try {
       const container = await LoadAssetContainerAsync(
         "/models/paddle.glb",
-        this.scene
+        this.scene,
       );
 
       this.setupFireEffect();
@@ -110,7 +110,7 @@ export class BasePaddle {
     this.textureMesh = this.mainMesh.clone(
       "faces",
       this.mainMesh.parent,
-      false
+      false,
     );
     this.textureMesh.parent = this.mainMesh.parent;
 
@@ -143,7 +143,6 @@ export class BasePaddle {
     return this.mainMesh ?? null;
   }
 
-
   private hextoColor3(hex: string): Color3 {
     const cleanHex = hex.replace("#", "");
     const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
@@ -161,7 +160,7 @@ export class BasePaddle {
     // Texture
     this.particleSystem.particleTexture = new Texture(
       "https://raw.githubusercontent.com/BabylonJS/Babylon.js/master/packages/tools/playground/public/textures/flare.png",
-      this.scene
+      this.scene,
     );
 
     // Emit from the paddle
