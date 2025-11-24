@@ -301,8 +301,6 @@ export class Arena {
       startTime: performance.now(),
       duration: 500, // 500ms animation
     });
-
-    console.log("✅ Impact effect created at", point);
   }
 
   /**

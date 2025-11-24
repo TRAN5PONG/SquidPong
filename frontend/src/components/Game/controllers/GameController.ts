@@ -10,6 +10,7 @@ import { NetworkSync } from "./NetworkSync";
 import { GameLogic } from "./GameLogic";
 import { DebugMeshManager } from "../DebugMeshManager";
 import { Arena } from "../entities/Arena";
+import { AIController } from "./ai/AIController";
 export enum GameState {
   WAITING_FOR_SERVE,
   IN_PLAY,
@@ -40,6 +41,9 @@ export class GameController {
   // Debug
   private debugMeshes: DebugMeshManager;
 
+  private aiController?: AIController;
+  private isAIMode: boolean = false;
+
   constructor(
     localPaddle: Paddle,
     opponentPaddle: Paddle,
@@ -48,6 +52,7 @@ export class GameController {
     physics: Physics,
     net: Network,
     scene: Scene,
+    aiMode: boolean = true,
   ) {
     this.localPaddle = localPaddle;
     this.opponentPaddle = opponentPaddle;
@@ -86,6 +91,11 @@ export class GameController {
       this.arena,
       () => this.currentTick,
     );
+
+    this.isAIMode = aiMode;
+    if (aiMode) {
+      this.aiController = new AIController(opponentPaddle, 0.7);
+    }
 
     this.setupEventListeners();
   }
@@ -243,6 +253,22 @@ export class GameController {
   //   this.gameLogic.gameState = GameState.WAITING_FOR_SERVE;
   // }
 
+  // ==================== AI Update =================
+  private updateAIPaddle(target: { x: number; y: number; z: number }): void {
+    // Clamp AI paddle to its boundaries
+    const boundaries = this.opponentPaddle.getBoundaries();
+    const clampedX = Math.max(
+      boundaries.x.min,
+      Math.min(boundaries.x.max, target.x),
+    );
+    const clampedZ = Math.max(
+      boundaries.z.min,
+      Math.min(boundaries.z.max, target.z),
+    );
+
+    this.physics.opponentPaddle.setTarget(clampedX, target.y, clampedZ);
+  }
+
   // ==================== Main update =================
   public fixedUpdate(): void {
     if (!this.ball || !this.physics || !this.hasGameStarted) return;
@@ -256,6 +282,16 @@ export class GameController {
       this.paddleZMin,
       Math.min(this.paddleZMax, worldPos.z),
     );
+
+    if (this.isAIMode && this.aiController) {
+      const aiTarget = this.aiController.update(
+        this.ball,
+        this.physics,
+        this.timestep,
+      );
+
+      this.updateAIPaddle(aiTarget);
+    }
 
     this.physics.paddle.setTarget(worldPos.x, worldPos.y, clampedZ);
     this.physics.ball.setPosition("PREV");
