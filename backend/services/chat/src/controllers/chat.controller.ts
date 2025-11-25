@@ -10,9 +10,6 @@ import { sendDataToQueue } from "../integration/rabbitmq.integration";
 import { getOnlineUsers } from "../integration/redis.integration";
 import { ReactionType } from "./chat.rabbit.controller";
 
-
-
-
 export async function createChat(req: FastifyRequest, res: FastifyReply) {
   const respond: ApiResponse<{ chatId: number }> = {
     success: true,
@@ -23,8 +20,7 @@ export async function createChat(req: FastifyRequest, res: FastifyReply) {
 
   const { friendId } = req.body as { friendId: string };
 
-  try 
-  {
+  try {
     if (userId === friendId) throw new Error(chatMessages.CANNOT_CHAT_SELF);
     await fetchAndEnsureUser(friendId);
 
@@ -66,10 +62,9 @@ export async function removeChat(req: FastifyRequest, res: FastifyReply) {
 
   const { friendId } = req.body as { friendId: string };
 
-  try 
-  {
+  try {
     checkSecretToken(req);
-    
+
     const chatId = await findChatBetweenUsers(Number(userId), Number(friendId));
     if (!chatId) throw new Error("Chat not found between users");
 
@@ -79,18 +74,18 @@ export async function removeChat(req: FastifyRequest, res: FastifyReply) {
       include: { group: true },
     });
 
-    if (chat?.group) throw new Error("Cannot delete group chat. Use remove group endpoint instead");
+    if (chat?.group)
+      throw new Error(
+        "Cannot delete group chat. Use remove group endpoint instead"
+      );
 
     await prisma.chat.delete({ where: { id: Number(chatId) } });
-  } 
-  catch (error) {
+  } catch (error) {
     sendError(res, error);
   }
 
   return res.send(respond);
 }
-
-
 
 export async function getChatById(req: FastifyRequest, res: FastifyReply) {
   const respond: ApiResponse<any> = {
@@ -114,7 +109,7 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply) {
             replyTo: { include: { sender: true } },
           },
         },
-        group : true,
+        group: { include: { members: true } },
       },
     });
     if (!fullChat) throw new Error(chatMessages.FETCH_NOT_FOUND);
@@ -142,8 +137,7 @@ export async function getChatById(req: FastifyRequest, res: FastifyReply) {
   return res.send(respond);
 }
 
-export async function getRecentChats(req: FastifyRequest, res: FastifyReply) 
-{
+export async function getRecentChats(req: FastifyRequest, res: FastifyReply) {
   const respond: ApiResponse<any> = {
     success: true,
     message: "Recent chats fetched successfully.",
@@ -153,8 +147,7 @@ export async function getRecentChats(req: FastifyRequest, res: FastifyReply)
   const userId = headers["x-user-id"];
 
   let dataRespond: any = [];
-  try 
-  {
+  try {
     const recentChats = await prisma.chat.findMany({
       where: {
         members: { some: { userId } },
@@ -200,8 +193,7 @@ export async function getRecentChats(req: FastifyRequest, res: FastifyReply)
   return res.send(respond);
 }
 
-export async function blockUserHandler(req: FastifyRequest, res: FastifyReply) 
-{
+export async function blockUserHandler(req: FastifyRequest, res: FastifyReply) {
   const respond: ApiResponse<null> = {
     success: true,
     message: "User blocked successfully",
@@ -211,8 +203,7 @@ export async function blockUserHandler(req: FastifyRequest, res: FastifyReply)
 
   const { chatId } = req.params as { chatId: string };
 
-  try 
-  {
+  try {
     const chat = await prisma.chat.findUnique({
       where: { id: Number(chatId) },
       include: { members: true },
@@ -311,8 +302,10 @@ export async function unblockUserHandler(
   return res.send(respond);
 }
 
-export async function blockFriendInChatHandler(req: FastifyRequest,res: FastifyReply) 
-{
+export async function blockFriendInChatHandler(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const respond: ApiResponse<null> = {
     success: true,
     message: "Friend blocked in chat successfully",
@@ -320,13 +313,11 @@ export async function blockFriendInChatHandler(req: FastifyRequest,res: FastifyR
 
   const { userId, friendId } = req.body as { userId: string; friendId: string };
 
-  try 
-  {
+  try {
     checkSecretToken(req);
 
     const chatId = await findChatBetweenUsers(Number(userId), Number(friendId));
-    if (!chatId)
-      throw new Error("No chat found between users");
+    if (!chatId) throw new Error("No chat found between users");
 
     await prisma.chat.update({
       where: { id: Number(chatId) },
@@ -340,17 +331,20 @@ export async function blockFriendInChatHandler(req: FastifyRequest,res: FastifyR
       },
     });
 
-    console.log(`User ${userId} blocked in chat ${chatId} with friend ${friendId}`);
-  } 
-  catch (error) {
+    console.log(
+      `User ${userId} blocked in chat ${chatId} with friend ${friendId}`
+    );
+  } catch (error) {
     sendError(res, error);
   }
 
   return res.send(respond);
 }
 
-export async function unblockFriendInChatHandler(req: FastifyRequest,res: FastifyReply) 
-{
+export async function unblockFriendInChatHandler(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const respond: ApiResponse<null> = {
     success: true,
     message: "Friend unblocked in chat successfully",
@@ -358,8 +352,7 @@ export async function unblockFriendInChatHandler(req: FastifyRequest,res: Fastif
 
   const { userId, friendId } = req.body as { userId: string; friendId: string };
 
-  try 
-  {
+  try {
     checkSecretToken(req);
 
     const chatId = await findChatBetweenUsers(Number(userId), Number(friendId));
@@ -377,110 +370,153 @@ export async function unblockFriendInChatHandler(req: FastifyRequest,res: Fastif
       },
     });
 
-    console.log(`User ${userId} unblocked in chat ${chatId} with friend ${friendId}`);
-  } 
-  catch (error) {
+    console.log(
+      `User ${userId} unblocked in chat ${chatId} with friend ${friendId}`
+    );
+  } catch (error) {
     sendError(res, error);
   }
 
   return res.send(respond);
 }
 
-
 // ------------------- Message Endpoints -------------------
+async function getOrCreateChat(userId: string, receiverId: string) {
+  let chat = await prisma.chat.findFirst({
+    where: {
+      members: {
+        every: { userId: { in: [userId, receiverId] } },
+      },
+    },
+  });
 
-export async function sendMessageHandler(req: FastifyRequest,res: FastifyReply) 
-{
+  if (!chat) {
+    chat = await prisma.chat.create({
+      data: {
+        members: {
+          create: [{ userId }, { userId: receiverId }],
+        },
+      },
+    });
+  }
+
+  return chat.id;
+}
+
+export async function sendMessageHandler(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const respond: ApiResponse<any> = {
     success: true,
     message: "Message sent successfully",
   };
+
   const headers = req.headers as { "x-user-id": string };
   const senderId = headers["x-user-id"];
 
-  const { chatId, content, matchId, tournamentId } = req.body as {
-    chatId: number;
+  const { chatId, receiverId, content, invitationCode, tournamentId } = req.body as {
+    chatId?: number;
+    receiverId?: string;
     content?: string;
-    matchId?: string;
+    invitationCode?: string;
     tournamentId?: string;
   };
 
-  try 
-  {
+  try {
+    let finalChatId = chatId;
+
+    // --- NEW PART ---
+    // If chatId is not provided but receiverId is
+    if (!finalChatId && receiverId) {
+      finalChatId = await getOrCreateChat(senderId, receiverId);
+    }
+
+    if (!finalChatId)
+      throw new Error("Must provide either chatId or receiverId");
+
+    // ----------------
+
     const chat = await prisma.chat.findUnique({
-      where: { id: Number(chatId) },
+      where: { id: Number(finalChatId) },
       select: { members: true },
     });
-    if (!chat) throw new Error("Chat not found or user is not a member");
 
-    // Check if sender is blocked in this chat
-    const isSenderBlocked = chat.members.some((m: any) => m.userId === senderId && m.isBlocked);
+    if (!chat) throw new Error("Chat not found");
+
+    // Check if sender is blocked
+    const isSenderBlocked = chat.members.some(
+      (m: any) => m.userId === senderId && m.isBlocked
+    );
     if (isSenderBlocked) throw new Error("You are blocked in this chat");
-    
-    const type = matchId
+
+    const type = invitationCode
       ? "INVITE_MATCH"
       : tournamentId
       ? "INVITE_TOURNAMENT"
       : "TEXT";
 
-    // Check if any receiver has blocked the sender
-    const receiverBlockedSender = chat.members.some((m: any) => m.userId !== senderId && m.isBlocked);
-    
+    // Check if receiver blocked the sender
+    const receiverBlockedSender = chat.members.some(
+      (m: any) => m.userId !== senderId && m.isBlocked
+    );
+
     let status: "SENT" | "DELIVERED" | "BLOCKED" = "SENT";
     let shouldDeliver = true;
 
-    if (receiverBlockedSender) 
-    {
+    if (receiverBlockedSender) {
       status = "BLOCKED";
       shouldDeliver = false;
-    } 
-    else 
-    {
+    } else {
       const targetIds = chat.members
         .filter((m: any) => m.userId !== senderId && !m.isBlocked)
         .map((m: any) => m.userId);
-      const onlineUsers = await getOnlineUsers();
-      status = onlineUsers.includes(targetIds[0]) ? "DELIVERED" : "SENT";
+
+      const online = await getOnlineUsers();
+      status = online.includes(targetIds[0]) ? "DELIVERED" : "SENT";
     }
 
     const data = await prisma.message.create({
       data: {
-        chatId: Number(chatId),
+        chatId: Number(finalChatId),
         content: content || null,
         senderId,
         status,
         type,
-        matchId: matchId ? String(matchId) : null,
-        tournamentId: tournamentId ? String(tournamentId) : null,
+        invitationCode: invitationCode ?? null,
+        tournamentId: tournamentId ?? null,
       },
       include: { sender: true, reactions: true },
     });
-    console.log("===========", data);
 
-    // Only send to queue if not blocked
-    if (shouldDeliver) 
-    {
-      const targetIds = chat.members.filter((m: any) => m.userId !== senderId && !m.isBlocked).map((m: any) => m.userId);
+    if (shouldDeliver) {
+      const targetIds = chat.members
+        .filter((m: any) => m.userId !== senderId && !m.isBlocked)
+        .map((m: any) => m.userId);
 
-      const dataToSend = {
-        type: "newMessage",
-        fromId: senderId,
-        targetId: targetIds,
-        data,
-      };
-
-      await sendDataToQueue(dataToSend, "eventhub");
+      await sendDataToQueue(
+        {
+          type: "newMessage",
+          fromId: senderId,
+          targetId: targetIds,
+          data,
+        },
+        "eventhub"
+      );
     }
 
     respond.data = data;
   } catch (error) {
-    sendError(res, error);
+    return sendError(res, error);
   }
+
   return res.send(respond);
 }
 
-export async function editMessageHandler(req: FastifyRequest,res: FastifyReply) 
-{
+export async function editMessageHandler(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const respond: ApiResponse<null> = {
     success: true,
     message: "Message edited successfully",
@@ -489,9 +525,9 @@ export async function editMessageHandler(req: FastifyRequest,res: FastifyReply)
   const userId = headers["x-user-id"];
 
   const { messageId } = req.params as { messageId: string };
-  const { content, matchId, tournamentId } = req.body as {
+  const { content, invitationCode, tournamentId } = req.body as {
     content?: string;
-    matchId?: string;
+    invitationCode?: string;
     tournamentId?: string;
   };
 
@@ -504,12 +540,12 @@ export async function editMessageHandler(req: FastifyRequest,res: FastifyReply)
     if (!message) throw new Error("Message not found");
     if (message.senderId !== userId)
       throw new Error("Only the sender can edit the message");
-    
+
     // Blocked messages cannot be edited or change status
     if (message.status === "BLOCKED")
       throw new Error("Cannot edit blocked messages");
 
-    const type = matchId
+    const type = invitationCode
       ? "INVITE_MATCH"
       : tournamentId
       ? "INVITE_TOURNAMENT"
@@ -529,7 +565,7 @@ export async function editMessageHandler(req: FastifyRequest,res: FastifyReply)
         isEdited: true,
         status,
         content: content ? content : null,
-        matchId: matchId ? String(matchId) : null,
+        invitationCode: invitationCode ? String(invitationCode) : null,
         tournamentId: tournamentId ? String(tournamentId) : null,
       },
     });
@@ -548,8 +584,10 @@ export async function editMessageHandler(req: FastifyRequest,res: FastifyReply)
   return res.send(respond);
 }
 
-export async function deleteMessageHandler(req: FastifyRequest,res: FastifyReply) 
-{
+export async function deleteMessageHandler(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const respond: ApiResponse<null> = {
     success: true,
     message: "Message deleted successfully",
@@ -559,8 +597,7 @@ export async function deleteMessageHandler(req: FastifyRequest,res: FastifyReply
 
   const { messageId } = req.params as { messageId: string };
 
-  try 
-  {
+  try {
     const message = await prisma.message.findUnique({
       where: { id: Number(messageId) },
       include: { chat: { include: { members: true } } },
@@ -571,7 +608,7 @@ export async function deleteMessageHandler(req: FastifyRequest,res: FastifyReply
 
     const data = await prisma.message.update({
       where: { id: Number(messageId) },
-      data: { isDeleted: true , content : `message deleted.` },
+      data: { isDeleted: true, content: `message deleted.` },
     });
 
     const targetIds = message.chat.members
@@ -591,17 +628,17 @@ export async function deleteMessageHandler(req: FastifyRequest,res: FastifyReply
   return res.send(respond);
 }
 
-
-export async function replyToMessageHandler(req: FastifyRequest,res: FastifyReply) 
-{
+export async function replyToMessageHandler(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const headers = req.headers as { "x-user-id": string };
   const senderId = headers["x-user-id"];
 
   const { messageId } = req.params as { messageId: string };
   const { content } = req.body as { content: string };
 
-  try 
-  {
+  try {
     const originalMessage = await prisma.message.findUnique({
       where: { id: Number(messageId) },
       include: { chat: { include: { members: true } } },
@@ -609,7 +646,9 @@ export async function replyToMessageHandler(req: FastifyRequest,res: FastifyRepl
 
     if (!originalMessage) throw new Error("Original message not found");
 
-    const isBlocked = originalMessage.chat.members.some((m: any) => m.userId === senderId && m.isBlocked);
+    const isBlocked = originalMessage.chat.members.some(
+      (m: any) => m.userId === senderId && m.isBlocked
+    );
     if (isBlocked) throw new Error("You are blocked in this chat");
 
     const targetIds = originalMessage.chat.members
@@ -641,12 +680,13 @@ export async function replyToMessageHandler(req: FastifyRequest,res: FastifyRepl
       targetId: targetIds,
       data: replyMessage,
     };
+    await sendDataToQueue(dataToSend, "eventhub");
+
     return res.send({
       success: true,
       message: "Reply sent successfully",
       data: replyMessage,
     });
-    await sendDataToQueue(dataToSend, "eventhub");
   } catch (error) {
     sendError(res, error);
   }
@@ -675,7 +715,9 @@ export async function addReactionHandler(
     });
     if (!message) throw new Error("Message not found");
 
-    const isBlocked = message.chat.members.some((m: any) => m.userId === userId && m.isBlocked);
+    const isBlocked = message.chat.members.some(
+      (m: any) => m.userId === userId && m.isBlocked
+    );
     if (isBlocked) throw new Error("You are blocked in this chat");
 
     await prisma.reaction.upsert({
@@ -696,10 +738,10 @@ export async function addReactionHandler(
     const updatedMessage = await prisma.message.findUnique({
       where: { id: Number(messageId) },
       include: {
-        sender: { select: { id: true, username: true, avatar: true } },
+        sender: true,
         reactions: {
           include: {
-            user: { select: { id: true, username: true, avatar: true } },
+            user: true,
           },
         },
       },
@@ -726,7 +768,6 @@ export async function addReactionHandler(
   return res.send(respond);
 }
 
-
 export async function removeReactionHandler(
   req: FastifyRequest,
   res: FastifyReply
@@ -747,7 +788,9 @@ export async function removeReactionHandler(
     });
     if (!message) throw new Error("Message not found");
 
-    const isBlocked = message.chat.members.some((m: any) => m.userId === userId && m.isBlocked);
+    const isBlocked = message.chat.members.some(
+      (m: any) => m.userId === userId && m.isBlocked
+    );
     if (isBlocked) throw new Error("You are blocked in this chat");
 
     await prisma.reaction.delete({
@@ -776,10 +819,10 @@ export async function removeReactionHandler(
   return res.send(respond);
 }
 
-
-
-export async function markMessagesAsRead( req: FastifyRequest, res: FastifyReply)
-{
+export async function markMessagesAsRead(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const respond: ApiResponse<null> = {
     success: true,
     message: "Messages marked as read successfully",
@@ -789,8 +832,7 @@ export async function markMessagesAsRead( req: FastifyRequest, res: FastifyReply
 
   const { chatId } = req.params as { chatId: string };
 
-  try 
-  {
+  try {
     const chat = await prisma.chat.findUnique({
       where: { id: Number(chatId) },
       include: { members: true },
@@ -810,7 +852,9 @@ export async function markMessagesAsRead( req: FastifyRequest, res: FastifyReply
       data: { status: "READ" },
     });
 
-    const targetIds = chat.members.filter((m: any) => m.userId !== userId && !m.isBlocked).map((m: any) => m.userId);
+    const targetIds = chat.members
+      .filter((m: any) => m.userId !== userId && !m.isBlocked)
+      .map((m: any) => m.userId);
     const dataToSend = {
       type: "messagesRead",
       fromId: userId,
@@ -818,9 +862,7 @@ export async function markMessagesAsRead( req: FastifyRequest, res: FastifyReply
       data: { chatId: Number(chatId) },
     };
     await sendDataToQueue(dataToSend, "eventhub");
-
-  } 
-  catch (error) {
+  } catch (error) {
     sendError(res, error);
   }
 

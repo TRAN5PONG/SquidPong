@@ -32,6 +32,7 @@ import {
   sendFriendRequest,
 } from "@/api/user";
 import Skeleton from "../Skeleton/Skeleton";
+import { sendMessage } from "@/api/chat";
 
 const StyledProfileModal = styled("div")`
   height: 100%;
@@ -121,13 +122,13 @@ const StyledProfileModal = styled("div")`
         width: 10px;
         height: 10px;
         background-color: ${(props: { userStatus: UserStatus }) =>
-          props.userStatus === "online"
+          props.userStatus === "ONLINE"
             ? "#4ade80"
-            : props.userStatus === "offline"
+            : props.userStatus === "OFFLINE"
             ? "#888888"
-            : props.userStatus === "doNotDisturb"
+            : props.userStatus === "DONOTDISTURB"
             ? "#f04f4f"
-            : props.userStatus === "idle"
+            : props.userStatus === "IDLE"
             ? "#facc15"
             : "white"};
 
@@ -410,7 +411,7 @@ const Profile = () => {
   const [showConfirmationModal, setShowConfirmationModal] =
     Zeroact.useState(false);
   const userId = useRouteParam("/user/:id", "id");
-  const { modal, toasts, user } = useAppContext();
+  const { modal, toasts, user, inviteModal } = useAppContext();
   const navigate = useNavigate();
 
   const handleFriendAddUnfriend = async (receiverId: string) => {
@@ -463,6 +464,12 @@ const Profile = () => {
         });
       }
     }
+  };
+  const handleChallengeUser = async () => {
+    if (!profileData) return;
+
+    inviteModal.setSelectedOpponent(profileData);
+    inviteModal.setIsInviteModalOpen(true);
   };
   const handleBlockUser = () => {
     if (!profileData) return;
@@ -619,7 +626,7 @@ const Profile = () => {
             <button className="actionBtn">
               <MessageIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
             </button>
-            <button className="actionBtn">
+            <button className="actionBtn" onClick={() => handleChallengeUser()}>
               <ChallengeIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
             </button>
           </div>

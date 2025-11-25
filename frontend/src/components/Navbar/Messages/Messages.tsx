@@ -7,6 +7,7 @@ import { Conversation } from "@/types/chat";
 import {
   BackIcon,
   ChatIcon,
+  GroupIcon,
   NewChatIcon,
   SearchIcon,
   SeenIcon,
@@ -15,7 +16,7 @@ import {
 import { User, UserStatus } from "@/types/user";
 import Skeleton from "@/components/Skeleton/Skeleton";
 import { useAppContext } from "@/contexts/AppProviders";
-import { getConversations, newConversation } from "@/api/chat";
+import { createGroupChat, getConversations, newConversation } from "@/api/chat";
 import { getUserFriends, MiniUser, SearchUsers } from "@/api/user";
 
 const SyledChatModal = styled("div")`
@@ -341,11 +342,22 @@ type ChatModalView = "chats" | "newChat" | "newGroup";
 
 const ChatModal = (props: ChatModalProps) => {
   const [currentView, setCurrentView] = useState<ChatModalView>("chats");
-
   const [friends, setFriends] = useState<MiniUser[]>([]);
   const [query, setQuery] = useState<string>("");
+  /**
+   * Group state
+   */
+  const [groupName, setGroupName] = useState<string>("");
+  const [groupDesc, setGroupDesc] = useState<string>("");
+  const [groupType, setGroupType] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
 
+  /**
+   * Refs
+   */
   const ModalRef = useRef<HTMLDivElement>(null);
+  /**
+   * Context
+   */
   const { user, chat } = useAppContext();
 
   useEffect(() => {
@@ -365,7 +377,6 @@ const ChatModal = (props: ChatModalProps) => {
 
   const OnMessageClick = (conversation: Conversation) => {
     if (chat.activeConversations?.includes(conversation.id)) {
-      console.log("bec of here");
       return;
     }
     chat.setActiveConversations([
@@ -375,7 +386,7 @@ const ChatModal = (props: ChatModalProps) => {
     props.onClose();
   };
   /**
-   * Start conversations
+   * conversations
    */
   const fetchFriends = async () => {
     try {
@@ -388,6 +399,7 @@ const ChatModal = (props: ChatModalProps) => {
     }
   };
   const Search = async (query: string) => {
+    if (query.length === 0) return;
     const Users = await SearchUsers(query);
     if (Users.data) {
       const filterOutCurrentUser = Users.data.filter(
@@ -396,21 +408,9 @@ const ChatModal = (props: ChatModalProps) => {
       setFriends(filterOutCurrentUser as unknown as MiniUser[]);
     }
   };
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      Search(query.trim());
-    }, 300);
-    return () => clearTimeout(delayDebounceFn);
-  }, [query]);
-
-  /**
-   * Fetch conversations
-   */
-
   const startNewConversation = async (friendId: string) => {
     try {
       const resp = await newConversation(friendId);
-      console.log(resp);
       if (resp.success) {
         props.refetch_conversations();
         setCurrentView("chats");
@@ -419,7 +419,26 @@ const ChatModal = (props: ChatModalProps) => {
       console.error("Error starting new conversation:", err);
     }
   };
+  const handleCreateGroupChat = async () => {
+    if (groupName.trim().length === 0) return;
 
+    try {
+      const resp = await createGroupChat(groupName, groupDesc, groupType);
+      if (resp.success) {
+        props.refetch_conversations();
+        setCurrentView("chats");
+      } else throw new Error("Failed to create group conversation");
+    } catch (err) {
+      console.error("Error creating group conversation:", err);
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      Search(query.trim());
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
   useEffect(() => {
     if (currentView === "newChat") {
       fetchFriends();
@@ -545,15 +564,40 @@ const ChatModal = (props: ChatModalProps) => {
           </div>
 
           <div className="GroupDetails">
-            <input type="text" placeholder="Group Name" />
-            <textArea placeholder="Group Description" />
+            <input
+              type="text"
+              placeholder="Group Name"
+              value={groupName}
+              onChange={(e: any) => setGroupName(e.target.value)}
+            />
+            <textArea
+              placeholder="Group Description"
+              value={groupDesc}
+              onChange={(e: any) => setGroupDesc(e.target.value)}
+            />
             <div className="GroupTypeSelection">
               <span>Type :</span>
-              <input type="radio" name="group_type" value="public" /> Public
-              <input type="radio" name="group_type" value="private" /> Private
+              <input
+                type="radio"
+                name="group_type"
+                value="public"
+                checked={groupType === "PUBLIC"}
+                onChange={() => setGroupType("PUBLIC")}
+              />
+              Public
+              <input
+                type="radio"
+                name="group_type"
+                value="private"
+                checked={groupType === "PRIVATE"}
+                onChange={() => setGroupType("PRIVATE")}
+              />
+              Private
             </div>
 
-            <button>Create Group Chat</button>
+            <button onClick={() => handleCreateGroupChat()}>
+              Create Group Chat
+            </button>
           </div>
         </div>
       )}
@@ -646,7 +690,7 @@ const ChatItem = (props: ChatItemProps) => {
     time = `${hours}:${minutes}`;
   }
 
-  const isGroupChat = props.converstation.participants.length > 2; // todo : i may integrate this later.
+  const groupChat = props.converstation.group;
   const chattingWith = props.converstation.participants.find(
     (participant) => Number(participant.userId) !== Number(props.userId)
   );
@@ -656,7 +700,7 @@ const ChatItem = (props: ChatItemProps) => {
 
   return (
     <StyledChatItem
-      avatar={chattingWith?.avatar}
+      avatar={groupChat ? groupChat.imageUrl : chattingWith?.avatar}
       isRead={
         props.converstation.lastMessage?.status !== "READ" &&
         !isLastMessageFromUser
@@ -665,9 +709,13 @@ const ChatItem = (props: ChatItemProps) => {
       key={props.converstation.id}
       onClick={() => props.onClick(props.converstation)}
     >
-      <div className="ChatItemAvatar"></div>
+      <div className="ChatItemAvatar">
+        {groupChat && <GroupIcon size={20} fill="rgba(255, 255, 255, 0.7)" />}
+      </div>
       <div className="ChatItemInfos">
-        <span className="ChatItemName">{chattingWith?.username}</span>
+        <span className="ChatItemName">
+          {groupChat ? groupChat.name : chattingWith?.username}
+        </span>
         <div className="ChatItemLastMessage">
           <span>
             {isLastMessageFromUser &&
@@ -683,7 +731,9 @@ const ChatItem = (props: ChatItemProps) => {
           <span>{isLastMessageFromUser && "You :"}</span>
           <span>
             {props.converstation.lastMessage
-              ? props.converstation.lastMessage.content.length > 15
+              ? props.converstation.lastMessage.invitationCode
+                ? "Sent an invitation."
+                : props.converstation.lastMessage.content.length > 15
                 ? props.converstation.lastMessage.content.slice(0, 15) + "..."
                 : props.converstation.lastMessage.content
               : "No messages yet."}

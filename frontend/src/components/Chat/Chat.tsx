@@ -1,7 +1,17 @@
 import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { ChatGroup, ChatMessage, ConversationDetails } from "@/types/chat";
 import { styled } from "@/lib/Zerostyle";
-import { CloseIcon, EmojiIcon, MinimizeIcon, SendIcon } from "../Svg/Svg";
+import {
+  BackIcon,
+  CloseIcon,
+  EmojiIcon,
+  GroupIcon,
+  MinimizeIcon,
+  PersonIcon,
+  SendIcon,
+  SettingsIcon,
+  SignOutIcon,
+} from "../Svg/Svg";
 import { User, UserStatus } from "@/types/user";
 import ChatMessaegeEl from "./ChatMessage";
 import { useAppContext } from "@/contexts/AppProviders";
@@ -144,6 +154,102 @@ const StyledMaximizedConv = styled("div")`
     gap: 10px;
     overflow-y: scroll;
     position: relative;
+  }
+
+  .SettingsModal {
+    width: 250px;
+    min-height: 300px;
+    background-color: var(--bg_color_super_light);
+    position: absolute;
+    right: 10px;
+    top: 62px;
+    box-shadow: rgb(24, 24, 24) 0px 20px 30px -10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    .settingsList {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 2px;
+      .SettingsElement {
+        width: 100%;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 10px;
+        cursor: pointer;
+        font-family: var(--main_font);
+        font-size: 1rem;
+        color: white;
+        border-radius: 5px;
+        transition: 0.1s ease-in-out;
+        &:hover {
+          background-color: var(--bg_color_light);
+        }
+      }
+    }
+    .members {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      .header {
+        width: 100%;
+        height: 50px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 0 10px;
+        cursor: pointer;
+        font-family: var(--main_font);
+        font-size: 1rem;
+        color: white;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: var(--bg_color_light);
+        h2 {
+          margin: 0;
+          font-weight: 100;
+          font-family: var(--main_font);
+          font-size: 1.1rem;
+          color: rgba(255, 255, 255, 0.5);
+        }
+      }
+      .membersContainer {
+        flex: 1;
+        overflow-y: auto;
+        .member {
+          width: 100%;
+          height: 50px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 10px;
+          cursor: pointer;
+          font-family: var(--main_font);
+          font-size: 1rem;
+          color: white;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          .memberAvatar {
+            width: 35px;
+            height: 35px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+          }
+          .memberName {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          }
+          .memberRole {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+          }
+        }
+      }
+    }
   }
   .replyingToContainer {
     background: linear-gradient(
@@ -290,6 +396,7 @@ export const ChatContainer = () => {
   const [conversations, setConversations] = useState<ConversationWithView[]>(
     []
   );
+
   const { chat, user } = useAppContext();
   const { msgSentSound, msgReceivedSound } = useSounds();
 
@@ -305,6 +412,7 @@ export const ChatContainer = () => {
       try {
         const resp = await getMessages(id);
         if (resp.success && resp.data) {
+          console.log("Fetched conversation details:", resp.data);
           setConversations((prevs) => {
             const existing = prevs.find((c) => c.id === resp.data!.id);
             if (existing) return prevs; // Already exists
@@ -347,9 +455,11 @@ export const ChatContainer = () => {
           const messageExists = conv.messages.some((m) => m.id === data.id);
 
           const updatedMessages = messageExists
-            ? conv.messages.map((m) =>
-                m.id === data.id ? { ...m, ...data } : m
-              )
+            ? conv.messages.map((m) => {
+                if (m.id === data.id) {
+                  return { ...m, ...data };
+                } else return m;
+              })
             : [...conv.messages, data];
 
           const updatedConv = {
@@ -439,7 +549,11 @@ export const ChatContainer = () => {
           return (
             <StyledMinimizedConv
               key={conversation.id}
-              avatar_url={chattingWith?.avatar}
+              avatar_url={
+                conversation.group
+                  ? conversation.group.imageUrl
+                  : chattingWith?.avatar
+              }
               onClick={() => onMaximizeClick(conversation.id)}
             >
               {conversation.lastMessagePreview?.content && (
@@ -490,10 +604,22 @@ interface MaximizedConvProps {
   key: string;
 }
 const MaximizedConv = (props: MaximizedConvProps) => {
+  const [settingModalView, setSettingModalView] = useState<
+    "members" | "requests" | "settingsList"
+  >("settingsList");
+  const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
   const [chattingWith, setChattingWith] = useState<User | ChatGroup | null>(
     null
   );
+  /**
+   * Refs
+   */
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
+  const MaximizedContainerRef = Zeroact.useRef<HTMLDivElement>(null);
+  const settingModalRef = Zeroact.useRef<HTMLDivElement>(null);
+  /**
+   * Contexts
+   */
   const { msgSentSound, msgReceivedSound } = useSounds();
 
   const [messageInput, setMessageInput] = Zeroact.useState<string>("");
@@ -564,10 +690,8 @@ const MaximizedConv = (props: MaximizedConvProps) => {
   };
 
   useEffect(() => {
-    console.log(props.conversation);
     // set chatting with
     if (props.conversation.group) {
-      console.log("group found", props.conversation.group);
       setChattingWith(props.conversation.group);
     } else {
       const participant = props.conversation.participants.find(
@@ -593,10 +717,40 @@ const MaximizedConv = (props: MaximizedConvProps) => {
     };
   }, []);
   useEffect(() => {
-    if (messagesRef.current) {
-      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-    }
-  }, [props.conversation.messages, messagesRef.current]);
+    requestAnimationFrame(() => {
+      if (messagesRef.current) {
+        messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+      }
+    });
+  }, [props.conversation.messages]);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        MaximizedContainerRef.current &&
+        !MaximizedContainerRef.current.contains(event.target as Node)
+      ) {
+        props.onMinimize();
+      } else if (
+        settingModalRef.current &&
+        !settingModalRef.current.contains(event.target as Node)
+      ) {
+        setSettingsModalOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [MaximizedContainerRef.current, settingModalRef.current]);
+
+  /**
+   * Flags
+   */
+  const isAdmin = props.conversation.group?.members.some(
+    (m) =>
+      Number(m.userId) === Number(props.userId) &&
+      (m.role === "ADMIN" || m.role === "OWNER")
+  );
 
   if (!chattingWith) return null;
 
@@ -605,10 +759,23 @@ const MaximizedConv = (props: MaximizedConvProps) => {
       avatar_url={
         (chattingWith as User).avatar || (chattingWith as ChatGroup).imageUrl
       }
+      ref={MaximizedContainerRef}
       // userState={chattingWith.status}
     >
       <div className="chat-header">
         <div className="chat-controls">
+          {props.conversation.group ? (
+            <div
+              className="chat-controle"
+              onClick={() => setSettingsModalOpen(true)}
+            >
+              <SettingsIcon
+                stroke="white"
+                size={20}
+                className="chat-controle-icon"
+              />
+            </div>
+          ) : null}
           <div className="chat-controle" onClick={props.onMinimize}>
             <MinimizeIcon
               stroke="white"
@@ -623,10 +790,15 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         <div className="chat-title" onClick={props.onMinimize}>
           <div className="chat-avatar"></div>
           <div className="chat-title-text">
-            {/* <h1>{chattingWith.firstName + " " + chattingWith.lastName}</h1> */}
+            <h1>
+              {props.conversation.group
+                ? (chattingWith as ChatGroup).name
+                : (chattingWith as User).username}
+            </h1>
           </div>
         </div>
       </div>
+
       <div className="chat-messages scroll-y" ref={messagesRef}>
         {props.conversation.messages.map((message: ChatMessage) => {
           return (
@@ -643,6 +815,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
           );
         })}
       </div>
+
       {isReplyingTo && (
         <div className="replyingToContainer">
           <div className="closeIcon" onClick={() => setIsReplyingTo(null)}>
@@ -674,6 +847,82 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         />
         <EmojiIcon fill="white" size={25} className="EmojieSvg" />
       </div>
+
+      {settingsModalOpen && (
+        <div className="SettingsModal" ref={settingModalRef}>
+          {settingModalView === "settingsList" ? (
+            <div className="settingsList">
+              <div
+                className="SettingsElement"
+                onClick={() => {
+                  setSettingModalView("members");
+                }}
+              >
+                <GroupIcon fill="white" size={20} /> members
+              </div>
+              <div
+                className="SettingsElement"
+                onClick={() => {
+                  setSettingModalView("settingsList");
+                }}
+              >
+                <SettingsIcon fill="white" size={20} /> group settings
+              </div>
+              <div className="SettingsElement">
+                <SignOutIcon fill="white" size={20} /> leave group
+              </div>
+
+              {isAdmin && (
+                <div className="SettingsElement">
+                  <SignOutIcon fill="white" size={20} /> delete group
+                </div>
+              )}
+              {isAdmin && (
+                <div
+                  className="SettingsElement"
+                  onClick={() => {
+                    setSettingModalView("requests");
+                  }}
+                >
+                  <PersonIcon fill="white" size={20} /> membership requests
+                </div>
+              )}
+            </div>
+          ) : settingModalView === "members" ? (
+            <div className="members">
+              <div className="header">
+                <a onClick={() => setSettingModalView("settingsList")}>
+                  <BackIcon fill="rgba(255,255,255,0.5)" size={20} />
+                </a>
+                <h2>Group Members</h2>
+              </div>
+              <div className="membersContainer">
+                {props.conversation.participants.map((m) => {
+                  const isAdmin = props.conversation.group?.members.some(
+                    (member) =>
+                      Number(member.userId) === Number(m.userId) &&
+                      (member.role === "ADMIN" || member.role === "OWNER")
+                  );
+                  return (
+                    <div className="member" key={m.id}>
+                      <div
+                        className="memberAvatar"
+                        style={{ backgroundImage: `url(${m.avatar})` }}
+                      />
+                      <span className="memberName">
+                        {m.firstName} {m.lastName}
+                      </span>
+                      {isAdmin && <span className="memberRole"> (Admin) </span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="requestsView"></div>
+          )}
+        </div>
+      )}
     </StyledMaximizedConv>
   );
 };
