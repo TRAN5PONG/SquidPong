@@ -1,4 +1,4 @@
-import Zeroact, { useState } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { ChatMessage, ChatReaction, ChatReactionType } from "@/types/chat";
 import {
@@ -17,8 +17,13 @@ import {
   reactToMessage,
   removeReaction,
 } from "@/api/chat";
-import { timeAgo } from "@/utils/time";
+import { timeAgo, timeUntil } from "@/utils/time";
 import { ConversationWithView } from "./Chat";
+import { Tournament } from "@/types/game/tournament";
+import { getTournament } from "@/api/tournament";
+import { getInvitationByCode } from "@/api/gameInvitation";
+import { useAppContext } from "@/contexts/AppProviders";
+import { GameInvitation } from "@/types/invite";
 
 const StyledChatMessage = styled("div")`
   width: 100%;
@@ -105,6 +110,7 @@ const StyledChatMessage = styled("div")`
       gap: 4px;
       position: relative;
       .GameInvite {
+        cursor: pointer;
         width: 100%;
         height: 250px;
         background-color: #f7f1f1;
@@ -375,6 +381,19 @@ const reactions = {
   ANGRY: "😡",
   FUCK: "🖕",
 };
+interface msgInvitationData {
+  coins: number;
+  mode: "1vs1" | "tournament";
+
+  OneVsOneInvitationStatus?: string;
+  OneVsOneInvitationExpiration?: string;
+
+  tournamentName?: string;
+  tournamentStatus?: string;
+  tournamentParticipants?: number;
+  tournamentTotalParticipants?: number;
+  tournamentOrganizer?: string;
+}
 
 const ChatMessaegeEl = (props: {
   message: ChatMessage;
@@ -393,6 +412,15 @@ const ChatMessaegeEl = (props: {
   const [localMessage, setLocalMessage] = useState(props.message);
   const [showReactionsTooltip, setshowReactionsTooltip] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [onevsoneInvitation, setOnevsoneInvitation] =
+    useState<GameInvitation | null>(null);
+  const [msgInviteData, setmsgInviteData] = useState<msgInvitationData | null>(
+    null
+  );
+  /**
+   * Context
+   */
+  const { inviteModal } = useAppContext();
 
   /**
    * Message
@@ -431,6 +459,13 @@ const ChatMessaegeEl = (props: {
       }
     } catch (err) {
       console.error("Failed to delete message:", err);
+    }
+  };
+  const onInviteClick = () => {
+    if (localMessage.type === "INVITE_TOURNAMENT") {
+    } else if (localMessage.type === "INVITE_MATCH") {
+      inviteModal.setIsInviteModalOpen(true);
+      inviteModal.setSelectedInvitation(onevsoneInvitation);
     }
   };
 
@@ -501,6 +536,51 @@ const ChatMessaegeEl = (props: {
     }
   }
 
+  useEffect(() => {
+    setLocalMessage(props.message);
+    const fetchTournamentData = async () => {
+      try {
+        const resp = await getTournament(props.message.tournamentId!);
+        if (resp.success && resp.data) {
+          setmsgInviteData({
+            coins: resp.data.participationFee || 0,
+            mode: "tournament",
+            tournamentName: resp.data.name,
+            tournamentStatus: resp.data.status,
+            tournamentParticipants: resp.data.participants.length || 0,
+            tournamentTotalParticipants: resp.data.maxPlayers,
+            tournamentOrganizer: resp.data.organizerId,
+          });
+        } else {
+          console.error("Failed to fetch tournament data:", resp.message);
+        }
+      } catch (err) {
+        console.error("Error fetching tournament data:", err);
+      }
+    };
+    const fetchInvitationData = async () => {
+      try {
+        const resp = await getInvitationByCode(props.message.invitationCode!);
+        if (resp) {
+          setOnevsoneInvitation(resp);
+          setmsgInviteData({
+            coins: resp.requiredCurrency,
+            mode: "1vs1",
+            OneVsOneInvitationStatus: resp.status,
+            OneVsOneInvitationExpiration: new Date(
+              resp.expiresAt
+            ).toISOString(),
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching invitation data:", err);
+      }
+    };
+
+    if (props.message.type === "INVITE_TOURNAMENT") fetchTournamentData();
+    else if (props.message.type === "INVITE_MATCH") fetchInvitationData();
+  }, [props.message]);
+
   return (
     <StyledChatMessage
       avatar={localMessage.sender.avatar}
@@ -570,76 +650,69 @@ const ChatMessaegeEl = (props: {
           >
             {localMessage.content}
           </span>
-          {localMessage.type === "invite" && (
-            <div className="GameInvite">
-              <div className="Host">
-                <div className="HostedBy" />
-                <h1>
-                  {localMessage.invitation?.type === "game"
-                    ? "Game Invitation"
-                    : localMessage.invitation?.tournamentInfos?.tournamentName +
-                        " 🏆" || "Tournament Invitation 🏆"}
-                </h1>
-                <span>By user12</span>
+          {(localMessage.type === "INVITE_MATCH" ||
+            localMessage.type === "INVITE_TOURNAMENT") &&
+            !localMessage.isDeleted && (
+              <div className="GameInvite" onClick={onInviteClick}>
+                <div className="Host">
+                  <div className="HostedBy" />
+                  <h1>
+                    {localMessage.type === "INVITE_MATCH"
+                      ? "Game Invitation"
+                      : "🏆 Tournament Invitation 🏆"}
+                  </h1>
+                  <span>{localMessage.sender.username}</span>
+                </div>
+
+                <div className="GameOptions">
+                  <div className="GameOption">
+                    <CoinIcon fill="gray" size={17} />
+                    <span>{msgInviteData?.coins} coins</span>
+                  </div>
+                  <div className="GameOption">
+                    <PingPongIcon fill="gray" size={18} stroke="red" />
+                    <span>
+                      {msgInviteData?.mode === "1vs1"
+                        ? "1 vs 1 Match"
+                        : "Tournament"}
+                    </span>
+                  </div>
+
+                  {localMessage.type === "INVITE_TOURNAMENT" ? (
+                    <div className="GameOption">
+                      <GroupIcon fill="gray" size={17} />
+                      <span>
+                        {msgInviteData?.tournamentParticipants}/
+                        {msgInviteData?.tournamentTotalParticipants} players
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="GameOption">
+                      <InfosIcon fill="gray" size={17} />
+                      <span>
+                        Expires in: 
+                        {timeUntil(
+                          msgInviteData?.OneVsOneInvitationExpiration!
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="ActionButtons">
+                  <button className="DiclineButton">X</button>
+                  <button
+                    className="AcceptButton"
+                    disabled={
+                      msgInviteData?.tournamentStatus === "ONGOING" ||
+                      msgInviteData?.OneVsOneInvitationStatus === "accepted"
+                    }
+                  >
+                    Accept
+                  </button>
+                </div>
               </div>
-
-              <div className="GameOptions">
-                <div className="GameOption">
-                  <CoinIcon fill="gray" size={17} />
-                  <span>
-                    {localMessage.invitation?.type === "game"
-                      ? localMessage.invitation?.matchSettings?.settings
-                          .requiredCurrency + " coins"
-                      : localMessage.invitation?.tournamentInfos
-                          ?.requiredCurrency + " coins"}
-                  </span>
-                </div>
-                <div className="GameOption">
-                  <PingPongIcon fill="gray" size={18} stroke="red" />
-                  <span>{localMessage.invitation?.type}</span>
-                </div>
-
-                <div className="GameOption">
-                  <InfosIcon fill="gray" size={17} />
-                  <span>waiting for players</span>
-                </div>
-
-                <div className="GameOption">
-                  <GroupIcon fill="gray" size={17} />
-                  <span>
-                    {localMessage.invitation?.type === "tournament"
-                      ? localMessage.invitation?.tournamentInfos
-                          ?.currentParticipants +
-                        " / " +
-                        localMessage.invitation?.tournamentInfos
-                          ?.maxParticipants +
-                        " participants"
-                      : ""}
-                  </span>
-                </div>
-              </div>
-
-              <div className="ActionButtons">
-                <button className="DiclineButton">X</button>
-                <button
-                  className="AcceptButton"
-                  disabled={localMessage.invitation?.status !== "pending"}
-                >
-                  {localMessage.invitation?.status === "pending"
-                    ? "Accept"
-                    : localMessage.invitation?.status === "cancelled"
-                    ? "Cancelled"
-                    : localMessage.invitation?.status === "declined"
-                    ? "Declined"
-                    : localMessage.invitation?.status === "expired"
-                    ? "Expired"
-                    : localMessage.invitation?.status === "accepted"
-                    ? "Accepted"
-                    : ""}
-                </button>
-              </div>
-            </div>
-          )}
+            )}
           <div
             className="ChatMsgBottom"
             onMouseLeave={() => setshowReactionsTooltip(false)}

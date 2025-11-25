@@ -208,7 +208,6 @@ const Navbar = () => {
     try {
       const res = await getNotifications();
       if (res.success && res.data) {
-        console.log("Fetched notifications:", res.data);
         setNotifications(res.data);
       }
     } catch (error) {

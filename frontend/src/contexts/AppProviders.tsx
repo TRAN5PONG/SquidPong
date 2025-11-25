@@ -2,7 +2,8 @@ import { ToastEl } from "@/components/Toast/Toast";
 import { useSocket } from "@/hooks/useSocket";
 import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
 import { createContext, useState, ZeroactNode } from "@/lib/Zeroact";
-import { Match } from "@/types/game/game";
+import { GameSettings, Match } from "@/types/game/game";
+import { GameInvitation } from "@/types/game/game";
 import { User, UserPreferences } from "@/types/user";
 
 type ModalState = {
@@ -40,6 +41,23 @@ type userData = {
       value: Match | null | ((prev: Match | null) => Match | null)
     ) => void;
   };
+  inviteModal: {
+    isInviteModalOpen: boolean;
+    setIsInviteModalOpen: (
+      isOpen: boolean,
+      settings?: {
+        inviteType: "public" | "private";
+      }
+    ) => void;
+    onCloseInviteModal: () => void;
+    GameSettings: GameSettings;
+    selectedInvitation: GameInvitation | null;
+    setSelectedInvitation: (invitation: GameInvitation | null) => void;
+    setSelectedMatch: (match: Match | null) => void;
+    setSelectedMode: (mode: string | null) => void;
+    selectedOpponent: User | null;
+    setSelectedOpponent: (opponent: User | null) => void;
+  };
 };
 const AppContext = createContext<userData | null>(null);
 
@@ -47,6 +65,21 @@ export function AppProvider({ children }: { children: ZeroactNode[] }) {
   const [user, setUser] = useState<User | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [activeConversations, setActiveConversations] = useState<string[]>([]);
+  // invite modal management
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState<boolean>(false);
+  const [selectedInvitation, setSelectedInvitation] =
+    useState<GameInvitation | null>(null);
+  const [GameSettings, setGameSettings] = useState<GameSettings>({
+    requiredCurrency: 0,
+    rules: {
+      maxScore: 5,
+      pauseTime: 30,
+      allowPowerUps: false,
+    },
+  });
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [selectedOpponent, setSelectedOpponent] = useState<User | null>(null);
 
   // Toasts management
   const [toastsQueue, setToastsQueue] = useState<ToastEl[]>([]);
@@ -116,6 +149,18 @@ export function AppProvider({ children }: { children: ZeroactNode[] }) {
         match: {
           currentMatch,
           setCurrentMatch,
+        },
+        inviteModal: {
+          isInviteModalOpen,
+          setIsInviteModalOpen,
+          onCloseInviteModal: () => setIsInviteModalOpen(false),
+          GameSettings,
+          selectedInvitation,
+          setSelectedInvitation,
+          setSelectedMatch,
+          setSelectedMode,
+          selectedOpponent,
+          setSelectedOpponent,
         },
       }}
     >

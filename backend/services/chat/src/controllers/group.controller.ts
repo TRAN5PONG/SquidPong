@@ -99,10 +99,6 @@ export async function createGroup(req: FastifyRequest, res: FastifyReply)
       
    return res.send(respond);
 }
-
-
-
-
 export async function updateGroupInfo(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<null> = { success: true, message: GroupMessages.UPDATED_SUCCESS };
@@ -143,9 +139,6 @@ export async function updateGroupInfo(req: FastifyRequest, res: FastifyReply)
    
    return res.send(respond);
 }
-
-
-
 export async function updateGroupImage(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.IMAGE_UPDATED_SUCCESS };
@@ -181,9 +174,6 @@ export async function updateGroupImage(req: FastifyRequest, res: FastifyReply)
   
    return res.send(respond);
 }
-
-
-
 export async function updateMember(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<null> = { success: true, message: GroupMessages.ROLE_UPDATED_SUCCESS };
@@ -269,9 +259,6 @@ export async function removeGroupMember(req: FastifyRequest, res: FastifyReply)
    
    return res.send(respond);  
 }   
-
-
-
 /** 6️⃣ Leave Group */
 export async function leaveGroup (req: FastifyRequest, res: FastifyReply)
 {
@@ -305,9 +292,6 @@ export async function leaveGroup (req: FastifyRequest, res: FastifyReply)
 
    return res.send(respond);
 }
-
-
-
 /** 7️⃣ Join Requests (Private Groups) */
 export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply) 
 {
@@ -365,8 +349,6 @@ export async function requestJoinGroup (req: FastifyRequest, res: FastifyReply)
    
    return res.send(respond);
 }
-
-
 export async function getJoinRequests (req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.JOIN_REQUESTS_FETCHED_SUCCESS };
@@ -404,8 +386,6 @@ export async function getJoinRequests (req: FastifyRequest, res: FastifyReply)
    
    return res.send(respond);
 }
-
-
 export async function approveJoinRequest (req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.JOIN_REQUEST_APPROVED_SUCCESS };
@@ -449,8 +429,6 @@ export async function approveJoinRequest (req: FastifyRequest, res: FastifyReply
    
    return res.send(respond);
 }
-
-
 export async function rejectJoinRequest (req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.JOIN_REQUEST_REJECTED_SUCCESS };
@@ -485,9 +463,6 @@ export async function rejectJoinRequest (req: FastifyRequest, res: FastifyReply)
    }
    return res.send(respond);
 }
-
-
-
 export async function getGroupById(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.FETCH_SUCCESS };
@@ -513,9 +488,6 @@ export async function getGroupById(req: FastifyRequest, res: FastifyReply)
 
    return res.send(respond);
 }
-
-
-
 export async function listGroupMembers(req: FastifyRequest, res: FastifyReply) 
 {
    const respond: ApiResponse<{ members: { userId: string; role: string }[] }> = { success: true, message: GroupMessages.MEMBERS_LISTED_SUCCESS, data: { members: [] } };
@@ -542,8 +514,6 @@ export async function listGroupMembers(req: FastifyRequest, res: FastifyReply)
    
    return res.send(respond);
 }
-
-
 export async function getGoupes (req: FastifyRequest, res: FastifyReply)
 {
    const respond: ApiResponse<any> = { success: true, message: GroupMessages.FETCH_SUCCESS, data: { groups: [] } };
@@ -567,7 +537,6 @@ export async function getGoupes (req: FastifyRequest, res: FastifyReply)
    
    return res.send(respond);
 }
-
 
 /** 9️⃣ Messages */
 export async function getGroupMessages(req: FastifyRequest, res: FastifyReply) 
@@ -595,8 +564,6 @@ export async function getGroupMessages(req: FastifyRequest, res: FastifyReply)
    }
    return res.send(respond);
 }
-
-
 /** 🔟 Delete Group */
 export async function removeGroup(req: FastifyRequest, res: FastifyReply) 
 {
@@ -626,8 +593,6 @@ export async function removeGroup(req: FastifyRequest, res: FastifyReply)
 
    return res.send(respond);
 }
-
-
 /** 🆕 Admin/Owner Invite User to Group */
 export async function inviteUserToGroup(req: FastifyRequest, res: FastifyReply) 
 {

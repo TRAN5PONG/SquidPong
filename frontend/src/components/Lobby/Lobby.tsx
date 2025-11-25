@@ -44,7 +44,7 @@ const StyledLobby = styled("div")`
       justify-content: center;
       align-items: center;
       position: relative;
-      background-image: linear-gradient(
+      background: linear-gradient(
         -180deg,
         rgba(45, 56, 82, 0) 50%,
         rgba(45, 56, 82, 0.3) 100%

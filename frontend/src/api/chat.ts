@@ -58,8 +58,11 @@ export const getMessages = async (
   return resp.json();
 };
 export const sendMessage = async (
-  chatId: number,
-  content: string
+  chatId?: number,
+  content?: string,
+  receiverId?: string,
+  invitationCode?: string,
+  tournamentId?: number
 ): Promise<ApiResponse> => {
   const resp = await fetch(`${API_BASE_URL}/message/send`, {
     method: "POST",
@@ -67,7 +70,13 @@ export const sendMessage = async (
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ chatId, content }),
+    body: JSON.stringify({
+      chatId,
+      content,
+      receiverId,
+      invitationCode,
+      tournamentId,
+    }),
   });
 
   return resp.json();
@@ -169,7 +178,7 @@ export const createGroupChat = async (
   desc: string,
   type: string
 ): Promise<ApiResponse> => {
-  const resp = await fetch(`${API_BASE_URL}/group`, {
+  const resp = await fetch(`${API_BASE_URL}/group/create`, {
     method: "POST",
     credentials: "include",
     headers: {
