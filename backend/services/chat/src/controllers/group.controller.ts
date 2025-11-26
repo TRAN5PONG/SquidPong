@@ -60,7 +60,6 @@ export async function getGroupConversationByMatchId(
           include: {
             members: true,
             messages: {
-              orderBy: { timestamp: "desc" },
               take: 50,
             },
           },
@@ -147,7 +146,6 @@ export async function getGroupConversationByMatchId(
               include: { user: true },
             },
             messages: {
-              orderBy: { timestamp: "desc" },
               take: 50,
             },
           },
