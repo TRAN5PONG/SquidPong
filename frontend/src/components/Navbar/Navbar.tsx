@@ -276,6 +276,7 @@ const Navbar = () => {
               setShowSearchModal(false);
             }}
             query={query}
+            refetchConvs={fetchConversations}
           />
         )}
       </div>

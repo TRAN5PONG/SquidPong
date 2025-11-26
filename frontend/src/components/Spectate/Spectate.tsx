@@ -24,7 +24,22 @@ import {
   cameraModes,
   SpectatorCamera,
 } from "../Game/entities/Camera/SpectatorCamera";
+import { getSpectateGroupByMatchId } from "@/api/chat";
 // import { CameraModeName, cameraModes } from "../Game/entities/cameras/camera";
+
+interface Spectator {
+  id: number;
+  userId: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  isVerified: boolean;
+  avatar: string;
+  status: string;
+  customStatus: "ONLINE" | "OFFLINE" | "IDLE" | "DO_NOT_DISTURB";
+  isDeleted: boolean;
+  createdAt: Date;
+}
 
 const StyledSpectate = styled("div")`
   width: 100%;
@@ -334,29 +349,46 @@ const StyledSpectate = styled("div")`
     }
   }
 `;
-
 const Spectate = () => {
   /**
-   *STATE
+   * Refs
    */
-  // refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const SpectateSceneRef = useRef<SpectateScene | null>(null);
   const netWorkRef = useRef<Network | null>(null);
   const cameraRef = useRef<SpectatorCamera | null>(null);
-  // states
+  /**
+   *STATE
+   */
   const [selectedBet, setSelectedBet] = Zeroact.useState<string | null>(null);
   const [ammountBet, setAmmountBet] = Zeroact.useState<number | null>(null);
   const [showCameraModes, setShowCameraModes] = Zeroact.useState(false);
   const [isLoading, setIsLoading] = Zeroact.useState(true);
   const [match, setMatch] = Zeroact.useState<Match | null>(null);
+  const [chatGroup, setChatGroup] = Zeroact.useState<any>(null);
+  const [chatMembers, setChatMembers] = Zeroact.useState<Spectator[]>([]);
   const [notFound, setNotFound] = Zeroact.useState(false);
+  /**
+   * Contexts
+   */
+  const navigate = useNavigate();
 
   /**
    * MATCH
    */
   const matchId = useRouteParam("/spectate/:id", "id");
   const { user } = useAppContext();
+
+  /**
+   * handlers
+   */
+  const handleBetSelection = (bet: string) => {
+    setSelectedBet((prev) => (prev === bet ? null : bet));
+  };
+
+  /**
+   * Effects
+   */
   useEffect(() => {
     if (!matchId) return;
 
@@ -374,14 +406,25 @@ const Spectate = () => {
         setNotFound(true);
       }
     };
+    const fetchMatchChat = async () => {
+      try {
+        const resp = await getSpectateGroupByMatchId(matchId);
+        if (resp && resp.data) {
+          setChatGroup(resp.data);
+          setChatMembers((resp.data as any).chat.members as Spectator[]);
+        } else throw new Error("No data received");
+      } catch (error) {
+        console.error("Error fetching match chat data:", error);
+      }
+    };
     fetchMatchData();
+    fetchMatchChat();
 
     try {
     } catch (err) {
       console.error("Error fetching match data:", err);
     }
   }, [matchId]);
-
   useEffect(() => {
     if (!match || !canvasRef.current || !user) return;
 
@@ -395,26 +438,13 @@ const Spectate = () => {
     cameraRef.current = SpectateSceneRef.current.camera;
   }, [match, canvasRef.current, user]);
 
-  // useEffect(() => {
-  //   if (!netWorkRef.current) return;
 
-  //   netWorkRef.current.on("opponent:paddle", (data) => {
-  //     console.log("opponent paddle data:", data);
-  //   });
-  // }, [netWorkRef.current]);
   /**
-   * BETTING
+   * Helpers
    */
-  const handleBetSelection = (bet: string) => {
-    setSelectedBet((prev) => (prev === bet ? null : bet));
-  };
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    // const game = new Game(canvasRef.current);
-    // game.start(1)
-  }, []);
+  const messageFromUser = (message: ChatMessage) => {
+    // return chatMembers.find((member) => member.userId === message.from.id);
+  }
 
   // const onCameraModeChange = (mode: CameraModeName) => {
   //   camera.setCurrentMode(mode);
@@ -561,7 +591,7 @@ const Spectate = () => {
                 ))}
               </div>
             ) : (
-              db.FakeGroupChatMessages.map((message: ChatMessage) => {
+              chatGroup?.chat?.messages.map((message: ChatMessage) => {
                 return <GroupMessageEl {...message} />;
               })
             )}
