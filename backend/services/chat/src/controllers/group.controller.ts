@@ -51,7 +51,8 @@ export async function getGroupConversationByMatchId(
   const userId = String(headers["x-user-id"]);
   const { matchId } = req.params as { matchId: string };
 
-  try {
+  try 
+  {
     let group = await prisma.group.findFirst({
       where: { matchId },
       include: {
@@ -114,7 +115,7 @@ export async function getGroupConversationByMatchId(
       return res.send(respond);
     }
 
-    const isInGroup = group.members.some((m) => m.userId === userId);
+    const isInGroup = group.members.some((m : any) => m.userId === userId);
     if (!isInGroup) {
       await prisma.groupMember.create({
         data: {
@@ -126,7 +127,7 @@ export async function getGroupConversationByMatchId(
       });
     }
 
-    const isInChat = group.chat?.members.some((m) => m.userId === userId);
+    const isInChat = group.chat?.members.some((m : any) => m.userId === userId);
     if (!isInChat) {
       await prisma.chatMember.create({
         data: {
