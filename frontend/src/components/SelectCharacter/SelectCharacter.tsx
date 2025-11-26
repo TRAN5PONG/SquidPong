@@ -5,11 +5,12 @@ import { db } from "@/db";
 import { useSound } from "@/hooks/useSound";
 import { characters, GameCharacter } from "@/types/game/character";
 import { useAppContext } from "@/contexts/AppProviders";
+import { updateProfile } from "@/api/user";
 
 const SelectCharacter = () => {
   const [selectedChar, setselectedChar] =
     Zeroact.useState<GameCharacter | null>(null); //playerId
-  const {user} = useAppContext();
+  const { user, toasts } = useAppContext();
 
   useEffect(() => {
     if (!user) return;
@@ -20,12 +21,38 @@ const SelectCharacter = () => {
     setselectedChar(selectedChar);
   }, [user]);
 
-  const handleSelectChar = async(character: GameCharacter) => {
+  const handleSelectChar = async (character: GameCharacter | null) => {
+    if (!character) return;
+    try {
+      const resp = await updateProfile({
+        playerSelectedCharacter: character.id,
+      });
+      if (resp.success) {
+        toasts.addToastToQueue({
+          message: "Character selected successfully",
+          type: "success",
+        });
+        setselectedChar(character);
+      } else {
+        toasts.addToastToQueue({
+          message: "Failed to select character",
+          type: "error",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  // const handlePurchaseChar = async (character: GameCharacter | null) => {
+  //   if (!character) return;
+  //   try {
+  //     const resp = await updateProfile({
 
-  }
-  const handlePurchaseChar = async(character: GameCharacter) => {
-
-  }
+  //     })
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
+  // };
 
   if (!user) return null;
 
@@ -68,11 +95,20 @@ const SelectCharacter = () => {
         </div>
 
         <div className="actions">
-          {selectedChar &&
-          !user.playerCharacters.includes(selectedChar.id) ? (
-            <button className="PurchBtn">Purchase - {selectedChar.price}</button>
+          {selectedChar && !user.playerCharacters.includes(selectedChar.id) ? (
+            <button
+              className="PurchBtn"
+              onClick={() => handlePurchaseChar(selectedChar)}
+            >
+              Purchase - {selectedChar.price}
+            </button>
           ) : null}
-          <button className="SelectBtn">select</button>
+          <button
+            className="SelectBtn"
+            onClick={() => handleSelectChar(selectedChar)}
+          >
+            select
+          </button>
         </div>
       </div>
     </StyledSelectCharacter>
@@ -143,7 +179,7 @@ const StyledSelectCharacter = styled("div")`
       .PurchBtn {
         background-color: rgba(255, 217, 68, 1);
         width: auto;
-        padding: 0 20px; 
+        padding: 0 20px;
       }
       .SelectBtn {
         background-color: transparent;
