@@ -124,7 +124,6 @@ interface ScoreBoardProps {
   match: Match | null;
   startCinematicCamera: () => void;
   resetCamera: () => void;
-  TableAnimation: ((isWon: boolean, intro?: boolean | undefined) => void) | undefined; 
 }
 const ScoreBoard = (props: ScoreBoardProps) => {
   const { toasts } = useAppContext();
@@ -171,7 +170,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     props.net.on("phase:changed", setMatchPhase);
     props.net.on("countdown:updated", setCountdownValue);
     props.net.on("winner:declared", setWinnerId);
-    props.net.on("gameStartAt", setGameStartedAt);
+    // props.net.on("gameStartAt", setGameStartedAt);
 
     props.net.on(
       "player:connected",
@@ -223,11 +222,6 @@ const ScoreBoard = (props: ScoreBoardProps) => {
           setGuestScores(score as number);
         }
       });
-
-      if (data.pointBy === user?.id)
-        props.TableAnimation(true);
-      else
-        props.TableAnimation(false);
     });
     // Time
   }, [props.net, host, guest]);
@@ -251,7 +245,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
       props.startCinematicCamera();
       lastPausedRef.current = true;
     } else if (matchPhase !== "paused") {
-      ambianceSound.stop(2);
+      ambianceSound.stop();
       props.resetCamera();
       lastPausedRef.current = false;
     }

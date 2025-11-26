@@ -1,7 +1,14 @@
+import { joinGroup, searchGroupChats } from "@/api/chat";
 import { searchTournaments } from "@/api/tournament";
 import { SearchUsers, sendFriendRequest } from "@/api/user";
 import Skeleton from "@/components/Skeleton/Skeleton";
-import { AddFriendIcon, TrophyIcon, VerifiedIcon } from "@/components/Svg/Svg";
+import {
+  AddFriendIcon,
+  AddIcon,
+  GroupIcon,
+  TrophyIcon,
+  VerifiedIcon,
+} from "@/components/Svg/Svg";
 import { useAppContext } from "@/contexts/AppProviders";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { db } from "@/db";
@@ -154,14 +161,97 @@ const StyledSearchTournamentBox = styled("div")`
     }
   }
 `;
-const SearchModal = (props: { onClose: () => void; query: string }) => {
+const StyledSearchGroupBox = styled("div")`
+  width: 100%;
+  height: 50px;
+  border-radius: 5px;
+  border: 1px solid var(--bg_color_light);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 3px 2px;
+  transition: 0.2s ease-in-out;
+  cursor: pointer;
+  .Avatar {
+    height: 44px;
+    width: 44px;
+    border-radius: 5px;
+    background-color: var(--bg_color_light);
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    .GroupIcon {
+      position: absolute;
+      bottom: 0px;
+      right: 0px;
+      width: 15px;
+      height: 15px;
+    }
+  }
+  .GroupInfos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0 10px;
+    color: white;
+    h1 {
+      font-family: var(--main_font);
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    span {
+      font-family: var(--main_font);
+      font-size: 0.9rem;
+      opacity: 0.7;
+      font-weight: 100;
+    }
+  }
+  .ActionsBtns {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: auto;
+    padding: 5px;
+    button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      background-color: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      padding: 5px 10px;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      font-family: var(--main_font);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: 0.2s ease-in-out;
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      &:hover {
+        color: rgba(255, 255, 255, 0.8);
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  &:hover {
+    background-color: var(--bg_color_light);
+  }
+`;
+const SearchModal = (props: { onClose: () => void; query: string, refetchConvs: () => void }) => {
   const ModalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, toasts } = useAppContext();
   // Stats
   const [players, setPlayers] = Zeroact.useState<User[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [groups, setGroups] = useState<Conversation[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const SearchPlayers = async (query: string) => {
@@ -182,7 +272,18 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
       console.error("Error searching tournaments:", err);
     }
   };
-
+  const SearchGroups = async (query: string) => {
+    try {
+      const groups = await searchGroupChats(query);
+      if (groups.data) {
+        setGroups(groups.data);
+      } else {
+        setGroups([]);
+      }
+    } catch (err) {
+      console.error("Error searching groups:", err);
+    }
+  };
   const sendFriendRequest_ = async (receiverId: string) => {
     try {
       const resp = await sendFriendRequest(Number(receiverId));
@@ -208,6 +309,24 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
       });
     }
   };
+  /**
+   * Groups
+   */
+  const handleJoinGroup = async (groupId: number) => {
+    try {
+      const resp = await joinGroup(groupId);
+      if (resp.success) {
+        props.refetchConvs();
+        toasts.addToastToQueue({
+          type: "info",
+          message: "Join request sent successfully.",
+          duration: 3000,
+        });
+      } else throw new Error(resp.message || "Failed to send join request");
+    } catch (err) {
+      console.error("Error joining group:", err);
+    }
+  };
 
   useEffect(() => {
     if (props.query.trim() === "") {
@@ -220,6 +339,7 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
     const delayDebounceFn = setTimeout(() => {
       SearchPlayers(props.query.trim()).then(() => setIsLoading(false));
       SearchTournaments(props.query.trim());
+      SearchGroups(props.query.trim());
     }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [props.query]);
@@ -347,10 +467,45 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
               );
             })}
       </div>
-      {groups.length > 0 && <h1 className="SearchCatg">Groups</h1>}
-      {tournaments.length === 0 && players.length === 0 && !isLoading && (
-        <span className="NOPSpan">No results found.</span>
-      )}
+      <div className="SearchCatgContainer">
+        {groups.length > 0 && <h1 className="SearchCatg">Groups</h1>}
+        {groups.length > 0 &&
+          groups.map((group) => {
+            const alreadyMember = group.members.find(
+              (m: any) => Number(m.userId) === Number(user?.userId)
+            );
+            return (
+              <StyledSearchGroupBox>
+                <div
+                  className="Avatar"
+                  style={{ backgroundImage: `url(${group.imageUrl})` }}
+                >
+                  <GroupIcon fill="white" size={30} className="GroupIcon" />
+                </div>
+                <div className="GroupInfos">
+                  <h1>
+                    {group.name} -{" "}
+                    <span>{group.members.length} participants</span>
+                  </h1>
+                  <span>{group.desc}</span>
+                </div>
+                <div className="ActionsBtns">
+                  <button
+                    onClick={() => handleJoinGroup(group.id)}
+                    disabled={alreadyMember}
+                  >
+                    {alreadyMember ? "Joined" : "Join Group"}
+                  </button>
+                </div>
+              </StyledSearchGroupBox>
+            );
+          })}
+      </div>
+
+      {tournaments.length === 0 &&
+        players.length === 0 &&
+        groups.length === 0 &&
+        !isLoading && <span className="NOPSpan">No results found.</span>}
     </StyledSearchModal>
   );
 };
