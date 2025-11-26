@@ -102,8 +102,8 @@ export const characters: GameCharacter[] = [
     powerShot: 95,
   },
   {
-    id: "Bssita",
-    name: "Bssita",
+    id: "Xylar",
+    name: "Xylar",
     description:
       "An eerie doll-like challenger that mimics every move you make.",
     image: "/characters/doll.png",

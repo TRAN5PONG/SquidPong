@@ -147,11 +147,17 @@ export async function getRecentChats(req: FastifyRequest, res: FastifyReply) {
   const userId = headers["x-user-id"];
 
   let dataRespond: any = [];
-  try {
+  try 
+  {
     const recentChats = await prisma.chat.findMany({
       where: {
         members: { some: { userId } },
+        OR: [
+          { group: { is: null } },
+          { group: { is: { matchId: null } } },
+        ],
       },
+      orderBy: {},
       include: {
         members: { include: { user: true } },
         group: true,
