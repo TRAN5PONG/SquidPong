@@ -74,12 +74,12 @@ enum PlayerCharacter {
   Tbib
   Med
   Ryu
-  hamaka
+  Hama9a
   Mnachit
   Mira
   Zero
   Zenitsu
-  Bssita
+  Xylar
 }
 
 enum PlayerPaddle {

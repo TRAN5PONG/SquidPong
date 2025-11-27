@@ -58,8 +58,11 @@ export const getMessages = async (
   return resp.json();
 };
 export const sendMessage = async (
-  chatId: number,
-  content: string
+  chatId?: number,
+  content?: string,
+  receiverId?: string,
+  invitationCode?: string,
+  tournamentId?: number
 ): Promise<ApiResponse> => {
   const resp = await fetch(`${API_BASE_URL}/message/send`, {
     method: "POST",
@@ -67,7 +70,13 @@ export const sendMessage = async (
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ chatId, content }),
+    body: JSON.stringify({
+      chatId,
+      content,
+      receiverId,
+      invitationCode,
+      tournamentId,
+    }),
   });
 
   return resp.json();
@@ -169,7 +178,7 @@ export const createGroupChat = async (
   desc: string,
   type: string
 ): Promise<ApiResponse> => {
-  const resp = await fetch(`${API_BASE_URL}/group`, {
+  const resp = await fetch(`${API_BASE_URL}/group/create`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -217,6 +226,16 @@ export const searchGroupChats = async (query: string): Promise<ApiResponse> => {
 
   return resp.json();
 };
+export const listGroupRequests = async (
+  groupId: number
+): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/group/${groupId}/join-requests`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return resp.json();
+};
 export const listGroupMembers = async (
   groupId: number
 ): Promise<ApiResponse> => {
@@ -242,9 +261,94 @@ export const inviteToGroup = async (
 
   return resp.json();
 };
-export const leaveGroup = async (groupId: number): Promise<ApiResponse> => {
-  const resp = await fetch(`${API_BASE_URL}/group/${groupId}/members/leave`, {
-    method: "POST",
+export const leaveGroup = async (
+  groupId: number,
+  matchId?: string
+): Promise<ApiResponse> => {
+  const matchIdParam = matchId || "";
+
+  const resp = await fetch(
+    `${API_BASE_URL}/group/${groupId}/${matchIdParam}/members/leave`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
+
+  return resp.json();
+};
+export const joinGroup = async (
+  groupId: number,
+  matchId?: string
+): Promise<ApiResponse> => {
+  const matchIdParam = matchId || "";
+
+  const resp = await fetch(
+    `${API_BASE_URL}/group/${groupId}/${matchIdParam}/join-requests`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
+
+  return resp.json();
+};
+export const updateGroupAvatar = async (
+  groupId: number,
+  avatarFile: File
+): Promise<ApiResponse> => {
+  const formData = new FormData();
+  formData.append("image", avatarFile);
+
+  const resp = await fetch(`${API_BASE_URL}/group/${groupId}/image`, {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+
+  return resp.json();
+};
+export const approveJoinRequest = async (
+  groupId: number,
+  memberId: number
+): Promise<ApiResponse> => {
+  const resp = await fetch(
+    `${API_BASE_URL}/group/${groupId}/join-requests/approve`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ memberId }),
+    }
+  );
+
+  return resp.json();
+};
+export const rejectJoinRequest = async (
+  groupId: number,
+  memberId: number
+): Promise<ApiResponse> => {
+  const resp = await fetch(
+    `${API_BASE_URL}/group/${groupId}/join-requests/reject`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ memberId }),
+    }
+  );
+
+  return resp.json();
+}
+export const getSpectateGroupByMatchId = async (
+  matchId: string
+): Promise<ApiResponse> => {
+  const resp = await fetch(`${API_BASE_URL}/group/spectate/${matchId}`, {
+    method: "GET",
     credentials: "include",
   });
 

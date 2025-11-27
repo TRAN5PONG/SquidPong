@@ -50,9 +50,9 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
   let newData: { isVerified?: boolean , walletBalance?: number } = {};
   let body = req.body as any;
 
-  console.log("Update Profile DB Body:", body);
   try
   {
+
     let existingProfile = await prisma.profile.findUnique({ where: { userId } });
     if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
 
@@ -60,7 +60,7 @@ export async function updateProfileHandlerDB(req: FastifyRequest, res: FastifyRe
 
     body.playerCharacters = await purchaseItem(existingProfile ,'playerCharacters' ,  body.playerCharacters);
     body.playerPaddles = await purchaseItem(existingProfile ,'playerPaddles' ,  body.playerPaddles);
-// customStatus
+
     newData.walletBalance = existingProfile.walletBalance;
 
     if(body.isVerified === true)

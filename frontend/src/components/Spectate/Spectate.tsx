@@ -7,7 +7,6 @@ import {
   SendIcon,
   SignOutIcon,
 } from "../Svg/Svg";
-import { ChatMessage } from "@/types/chat";
 import { db } from "@/db";
 import { useNavigate } from "@/contexts/RouterProvider";
 import ScoreBoard from "../Game/Elements/ScoreBoard";
@@ -24,6 +23,8 @@ import {
   cameraModes,
   SpectatorCamera,
 } from "../Game/entities/Camera/SpectatorCamera";
+import { getSpectateGroupByMatchId, sendMessage } from "@/api/chat";
+import { socketManager } from "@/utils/socket";
 // import { CameraModeName, cameraModes } from "../Game/entities/cameras/camera";
 
 const StyledSpectate = styled("div")`
@@ -288,10 +289,13 @@ const StyledSpectate = styled("div")`
       flex-direction: column;
       position: relative;
       align-items: center;
-      padding: 5px 10px;
+      position: relative;
       .ChatMessages {
+        padding: 5px 10px;
+        position: absolute;
+        height: calc(100% - 55px);
         width: 100%;
-        flex: 1;
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -299,17 +303,25 @@ const StyledSpectate = styled("div")`
         justify-content: flex-start;
       }
       .Chat-input {
-        height: 45px;
+        position: absolute;
+        bottom: 0;
+        min-height: 50px;
         width: 100%;
-        position: relative;
+        padding: 5px;
 
         .Chat-input-icons {
           position: absolute;
           right: 10px;
-          height: 100%;
+          min-height: 50px;
           display: flex;
+          justify-content: center;
           align-items: center;
           gap: 10px;
+          a {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
           .InputOptIcon {
             cursor: pointer;
             transition: fill 0.2s ease;
@@ -318,7 +330,8 @@ const StyledSpectate = styled("div")`
             }
           }
         }
-        input {
+        .Chat-input-field {
+          min-height: 50px;
           width: 100%;
           height: 100%;
           border-radius: 5px;
@@ -334,34 +347,79 @@ const StyledSpectate = styled("div")`
     }
   }
 `;
-
 const Spectate = () => {
   /**
-   *STATE
+   * Refs
    */
-  // refs
+  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const SpectateSceneRef = useRef<SpectateScene | null>(null);
   const netWorkRef = useRef<Network | null>(null);
   const cameraRef = useRef<SpectatorCamera | null>(null);
-  // states
+  /**
+   *STATE
+   */
   const [selectedBet, setSelectedBet] = Zeroact.useState<string | null>(null);
   const [ammountBet, setAmmountBet] = Zeroact.useState<number | null>(null);
   const [showCameraModes, setShowCameraModes] = Zeroact.useState(false);
-  const [isLoading, setIsLoading] = Zeroact.useState(true);
+  const [isLoading, setIsLoading] = Zeroact.useState(false);
   const [match, setMatch] = Zeroact.useState<Match | null>(null);
+  const [chatGroup, setChatGroup] = Zeroact.useState<any>(null);
+  const [message, setMessage] = Zeroact.useState<string>("");
   const [notFound, setNotFound] = Zeroact.useState(false);
+  /**
+   * Contexts
+   */
+  const navigate = useNavigate();
 
   /**
    * MATCH
    */
   const matchId = useRouteParam("/spectate/:id", "id");
   const { user } = useAppContext();
+
+  /**
+   * handlers
+   */
+  const handleBetSelection = (bet: string) => {
+    setSelectedBet((prev) => (prev === bet ? null : bet));
+  };
+  const handleSendMessage = async () => {
+    if (!chatGroup) return;
+    try {
+      const resp = await sendMessage(chatGroup.chatId, message);
+      if (resp.success) {
+        setChatGroup((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            chat: {
+              ...prev.chat,
+              messages: [...(prev.chat?.messages ?? []), resp.data],
+            },
+          };
+        });
+        setMessage("");
+        if (inputRef.current) {
+          inputRef.current.value = "";
+        }
+        if (messagesRef.current) {
+          messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+        }
+      }
+    } catch (err) {
+      console.log("error sending a msg.", err);
+    }
+  };
+  /**
+   * Effects
+   */
   useEffect(() => {
     if (!matchId) return;
 
     const fetchMatchData = async () => {
-      setIsLoading(true);
+      // setIsLoading(true);
       try {
         const matchData = await getMatchById(matchId);
         if (matchData && matchData.data) {
@@ -374,14 +432,25 @@ const Spectate = () => {
         setNotFound(true);
       }
     };
+    const fetchMatchChat = async () => {
+      try {
+        const resp = await getSpectateGroupByMatchId(matchId);
+        if (resp && resp.data) {
+          console.log(resp.data);
+          setChatGroup(resp.data);
+        } else throw new Error("No data received");
+      } catch (error) {
+        console.error("Error fetching match chat data:", error);
+      }
+    };
     fetchMatchData();
+    fetchMatchChat();
 
     try {
     } catch (err) {
       console.error("Error fetching match data:", err);
     }
   }, [matchId]);
-
   useEffect(() => {
     if (!match || !canvasRef.current || !user) return;
 
@@ -394,27 +463,62 @@ const Spectate = () => {
     netWorkRef.current = SpectateSceneRef.current.net;
     cameraRef.current = SpectateSceneRef.current.camera;
   }, [match, canvasRef.current, user]);
-
-  // useEffect(() => {
-  //   if (!netWorkRef.current) return;
-
-  //   netWorkRef.current.on("opponent:paddle", (data) => {
-  //     console.log("opponent paddle data:", data);
-  //   });
-  // }, [netWorkRef.current]);
-  /**
-   * BETTING
-   */
-  const handleBetSelection = (bet: string) => {
-    setSelectedBet((prev) => (prev === bet ? null : bet));
-  };
-  const navigate = useNavigate();
-
   useEffect(() => {
-    if (!canvasRef.current) return;
-    // const game = new Game(canvasRef.current);
-    // game.start(1)
+    requestAnimationFrame(() => {
+      if (messagesRef.current) {
+        console.log("Scrolling messages to bottom");
+        messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+      }
+    });
+  }, [messagesRef.current]);
+  useEffect(() => {
+    const handler = (data: any) => {
+      console.log("socket chat event:", data);
+      setChatGroup((prev) => {
+        if (!prev) return prev;
+
+        // Try to avoid applying messages for other chat groups
+        const prevChatId = prev.chat?.chatId ?? prev.chat?.id ?? null;
+        const incomingChatId = data.chatId ?? data.chat_id ?? null;
+        if (prevChatId && incomingChatId && prevChatId !== incomingChatId)
+          return prev;
+
+        const messages = prev.chat?.messages ?? [];
+        const messageExists = messages.some((m: any) => m.id === data.id);
+        const updatedMessages = messageExists
+          ? messages.map((m: any) => (m.id === data.id ? { ...m, ...data } : m))
+          : [...messages, data];
+
+        return {
+          ...prev,
+          chat: {
+            ...prev.chat,
+            messages: updatedMessages,
+          },
+        };
+      });
+
+      requestAnimationFrame(() => {
+        if (messagesRef.current) {
+          messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+        }
+      });
+    };
+
+    socketManager.subscribe("chat", handler);
+
+    return () => {
+      socketManager.unsubscribe("chat", handler);
+    };
   }, []);
+  /**
+   * Helpers
+   */
+  const messageFromUser = (message: any) => {
+    return chatGroup.chat.members.find(
+      (member: any) => member.userId === message.senderId
+    )?.user;
+  };
 
   // const onCameraModeChange = (mode: CameraModeName) => {
   //   camera.setCurrentMode(mode);
@@ -422,8 +526,8 @@ const Spectate = () => {
 
   return (
     <StyledSpectate
-      oponent1avatar={db.users[0].avatar}
-      oponent2avatar={db.users[1].avatar}
+      oponent1avatar={match?.opponent1.avatarUrl}
+      oponent2avatar={match?.opponent2.avatarUrl}
     >
       <div className="GameContainer">
         <ScoreBoard
@@ -538,7 +642,7 @@ const Spectate = () => {
           <button className="betButton">Bet</button>
         </div>
         <div className="ChatContainer">
-          <div className="ChatMessages">
+          <div className="ChatMessages scroll-y" ref={messagesRef}>
             {isLoading ? (
               <div
                 style={{
@@ -561,8 +665,9 @@ const Spectate = () => {
                 ))}
               </div>
             ) : (
-              db.FakeGroupChatMessages.map((message: ChatMessage) => {
-                return <GroupMessageEl {...message} />;
+              chatGroup?.chat?.messages.map((message: any) => {
+                const from = messageFromUser(message);
+                return <GroupMessageEl from={from} message={message.content} />;
               })
             )}
           </div>
@@ -573,13 +678,27 @@ const Spectate = () => {
                 size={25}
                 className="InputOptIcon"
               />
-              <SendIcon
-                fill="rgba(255,255,255, 0.6)"
-                size={25}
-                className="InputOptIcon"
-              />
+              <a onClick={handleSendMessage}>
+                <SendIcon
+                  fill="rgba(255,255,255, 0.6)"
+                  size={25}
+                  className="InputOptIcon"
+                />
+              </a>
             </div>
-            <input type="text" placeholder="Type your message..." />
+            <input
+              type="text"
+              className="Chat-input-field"
+              placeholder="Type your message..."
+              value={message}
+              onChange={(e: any) => setMessage(e.target.value)}
+              ref={inputRef}
+              onKeyPress={(e: any) => {
+                if (e.key === "Enter") {
+                  handleSendMessage();
+                }
+              }}
+            />
           </div>
         </div>
       </div>
@@ -619,6 +738,13 @@ const StyledGroupMessage = styled("div")`
     }
   }
 `;
+interface ChatMessage {
+  message: string;
+  from: {
+    avatar: string;
+    username: string;
+  };
+}
 const GroupMessageEl = (props: ChatMessage) => {
   return (
     <StyledGroupMessage avatar={props.from.avatar}>

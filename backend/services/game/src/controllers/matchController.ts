@@ -8,7 +8,7 @@ import { matchMaker } from "colyseus";
 
 export async function createMatch(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const body = request.body as CreateMatchBody;
 
@@ -38,14 +38,14 @@ export async function createMatch(
   }
 }
 export async function OneVsOneMatch(
-  body: Extract<CreateMatchBody, { mode: "ONE_VS_ONE" }>,
+  body: Extract<CreateMatchBody, { mode: "ONE_VS_ONE" }>
 ) {
   // create match players
   // create match
   // create match setting
 }
 
-// === Helpers ===
+// === Core ===
 export async function MatchFromInvitation(invitation: any): Promise<Match> {
   const {
     senderId,
@@ -60,7 +60,6 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
     throw new Error("Invalid invitation data");
   }
 
-  // 1️⃣ Create match and matchSetting in a transaction
   const { match, hostPlayer, guestPlayer } = await prisma.$transaction(
     async (tx) => {
       const hostPlayer = await createMatchPlayer(
@@ -68,7 +67,7 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
         invitation.sender.id, // local UUID
         true,
         false,
-        tx,
+        tx
       );
 
       const guestPlayer = await createMatchPlayer(
@@ -76,7 +75,7 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
         invitation.receiver.id,
         false,
         false,
-        tx,
+        tx
       );
 
       const match = await tx.match.create({
@@ -102,14 +101,13 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
           allowPowerUps: allowPowerUps ?? true,
           requiredCurrency: requiredCurrency ?? 0,
         },
-        tx,
+        tx
       );
 
       return { match, hostPlayer, guestPlayer };
-    },
+    }
   );
 
-  // 2️⃣ Create Colyseus room after transaction committed
   const room = await matchMaker.createRoom("ping-pong-game", {
     matchId: match.id,
     roomId: match.id,
@@ -118,10 +116,9 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
   });
 
   console.log(
-    `✅ Created Colyseus room for match  ============================================ ${match.id}: ${room.roomId}`,
+    `✅ Created Colyseus room for match  ============================================ ${match.id}: ${room.roomId}`
   );
 
-  // 3️⃣ Update match with roomId
   const updatedMatch = await prisma.match.update({
     where: { id: match.id },
     data: { roomId: match.id },
@@ -136,7 +133,7 @@ export async function createMatchPlayer(
   localUserId: string, // from game DB
   isHost: boolean,
   isAI: boolean,
-  tx: Prisma.TransactionClient = prisma,
+  tx: Prisma.TransactionClient = prisma
 ): Promise<MatchPlayer> {
   // Fetch user info from user service
   const res = await fetch(`http://user:4002/api/user/id/${remoteUserId}`);
@@ -170,7 +167,7 @@ export async function createMatchSetting(
     requiredCurrency: number;
     difficulty?: "EASY" | "MEDIUM" | "HARD";
   },
-  tx: Prisma.TransactionClient = prisma,
+  tx: Prisma.TransactionClient = prisma
 ) {
   if (mode === "ONE_VS_ONE") {
     return tx.matchSetting.create({
@@ -204,7 +201,7 @@ export async function createMatchSetting(
 }
 export async function getMatch(
   request: FastifyRequest<{ Params: { matchId: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { matchId } = request.params;
 
@@ -233,7 +230,7 @@ export async function getMatch(
 }
 export async function getCurrenMatch(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const params = request.params as { userId: string };
 
@@ -304,8 +301,8 @@ export async function toggleReadyStatus(matchId: string, playerId: string) {
       match.opponent1.id === playerId
         ? match.opponent1
         : match.opponent2?.id === playerId
-          ? match.opponent2
-          : null;
+        ? match.opponent2
+        : null;
 
     if (!player) {
       throw new Error("Player not found in this match");
@@ -333,7 +330,7 @@ export async function toggleReadyStatus(matchId: string, playerId: string) {
             matchPlayer: updatedMatchPlayer,
           },
         },
-        "broadcastData",
+        "broadcastData"
       );
     }
   } catch (error) {
@@ -363,8 +360,8 @@ export async function giveUp(matchId: string, playerId: string) {
       match.opponent1.id === playerId
         ? match.opponent1
         : match.opponent2?.id === playerId
-          ? match.opponent2
-          : null;
+        ? match.opponent2
+        : null;
     if (!player) {
       throw new Error("Player not found in this match");
     }
@@ -407,7 +404,7 @@ export async function giveUp(matchId: string, playerId: string) {
             reason: "opponent_gave_up",
           },
         },
-        "broadcastData",
+        "broadcastData"
       );
     }
   } catch (err) {
@@ -437,8 +434,8 @@ export async function startGame(matchId: string, playerId: string) {
       match.opponent1.userId === playerId
         ? match.opponent1
         : match.opponent2?.userId === playerId
-          ? match.opponent2
-          : null;
+        ? match.opponent2
+        : null;
 
     if (!player) {
       throw new Error("Player not found in this match");
@@ -476,7 +473,7 @@ export async function startGame(matchId: string, playerId: string) {
             reason: "match_started",
           },
         },
-        "broadcastData",
+        "broadcastData"
       );
     }
 
@@ -484,5 +481,105 @@ export async function startGame(matchId: string, playerId: string) {
   } catch (error) {
     console.error("Error starting game:", error);
     throw error;
+  }
+}
+export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { tournamentId, matchId } = request.params as {
+      tournamentId: string;
+      matchId: string;
+    };
+    const { winnerId, loserId, winnerScore, loserScore } = request.body as {
+      winnerId: string;
+      loserId: string;
+      winnerScore: number;
+      loserScore: number;
+    };
+
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      include: {
+        opponent1: true,
+        opponent2: true,
+      },
+    });
+
+    if (!match) {
+      return reply
+        .status(404)
+        .send({ error: "Match not found", success: false });
+    }
+
+    const player1 = match.opponent1;
+    const player2 = match.opponent2;
+
+    const winner =
+      player1.gmUserId === winnerId
+        ? player1
+        : player2?.gmUserId === winnerId
+        ? player2
+        : null;
+    const loser =
+      player1.gmUserId === loserId
+        ? player1
+        : player2?.gmUserId === loserId
+        ? player2
+        : null;
+
+    if (!winner || !loser) {
+      return reply
+        .status(400)
+        .send({ error: "Invalid winner or loser ID", success: false });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.matchPlayer.update({
+        where: { id: winner.id },
+        data: {
+          finalScore: winnerScore,
+          isWinner: true,
+        },
+      });
+
+      await tx.matchPlayer.update({
+        where: { id: loser.id },
+        data: {
+          finalScore: loserScore,
+          isWinner: false,
+        },
+      });
+
+      await tx.match.update({
+        where: { id: matchId },
+        data: { status: "COMPLETED", winnerId: winner.id },
+      });
+
+      // update tournament match if its related to tournament
+      const resp = await fetch(
+        `http://tournament:4006/api/tournament/tournaments/${tournamentId}/reportMatchResult/${match.tournamentMatchId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            winnerId: winnerId,
+            loserId: loserId,
+            winnerScore: winnerScore,
+            loserScore: loserScore,
+          }),
+        }
+      );
+
+      const tournamentResp = await resp.json();
+      console.log("tournamentResp ========", tournamentResp);
+      if (!tournamentResp.success)
+        throw new Error("Failed to report match result to tournament service");
+    });
+
+    return reply
+      .status(200)
+      .send({ success: true, message: "Match ended successfully" });
+  } catch (error) {
+    console.log("========", error);
+    reply.status(500).send({ error: "Failed to end match", success: false });
   }
 }

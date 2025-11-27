@@ -44,6 +44,9 @@ import ConfirmationModal from "./components/ConfirmationModal/ConfirmationModal"
 import { getUserProfile } from "./api/user";
 import { socketManager } from "./utils/socket";
 import GameContiner from "./components/Game/GameContainer";
+import { InviteOponent } from "./components/Lobby/InvitationModal";
+import { Match, MatchPlayer } from "./types/game/game";
+import { useSounds } from "./contexts/SoundProvider";
 
 const StyledApp = styled("div")`
   width: 100vw;
@@ -151,22 +154,60 @@ function RouterSwitch({ routes }: { routes: Route[] }) {
 }
 
 const App = () => {
-  const { modal, setUser, user } = useAppContext();
+  const { modal, setUser, user, inviteModal, toasts, match } = useAppContext();
+  const { errorSound, notificationSound } = useSounds();
 
   useEffect(() => {
-    if (!socketManager.isConntected()) {
-      socketManager.connect(`${import.meta.env.VITE_IP}`);
-    }
     const initializeAuth = async () => {
       try {
         const userData = await getUserProfile();
-        setUser(userData.data!);
+        if (userData.success && userData.data) setUser(userData.data);
+        else throw new Error("No valid session");
       } catch (error) {
         console.log("No valid session found");
       }
     };
-    initializeAuth();
-  }, [user]);
+    if (!user) initializeAuth();
+
+    if (!socketManager.isConntected()) {
+      socketManager.connect(`${import.meta.env.VITE_IP}`);
+    } else {
+      console.log("Socket already connected.");
+    }
+  }, []);
+
+  /**
+   * Socket listeners for game invitations and match updates
+   */
+  useEffect(() => {
+    // Listen for game invitations
+    const handleInvite = (data: any) => {
+      if (data.invitation) {
+        inviteModal.setSelectedInvitation(data.invitation);
+      }
+      if (data.match) {
+        match.setCurrentMatch(data.match);
+        return inviteModal.setIsInviteModalOpen(false);
+      }
+      inviteModal.setIsInviteModalOpen(true);
+    };
+    const handleError = (data: any) => {
+      if (data.message) {
+        errorSound.play();
+        toasts.addToastToQueue({
+          type: "error",
+          message: data.message,
+        });
+      }
+    };
+
+    socketManager.subscribe("game-invitation", handleInvite);
+    socketManager.subscribe("match-error", handleError);
+    return () => {
+      socketManager.unsubscribe("game-invitation", handleInvite);
+      socketManager.unsubscribe("match-error", handleError);
+    };
+  }, []);
 
   return (
     <StyledApp>
@@ -176,13 +217,27 @@ const App = () => {
       <GameMenu />
       <RouterSwitch routes={routes} />
 
-      {modal.modalState.show && (
+      {modal.modalState.show ? (
         <ConfirmationModal
           show={modal.modalState.show}
           message={modal.modalState.message}
           title={modal.modalState.title}
           onConfirm={modal.handleModalConfirm}
           onClose={modal.handleModalClose}
+        />
+      ) : (
+        ""
+      )}
+      {inviteModal.isInviteModalOpen && (
+        <InviteOponent
+          onClose={inviteModal.onCloseInviteModal}
+          GameSettings={inviteModal.GameSettings}
+          selectedInvitation={inviteModal.selectedInvitation}
+          setSelectedInvitation={inviteModal.setSelectedInvitation}
+          setSelectedMatch={match.setCurrentMatch}
+          setSelectedMode={inviteModal.setSelectedMode}
+          selectedOpponent={inviteModal.selectedOpponent}
+          setSelectedOpponent={inviteModal.setSelectedOpponent}
         />
       )}
     </StyledApp>

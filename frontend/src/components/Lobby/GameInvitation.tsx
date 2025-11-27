@@ -287,9 +287,9 @@ const GameInvitationCard = (props: GameInvitationCardProps) => {
           className="BackIcon"
         />
       </div>
-      <div className="MainInviteCardContainer">
+      <div className="MainInviteCardContainer" onClick={props.onClick}>
         <div className="TopContainer">
-          <h1 onClick={props.onClick}>{props.invitation.inviteCode}</h1>
+          <h1>{props.invitation.inviteCode}</h1>
 
           <span className="ExpiredAt">
             {props.invitation.status === "ACCEPTED"

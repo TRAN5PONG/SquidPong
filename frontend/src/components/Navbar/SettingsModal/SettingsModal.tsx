@@ -72,7 +72,7 @@ interface SettingsModalProps {
 const SettingsModal = (props: SettingsModalProps) => {
   const ModalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const {user} = useAppContext();
+  const { user, setUser } = useAppContext();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -95,8 +95,9 @@ const SettingsModal = (props: SettingsModalProps) => {
 
   const onSignOut = async () => {
     await logout();
+    setUser(null);
     navigate("/");
-  }
+  };
 
   return (
     <StyledSettingsModal

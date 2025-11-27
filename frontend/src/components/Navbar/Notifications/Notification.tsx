@@ -123,8 +123,6 @@ interface NotificationProps {
 const Notification = (props: NotificationProps) => {
   const ModalRef = useRef<HTMLDivElement>(null);
 
-  console.log("mouuuuuuuuuuuunted notifications");
-
   const [currentFilter, setCurrentFilter] = Zeroact.useState<
     "All" | "freindRequests"
   >("All");
@@ -261,6 +259,8 @@ const NotificationItem = (props: NotificationItemProps) => {
       });
     }
   };
+
+
   return (
     <StyledNotificationItem
       avatar={props.element.by?.avatar || ""}

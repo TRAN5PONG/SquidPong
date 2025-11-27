@@ -1,11 +1,21 @@
+import { joinGroup, searchGroupChats } from "@/api/chat";
+import { searchTournaments } from "@/api/tournament";
 import { SearchUsers, sendFriendRequest } from "@/api/user";
 import Skeleton from "@/components/Skeleton/Skeleton";
-import { AddFriendIcon, TrophyIcon, VerifiedIcon } from "@/components/Svg/Svg";
+import {
+  AddFriendIcon,
+  AddIcon,
+  GroupIcon,
+  TrophyIcon,
+  VerifiedIcon,
+} from "@/components/Svg/Svg";
 import { useAppContext } from "@/contexts/AppProviders";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { db } from "@/db";
 import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
+import { Conversation } from "@/types/chat";
+import { Tournament } from "@/types/game/tournament";
 import { User } from "@/types/user";
 
 const StyledSearchModal = styled("div")`
@@ -18,26 +28,31 @@ const StyledSearchModal = styled("div")`
   border-radius: 5px 5px 10px 10px;
   padding: 5px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  .SearchCatg {
-    color: white;
-    font-family: var(--span_font);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  .NOPSpan {
+    font-family: var(--main_font);
+    color: rgba(255, 255, 255, 0.7);
+    opacity: 0.7;
     font-size: 1rem;
-    font-weight: 100;
-    opacity: 0.9;
-    margin-bottom: 15px;
+    text-align: center;
   }
+
   .SearchCatgContainer {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 3px;
-    .NOPSpan {
-      font-family: var(--main_font);
-      color: rgba(255, 255, 255, 0.7);
-      opacity: 0.7;
+    width: 100%;
+    .SearchCatg {
+      color: white;
+      font-family: var(--span_font);
+      min-width: 100%;
       font-size: 1rem;
-      text-align: center;
+      font-weight: 100;
+      opacity: 0.9;
     }
   }
 `;
@@ -146,21 +161,129 @@ const StyledSearchTournamentBox = styled("div")`
     }
   }
 `;
-const SearchModal = (props: { onClose: () => void; query: string }) => {
+const StyledSearchGroupBox = styled("div")`
+  width: 100%;
+  height: 50px;
+  border-radius: 5px;
+  border: 1px solid var(--bg_color_light);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 3px 2px;
+  transition: 0.2s ease-in-out;
+  cursor: pointer;
+  .Avatar {
+    height: 44px;
+    width: 44px;
+    border-radius: 5px;
+    background-color: var(--bg_color_light);
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    .GroupIcon {
+      position: absolute;
+      bottom: 0px;
+      right: 0px;
+      width: 15px;
+      height: 15px;
+    }
+  }
+  .GroupInfos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0 10px;
+    color: white;
+    h1 {
+      font-family: var(--main_font);
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    span {
+      font-family: var(--main_font);
+      font-size: 0.9rem;
+      opacity: 0.7;
+      font-weight: 100;
+    }
+  }
+  .ActionsBtns {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: auto;
+    padding: 5px;
+    button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      background-color: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      padding: 5px 10px;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      font-family: var(--main_font);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: 0.2s ease-in-out;
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      &:hover {
+        color: rgba(255, 255, 255, 0.8);
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  &:hover {
+    background-color: var(--bg_color_light);
+  }
+`;
+const SearchModal = (props: { onClose: () => void; query: string, refetchConvs: () => void }) => {
   const ModalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, toasts } = useAppContext();
   // Stats
   const [players, setPlayers] = Zeroact.useState<User[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const Search = async (query: string) => {
+  const SearchPlayers = async (query: string) => {
     const Users = await SearchUsers(query);
     if (Users.data) {
       setPlayers(Users.data);
     }
   };
-
+  const SearchTournaments = async (query: string) => {
+    try {
+      const tournaments = await searchTournaments(query);
+      if (tournaments.data) {
+        setTournaments(tournaments.data);
+      } else {
+        setTournaments([]);
+      }
+    } catch (err) {
+      console.error("Error searching tournaments:", err);
+    }
+  };
+  const SearchGroups = async (query: string) => {
+    try {
+      const groups = await searchGroupChats(query);
+      if (groups.data) {
+        setGroups(groups.data);
+      } else {
+        setGroups([]);
+      }
+    } catch (err) {
+      console.error("Error searching groups:", err);
+    }
+  };
   const sendFriendRequest_ = async (receiverId: string) => {
     try {
       const resp = await sendFriendRequest(Number(receiverId));
@@ -186,15 +309,37 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
       });
     }
   };
+  /**
+   * Groups
+   */
+  const handleJoinGroup = async (groupId: number) => {
+    try {
+      const resp = await joinGroup(groupId);
+      if (resp.success) {
+        props.refetchConvs();
+        toasts.addToastToQueue({
+          type: "info",
+          message: "Join request sent successfully.",
+          duration: 3000,
+        });
+      } else throw new Error(resp.message || "Failed to send join request");
+    } catch (err) {
+      console.error("Error joining group:", err);
+    }
+  };
 
   useEffect(() => {
     if (props.query.trim() === "") {
       setIsLoading(false);
-      return setPlayers([]);
+      setPlayers([]);
+      setTournaments([]);
+      return;
     }
     setIsLoading(true);
     const delayDebounceFn = setTimeout(() => {
-      Search(props.query.trim()).then(() => setIsLoading(false));
+      SearchPlayers(props.query.trim()).then(() => setIsLoading(false));
+      SearchTournaments(props.query.trim());
+      SearchGroups(props.query.trim());
     }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [props.query]);
@@ -216,101 +361,151 @@ const SearchModal = (props: { onClose: () => void; query: string }) => {
 
   return (
     <StyledSearchModal className="GlassMorphism" ref={ModalRef}>
-      <h1 className="SearchCatg">Players</h1>
       <div className="SearchCatgContainer">
-        {isLoading ? (
-          Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton
-              dark={true}
-              width="100%"
-              height="50px"
-              borderRadius={5}
-              gap={5}
-              animation="hybrid"
-              index={index + 1}
-            />
-          ))
-        ) : players.length === 0 ? (
-          <span className="NOPSpan">
-            {props.query.trim() === ""
-              ? "Type to search for players."
-              : "No players found matching your search."}
-          </span>
-        ) : (
-          players.map((player: User) => {
-            return (
-              <StyledSearchPlayerBox
-                avatar={player.avatar}
-                onClick={() => {
-                  navigate(`/user/${player.username}`);
-                  props.onClose();
-                }}
-              >
-                <div className="Avatar" />
-                <div className="SearchPlayerInfos">
-                  <span className="SearchPlayerInfosFullName">
-                    {player.firstName + " " + player.lastName}
-                    {player.isVerified &&  (
-                      <VerifiedIcon fill="var(--main_color)" size={15} />
+        {players.length > 0 ? <h1 className="SearchCatg">Players</h1> : null}
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton
+                dark={true}
+                width="100%"
+                height="50px"
+                borderRadius={5}
+                gap={5}
+                animation="hybrid"
+                index={index + 1}
+              />
+            ))
+          : players.length > 0 &&
+            players.map((player: User) => {
+              return (
+                <StyledSearchPlayerBox
+                  avatar={player.avatar}
+                  onClick={() => {
+                    navigate(`/user/${player.username}`);
+                    props.onClose();
+                  }}
+                >
+                  <div className="Avatar" />
+                  <div className="SearchPlayerInfos">
+                    <span className="SearchPlayerInfosFullName">
+                      {player.firstName + " " + player.lastName}
+                      {player.isVerified && (
+                        <VerifiedIcon fill="var(--main_color)" size={15} />
+                      )}
+                    </span>
+                    <span className="SearchPlayerInfosUserName">
+                      {"@" + player.username}
+                    </span>
+                  </div>
+                  <div className="ActionsBtns">
+                    {player.id !== user?.id && (
+                      <a
+                        onClick={() =>
+                          sendFriendRequest_(player.userId.toString())
+                        }
+                      >
+                        <AddFriendIcon
+                          fill="white"
+                          size={20}
+                          className="AddFriendIcon"
+                        />
+                      </a>
                     )}
-                  </span>
-                  <span className="SearchPlayerInfosUserName">
-                    {"@" + player.username}
-                  </span>
+                  </div>
+                </StyledSearchPlayerBox>
+              );
+            })}
+      </div>
+      <div className="SearchCatgContainer">
+        {tournaments.length > 0 ? (
+          <h1 className="SearchCatg">Tournaments</h1>
+        ) : null}
+
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton
+                dark={true}
+                width="100%"
+                height="50px"
+                borderRadius={5}
+                gap={5}
+                animation="hybrid"
+                index={index + 1}
+              />
+            ))
+          : tournaments.length > 0 &&
+            tournaments.map((tournament) => {
+              return (
+                <StyledSearchTournamentBox
+                  onClick={() => {
+                    navigate(`/tournament/${tournament.id}`);
+                    props.onClose();
+                  }}
+                >
+                  <div className="Avatar">
+                    <TrophyIcon fill="white" size={30} />
+                  </div>
+                  <div className="TournamentInfos">
+                    <span className="TournamentInfosName">
+                      {tournament.name}
+                    </span>
+                    <span className="TournamentInfosDesc">
+                      {tournament.status === "REGISTRATION"
+                        ? "Registration is open."
+                        : tournament.status === "READY"
+                        ? "Tournament is ready to start."
+                        : tournament.status === "IN_PROGRESS"
+                        ? "Tournament is in progress."
+                        : tournament.status === "COMPLETED"
+                        ? "Tournament has been completed."
+                        : tournament.status === "CANCELLED"
+                        ? "Tournament has been cancelled."
+                        : ""}
+                    </span>
+                  </div>
+                </StyledSearchTournamentBox>
+              );
+            })}
+      </div>
+      <div className="SearchCatgContainer">
+        {groups.length > 0 && <h1 className="SearchCatg">Groups</h1>}
+        {groups.length > 0 &&
+          groups.map((group) => {
+            const alreadyMember = group.members.find(
+              (m: any) => Number(m.userId) === Number(user?.userId)
+            );
+            return (
+              <StyledSearchGroupBox>
+                <div
+                  className="Avatar"
+                  style={{ backgroundImage: `url(${group.imageUrl})` }}
+                >
+                  <GroupIcon fill="white" size={30} className="GroupIcon" />
+                </div>
+                <div className="GroupInfos">
+                  <h1>
+                    {group.name} -{" "}
+                    <span>{group.members.length} participants</span>
+                  </h1>
+                  <span>{group.desc}</span>
                 </div>
                 <div className="ActionsBtns">
-                  {player.id !== user?.id && (
-                    <a
-                      onClick={() =>
-                        sendFriendRequest_(player.userId.toString())
-                      }
-                    >
-                      <AddFriendIcon
-                        fill="white"
-                        size={20}
-                        className="AddFriendIcon"
-                      />
-                    </a>
-                  )}
+                  <button
+                    onClick={() => handleJoinGroup(group.id)}
+                    disabled={alreadyMember}
+                  >
+                    {alreadyMember ? "Joined" : "Join Group"}
+                  </button>
                 </div>
-              </StyledSearchPlayerBox>
+              </StyledSearchGroupBox>
             );
-          })
-        )}
+          })}
       </div>
-      <h1 className="SearchCatg">Tournaments</h1>
-      <div className="SearchCatgContainer">
-        {db.FakeTournaments.map((tournament) => {
-          return (
-            <StyledSearchTournamentBox
-              onClick={() => {
-                navigate(`/tournament/${tournament.id}`);
-                props.onClose();
-              }}
-            >
-              <div className="Avatar">
-                <TrophyIcon fill="white" size={30} />
-              </div>
-              <div className="TournamentInfos">
-                <span className="TournamentInfosName">{tournament.name}</span>
-                <span className="TournamentInfosDesc">
-                  {tournament.status === "registration"
-                    ? "Registration is open."
-                    : tournament.status === "ready"
-                    ? "Tournament is ready to start."
-                    : tournament.status === "inProgress"
-                    ? "Tournament is in progress."
-                    : tournament.status === "completed"
-                    ? "Tournament has been completed."
-                    : tournament.status === "cancelled"
-                    ? "Tournament has been cancelled."
-                    : ""}
-                </span>
-              </div>
-            </StyledSearchTournamentBox>
-          );
-        })}
-      </div>
+
+      {tournaments.length === 0 &&
+        players.length === 0 &&
+        groups.length === 0 &&
+        !isLoading && <span className="NOPSpan">No results found.</span>}
     </StyledSearchModal>
   );
 };

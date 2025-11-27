@@ -7,7 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 // ------------------- Enums -------------------
 
 enum UserStatus {
@@ -22,31 +21,26 @@ enum UserStatusCustom {
   INVISIBLE
 }
 
-
 enum GroupRole {
   OWNER
   ADMIN
   MEMBER
 }
 
-
 enum ReactionType {
-  LIKE      // 👍
-  LOVE      // ❤️
-  LAUGH     // 😂
-  SAD       // 😢
-  ANGRY     // 😡
-  WOW       // 😮
+  LIKE // 👍
+  LOVE // ❤️
+  LAUGH // 😂
+  SAD // 😢
+  ANGRY // 😡
+  WOW // 😮
   FUCK // 🖕
 }
-
-
 
 enum MessageType {
   TEXT
   INVITE_MATCH
   INVITE_TOURNAMENT
-
 }
 
 enum ChatType {
@@ -54,20 +48,16 @@ enum ChatType {
   GROUP
 }
 
-
 enum GroupType {
   PUBLIC
   PRIVATE
 }
-
 
 enum MemberStatus {
   PENDING
   APPROVED
   REJECTED
 }
-
-
 
 enum statusMessage {
   SENT
@@ -76,22 +66,20 @@ enum statusMessage {
   BLOCKED
 }
 
-
-
 model User {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  userId    String   @unique
-  username    String   
-  firstName   String
-  lastName    String
-  isVerified Boolean  @default(false)
-  avatar      String  
+  userId     String  @unique
+  username   String
+  firstName  String
+  lastName   String
+  isVerified Boolean @default(false)
+  avatar     String
 
-  status       UserStatus   @default(OFFLINE)  // Real connection state
-  customStatus UserStatusCustom   @default(ONLINE)   // User's preference
+  status       UserStatus       @default(OFFLINE) // Real connection state
+  customStatus UserStatusCustom @default(ONLINE) // User's preference
 
-  isDeleted   Boolean  @default(false)
+  isDeleted Boolean @default(false)
 
   chatMembers  ChatMember[]
   messages     Message[]
@@ -101,106 +89,99 @@ model User {
   createdAt DateTime @default(now())
 }
 
-
 // ------------------- Chat -------------------
 model Chat {
-  id        Int      @id @default(autoincrement())
-  type      ChatType @default(PRIVATE)
+  id   Int      @id @default(autoincrement())
+  type ChatType @default(PRIVATE)
 
-  members   ChatMember[]
-  messages  Message[]
+  members  ChatMember[]
+  messages Message[]
 
-  group     Group?
+  group Group?
 
   createdAt DateTime @default(now())
-} 
-
+}
 
 model ChatMember {
-  id      Int    @id @default(autoincrement())
-  chatId  Int
-  userId  String
+  id     Int    @id @default(autoincrement())
+  chatId Int
+  userId String
 
   isBlocked Boolean @default(false)
-  chat    Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  user    User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  chat      Chat    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@unique([chatId, userId])
 }
 
-
 // ------------------- Message -------------------
 model Message {
-  id         Int          @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  chatId     Int
-  senderId   String
+  chatId   Int
+  senderId String
 
-  type       MessageType  @default(TEXT)
-  content    String?
-  matchId      String?
-  tournamentId String?
+  type           MessageType @default(TEXT)
+  content        String?
+  invitationCode String?
+  tournamentId   String?
 
-  status     statusMessage @default(SENT)
+  status statusMessage @default(SENT)
 
-  reactions  Reaction[]
-  
-  replyToId  Int?
-  replyTo    Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
-  replies    Message[]    @relation("MessageReplies")
+  reactions Reaction[]
 
+  replyToId Int?
+  replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies   Message[] @relation("MessageReplies")
 
-  isEdited   Boolean      @default(false)
-  isDeleted  Boolean?
-  chat       Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender     User         @relation(fields: [senderId], references: [userId], onDelete: Cascade)
-  timestamp  DateTime     @default(now())
+  isEdited  Boolean  @default(false)
+  isDeleted Boolean?
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [userId], onDelete: Cascade)
+  timestamp DateTime @default(now())
 }
-
 
 // ------------------- Group -------------------
 model Group {
-  id        Int        @id @default(autoincrement())
-  name      String
-  desc      String?
-  imageUrl  String     @default("http://localhost:4000/tmp/default_group.png")
-  chatId    Int        @unique
-  type      GroupType  @default(PRIVATE)
+  id       Int       @id @default(autoincrement())
+  name     String
+  desc     String?
+  imageUrl String    @default("http://localhost:4000/tmp/default_group.png")
+  chatId   Int       @unique
+  type     GroupType @default(PRIVATE)
 
-  matchId      String? @unique
+  matchId String? @unique
 
-  members   GroupMember[]
-  chat      Chat       @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  members GroupMember[]
+  chat    Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime   @default(now())
+  createdAt DateTime @default(now())
 }
 
-
 model GroupMember {
-  id       Int        @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId   String  
-  groupId  Int
-  status   MemberStatus @default(PENDING)
-  role     GroupRole    @default(MEMBER)
+  userId  String
+  groupId Int
+  status  MemberStatus @default(PENDING)
+  role    GroupRole    @default(MEMBER)
 
-  group    Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user     User       @relation(fields: [userId], references: [userId], onDelete: Cascade) // reference primary key
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [userId], onDelete: Cascade) // reference primary key
 
   @@unique([userId, groupId])
 }
 
-
 // ------------------- Reactions -------------------
 model Reaction {
-  id        Int      @id @default(autoincrement())
+  id        Int          @id @default(autoincrement())
   userId    String
   messageId Int
   emoji     ReactionType
-  timestamp DateTime @default(now())
+  timestamp DateTime     @default(now())
 
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@unique([messageId, userId])
 }

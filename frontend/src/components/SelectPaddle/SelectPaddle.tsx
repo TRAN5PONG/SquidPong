@@ -251,6 +251,13 @@ const SelectPaddle = () => {
     };
   }, []);
 
+  const onSaveCustomization = () => {
+
+  }
+  const onPurchaseCustomization = () => {
+    
+  }
+
   return (
     <StyledSelectPaddle paddleColor={selectedColor.color}>
       <div className="CustomizationsContainer">
@@ -260,7 +267,10 @@ const SelectPaddle = () => {
             <StyledColor
               color={color.color}
               isSelected={color === selectedColor}
-              onClick={() => sceneRef.current?.paddle.setColor(color.color)}
+              onClick={() => {
+                sceneRef.current?.paddle.setColor(color.color);
+                setSelectedColor(color);
+              }}
               key={index}
             />
           ))}

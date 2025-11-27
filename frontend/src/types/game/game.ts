@@ -80,6 +80,7 @@ export interface GameInvitation {
     level: number;
     rank: RankDivision;
     coinsBalance: number;
+    userId: string;
   };
   receiver?: {
     id: string;
@@ -87,6 +88,7 @@ export interface GameInvitation {
     level: number;
     rank: RankDivision;
     coinsBalance: number;
+    userId: string;
   };
   expiresAt: Date;
   scoreLimit: string;
