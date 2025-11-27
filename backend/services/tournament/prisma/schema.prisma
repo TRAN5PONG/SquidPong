@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -21,7 +20,7 @@ model Tournament {
   winnerId         String?
   participationFee Int?
 
-  // Relations
+  // Relations with cascading deletes
   participants TournamentPlayer[]
   rounds       TournamentRoundData[]
 }
@@ -32,26 +31,28 @@ model TournamentRoundData {
   order        Int // 1 = Qualifiers, 2 = Round of 16, etc.
   tournamentId String
 
-  // Relations
-  tournament Tournament        @relation(fields: [tournamentId], references: [id])
+  tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   matches    TournamentMatch[]
 }
 
 model TournamentMatch {
-  id             String     @id @default(cuid())
-  roundId        String
-  opponent1Id    String?
-  opponent2Id    String?
-  opponent1Score Int        @default(0)
-  opponent2Score Int        @default(0)
-  winnerId       String?
-  status         GameStatus @default(PENDING)
-  deadline       DateTime?
+  id String @id @default(cuid())
 
-  // Relations
-  round     TournamentRoundData @relation(fields: [roundId], references: [id])
-  opponent1 TournamentPlayer?   @relation("MatchOpponent1", fields: [opponent1Id], references: [id])
-  opponent2 TournamentPlayer?   @relation("MatchOpponent2", fields: [opponent2Id], references: [id])
+  roundId               String
+  matchId               String? // link to game service match
+  nextTournamentMatchId String? // link to the next match in the bracket
+  opponent1Id           String?
+  opponent2Id           String?
+  opponent1Score        Int        @default(0)
+  opponent2Score        Int        @default(0)
+  winnerId              String?
+  status                GameStatus @default(PENDING)
+  deadline              DateTime?
+
+  // Relations with cascading deletes
+  round     TournamentRoundData @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  opponent1 TournamentPlayer?   @relation("MatchOpponent1", fields: [opponent1Id], references: [id], onDelete: SetNull)
+  opponent2 TournamentPlayer?   @relation("MatchOpponent2", fields: [opponent2Id], references: [id], onDelete: SetNull)
 }
 
 model TournamentPlayer {
@@ -64,12 +65,12 @@ model TournamentPlayer {
 
   firstName    String
   lastName     String
+  userName     String
   avatar       String
   isVerified   Boolean @default(false)
   rankDivision String
 
-  // Relations
-  tournament         Tournament        @relation(fields: [tournamentId], references: [id])
+  tournament         Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   matchesAsOpponent1 TournamentMatch[] @relation("MatchOpponent1")
   matchesAsOpponent2 TournamentMatch[] @relation("MatchOpponent2")
 
@@ -77,7 +78,7 @@ model TournamentPlayer {
 }
 
 enum TournamentRound {
-  QUALIFIERS
+  QUALIFIERS // i will be rremove this later
   ROUND_OF_16
   QUARTER_FINALS
   SEMI_FINALS

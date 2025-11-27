@@ -136,7 +136,7 @@ const GameContiner = () => {
   useEffect(() => {
     if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
 
-    gameRef.current = new Game(canvasRef.current, match, user.id, true);
+    gameRef.current = new Game(canvasRef.current, match, user.id);
     gameRef.current.start();
     netRef.current = gameRef.current.net;
 
@@ -153,6 +153,7 @@ const GameContiner = () => {
     netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
   }, [gameRef.current]);
 
+
   const onPause = () => {
     if (!netRef.current) return;
 
@@ -164,7 +165,7 @@ const GameContiner = () => {
   };
   const onReady = () => {
     if (!netRef.current) return;
-
+    
     gameRef.current?.arena.stopTableEdgesPulse();
     gameRef.current?.camera.setupPosition();
     netRef.current.sendMessage("player:ready");
@@ -192,9 +193,6 @@ const GameContiner = () => {
         match={match}
         startCinematicCamera={() => { }}
         resetCamera={() => { }}
-        TableAnimation={
-          gameRef.current?.arena?.updateTableEdgesMaterial ?? (() => { })
-        }
       />
       <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
         <button onClick={onReady}>Ready</button>

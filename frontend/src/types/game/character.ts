@@ -46,7 +46,7 @@ export const characters: GameCharacter[] = [
   },
   {
     id: "7ama9a",
-    name: "7ama9a",
+    name: "Hama9a",
     description: "A brave hero with a heart of gold and a spirit of adventure.",
     image: "/characters/green_f2.webp",
     avatar: "/characters/green_f2_avatar.png",
@@ -57,7 +57,7 @@ export const characters: GameCharacter[] = [
   },
   {
     id: "M-nachit",
-    name: "M-nachit",
+    name: "Mnachit",
     description: "A lightning-fast prodigy who dominates the court with style.",
     image: "/characters/green_m3.webp",
     avatar: "/characters/green_m3_avatar.png",
@@ -102,8 +102,8 @@ export const characters: GameCharacter[] = [
     powerShot: 95,
   },
   {
-    id: "Bssita",
-    name: "Bssita",
+    id: "Xylar",
+    name: "Xylar",
     description:
       "An eerie doll-like challenger that mimics every move you make.",
     image: "/characters/doll.png",

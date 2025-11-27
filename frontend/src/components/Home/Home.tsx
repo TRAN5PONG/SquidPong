@@ -554,7 +554,9 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
         });
         const userData = await getUserProfile();
         if (userData.success) {
+          console.log("User data::", userData);
           setUser(userData.data!);
+          socketManager.connect(`${import.meta.env.VITE_IP}`);
           navigate("/lobby");
         }
       }

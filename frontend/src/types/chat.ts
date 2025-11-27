@@ -10,7 +10,7 @@ export type ChatReactionType =
   | "ANGRY"
   | "WOW"
   | "LOVE";
-export type ChatMessageType = "text" | "invite";
+export type ChatMessageType = "INVITE_TOURNAMENT" | "INVITE_MATCH" | "TEXT";
 export type ChatMessageStatus = "SENT" | "DELIVERED" | "READ";
 
 export interface ChatReaction {
@@ -30,8 +30,10 @@ export interface ChatMessage {
   status: ChatMessageStatus;
   reactions: ChatReaction[];
   type: ChatMessageType;
-  invitation?: GameInvitation;
+  invitationCode?: string;
+  tournamentId?: string;
   replyTo?: ChatMessage;
+  isDeleted?: boolean;
   isEdited?: boolean;
 }
 
@@ -43,6 +45,13 @@ export interface ChatGroup {
   imageUrl: string;
   name: string;
   type: "PRIVATE" | "PUBLIC";
+  members: {
+    groupId: number;
+    id: number;
+    userId: string;
+    role: "OWNER" | "MEMBER" | "ADMIN";
+    status: "APPROVED" | "PENDING" | "REJECTED";
+  }[];
 }
 
 export interface Conversation {

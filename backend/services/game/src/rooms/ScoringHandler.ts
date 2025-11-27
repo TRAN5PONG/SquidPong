@@ -7,13 +7,13 @@ export class ScoringHandler {
   private serveCount = 0;
   private isProcessingPoint = false;
 
-  constructor(private room: MatchRoom) { }
+  constructor(private room: MatchRoom) {}
 
   incrementScore(playerId: string) {
     const current = this.room.state.scores.get(playerId) || 0;
 
     console.log(
-      `➕ Incrementing score for player ${playerId}. Current score: ${current}`,
+      `➕ Incrementing score for player ${playerId}. Current score: ${current}`
     );
 
     this.room.state.scores.set(playerId, current + 1);
@@ -100,7 +100,7 @@ export class ScoringHandler {
 
     if (this.serveCount >= this.SERVES_PER_TURN) {
       const nextServerId = playerIds.find(
-        (id) => id !== this.room.state.currentServer,
+        (id) => id !== this.room.state.currentServer
       );
       this.room.state.currentServer =
         nextServerId || this.room.state.currentServer;
@@ -139,7 +139,7 @@ export class ScoringHandler {
 
       // Calculate match duration
       const matchDuration = Math.floor(
-        (Date.now() - this.room.state.gameStartAt) / 1000,
+        (Date.now() - this.room.state.gameStartAt) / 1000
       ); // in seconds
 
       // Determine winner and loser
@@ -188,6 +188,23 @@ export class ScoringHandler {
         updates.push(this.updateUserStats(loser.userId, false, matchDuration));
       }
 
+      // If tournament match, report to tournament Service
+      // if (match.tournamentId) {
+      //   const tournamentResp = await fetch(
+      //     `http://tournament:4006/api/tournament/tournaments/${match.tournamentId}/reportMatchResult/${matchId}`,
+      //     {
+      //       method: "POST",
+      //       headers: { "Content-Type": "application/json" },
+      //       body: JSON.stringify({
+      //         winnerId: winnerId,
+      //         loserId: loser?.id,
+      //         winnerScore: this.room.state.scores.get(winnerId) || 0,
+      //         loserScore: this.room.state.scores.get(loser?.id!) || 0,
+      //       }),
+      //     }
+      //   );
+      // }
+
       await Promise.all(updates);
 
       console.log(`✅ Match stats updated for match ${matchId}`);
@@ -199,7 +216,7 @@ export class ScoringHandler {
   private async updateUserStats(
     userId: string,
     won: boolean,
-    matchDuration: number,
+    matchDuration: number
   ): Promise<void> {
     const existing = await prisma.userStats.findUnique({
       where: { userId },
@@ -246,7 +263,7 @@ export class ScoringHandler {
       const newLoseStreak = won ? 0 : existing.loseStreak + 1;
       const newLongestWinStreak = Math.max(
         existing.longestWinStreak,
-        newWinStreak,
+        newWinStreak
       );
 
       // Calculate new average game duration
@@ -282,7 +299,9 @@ export class ScoringHandler {
     }
 
     console.log(
-      `✅ Updated stats for user ${userId}: ${won ? "WIN" : "LOSS"}, Duration: ${matchDuration}s`,
+      `✅ Updated stats for user ${userId}: ${
+        won ? "WIN" : "LOSS"
+      }, Duration: ${matchDuration}s`
     );
   }
 }

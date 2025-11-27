@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "@/lib/Zeroact";
 
 export interface SoundValue {
   play: () => void;
-  stop: (fadeDuration?: number) => void;
+  stop: () => void;
   pause: () => void;
   resume: () => void;
   setMuffled: (value: boolean) => void;
@@ -11,28 +11,15 @@ export interface SoundValue {
   isPlaying: boolean;
 }
 
-interface SoundSettings {
-  volume?: number;
-  muffled?: boolean;
-  loop?: boolean;
-}
-
-export function useSound(
-  soundUrl: string,
-  settings: SoundSettings = {}
-): SoundValue {
-  // Core
+export function useSound(soundUrl: string): SoundValue {
   const audioContextRef = useRef<AudioContext | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const filterRef = useRef<BiquadFilterNode | null>(null);
   const soundBufferRef = useRef<AudioBuffer | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // Settings
   const [isMuffled, setIsMuffled] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLooping, setIsLooping] = useState(settings.loop || false);
-  const volume = settings.volume ?? 1;
 
   useEffect(() => {
     const context = new AudioContext();
@@ -48,12 +35,6 @@ export function useSound(
     audioContextRef.current = context;
     gainNodeRef.current = gainNode;
     filterRef.current = filter;
-
-    if (settings.muffled) {
-      const targetFreq = 200;
-      filter.frequency.setTargetAtTime(targetFreq, context.currentTime, 0);
-      setIsMuffled(true);
-    }
 
     return () => {
       stop();
@@ -84,7 +65,7 @@ export function useSound(
     loadSound();
   }, [soundUrl]);
 
-  const play = useCallback((fresh = false) => {
+  const play = useCallback(() => {
     const context = audioContextRef.current;
     const gainNode = gainNodeRef.current;
     const buffer = soundBufferRef.current;
@@ -94,59 +75,35 @@ export function useSound(
       return;
     }
 
-    // Always create a new source
+    stop(); // stop any existing source first
+
     const source = context.createBufferSource();
     source.buffer = buffer;
     source.connect(gainNode);
-    source.loop = isLooping;
-    gainNode.gain.setValueAtTime(volume, context.currentTime);
-
     source.start();
 
-    if (!fresh) {
-      // Store it as the main source so `stop()` works normally
-      stop();
-      sourceRef.current = source;
-      setIsPlaying(true);
+    sourceRef.current = source;
+    setIsPlaying(true);
 
-      source.onended = () => {
-        setIsPlaying(false);
-        source.disconnect();
-        if (sourceRef.current === source) sourceRef.current = null;
-      };
-    } else {
-      // Fire-and-forget mode — for rapid hits
-      source.onended = () => source.disconnect();
-    }
+    source.onended = () => {
+      setIsPlaying(false);
+      source.disconnect();
+      if (sourceRef.current === source) sourceRef.current = null;
+    };
   }, []);
 
-  const stop = useCallback((fadeDuration = 0.3) => {
-    const context = audioContextRef.current;
-    const gainNode = gainNodeRef.current;
+  const stop = useCallback(() => {
     const source = sourceRef.current;
-
-    if (!context || !gainNode || !source) {
-      setIsPlaying(false);
-      return;
-    }
-
-    const currentTime = context.currentTime;
-    const currentGain = gainNode.gain.value;
-
-    gainNode.gain.cancelScheduledValues(currentTime);
-    gainNode.gain.setValueAtTime(currentGain, currentTime);
-    gainNode.gain.linearRampToValueAtTime(0, currentTime + fadeDuration);
-
-    source.stop(currentTime + fadeDuration);
-
-    setTimeout(() => {
+    if (source) {
       try {
+        source.stop();
         source.disconnect();
-      } catch {}
-      if (sourceRef.current === source) sourceRef.current = null;
-      gainNode.gain.setValueAtTime(volume, context.currentTime); // 👈 reset volume
-      setIsPlaying(false);
-    }, fadeDuration * 1000);
+      } catch (e) {
+        console.warn("Failed to stop source", e);
+      }
+      sourceRef.current = null;
+    }
+    setIsPlaying(false);
   }, []);
 
   const pause = useCallback(() => {

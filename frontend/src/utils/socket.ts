@@ -12,7 +12,7 @@ class SocketManager {
 
       try {
         parsedData = JSON.parse(event.data);
-        // console.log(parsedData);
+        console.log("[WebSocket] Message received:", parsedData);
 
         if (parsedData.data && parsedData.event) {
           const handlers = this.listeners[parsedData.event];

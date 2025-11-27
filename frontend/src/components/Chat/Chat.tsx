@@ -1,18 +1,38 @@
 import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { ChatGroup, ChatMessage, ConversationDetails } from "@/types/chat";
 import { styled } from "@/lib/Zerostyle";
-import { CloseIcon, EmojiIcon, MinimizeIcon, SendIcon } from "../Svg/Svg";
+import {
+  BackIcon,
+  CheckIcon2,
+  CloseIcon,
+  EditIcon,
+  EmojiIcon,
+  GroupIcon,
+  MinimizeIcon,
+  PersonIcon,
+  SendIcon,
+  SettingsIcon,
+  SignOutIcon,
+} from "../Svg/Svg";
 import { User, UserStatus } from "@/types/user";
 import ChatMessaegeEl from "./ChatMessage";
 import { useAppContext } from "@/contexts/AppProviders";
 import {
+  approveJoinRequest,
+  deleteGroupChat,
   getMessages,
+  leaveGroup,
+  listGroupRequests,
   markConversationAsRead,
+  rejectJoinRequest,
   replyToMessage,
   sendMessage,
+  updateGroupAvatar,
 } from "@/api/chat";
 import { socketManager } from "@/utils/socket";
 import { useSounds } from "@/contexts/SoundProvider";
+import Toast, { ToastContainer } from "../Toast/Toast";
+import { useNavigate } from "@/contexts/RouterProvider";
 
 export type ConversationWithView = ConversationDetails & {
   viewState: "maximized" | "minimized";
@@ -104,6 +124,17 @@ const StyledMaximizedConv = styled("div")`
         background-position: center;
         border-radius: 10px;
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: gray;
+        svg {
+          display: none;
+        }
+        &:hover svg {
+          display: block;
+        }
+
         &:after {
           position: absolute;
           content: "";
@@ -144,6 +175,162 @@ const StyledMaximizedConv = styled("div")`
     gap: 10px;
     overflow-y: scroll;
     position: relative;
+  }
+
+  .SettingsModal {
+    width: 250px;
+    min-height: 300px;
+    background-color: var(--bg_color_super_light);
+    position: absolute;
+    right: 10px;
+    top: 62px;
+    box-shadow: rgb(24, 24, 24) 0px 20px 30px -10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    .settingsList {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 2px;
+      .SettingsElement {
+        width: 100%;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 10px;
+        cursor: pointer;
+        font-family: var(--main_font);
+        font-size: 1rem;
+        color: white;
+        border-radius: 5px;
+        transition: 0.1s ease-in-out;
+        &:hover {
+          background-color: var(--bg_color_light);
+        }
+      }
+    }
+    .header {
+      width: 100%;
+      height: 50px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px;
+      cursor: pointer;
+      font-family: var(--main_font);
+      font-size: 1rem;
+      color: white;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background-color: var(--bg_color_light);
+      h2 {
+        margin: 0;
+        font-weight: 100;
+        font-family: var(--main_font);
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.5);
+      }
+    }
+    .members {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+
+      .membersContainer {
+        flex: 1;
+        overflow-y: auto;
+        .member {
+          width: 100%;
+          height: 50px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 10px;
+          cursor: pointer;
+          font-family: var(--main_font);
+          font-size: 1rem;
+          color: white;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          .memberAvatar {
+            width: 35px;
+            height: 35px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+          }
+          .memberName {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          }
+          .memberRole {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+          }
+        }
+      }
+    }
+    .requestsView {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      .membersContainer {
+        display: flex;
+        .noRequestsText {
+          color: rgba(255, 255, 255, 0.5);
+          font-family: var(--main_font);
+        }
+        .member {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 10px;
+          cursor: pointer;
+          font-family: var(--main_font);
+          font-size: 1rem;
+          color: white;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 5px;
+          .memberAvatar {
+            width: 35px;
+            height: 35px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+          }
+          .memberName {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          }
+          .memberActions {
+            margin-left: auto;
+            display: flex;
+            gap: 5px;
+            button {
+              background: none;
+              border: none;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              &:hover {
+                opacity: 0.8;
+              }
+            }
+          }
+          transition: 0.1s ease-in-out;
+          &:hover {
+            background-color: var(--bg_color_light);
+          }
+        }
+      }
+    }
   }
   .replyingToContainer {
     background: linear-gradient(
@@ -290,6 +477,7 @@ export const ChatContainer = () => {
   const [conversations, setConversations] = useState<ConversationWithView[]>(
     []
   );
+
   const { chat, user } = useAppContext();
   const { msgSentSound, msgReceivedSound } = useSounds();
 
@@ -305,6 +493,7 @@ export const ChatContainer = () => {
       try {
         const resp = await getMessages(id);
         if (resp.success && resp.data) {
+          console.log("Fetched conversation details:", resp.data);
           setConversations((prevs) => {
             const existing = prevs.find((c) => c.id === resp.data!.id);
             if (existing) return prevs; // Already exists
@@ -347,9 +536,11 @@ export const ChatContainer = () => {
           const messageExists = conv.messages.some((m) => m.id === data.id);
 
           const updatedMessages = messageExists
-            ? conv.messages.map((m) =>
-                m.id === data.id ? { ...m, ...data } : m
-              )
+            ? conv.messages.map((m) => {
+                if (m.id === data.id) {
+                  return { ...m, ...data };
+                } else return m;
+              })
             : [...conv.messages, data];
 
           const updatedConv = {
@@ -439,7 +630,11 @@ export const ChatContainer = () => {
           return (
             <StyledMinimizedConv
               key={conversation.id}
-              avatar_url={chattingWith?.avatar}
+              avatar_url={
+                conversation.group
+                  ? conversation.group.imageUrl
+                  : chattingWith?.avatar
+              }
               onClick={() => onMaximizeClick(conversation.id)}
             >
               {conversation.lastMessagePreview?.content && (
@@ -490,11 +685,26 @@ interface MaximizedConvProps {
   key: string;
 }
 const MaximizedConv = (props: MaximizedConvProps) => {
+  const [settingModalView, setSettingModalView] = useState<
+    "members" | "requests" | "settingsList"
+  >("settingsList");
+  const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
   const [chattingWith, setChattingWith] = useState<User | ChatGroup | null>(
     null
   );
+  const [groupRequests, setGroupRequests] = useState<any[]>([]);
+  /**
+   * Refs
+   */
+  const avatarInputRef = Zeroact.useRef<HTMLInputElement>(null);
   const messagesRef = Zeroact.useRef<HTMLDivElement>(null);
+  const MaximizedContainerRef = Zeroact.useRef<HTMLDivElement>(null);
+  const settingModalRef = Zeroact.useRef<HTMLDivElement>(null);
+  /**
+   * Contexts
+   */
   const { msgSentSound, msgReceivedSound } = useSounds();
+  const navigate = useNavigate();
 
   const [messageInput, setMessageInput] = Zeroact.useState<string>("");
   const [isReplyingTo, setIsReplyingTo] = Zeroact.useState<ChatMessage | null>(
@@ -530,6 +740,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
           messageInput
         );
         if (resp.success && resp.data) {
+          console.log("message sentasddddd============", resp);
           msgSentSound.play();
           setMessageInput("");
           if (inputRef.current) {
@@ -561,24 +772,124 @@ const MaximizedConv = (props: MaximizedConvProps) => {
       console.error("Error marking conversation as read:", err);
     }
   };
+  /**
+   * Group actions
+   */
+  const handleLeaveGroup = async () => {
+    try {
+      const resp = await leaveGroup(props.conversation.group?.id as number);
+      if (resp.success) {
+        props.onClose();
+      } else {
+        console.error("Failed to leave group");
+      }
+    } catch (err) {
+      console.error("Error leaving group:", err);
+    }
+  };
+  const handleDeleteGroup = async () => {
+    try {
+      const resp = await deleteGroupChat(
+        props.conversation.group?.id as number
+      );
+      if (resp.success) {
+        props.onClose();
+      } else {
+        console.error("Failed to delete group");
+      }
+    } catch (err) {
+      console.error("Error deleting group:", err);
+    }
+  };
+  const handleUpdateGroupAvatar = async (file: File) => {
+    if (!props.conversation.group) return;
+    try {
+      // Send the file to backend
+      const updateAvatar = await updateGroupAvatar(
+        props.conversation.group?.id!,
+        file
+      );
+
+      if (updateAvatar.success && updateAvatar.data) {
+        const newImageUrl = (updateAvatar.data as ChatGroup).imageUrl;
+        props.setConversations((prevs) =>
+          prevs.map((conv) =>
+            conv.id === props.conversation.id
+              ? conv.group
+                ? ({
+                    ...conv,
+                    group: {
+                      ...conv.group,
+                      imageUrl: newImageUrl,
+                    },
+                  } as ConversationWithView)
+                : conv
+              : conv
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update avatar:", err);
+    }
+  };
+  const handleAcceptRequest = async (groupId: number, memberId: number) => {
+    try {
+      const resp = await approveJoinRequest(groupId, memberId);
+      if (resp.success) {
+        setGroupRequests((prevs) =>
+          prevs.filter((req) => Number(req.userId) !== Number(memberId))
+        );
+      } else {
+        console.error("Failed to accept join request");
+      }
+    } catch (err) {
+      console.error("Error accepting request:", err);
+    }
+  };
+  const handleRejectRequest = async (groupId: number, memberId: number) => {
+    try {
+      const resp = await rejectJoinRequest(groupId, memberId);
+      if (resp.success) {
+        setGroupRequests((prevs) =>
+          prevs.filter((req) => Number(req.id) !== Number(groupId))
+        );
+      } else {
+        console.error("Failed to reject join request");
+      }
+    } catch (err) {
+      console.error("Error rejecting request:", err);
+    }
+  };
 
   useEffect(() => {
-    console.log(props.conversation);
+    const getRequests = async () => {
+      try {
+        const resp = await listGroupRequests(props.conversation.group?.id!);
+        console.log("Group join requests response:", resp);
+        if (resp.success && resp.data) {
+          const requests = (resp.data as any)?.requests ?? [];
+          setGroupRequests(requests);
+        } else throw new Error("Failed to fetch group join requests");
+      } catch (err) {
+        console.error("Error fetching group join requests:", err);
+      }
+    };
+    if (settingModalView === "requests") getRequests();
+  }, [settingModalView]);
+  useEffect(() => {
     // set chatting with
-    if (props.conversation.group)
-    {
-      console.log("group found", props.conversation.group);
+    if (props.conversation.group) {
       setChattingWith(props.conversation.group);
-    }
-    else {
+    } else {
       const participant = props.conversation.participants.find(
-        (p) => p.userId !== props.userId
+        (p) => Number(p.userId) !== Number(props.userId)
       );
       if (participant) setChattingWith(participant);
     }
   }, []);
   useEffect(() => {
     if (!inputRef.current) return;
+
     inputRef.current.addEventListener("focus", () => {
       markConvAsRead();
       props.setConversations((prevs) =>
@@ -593,10 +904,40 @@ const MaximizedConv = (props: MaximizedConvProps) => {
     };
   }, []);
   useEffect(() => {
-    if (messagesRef.current) {
-      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-    }
+    requestAnimationFrame(() => {
+      if (messagesRef.current) {
+        messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+      }
+    });
   }, [props.conversation.messages]);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        MaximizedContainerRef.current &&
+        !MaximizedContainerRef.current.contains(event.target as Node)
+      ) {
+        props.onMinimize();
+      } else if (
+        settingModalRef.current &&
+        !settingModalRef.current.contains(event.target as Node)
+      ) {
+        setSettingsModalOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [MaximizedContainerRef.current, settingModalRef.current]);
+
+  /**
+   * Flags
+   */
+  const isAdmin = props.conversation.group?.members.some(
+    (m) =>
+      Number(m.userId) === Number(props.userId) &&
+      (m.role === "ADMIN" || m.role === "OWNER")
+  );
 
   if (!chattingWith) return null;
 
@@ -605,10 +946,23 @@ const MaximizedConv = (props: MaximizedConvProps) => {
       avatar_url={
         (chattingWith as User).avatar || (chattingWith as ChatGroup).imageUrl
       }
+      ref={MaximizedContainerRef}
       // userState={chattingWith.status}
     >
       <div className="chat-header">
         <div className="chat-controls">
+          {props.conversation.group ? (
+            <div
+              className="chat-controle"
+              onClick={() => setSettingsModalOpen(true)}
+            >
+              <SettingsIcon
+                stroke="white"
+                size={20}
+                className="chat-controle-icon"
+              />
+            </div>
+          ) : null}
           <div className="chat-controle" onClick={props.onMinimize}>
             <MinimizeIcon
               stroke="white"
@@ -620,13 +974,39 @@ const MaximizedConv = (props: MaximizedConvProps) => {
             <CloseIcon fill="white" size={23} className="chat-controle-icon" />
           </div>
         </div>
-        <div className="chat-title" onClick={props.onMinimize}>
-          <div className="chat-avatar"></div>
+        <div className="chat-title">
+          <div
+            className="chat-avatar"
+            onClick={() => {
+              if (props.conversation.group && isAdmin) {
+                avatarInputRef.current?.click();
+              }
+            }}
+          >
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e: any) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleUpdateGroupAvatar(file);
+                }
+              }}
+            />
+            {isAdmin && <EditIcon stroke="rgba(255, 255,255, 0.6)" size={15} />}
+          </div>
           <div className="chat-title-text">
-            {/* <h1>{chattingWith.firstName + " " + chattingWith.lastName}</h1> */}
+            <h1>
+              {props.conversation.group
+                ? (chattingWith as ChatGroup).name
+                : (chattingWith as User).username}
+            </h1>
           </div>
         </div>
       </div>
+
       <div className="chat-messages scroll-y" ref={messagesRef}>
         {props.conversation.messages.map((message: ChatMessage) => {
           return (
@@ -643,6 +1023,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
           );
         })}
       </div>
+
       {isReplyingTo && (
         <div className="replyingToContainer">
           <div className="closeIcon" onClick={() => setIsReplyingTo(null)}>
@@ -674,6 +1055,139 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         />
         <EmojiIcon fill="white" size={25} className="EmojieSvg" />
       </div>
+
+      {settingsModalOpen && (
+        <div className="SettingsModal" ref={settingModalRef}>
+          {settingModalView === "settingsList" ? (
+            <div className="settingsList">
+              <div
+                className="SettingsElement"
+                onClick={() => {
+                  setSettingModalView("members");
+                }}
+              >
+                <GroupIcon fill="white" size={20} /> members
+              </div>
+              <div
+                className="SettingsElement"
+                onClick={() => {
+                  setSettingModalView("settingsList");
+                }}
+              >
+                <SettingsIcon fill="white" size={20} /> group settings
+              </div>
+              <div className="SettingsElement" onClick={handleLeaveGroup}>
+                <SignOutIcon fill="white" size={20} /> leave group
+              </div>
+
+              {isAdmin && (
+                <div className="SettingsElement" onClick={handleDeleteGroup}>
+                  <SignOutIcon fill="white" size={20} /> delete group
+                </div>
+              )}
+              {isAdmin && (
+                <div
+                  className="SettingsElement"
+                  onClick={() => {
+                    setSettingModalView("requests");
+                  }}
+                >
+                  <PersonIcon fill="white" size={20} /> membership requests
+                </div>
+              )}
+            </div>
+          ) : settingModalView === "members" ? (
+            <div className="members">
+              <div className="header">
+                <a onClick={() => setSettingModalView("settingsList")}>
+                  <BackIcon fill="rgba(255,255,255,0.5)" size={20} />
+                </a>
+                <h2>Group Members</h2>
+              </div>
+              <div className="membersContainer">
+                {props.conversation.participants.map((m) => {
+                  const isAdmin = props.conversation.group?.members.some(
+                    (member) =>
+                      Number(member.userId) === Number(m.userId) &&
+                      (member.role === "ADMIN" || member.role === "OWNER")
+                  );
+                  return (
+                    <div className="member" key={m.id}>
+                      <div
+                        className="memberAvatar"
+                        style={{ backgroundImage: `url(${m.avatar})` }}
+                        onClick={() => {
+                          navigate(`/user/${m.username}`);
+                        }}
+                      />
+                      <span className="memberName">
+                        {m.firstName} {m.lastName}
+                      </span>
+                      {isAdmin && <span className="memberRole"> (Admin) </span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="requestsView">
+              <div className="header">
+                <a onClick={() => setSettingModalView("settingsList")}>
+                  <BackIcon fill="rgba(255,255,255,0.5)" size={20} />
+                </a>
+                <h2>Membership Requests</h2>
+              </div>
+              <div className="membersContainer">
+                {groupRequests.length === 0 ? (
+                  <span className="noRequestsText">No pending requests</span>
+                ) : (
+                  groupRequests.map((req) => (
+                    <div key={req.id} className="member">
+                      <div
+                        className="memberAvatar"
+                        style={{
+                          backgroundImage: `url(${req.user.avatar})`,
+                        }}
+                        onClick={() => {
+                          navigate(`/user/${req.user.username}`);
+                        }}
+                      />
+                      <span className="memberName">
+                        {req.user.firstName} {req.user.lastName}
+                      </span>
+
+                      <div className="memberActions">
+                        <button
+                          className="acceptBtn"
+                          onClick={() =>
+                            handleAcceptRequest(
+                              props.conversation.group?.id!,
+                              req.user.userId
+                            )
+                          }
+                        >
+                          <CheckIcon2 fill="var(--green_color)" size={20} />
+                        </button>
+                        <button
+                          className="declineBtn"
+                          onClick={() =>
+                            handleRejectRequest(
+                              props.conversation.group?.id!,
+                              req.user.userId
+                            )
+                          }
+                        >
+                          <CloseIcon fill="var(--red_color)" size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </StyledMaximizedConv>
   );
 };
