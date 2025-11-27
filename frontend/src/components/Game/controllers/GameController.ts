@@ -9,20 +9,22 @@ import { Physics } from "../physics";
 import { NetworkSync } from "./NetworkSync";
 import { GameLogic } from "./GameLogic";
 import { DebugMeshManager } from "../DebugMeshManager";
-
+import { Arena } from "../entities/Arena";
+import { AIController } from "./ai/AIController";
 export enum GameState {
   WAITING_FOR_SERVE,
   IN_PLAY,
 }
 
 export class GameController {
-  private net: Network;
+  private net: Network | null;
   private localPaddle: Paddle;
   private opponentPaddle: Paddle;
   private ball: Ball;
   private physics: Physics;
   private scene: Scene;
   private playerId: string;
+  private arena: Arena;
 
   // Delegated modules
   private networkSync: NetworkSync;
@@ -39,13 +41,18 @@ export class GameController {
   // Debug
   private debugMeshes: DebugMeshManager;
 
+  private aiController?: AIController;
+  private isAIMode: boolean = false;
+
   constructor(
     localPaddle: Paddle,
     opponentPaddle: Paddle,
     ball: Ball,
+    arena: Arena,
     physics: Physics,
-    net: Network,
+    net: Network | null,
     scene: Scene,
+    aiMode: boolean = true,
   ) {
     this.localPaddle = localPaddle;
     this.opponentPaddle = opponentPaddle;
@@ -53,7 +60,8 @@ export class GameController {
     this.physics = physics;
     this.net = net;
     this.scene = scene;
-    this.playerId = this.net.getPlayerId()!;
+    this.playerId = net?.getPlayerId() || "local_player";
+    this.arena = arena;
 
     const boundaries = this.localPaddle.getBoundaries();
     this.paddleZMin = boundaries.z.min;
@@ -63,31 +71,58 @@ export class GameController {
     this.debugMeshes = new DebugMeshManager(this.scene);
     // this.debugMeshes.createMeshes();
     // Initialize delegated modules
-    this.networkSync = new NetworkSync(
-      this.net,
-      this.ball,
-      this.physics,
-      this.localPaddle,
-      this.opponentPaddle,
-      this.playerId,
-    );
+    if (!aiMode && net) {
+      this.networkSync = new NetworkSync(
+        net,
+        this.ball,
+        this.physics,
+        this.localPaddle,
+        this.opponentPaddle,
+        this.playerId,
+      );
 
-    this.gameLogic = new GameLogic(
-      this.net,
-      this.ball,
-      this.physics,
-      this.localPaddle,
-      this.opponentPaddle,
-      this.playerId,
-      this.networkSync,
-      () => this.currentTick,
-    );
+      this.gameLogic = new GameLogic(
+        net,
+        this.ball,
+        this.physics,
+        this.localPaddle,
+        this.opponentPaddle,
+        this.playerId,
+        this.networkSync,
+        this.arena,
+        () => this.currentTick,
+      );
+    } else {
+      this.networkSync = null!;
+      this.gameLogic = null!;
+      this.hasGameStarted = true;
+    }
+    this.isAIMode = aiMode;
+    if (aiMode) {
+      this.aiController = new AIController(opponentPaddle, 0.7);
+    }
 
     this.setupEventListeners();
   }
 
   private setupEventListeners(): void {
     // Game started event
+
+    if (this.isAIMode || !this.net) {
+      // Mouse click to start rally in AI mode
+      this.scene.onPointerObservable.add((pointerInfo: any) => {
+        if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
+          const event = pointerInfo.event as PointerEvent;
+          if (event.button === 0) {
+            // Simple: Just start the ball moving
+            this.physics.setBallFrozen(false);
+            this.physics.setBallVelocity(0, 2, 5); // Toss ball up
+          }
+        }
+      });
+      return; // EXIT - don't setup network listeners
+    }
+
     this.net.on("game:started", () => {
       this.hasGameStarted = true;
       this.networkSync.startSync();
@@ -122,13 +157,13 @@ export class GameController {
     });
 
     // Host migration
-    this.net.on("host:migrated", (data) => {
-      if (this.net.isHost()) {
-        console.log("📡 I'm now host - taking authority");
-        console.log("My id is:", this.playerId);
-        console.log("new host id is:", data.newHostId);
-      }
-    });
+    // this.net.on("host:migrated", (data) => {
+    //   if (this.net.isHost()) {
+    //     console.log("📡 I'm now host - taking authority");
+    //     console.log("My id is:", this.playerId);
+    //     console.log("new host id is:", data.newHostId);
+    //   }
+    // });
   }
 
   // ================= 2D To 3D ==================
@@ -216,7 +251,12 @@ export class GameController {
     const pos = this.physics.paddle.getInterpolatedPos(alpha);
     this.localPaddle.updateVisual(pos as Vector3);
 
-    this.networkSync.updateVisualsOpponentPaddle();
+    if (!this.isAIMode && this.networkSync) {
+      this.networkSync.updateVisualsOpponentPaddle();
+    } else if (this.isAIMode) {
+      const aiPos = this.physics.opponentPaddle.getInterpolatedPos(alpha);
+      this.opponentPaddle.updateVisual(aiPos as Vector3);
+    }
     this.updateVisualsBall(alpha);
 
     // debug
@@ -239,6 +279,22 @@ export class GameController {
   //   this.gameLogic.gameState = GameState.WAITING_FOR_SERVE;
   // }
 
+  // ==================== AI Update =================
+  private updateAIPaddle(target: { x: number; y: number; z: number }): void {
+    // Clamp AI paddle to its boundaries
+    const boundaries = this.opponentPaddle.getBoundaries();
+    const clampedX = Math.max(
+      boundaries.x.min,
+      Math.min(boundaries.x.max, target.x),
+    );
+    const clampedZ = Math.max(
+      boundaries.z.min,
+      Math.min(boundaries.z.max, target.z),
+    );
+
+    this.physics.opponentPaddle.setTarget(clampedX, target.y, clampedZ);
+  }
+
   // ==================== Main update =================
   public fixedUpdate(): void {
     if (!this.ball || !this.physics || !this.hasGameStarted) return;
@@ -253,12 +309,23 @@ export class GameController {
       Math.min(this.paddleZMax, worldPos.z),
     );
 
+    if (this.isAIMode && this.aiController) {
+      const aiTarget = this.aiController.update(
+        this.ball,
+        this.physics,
+        1 / 60,
+      );
+
+      this.updateAIPaddle(aiTarget);
+    }
+
     this.physics.paddle.setTarget(worldPos.x, worldPos.y, clampedZ);
     this.physics.ball.setPosition("PREV");
     this.physics.Step();
     this.physics.ball.setPosition("CURR");
-
-    this.networkSync.recordState(this.currentTick);
+    if (!this.isAIMode && this.networkSync) {
+      this.networkSync.recordState(this.currentTick);
+    }
     this.incrementTick();
   }
 
