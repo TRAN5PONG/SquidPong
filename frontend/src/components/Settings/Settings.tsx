@@ -603,7 +603,8 @@ const Settings = () => {
     }
   }, [modName]);
 
-  const onProfileDataChange = (data: User) => {
+  const onProfileDataChange = () => {
+    if (!profileData) return;
     modal
       .showConfirmationModal(
         "Are you sure you want to save changes?",
@@ -613,11 +614,11 @@ const Settings = () => {
         if (confirmed) {
           try {
             const resp = await updateProfile({
-              firstName: data.firstName,
-              lastName: data.lastName,
-              username: data.username,
-              bio: data.bio,
-              banner: data.banner,
+              firstName: profileData.firstName,
+              lastName: profileData.lastName,
+              username: profileData.username,
+              bio: profileData.bio,
+              banner: profileData.banner,
             });
             if (resp.success) {
               toasts.addToastToQueue({
@@ -800,17 +801,14 @@ const Settings = () => {
     }
   };
 
-  useEffect(() => {
-    setProfileData(user);
-  }, [user]);
 
   if (currentMod === "404") return <NotFound />;
-  if (!currentMod || !profileData) return <LoaderSpinner />;
+  if (!currentMod || !user) return <LoaderSpinner />;
 
   return (
     <StyledSettings
-      avatar={profileData.avatar}
-      banner={profileData.banner}
+      avatar={user.avatar}
+      banner={user.banner}
       className="scroll-y"
     >
       <div className="Banner">
@@ -833,12 +831,12 @@ const Settings = () => {
         </div>
         <div className="ProfileDetails">
           <h1 className="ProfileDetailsUserName">
-            {profileData.firstName + " " + profileData.lastName}
-            {profileData.isVerified && (
+            {user.firstName + " " + user.lastName}
+            {user.isVerified && (
               <VerifiedIcon fill="var(--main_color)" size={20} />
             )}
           </h1>
-          <p>@{profileData.username}</p>
+          <p>@{user.username}</p>
         </div>
       </div>
 
@@ -894,7 +892,7 @@ const Settings = () => {
                 <input
                   className="textInput"
                   type="text"
-                  value={profileData.firstName}
+                  value={user.firstName}
                   onChange={(e: any) => {
                     onInputChange("firstName", e.currentTarget.value);
                     setError(
@@ -912,7 +910,7 @@ const Settings = () => {
                 <input
                   className="textInput"
                   type="text"
-                  value={profileData.lastName}
+                  value={user.lastName}
                   onChange={(e: any) => {
                     onInputChange("lastName", e.currentTarget.value);
                     setError(
@@ -930,7 +928,7 @@ const Settings = () => {
                 <input
                   className="textInput"
                   type="text"
-                  value={profileData.username}
+                  value={user.username}
                   onChange={(e: any) => {
                     onInputChange("username", e.currentTarget.value);
                     setError(
@@ -948,7 +946,7 @@ const Settings = () => {
                 <input
                   className="textInput"
                   type="text"
-                  value={profileData.banner}
+                  value={user.banner}
                   onChange={(e: any) => {
                     onInputChange("banner", e.currentTarget.value);
                     setError(
@@ -966,7 +964,7 @@ const Settings = () => {
                 <textarea
                   className="textInput"
                   style={{ height: "100px", resize: "vertical" }}
-                  value={profileData.bio}
+                  value={user.bio}
                   onChange={(e: any) => {
                     onInputChange("bio", e.currentTarget.value);
                     setError(
@@ -977,7 +975,7 @@ const Settings = () => {
                   }}
                   maxLength={160}
                 >
-                  {profileData.bio}
+                  {user.bio}
                 </textarea>
               </div>
               <span className="ErrorSpn">{Error}</span>
@@ -985,7 +983,7 @@ const Settings = () => {
               <div className="ProfileDataActions">
                 <button
                   className="SaveChangesBtn"
-                  onClick={() => onProfileDataChange(profileData)}
+                  onClick={() => onProfileDataChange()}
                 >
                   <SaveIcon fill="rgba(116, 218, 116, 0.2)" size={20} />
                   Save Changes
