@@ -57,7 +57,14 @@ export class Game {
   userId: string;
   userPlayerId: string;
 
-  constructor(canvas: HTMLCanvasElement, match: Match, userId: string) {
+  isAIMode: boolean;
+
+  constructor(
+    canvas: HTMLCanvasElement,
+    match: Match,
+    userId: string,
+    isAIMode: boolean = false,
+  ) {
     if (!canvas) {
       throw new Error("Canvas not found before initializing Game!");
     }
@@ -65,16 +72,25 @@ export class Game {
     this.match = match;
 
     this.userId = userId;
-    this.hostId = match?.opponent1.isHost
-      ? match.opponent1.userId
-      : match?.opponent2.userId;
-    this.guestId = match?.opponent1.isHost
-      ? match.opponent2.userId
-      : match?.opponent1.userId;
-    this.userPlayerId =
-      match?.opponent1.userId === userId
-        ? match?.opponent1.id
-        : match?.opponent2.id;
+    this.isAIMode = isAIMode;
+
+    if (!isAIMode) {
+      this.hostId = match?.opponent1.isHost
+        ? match.opponent1.userId
+        : match?.opponent2.userId;
+      this.guestId = match?.opponent1.isHost
+        ? match.opponent2.userId
+        : match?.opponent1.userId;
+      this.userPlayerId =
+        match?.opponent1.userId === userId
+          ? match?.opponent1.id
+          : match?.opponent2.id;
+    } else {
+      // AI mode: you're always "host"
+      this.hostId = userId;
+      this.guestId = "AI_OPPONENT";
+      this.userPlayerId = "player1";
+    }
 
     this.engine = new Engine(canvas, true, { adaptToDeviceRatio: true });
     this.scene = new Scene(this.engine);
@@ -98,8 +114,13 @@ export class Game {
       this.camera.attach(this.canvas);
 
       // Network
-      this.net = new Network(`wss://10.13.3.3:4433/matches`, this.match);
-      this.room = await this.net.join(this.userId);
+      if (!this.isAIMode) {
+        this.net = new Network(`wss://10.13.3.3:4433/matches`, this.match);
+        this.room = await this.net.join(this.userId);
+      } else {
+        this.net = null as any;
+        this.room = null as any;
+      }
 
       // Entities
       this.ball = new Ball(this.scene);
@@ -119,7 +140,7 @@ export class Game {
       this.guestPaddle = new Paddle(
         this.scene,
         "LEFT",
-        this.userId === this.guestId,
+        this.isAIMode || this.userId === this.guestId,
         {
           color: paddleColors[1],
         },
@@ -139,6 +160,7 @@ export class Game {
         this.physics,
         this.net,
         this.scene,
+        this.isAIMode,
       );
 
       // Debugging tools

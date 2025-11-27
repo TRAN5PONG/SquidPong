@@ -136,7 +136,7 @@ const GameContiner = () => {
   useEffect(() => {
     if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
 
-    gameRef.current = new Game(canvasRef.current, match, user.id);
+    gameRef.current = new Game(canvasRef.current, match, user.id, true);
     gameRef.current.start();
     netRef.current = gameRef.current.net;
 
