@@ -14,6 +14,7 @@ export class Physics {
   eventQueue: RAPIER.EventQueue = null!;
   public ball!: Ball;
   public paddle!: Paddle;
+  public opponentPaddle!: Paddle;
   public floor!: Floor;
   public net!: Net;
   public table!: Table;
@@ -45,6 +46,8 @@ export class Physics {
   public onBallTableCollision?: (
     ball: RAPIER.RigidBody,
     table: RAPIER.RigidBody,
+    contactPoint: Vector3,
+    contactNormal: Vector3,
   ) => void;
 
   Impulse: RAPIER.Vector3 | null = null;
@@ -68,6 +71,7 @@ export class Physics {
 
     this.ball = new Ball(this.world);
     this.paddle = new Paddle(this.world);
+    this.opponentPaddle = new Paddle(this.world);
   }
 
   updatePaddle(currPos: Vector3) {
@@ -83,6 +87,9 @@ export class Physics {
 
   Step() {
     this.paddle.update();
+
+    // TODO: If mode ai active
+    if (true) this.opponentPaddle.update();
     this.applyMagnusEffect();
     this.applyVisualSpeedBoost();
 
@@ -100,6 +107,7 @@ export class Physics {
     const floorHandle = this.floor.collider.handle;
     const netHandle = this.net.collider.handle;
     const tableHandle = this.table.collider.handle;
+    const opponentPaddleHandle = this.opponentPaddle.collider.handle;
 
     // Ball + Paddle
     if (
@@ -110,6 +118,13 @@ export class Physics {
       return;
     }
 
+    if (
+      (handle1 === ballHandle && handle2 === opponentPaddleHandle) ||
+      (handle2 === ballHandle && handle1 === opponentPaddleHandle)
+    ) {
+      this.onBallPaddleCollision?.(this.ball.body, this.opponentPaddle.body);
+      return;
+    }
     // Ball + Floor
     if (
       (handle1 === ballHandle && handle2 === floorHandle) ||
@@ -132,7 +147,18 @@ export class Physics {
       (handle1 === ballHandle && handle2 === tableHandle) ||
       (handle2 === ballHandle && handle1 === tableHandle)
     ) {
-      this.onBallTableCollision?.(this.ball.body, this.table.body);
+      const ballPos = this.ball.body.translation();
+      const contactPoint = new Vector3(ballPos.x, ballPos.y - 0.05, ballPos.z);
+      const contactNormal = new Vector3(0, 1, 0); // Upward normal
+
+      // Call callback
+      this.onBallTableCollision?.(
+        this.ball.body,
+        this.table.body,
+        contactPoint,
+        contactNormal,
+      );
+
       return;
     }
   }
