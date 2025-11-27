@@ -2,14 +2,16 @@
 export const ITEM_PRICES = {
   // Character prices
   characters: {
-    Zero: 0,        // Default character - free
-    Taizen: 1000,
-    Kira: 1500,
-    Ryu: 2000,
-    Akira: 2500,
-    Sora_F2: 3000,
-    Sora_M3: 3000,
-    Sora_F3: 3500
+    Tbib: 0,
+    Med: 200,
+    Ryu: 200  ,
+    Hama9a: 200,
+    Mnachit: 200,
+    Mira: 200,
+    Zero: 1000,
+    Zenitsu: 1000,
+    Xylar: 1000
+
   },
   
   // Paddle prices
