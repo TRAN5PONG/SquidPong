@@ -17,7 +17,7 @@ export enum GameState {
 }
 
 export class GameController {
-  private net: Network;
+  private net: Network | null;
   private localPaddle: Paddle;
   private opponentPaddle: Paddle;
   private ball: Ball;
@@ -50,7 +50,7 @@ export class GameController {
     ball: Ball,
     arena: Arena,
     physics: Physics,
-    net: Network,
+    net: Network | null,
     scene: Scene,
     aiMode: boolean = true,
   ) {
@@ -60,7 +60,7 @@ export class GameController {
     this.physics = physics;
     this.net = net;
     this.scene = scene;
-    this.playerId = this.net.getPlayerId()!;
+    this.playerId = net?.getPlayerId() || "local_player";
     this.arena = arena;
 
     const boundaries = this.localPaddle.getBoundaries();
@@ -71,27 +71,32 @@ export class GameController {
     this.debugMeshes = new DebugMeshManager(this.scene);
     // this.debugMeshes.createMeshes();
     // Initialize delegated modules
-    this.networkSync = new NetworkSync(
-      this.net,
-      this.ball,
-      this.physics,
-      this.localPaddle,
-      this.opponentPaddle,
-      this.playerId,
-    );
+    if (!aiMode && net) {
+      this.networkSync = new NetworkSync(
+        net,
+        this.ball,
+        this.physics,
+        this.localPaddle,
+        this.opponentPaddle,
+        this.playerId,
+      );
 
-    this.gameLogic = new GameLogic(
-      this.net,
-      this.ball,
-      this.physics,
-      this.localPaddle,
-      this.opponentPaddle,
-      this.playerId,
-      this.networkSync,
-      this.arena,
-      () => this.currentTick,
-    );
-
+      this.gameLogic = new GameLogic(
+        net,
+        this.ball,
+        this.physics,
+        this.localPaddle,
+        this.opponentPaddle,
+        this.playerId,
+        this.networkSync,
+        this.arena,
+        () => this.currentTick,
+      );
+    } else {
+      this.networkSync = null!;
+      this.gameLogic = null!;
+      this.hasGameStarted = true;
+    }
     this.isAIMode = aiMode;
     if (aiMode) {
       this.aiController = new AIController(opponentPaddle, 0.7);
@@ -102,6 +107,22 @@ export class GameController {
 
   private setupEventListeners(): void {
     // Game started event
+
+    if (this.isAIMode || !this.net) {
+      // Mouse click to start rally in AI mode
+      this.scene.onPointerObservable.add((pointerInfo: any) => {
+        if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
+          const event = pointerInfo.event as PointerEvent;
+          if (event.button === 0) {
+            // Simple: Just start the ball moving
+            this.physics.setBallFrozen(false);
+            this.physics.setBallVelocity(0, 2, 5); // Toss ball up
+          }
+        }
+      });
+      return; // EXIT - don't setup network listeners
+    }
+
     this.net.on("game:started", () => {
       this.hasGameStarted = true;
       this.networkSync.startSync();
@@ -136,13 +157,13 @@ export class GameController {
     });
 
     // Host migration
-    this.net.on("host:migrated", (data) => {
-      if (this.net.isHost()) {
-        console.log("📡 I'm now host - taking authority");
-        console.log("My id is:", this.playerId);
-        console.log("new host id is:", data.newHostId);
-      }
-    });
+    // this.net.on("host:migrated", (data) => {
+    //   if (this.net.isHost()) {
+    //     console.log("📡 I'm now host - taking authority");
+    //     console.log("My id is:", this.playerId);
+    //     console.log("new host id is:", data.newHostId);
+    //   }
+    // });
   }
 
   // ================= 2D To 3D ==================
@@ -230,7 +251,12 @@ export class GameController {
     const pos = this.physics.paddle.getInterpolatedPos(alpha);
     this.localPaddle.updateVisual(pos as Vector3);
 
-    this.networkSync.updateVisualsOpponentPaddle();
+    if (!this.isAIMode && this.networkSync) {
+      this.networkSync.updateVisualsOpponentPaddle();
+    } else if (this.isAIMode) {
+      const aiPos = this.physics.opponentPaddle.getInterpolatedPos(alpha);
+      this.opponentPaddle.updateVisual(aiPos as Vector3);
+    }
     this.updateVisualsBall(alpha);
 
     // debug
@@ -287,7 +313,7 @@ export class GameController {
       const aiTarget = this.aiController.update(
         this.ball,
         this.physics,
-        this.timestep,
+        1 / 60,
       );
 
       this.updateAIPaddle(aiTarget);
@@ -297,8 +323,9 @@ export class GameController {
     this.physics.ball.setPosition("PREV");
     this.physics.Step();
     this.physics.ball.setPosition("CURR");
-
-    this.networkSync.recordState(this.currentTick);
+    if (!this.isAIMode && this.networkSync) {
+      this.networkSync.recordState(this.currentTick);
+    }
     this.incrementTick();
   }
 

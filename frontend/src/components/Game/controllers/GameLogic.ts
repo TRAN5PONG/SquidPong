@@ -16,7 +16,7 @@ import { constants } from "../../../utils/constants";
 import { Arena } from "../entities/Arena";
 
 export class GameLogic {
-  private net: Network;
+  private net: Network | null;
   private ball: Ball;
   private physics: Physics;
   private localPaddle: Paddle;
@@ -46,7 +46,7 @@ export class GameLogic {
   private readonly MAX_SPIN: number = 8;
 
   constructor(
-    net: Network,
+    net: Network | null,
     ball: Ball,
     physics: Physics,
     localPaddle: Paddle,
@@ -66,13 +66,18 @@ export class GameLogic {
     this.getCurrentTickFn = getCurrentTickFn;
     this.arena = arena;
 
-    this.setupPhysicsCallbacks();
-    this.setupNetworkListeners();
+    if (net) {
+      this.setupPhysicsCallbacks();
+      this.setupNetworkListeners();
+    } else {
+      this.setupPhysicsCallbacks();
+    }
   }
 
   // ================= Network Listeners =================
   private setupNetworkListeners(): void {
     // Ball hit messages
+    if (!this.net) return;
     this.net.on("Ball:HitMessage", (data: BallHitMessage) => {
       this.networkSync.applyNetworkBallState(
         data.tick,
@@ -385,13 +390,16 @@ export class GameLogic {
 
   // ================= Game State Management =================
   private ballOut(): void {
-    if (this.isPointEnded || !this.net.isHost()) return;
+    if (this.isPointEnded) return;
+    if (this.net && !this.net.isHost()) return;
 
     this.isPointEnded = true;
-    this.net.sendMessage("Ball:Out", {
-      lastTableBounceSide: this.lastTableBounceSide,
-      serverSideBounced: this.serverSideBounced,
-    });
+
+    if (this.net)
+      this.net.sendMessage("Ball:Out", {
+        lastTableBounceSide: this.lastTableBounceSide,
+        serverSideBounced: this.serverSideBounced,
+      });
   }
 
   public resetRound(data?: ballResetMessage): void {
