@@ -23,6 +23,11 @@ const SelectCharacter = () => {
 
   const handleSelectChar = async (character: GameCharacter | null) => {
     if (!character) return;
+    if (user?.playerCharacters.includes(character.id) === false)
+      return toasts.addToastToQueue({
+        message: "You need to purchase this character first",
+        type: "error",
+      });
     try {
       const resp = await updateProfile({
         playerSelectedCharacter: character.id,
@@ -43,16 +48,32 @@ const SelectCharacter = () => {
       console.error(err);
     }
   };
-  // const handlePurchaseChar = async (character: GameCharacter | null) => {
-  //   if (!character) return;
-  //   try {
-  //     const resp = await updateProfile({
+  const handlePurchaseChar = async (character: GameCharacter | null) => {
+    if (!character || !user) return;
+    if (user.walletBalance < character.price)
+      return toasts.addToastToQueue({
+        message: "Insufficient balance to purchase character",
+        type: "error",
+      });
+    try {
+      const resp = await updateProfile({
+        playerCharacters: character.id,
+      });
 
-  //     })
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
+      if (resp.success) {
+        toasts.addToastToQueue({
+          message: "Character purchased successfully",
+          type: "success",
+        });
+      } else throw new Error("Purchase failed");
+    } catch (err) {
+      toasts.addToastToQueue({
+        message: "Failed to purchase character",
+        type: "error",
+      });
+      console.error(err);
+    }
+  };
 
   if (!user) return null;
 
