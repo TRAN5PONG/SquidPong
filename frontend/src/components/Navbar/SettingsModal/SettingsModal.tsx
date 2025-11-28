@@ -15,13 +15,14 @@ import { useAppContext } from "@/contexts/AppProviders";
 const StyledSettingsModal = styled("div")`
   width: 200px;
   height: 250px;
+  padding: 2px;
   position: absolute;
   background-color: var(--bg_color);
   top: 55px;
   right: 80px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   .ProfileElement {
@@ -34,6 +35,7 @@ const StyledSettingsModal = styled("div")`
     gap: 5px;
     font-family: var(--main_font);
     padding: 5px;
+    border-radius: 8px;
     cursor: pointer;
     .ProfileElementIcon {
       display: flex;

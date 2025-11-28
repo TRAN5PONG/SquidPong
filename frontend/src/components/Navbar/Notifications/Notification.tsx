@@ -181,7 +181,11 @@ const Notification = (props: NotificationProps) => {
       ) : (
         <span>No notifications</span>
       )}
-      <span className="NotsEnd">no more notifications</span>
+      {props.notifications.length > 0 ? (
+        <span className="NotsEnd">no more notifications</span>
+      ) : (
+        ""
+      )}
     </StyledModal>
   );
 };
@@ -259,7 +263,6 @@ const NotificationItem = (props: NotificationItemProps) => {
       });
     }
   };
-
 
   return (
     <StyledNotificationItem

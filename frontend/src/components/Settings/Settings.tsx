@@ -559,7 +559,7 @@ type SettingsMod =
   | "BlockedUsers"
   | "404";
 const Settings = () => {
-  const [profileData, setProfileData] = Zeroact.useState<User | null>(null);
+  const [profileData, setProfileData] = Zeroact.useState<Partial<User>>({});
   const [Error, setError] = Zeroact.useState<string>("");
   const [currentMod, setCurrentMod] = Zeroact.useState<SettingsMod | null>(
     null
@@ -650,7 +650,7 @@ const Settings = () => {
   };
   const onInputChange = (field: string, value: string) => {
     if (!user) return;
-    const updatedUser = { ...user, [field]: value };
+    const updatedUser = { ...profileData, [field]: value };
     setProfileData(updatedUser);
   };
   const onDeleteAccount = () => {
@@ -800,6 +800,10 @@ const Settings = () => {
       });
     }
   };
+
+  useEffect(() => {
+    console.log("Profile data updated:", profileData);
+  }, [profileData])
 
 
   if (currentMod === "404") return <NotFound />;
