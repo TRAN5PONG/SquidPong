@@ -11,6 +11,8 @@ const StyledStatus = styled("div")`
   left: -103%;
   display: flex;
   flex-direction: column;
+  border-radius: 8px;
+  padding: 2px;
   display: ${(props: any) => (props.isVisible ? "flex" : "none")};
 
   span {
@@ -20,6 +22,7 @@ const StyledStatus = styled("div")`
     align-items: center;
     padding: 0 20px;
     transition: 0.2s ease-in-out;
+    border-radius: 2px;
     cursor: pointer;
     background-image: linear-gradient(
       90deg,

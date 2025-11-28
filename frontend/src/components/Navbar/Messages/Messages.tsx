@@ -37,13 +37,13 @@ const SyledChatModal = styled("div")`
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: 3px;
   .ChatsContainer {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    padding: 0px 2px;
     .ChatsContainerHeader {
       width: 100%;
       display: flex;
@@ -612,6 +612,8 @@ const StyledChatItem = styled("div")`
   align-items: center;
   justify-content: space-between;
   transition: 0.1s ease-in-out;
+    border-radius: 5px;
+
   cursor: pointer;
   background-color: ${(props: any) =>
     props.isRead ? "var(--bg_color_light)" : "var(--bg_color)"};
@@ -628,6 +630,9 @@ const StyledChatItem = styled("div")`
     background-size: cover;
     background-position: center;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     &::after {
       content: "";
       position: absolute;
@@ -710,7 +715,7 @@ const ChatItem = (props: ChatItemProps) => {
       onClick={() => props.onClick(props.converstation)}
     >
       <div className="ChatItemAvatar">
-        {groupChat && <GroupIcon size={20} fill="rgba(255, 255, 255, 0.7)" />}
+        {groupChat && <GroupIcon size={20} fill="rgba(255, 255, 255, 0.3)" />}
       </div>
       <div className="ChatItemInfos">
         <span className="ChatItemName">
