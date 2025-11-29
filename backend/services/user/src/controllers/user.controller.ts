@@ -85,14 +85,13 @@ export async function updateProfileHandlerDB(
   let newData: { isVerified?: boolean; walletBalance?: number } = {};
   let body = req.body as any;
 
+  console.log("UpdateProfileHandlerDB body:", body);
   try 
   {
     let existingProfile = await prisma.profile.findUnique({
       where: { userId },
     });
     if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
-
-    console.log("profile before update:", existingProfile);
 
     if (await isReadyExists(body.username, existingProfile.username))
       throw new Error(ProfileMessages.READY_EXISTS);
@@ -135,6 +134,9 @@ export async function updateProfileHandlerDB(
 
     body = { ...body, ...newData };
 
+    body['status'] = body.customStatus;
+
+    console.log("Final body to update:", body);
     const updatedProfile = await prisma.profile.update({
       where: { userId },
       data: {
@@ -153,7 +155,6 @@ export async function updateProfileHandlerDB(
         }),
       },
     });
-    respond.data = await mergeProfileWithRedis(updatedProfile);
 
     if (body.username)
     {
@@ -164,7 +165,7 @@ export async function updateProfileHandlerDB(
       
     if (body.customStatus) {
       await redis.update(`profile:${userId}`, "$", {
-        customStatus: body.customStatus,
+        status: body.customStatus,
       });
     }
 
@@ -174,6 +175,7 @@ export async function updateProfileHandlerDB(
       ...(body.lastName && { lastName: body.lastName }),
       ...(body.isVerified && { isVerified: body.isVerified }),
       ...(body.customStatus && { customStatus: body.customStatus }),
+      ...(body.customStatus && { status: body.customStatus }),
     };
 
     await sendServiceRequestSimple("chat", userId, "PUT", dataSend);
@@ -187,9 +189,15 @@ export async function updateProfileHandlerDB(
     });
 
     const redisKey = `profile:${userId}`;
+
+    // delete dataSend.walletBalance;
+
     if (await redis.exists(redisKey)) {
       await redis.update(redisKey, "$", dataSend);
     }
+
+    respond.data = await mergeProfileWithRedis(updatedProfile);
+
   } 
   catch (error) {
     return sendError(res, error);
@@ -386,8 +394,7 @@ export async function getCurrentUserHandler(
 
     if (!(await redis.exists(`profile:${userId}`))) {
       await redis.set(`profile:${userId}`, {
-        status: profile.status,
-        customStatus: profile.customStatus,
+        status: profile.customStatus,
         username: profile.username,
         firstName: profile.firstName,
         lastName: profile.lastName,
