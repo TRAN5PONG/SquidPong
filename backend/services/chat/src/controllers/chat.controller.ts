@@ -10,7 +10,8 @@ import { sendDataToQueue } from "../integration/rabbitmq.integration";
 import { getOnlineUsers } from "../integration/redis.integration";
 import { ReactionType } from "./chat.rabbit.controller";
 
-export async function createChat(req: FastifyRequest, res: FastifyReply) {
+export async function createChat(req: FastifyRequest, res: FastifyReply) 
+{
   const respond: ApiResponse<{ chatId: number }> = {
     success: true,
     message: chatMessages.CREATED_SUCCESS,
@@ -20,9 +21,11 @@ export async function createChat(req: FastifyRequest, res: FastifyReply) {
 
   const { friendId } = req.body as { friendId: string };
 
-  try {
+  try 
+  {
     if (userId === friendId) throw new Error(chatMessages.CANNOT_CHAT_SELF);
-    await fetchAndEnsureUser(friendId);
+    console.log(`Creating chat between ${userId} and ${friendId}`);
+    await fetchAndEnsureUser(friendId.toString());
 
     const existingChatId = await findChatBetweenUsers(
       Number(userId),
