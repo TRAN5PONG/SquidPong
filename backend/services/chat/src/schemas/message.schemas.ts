@@ -17,12 +17,7 @@ export const sendMessageSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            content: { type: 'string' }
-          }
-        }
+        data: {}
       }
     }
   }
@@ -51,13 +46,7 @@ export const editMessageSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            messageId: { type: 'number' },
-            content: { type: 'string' }
-          }
-        }
+        data: {}
       }
     }
   }
@@ -79,12 +68,7 @@ export const deleteMessageSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            messageId: { type: 'number' }
-          }
-        }
+        data: {}
       }
     }
   }
@@ -113,12 +97,7 @@ export const replyToMessageSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            replyMessage: { type: 'object' }
-          }
-        }
+        data: {}
       }
     }
   }
@@ -151,12 +130,7 @@ export const addReactionSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            emoji: { type: 'string' }
-          }
-        }
+        data: {}
       }
     }
   }
@@ -178,12 +152,7 @@ export const removeReactionSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            messageId: { type: 'number' }
-          }
-        }
+        data: {}
       }
     }
   }

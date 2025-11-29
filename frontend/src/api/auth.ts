@@ -1,6 +1,6 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export interface ApiResponse<T = undefined> {
+export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
   data?: T;

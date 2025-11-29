@@ -10,7 +10,7 @@ const successResponse = {
   properties: {
     success: { type: 'boolean' },
     message: { type: 'string' },
-    data: { type: 'object', nullable: true }
+  data: {}
   },
   required: ['success', 'message']
 };
@@ -75,10 +75,7 @@ export const getNotificationHistorySchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'array',
-          items: notificationSchema
-        }
+        data: {}
       },
       description: 'Notifications fetched successfully'
     },

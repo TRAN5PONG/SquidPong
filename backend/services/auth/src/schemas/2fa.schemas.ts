@@ -10,7 +10,7 @@ const successResponse = {
   properties: {
     success: { type: 'boolean' },
     message: { type: 'string' },
-    data: { type: 'object', nullable: true }
+  data: {}
   },
   required: ['success', 'message']
 };
@@ -57,20 +57,7 @@ export const setup2FASchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            twoFAQRCode: {
-              type: 'string',
-              description: 'QR code for authenticator app (only for authenticator method)'
-            },
-            twoFAKey: {
-              type: 'string',
-              description: 'Secret key for manual entry (only for authenticator method)'
-            }
-          },
-          nullable: true
-        }
+        data: {}
       },
       description: '2FA setup successful'
     },
@@ -271,16 +258,7 @@ export const status2FASchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            twoFAMethod: {
-              type: 'string',
-              enum: ['authenticator', 'email', 'none'],
-              description: 'Current 2FA method enabled'
-            }
-          }
-        }
+        data: {}
       },
       description: '2FA status retrieved successfully'
     },

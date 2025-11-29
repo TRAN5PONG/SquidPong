@@ -10,7 +10,7 @@ const successResponse = {
   properties: {
     success: { type: 'boolean' },
     message: { type: 'string' },
-    data: { type: 'object', nullable: true }
+    data: {}
   },
   required: ['success', 'message']
 };
@@ -158,7 +158,7 @@ export const createPollSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: pollSchema
+  data: {}
       },
       description: 'Poll created successfully'
     },
@@ -225,24 +225,7 @@ export const getGroupPollsSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            polls: {
-              type: 'array',
-              items: pollSchema
-            },
-            pagination: {
-              type: 'object',
-              properties: {
-                page: { type: 'number' },
-                limit: { type: 'number' },
-                total: { type: 'number' },
-                totalPages: { type: 'number' }
-              }
-            }
-          }
-        }
+        data: {}
       },
       description: 'Group polls retrieved successfully'
     },
@@ -287,28 +270,7 @@ export const getPollByIdSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            ...pollSchema.properties,
-            userVotes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  optionId: { type: 'number' },
-                  userId: { type: 'string' },
-                  createdAt: { type: 'string', format: 'date-time' }
-                }
-              },
-              description: 'Current user votes (if not anonymous)'
-            },
-            totalVotes: {
-              type: 'number',
-              description: 'Total number of votes cast'
-            }
-          }
-        }
+        data: {}
       },
       description: 'Poll retrieved successfully'
     },
