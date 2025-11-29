@@ -47,6 +47,7 @@ import GameContiner from "./components/Game/GameContainer";
 import { InviteOponent } from "./components/Lobby/InvitationModal";
 import { Match, MatchPlayer } from "./types/game/game";
 import { useSounds } from "./contexts/SoundProvider";
+import BounceGame from "./components/Game/BounceGame";
 
 const StyledApp = styled("div")`
   width: 100vw;
@@ -73,6 +74,12 @@ export const routes: Route[] = [
     showLoader: true,
   },
   { path: "/game", component: GameContiner, exact: false, showLoader: true },
+  {
+    path: "/bounce-game",
+    component: BounceGame,
+    exact: true,
+    showLoader: true,
+  },
   {
     path: "/select-paddle",
     component: SelectPaddle,

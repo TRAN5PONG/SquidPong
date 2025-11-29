@@ -128,6 +128,7 @@ const Notification = (props: NotificationProps) => {
   >("All");
 
   useEffect(() => {
+    console.log("Notifications:", props.notifications);
     function handleClickOutside(event: MouseEvent) {
       if (
         ModalRef.current &&

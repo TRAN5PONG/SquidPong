@@ -88,8 +88,6 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
   return res.send(respond);
 }
 
-
-
 // STEP 2 - Verify TwoFA (App or Email)
 export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply) 
 {
@@ -101,7 +99,6 @@ export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 
   try 
   {
-
     const redisKey = `2fa:token:${twoFAToken}`;
     const tokenData = await redis.get(redisKey);
     if (!tokenData) throw new Error("Invalid or expired 2FA token");
@@ -128,22 +125,6 @@ export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 
   return res.send(respond);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 export async function disableTwoFAHandler(req: FastifyRequest, res: FastifyReply) {
   const respond: ApiResponse<null> = { success: true, message: TwoFA.TWO_FA_DISABLE_SUCCESS };

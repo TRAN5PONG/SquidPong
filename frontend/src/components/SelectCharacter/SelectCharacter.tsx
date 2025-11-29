@@ -10,7 +10,7 @@ import { updateProfile } from "@/api/user";
 const SelectCharacter = () => {
   const [selectedChar, setselectedChar] =
     Zeroact.useState<GameCharacter | null>(null); //playerId
-  const { user, toasts } = useAppContext();
+  const { user, setUser, toasts } = useAppContext();
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +38,7 @@ const SelectCharacter = () => {
           type: "success",
         });
         setselectedChar(character);
+        if (resp.data) setUser(resp.data);
       } else {
         toasts.addToastToQueue({
           message: "Failed to select character",
@@ -65,6 +66,7 @@ const SelectCharacter = () => {
           message: "Character purchased successfully",
           type: "success",
         });
+        if (resp.data) setUser(resp.data);
       } else throw new Error("Purchase failed");
     } catch (err) {
       toasts.addToastToQueue({

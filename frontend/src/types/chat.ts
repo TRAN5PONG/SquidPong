@@ -45,6 +45,7 @@ export interface ChatGroup {
   imageUrl: string;
   name: string;
   type: "PRIVATE" | "PUBLIC";
+  matchId?: string;
   members: {
     groupId: number;
     id: number;

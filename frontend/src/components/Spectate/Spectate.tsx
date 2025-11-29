@@ -386,7 +386,7 @@ const Spectate = () => {
     setSelectedBet((prev) => (prev === bet ? null : bet));
   };
   const handleSendMessage = async () => {
-    if (!chatGroup) return;
+    if (!chatGroup || !message.length) return;
     try {
       const resp = await sendMessage(chatGroup.chatId, message);
       if (resp.success) {

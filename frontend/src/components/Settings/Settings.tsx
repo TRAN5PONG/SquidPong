@@ -559,6 +559,9 @@ type SettingsMod =
   | "BlockedUsers"
   | "404";
 const Settings = () => {
+  /**
+   * States
+   */
   const [profileData, setProfileData] = Zeroact.useState<Partial<User>>({});
   const [Error, setError] = Zeroact.useState<string>("");
   const [currentMod, setCurrentMod] = Zeroact.useState<SettingsMod | null>(
@@ -574,22 +577,32 @@ const Settings = () => {
     MiniUser[]
   >([]);
   const [blockedUsers, setBlockedUsers] = Zeroact.useState<MiniUser[]>([]);
-  const [Preferences, setPreferences] = Zeroact.useState<UserPreferences>(
-    db.FakeUserPreferences
-  );
+  const [Preferences, setPreferences] =
+    Zeroact.useState<UserPreferences | null>(null);
   const [showTwoFAModal, setShowTwoFAModal] = Zeroact.useState(false);
+
+  /**
+   * Refs
+   */
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Ctx
+   */
   const modName = useRouteParam("/settings/:key", "key");
   const navigate = useNavigate();
   const { modal, toasts, user } = useAppContext();
 
+  /**
+   * Effects
+   */
   useEffect(() => {
     if (modName === undefined) return;
     if (modName === "account") {
       setCurrentMod("account");
     } else if (modName === "preferences") {
       setCurrentMod("preferences");
+      if (user) setPreferences(user?.preferences);
     } else if (modName === "privacy") {
       setCurrentMod("privacy");
     } else if (modName === "friendRequests") {
@@ -601,7 +614,7 @@ const Settings = () => {
     } else {
       setCurrentMod("404");
     }
-  }, [modName]);
+  }, [modName, user]);
 
   const onProfileDataChange = () => {
     if (!profileData) return;
@@ -676,9 +689,9 @@ const Settings = () => {
       });
   };
   const onTwoFAToggle = () => {
-    if (Preferences.twoFactorEnabled) {
+    if (Preferences?.twoFactorEnabled) {
       toasts.addToastToQueue({
-        type: "success",
+        type: "info",
         message: "Two-factor already enabled.",
       });
     } else {
@@ -686,7 +699,9 @@ const Settings = () => {
     }
   };
 
-  // Fetches
+  /**
+   * Fetches
+   */
   const fetchFriendRequests = async () => {
     const resp = await getPendingFriendRequests();
 
@@ -769,7 +784,10 @@ const Settings = () => {
       });
     }
   };
-  // Avatar upload handler
+
+  /**
+   * Handlers
+   */
   const handleAvatarUpload = async (file: File) => {
     try {
       const reader = new FileReader();
@@ -800,11 +818,22 @@ const Settings = () => {
       });
     }
   };
+  const handlePreferencesChange = (path: string, value: any) => {
+    if (!Preferences) return;
 
-  useEffect(() => {
-    console.log("Profile data updated:", profileData);
-  }, [profileData])
+    const keys = path.split(".");
+    const updated = { ...Preferences };
+    let curr: any = updated;
 
+    for (let i = 0; i < keys.length - 1; i++) {
+      curr[keys[i]] = { ...curr[keys[i]] };
+      curr = curr[keys[i]];
+    }
+
+    curr[keys[keys.length - 1]] = value;
+
+    setPreferences(updated);
+  };
 
   if (currentMod === "404") return <NotFound />;
   if (!currentMod || !user) return <LoaderSpinner />;
@@ -1000,55 +1029,83 @@ const Settings = () => {
               <div className="PrefElement">
                 <span>Enable Game Sounds</span>
                 <PrefToggle
-                  enabled={Preferences.soundEnabled}
-                  onClick={() => {}}
+                  enabled={Preferences?.soundEnabled}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "soundEnabled",
+                      !Preferences?.soundEnabled
+                    )
+                  }
                 />
               </div>
               <div className="PrefElement">
                 <span>Enable Background Music</span>
                 <PrefToggle
-                  enabled={Preferences.musicEnabled}
-                  onClick={() => {
-                    // Implement background music toggle logic here
-                  }}
+                  enabled={Preferences?.musicEnabled}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "musicEnabled",
+                      !Preferences?.musicEnabled
+                    )
+                  }
                 />
               </div>
 
               <span className="Spliter">notifications</span>
               <div className="PrefElement">
-                <span>Enable Notifications</span>
+                <span>Friend Requests</span>
                 <PrefToggle
-                  enabled={Preferences.notifications.friendRequests}
-                  onClick={() => {}}
+                  enabled={Preferences?.notifications.friendRequests}
+                  onClick={() => {
+                    handlePreferencesChange(
+                      "notifications.friendRequests",
+                      !Preferences?.notifications.friendRequests
+                    );
+                  }}
                 />
               </div>
               <div className="PrefElement">
                 <span>Chat Messages</span>
                 <PrefToggle
-                  enabled={Preferences.notifications.chatMessages}
-                  onClick={() => {}}
+                  enabled={Preferences?.notifications.chatMessages}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "notifications.chatMessages",
+                      !Preferences?.notifications.chatMessages
+                    )
+                  }
                 />
               </div>
               <div className="PrefElement">
                 <span>Game Invites</span>
                 <PrefToggle
-                  enabled={Preferences.notifications.gameInvites}
-                  onClick={() => {}}
+                  enabled={Preferences?.notifications.gameInvites}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "notifications.gameInvites",
+                      !Preferences?.notifications.gameInvites
+                    )
+                  }
                 />
               </div>
               <div className="PrefElement">
                 <span>Tournament Updates</span>
                 <PrefToggle
-                  enabled={Preferences.notifications.tournamentUpdates}
-                  onClick={() => {}}
+                  enabled={Preferences?.notifications.tournamentUpdates}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "notifications.tournamentUpdates",
+                      !Preferences?.notifications.tournamentUpdates
+                    )
+                  }
                 />
               </div>
 
               <span className="Spliter">security</span>
-              <div className="PrefElement" onClick={() => {}}>
+              <div className="PrefElement">
                 <span>Enable two factor authentication</span>
                 <PrefToggle
-                  enabled={false}
+                  enabled={Preferences?.twoFactorEnabled}
                   onClick={() => {
                     onTwoFAToggle();
                   }}
@@ -1189,6 +1246,14 @@ const Settings = () => {
           onClose={() => {
             setShowTwoFAModal(false);
           }}
+          onEnabled={() => {
+            setShowTwoFAModal(false);
+            handlePreferencesChange("twoFactorEnabled", true);
+            toasts.addToastToQueue({
+              type: "success",
+              message: "Two-factor authentication enabled successfully!",
+            });
+          }}
         />
       )}
     </StyledSettings>
@@ -1220,11 +1285,15 @@ const StyledPrefToggle = styled("div")`
   }
 `;
 interface PrefToggleProps {
-  enabled: boolean;
+  enabled: boolean | null | undefined;
   onClick: () => void;
 }
 const PrefToggle = (props: PrefToggleProps) => {
-  const [enabled, setEnabled] = useState(props.enabled);
+  const [enabled, setEnabled] = useState(props.enabled || false);
+
+  useEffect(() => {
+    setEnabled(props.enabled || false);
+  }, [props.enabled]);
 
   return (
     <StyledPrefToggle isEnabled={enabled} onClick={() => props.onClick()}>

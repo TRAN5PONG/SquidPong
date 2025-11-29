@@ -1,7 +1,6 @@
 import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { CopyIcon, ScanIcon } from "../Svg/Svg";
-import { url } from "inspector";
 import { useAppContext } from "@/contexts/AppProviders";
 
 const StyledTwoFAModal = styled("div")`
@@ -174,12 +173,16 @@ const StyledTwoFAModal = styled("div")`
   }
 `;
 
-const TwoFAModal = (props: { onClose: () => void }) => {
+interface TwoFAModalProps {
+  onClose: () => void;
+  onEnabled: () => void;
+}
+const TwoFAModal = (props: TwoFAModalProps) => {
   const modalRef = Zeroact.useRef<HTMLDivElement>(null);
   const [isScanned, setIsScanned] = useState(false);
   const [showScanEffect, setShowScanEffect] = useState(false);
 
-  const {user} = useAppContext();
+  const { user } = useAppContext();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -200,14 +203,16 @@ const TwoFAModal = (props: { onClose: () => void }) => {
     setShowScanEffect(true);
     setTimeout(() => {
       setIsScanned(true);
+      props.onEnabled();
     }, 2000); // Simulate scan effect for 3 seconds
     // setIsScanned(true);
   };
-  
-
 
   return (
-    <StyledTwoFAModal ref={modalRef} qrImgUrl="https://codigosdebarrasbrasil.com.br/wp-content/uploads/2019/09/codigo_qr-300x300.png">
+    <StyledTwoFAModal
+      ref={modalRef}
+      qrImgUrl="https://codigosdebarrasbrasil.com.br/wp-content/uploads/2019/09/codigo_qr-300x300.png"
+    >
       <div className="QRCodeHeader">
         <ScanIcon fill="rgba(255, 255, 255, 0.8)" size={40} />
         <h2>Turn on Two-Factor Authentication</h2>

@@ -129,7 +129,7 @@ export async function requestPasswordReset(
 export async function resetPassword(
   email: string,
   code: string,
-  newPassword: string,
+  newPassword: string
 ): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
     method: "POST",
@@ -170,7 +170,6 @@ export async function changePassword(
 export async function TwoFA_status(): Promise<
   ApiResponse<{ is2FAEnabled: boolean }>
 > {
-  // endpoint => /2fa/status
   const response = await fetch(`${API_BASE_URL}/2fa/status`, {
     method: "GET",
     credentials: "include",
@@ -183,8 +182,11 @@ export async function TwoFA_status(): Promise<
   }
   return await response.json();
 }
-export async function TwoFA_enable(code: string): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/2fa/enable`, {
+export async function TwoFA_enable(
+  method: string,
+  code: string
+): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE_URL}/2fa/${method}/enable`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -199,8 +201,8 @@ export async function TwoFA_enable(code: string): Promise<ApiResponse> {
 
   return await response.json();
 }
-export async function TwoFA_disable(): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/2fa/disable`, {
+export async function TwoFA_disable(method: string): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE_URL}/2fa/${method}/disable`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -228,14 +230,18 @@ export async function TwoFA_setup(): Promise<
   }
   return await response.json();
 }
-export async function TwoFA_verify(token: string, code: string): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/2fa/verify`, {
+export async function TwoFA_verify(
+  method: string,
+  twoFAToken: string,
+  code: string
+): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE_URL}/2fa/${method}/verify`, {
     method: "POST",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ token, code }),
+    body: JSON.stringify({ twoFAToken, code }),
   });
 
   if (!response.ok) {
@@ -245,9 +251,8 @@ export async function TwoFA_verify(token: string, code: string): Promise<ApiResp
   return await response.json();
 }
 
-
 // Third-party authentication
-export async function googleAuth():Promise<ApiResponse> {
+export async function googleAuth(): Promise<ApiResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/google`, {
     method: "GET",
     credentials: "include",
