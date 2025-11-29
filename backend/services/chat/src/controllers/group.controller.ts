@@ -301,9 +301,8 @@ export async function updateGroupImage(req: FastifyRequest, res: FastifyReply) {
       throw new Error(GroupMessages.UPDATED_FAILED);
     }
 
-    const { imageUrl } = (await convertParsedMultipartToJson(req)) as {
-      imageUrl: string;
-    };
+    const imageUrl = await convertParsedMultipartToJson(req);
+    console.log("Updating group image to:", imageUrl);
 
     const data = await prisma.group.update({
       where: { id: Number(groupId) },
@@ -311,7 +310,8 @@ export async function updateGroupImage(req: FastifyRequest, res: FastifyReply) {
     });
 
     respond.data = data;
-  } catch (error) {
+  } 
+  catch (error) {
     return sendError(res, error);
   }
 

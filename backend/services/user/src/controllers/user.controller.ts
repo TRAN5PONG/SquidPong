@@ -71,7 +71,8 @@ export async function createProfileHandler(
 export async function updateProfileHandlerDB(
   req: FastifyRequest,
   res: FastifyReply
-) {
+) 
+{
   const respond: ApiResponse<any> = {
     success: true,
     message: ProfileMessages.UPDATE_SUCCESS,
@@ -196,6 +197,7 @@ export async function updateProfileHandlerDB(
   return res.send(respond);
 }
 
+
 export async function updateProfileHandler(
   req: FastifyRequest,
   res: FastifyReply
@@ -220,15 +222,28 @@ export async function updateProfileHandler(
 
   try 
   {
+    const profileExists = await prisma.profile.findUnique({ where: { userId } });
+    if (!profileExists) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
+
+
     if (Token !== process.env.SECRET_TOKEN)
       throw new Error(GeneralMessages.UNAUTHORIZED);
 
-    if (body.status !== undefined) {
-      let dataToUpdate: any = { status: body.status };
+    let dataToUpdate: any = { status: body.status };
+    if (body.status !== undefined) 
+    {
       const redisProfile = await redis.get(cacheKey);
-      if (body.status === "OFFLINE") {
+      console.log("redis profile:", redisProfile);
+      if (body.status === "OFFLINE") 
+      {
+        delete redisProfile.status;
         dataToUpdate.lastSeen = new Date();
         dataToUpdate = { ...dataToUpdate, ...redisProfile };
+        console.log("data to update:", dataToUpdate);
+      }
+      else
+      {
+        dataToUpdate.status = profileExists.customStatus;
       }
 
       await prisma.profile.update({
@@ -237,16 +252,18 @@ export async function updateProfileHandler(
       });
 
       await sendServiceRequestSimple("chat", userId, "PUT", {
-        status: body.status,
+        status: dataToUpdate.status,
       });
       await sendServiceRequestSimple("notify", userId, "PUT", {
-        status: body.status,
+        status: dataToUpdate.status,
       });
       if (await redis.exists(cacheKey))
+      {
         await redis.update(cacheKey, "$", {
-          status: body.status,
+          status: dataToUpdate.status,
           ...(body.status === "OFFLINE" && { lastSeen: new Date() }),
         });
+      }
 
       return res.send(respond);
     }

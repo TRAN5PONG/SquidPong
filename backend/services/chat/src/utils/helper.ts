@@ -56,25 +56,10 @@ export function sendError(res: FastifyReply, error: unknown, statusCode = 400)
 
 export async function fetchAndEnsureUser(userId: string) 
 {
-  let user;
-  const key = `profile:${userId}`;
 
-  if(await redis.exists(key)) {
-    user = await redis.get(key);
-    // Compute visible status
-    if (user.status && user.customStatus) {
-      user.status = getVisibleStatus(user.status, user.customStatus);
-    }
-    return user;
-  }
-
-  user = await prisma.user.findUnique({ where: { userId }});
+  const user = await prisma.user.findUnique({ where: { userId }});
   if(!user) throw new Error('User not found ');
-  
-  // Compute visible status before returning
-  if (user.status && user.customStatus) {
-    user.status = getVisibleStatus(user.status, user.customStatus);
-  }
+  console.log('Fetched user:', user);
   
   return user;
 }
@@ -90,13 +75,12 @@ export function checkSecretToken(req: FastifyRequest)
 }
 
 
-
-export async function convertParsedMultipartToJson(req: FastifyRequest): Promise<{imageUrl : string}> 
+export async function convertParsedMultipartToJson(req: FastifyRequest): Promise<string> 
 {
   const rawBody = req.body as any;
   let file: string = "";
   
-  const uploadDir = path.join(process.cwd(), 'uploads', 'group-images');
+  const uploadDir = path.join(process.cwd(), 'uploads', 'avatar');
   if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
   for (const key in rawBody) 
@@ -123,5 +107,6 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
     } 
   }
 
-  return {imageUrl : file} ;
+  return file;
 }
+

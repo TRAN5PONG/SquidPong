@@ -22,13 +22,13 @@ export default async function registerPlugins(app:FastifyInstance)
   });
 
   app.register(multipart, {
-    limits: {
+  limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
     files: 1,
-    fields: 10,
-    },
+  },
   attachFieldsToBody: true,
   });
+
 
     app.register(fastifyStatic, {
     root: path.join(process.cwd(), 'uploads', 'avatar'),
