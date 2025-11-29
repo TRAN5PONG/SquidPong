@@ -8,6 +8,8 @@ import {
   CoinIcon,
   DateIcon,
   MessageIcon,
+  PendingIcon,
+  PersonIcon,
   SeenIcon,
   VerifiedIcon,
 } from "../Svg/Svg";
@@ -307,6 +309,7 @@ const StyledProfileModal = styled("div")`
       justify-content: center;
       color: white;
       padding: 5px;
+      gap: 5px;
       &.Rank {
         padding: 0px 20px;
         flex-direction: row;
@@ -335,9 +338,9 @@ const StyledProfileModal = styled("div")`
         }
         span {
           z-index: 1;
-          font-family: var(--span_font);
-          font-weight: 600;
+          font-family: var(--squid_font);
           font-size: 1.2rem;
+          white-space: nowrap;
         }
       }
       .StatElValue {
@@ -403,8 +406,19 @@ const StyledProfileModal = styled("div")`
     gap: 5px;
   }
 `;
+
+interface UserWithRelations extends User {
+  relationshipStatus:
+    | "NO_RELATIONSHIP"
+    | "FRIENDS"
+    | "REQUEST_SENT"
+    | "REQUEST_RECEIVED"
+    | "YOU_BLOCKED"
+    | "BLOCKED_YOU";
+}
 const Profile = () => {
-  const [profileData, setProfileData] = Zeroact.useState<User | null>(null);
+  const [profileData, setProfileData] =
+    Zeroact.useState<UserWithRelations | null>(null);
   const [profileStats, setProfileStats] = Zeroact.useState<any>(null);
   const [profileFriends, setProfileFriends] = Zeroact.useState<MiniUser[]>([]);
   const [isUserNotFound, setIsUserNotFound] = Zeroact.useState(false);
@@ -515,7 +529,7 @@ const Profile = () => {
     setTimeout(async () => {
       const user = await getUserById(id);
       if (user.success && user.data) {
-        setProfileData(user.data);
+        setProfileData(user.data as UserWithRelations);
       } else {
         setIsUserNotFound(true);
       }
@@ -617,16 +631,30 @@ const Profile = () => {
               onClick={() =>
                 handleFriendAddUnfriend(profileData.userId.toString())
               }
+              disabled={profileData.relationshipStatus === "BLOCKED_YOU"}
             >
-              {profileFriends.find((f) => f.username === user?.username)
-                ? "UNFRIEND"
-                : "ADD FRIEND"}
-              <AddFriendIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+              {profileData.relationshipStatus === "FRIENDS"
+                ? "Unfriend"
+                : profileData.relationshipStatus === "REQUEST_SENT"
+                ? "Request Sent"
+                : "Add Friend"}
+              {profileData.relationshipStatus === "REQUEST_SENT" ? (
+                <PendingIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+              ) : (
+                <AddFriendIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
+              )}
             </button>
-            <button className="actionBtn">
+            <button
+              className="actionBtn"
+              disabled={profileData.relationshipStatus === "BLOCKED_YOU"}
+            >
               <MessageIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
             </button>
-            <button className="actionBtn" onClick={() => handleChallengeUser()}>
+            <button
+              className="actionBtn"
+              onClick={() => handleChallengeUser()}
+              disabled={profileData.relationshipStatus === "BLOCKED_YOU"}
+            >
               <ChallengeIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
             </button>
           </div>

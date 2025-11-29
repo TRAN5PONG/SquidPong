@@ -10,7 +10,7 @@ const successResponse = {
   properties: {
     success: { type: 'boolean' },
     message: { type: 'string' },
-    data: { type: 'object', nullable: true }
+  data: {}
   },
   required: ['success', 'message']
 };
@@ -154,11 +154,7 @@ export const getBlockedUsersSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'array',
-          items: blockedProfileSchema,
-          description: 'List of blocked users'
-        }
+        data: {}
       },
       description: 'Blocked users list retrieved successfully'
     },

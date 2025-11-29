@@ -10,7 +10,7 @@ const successResponse = {
   properties: {
     success: { type: 'boolean' },
     message: { type: 'string' },
-    data: { type: 'object', nullable: true }
+  data: {}
   },
   required: ['success', 'message']
 };
@@ -235,10 +235,7 @@ export const getFriendsListSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'array',
-          items: friendProfileSchema
-        }
+        data: {}
       },
       description: 'Friends list retrieved successfully'
     },
@@ -269,21 +266,7 @@ export const getPendingRequestsSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            sent: {
-              type: 'array',
-              items: friendProfileSchema,
-              description: 'Friend requests sent by current user'
-            },
-            received: {
-              type: 'array',
-              items: friendProfileSchema,
-              description: 'Friend requests received by current user'
-            }
-          }
-        }
+        data: {}
       },
       description: 'Pending requests retrieved successfully'
     },
@@ -372,15 +355,7 @@ export const verifyFriendshipSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            areFriends: {
-              type: 'boolean',
-              description: 'Whether the users are friends'
-            }
-          }
-        }
+        data: {}
       },
       description: 'Friendship status verified successfully'
     },

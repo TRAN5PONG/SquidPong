@@ -10,7 +10,7 @@ const successResponse = {
   properties: {
     success: { type: 'boolean' },
     message: { type: 'string' },
-    data: { type: 'object', nullable: true }
+  data: {}
   },
   required: ['success', 'message']
 };
@@ -160,7 +160,7 @@ export const createGroupSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: groupSchema
+  data: {}
       },
       description: 'Group created successfully'
     },
@@ -366,7 +366,7 @@ export const getGroupByIdSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: groupSchema
+  data: {}
       },
       description: 'Group retrieved successfully'
     },
@@ -409,24 +409,7 @@ export const getGroupsSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            groups: {
-              type: 'array',
-              items: groupSchema
-            },
-            pagination: {
-              type: 'object',
-              properties: {
-                page: { type: 'number' },
-                limit: { type: 'number' },
-                total: { type: 'number' },
-                totalPages: { type: 'number' }
-              }
-            }
-          }
-        }
+        data: {}
       },
       description: 'Groups retrieved successfully'
     },
@@ -617,10 +600,7 @@ export const listGroupMembersSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'array',
-          items: groupMemberSchema
-        }
+        data: {}
       },
       description: 'Group members retrieved successfully'
     },
@@ -716,10 +696,7 @@ export const getJoinRequestsSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'array',
-          items: groupMemberSchema
-        }
+        data: {}
       },
       description: 'Join requests retrieved successfully'
     },
@@ -738,16 +715,6 @@ export const approveJoinRequestSchema: FastifySchema = {
   description: 'Approve join request (admin/owner only)',
   tags: ['Join Requests'],
   summary: 'Approve Join Request',
-  headers: {
-    type: 'object',
-    properties: {
-      'x-user-id': {
-        type: 'string',
-        description: 'User ID from authentication token'
-      }
-    },
-    required: ['x-user-id']
-  },
   params: {
     type: 'object',
     properties: {
@@ -887,24 +854,7 @@ export const getGroupMessagesSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            messages: {
-              type: 'array',
-              items: groupMessageSchema
-            },
-            pagination: {
-              type: 'object',
-              properties: {
-                page: { type: 'number' },
-                limit: { type: 'number' },
-                total: { type: 'number' },
-                hasMore: { type: 'boolean' }
-              }
-            }
-          }
-        }
+        data: {}
       },
       description: 'Group messages retrieved successfully'
     },
@@ -952,13 +902,7 @@ export const inviteUserToGroupSchema: FastifySchema = {
       ...successResponse,
       properties: {
         ...successResponse.properties,
-        data: {
-          type: 'object',
-          properties: {
-            invitedUser: { type: 'string' },
-            groupName: { type: 'string' }
-          }
-        }
+        data: {}
       },
       description: 'User invited successfully'
     },

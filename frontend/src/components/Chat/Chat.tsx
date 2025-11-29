@@ -31,7 +31,6 @@ import {
 } from "@/api/chat";
 import { socketManager } from "@/utils/socket";
 import { useSounds } from "@/contexts/SoundProvider";
-import Toast, { ToastContainer } from "../Toast/Toast";
 import { useNavigate } from "@/contexts/RouterProvider";
 
 export type ConversationWithView = ConversationDetails & {
@@ -493,7 +492,7 @@ export const ChatContainer = () => {
       try {
         const resp = await getMessages(id);
         if (resp.success && resp.data) {
-          console.log("Fetched conversation details:", resp.data);
+          if (resp.data.group?.matchId) return; 
           setConversations((prevs) => {
             const existing = prevs.find((c) => c.id === resp.data!.id);
             if (existing) return prevs; // Already exists
@@ -521,6 +520,7 @@ export const ChatContainer = () => {
         );
 
         if (!existingConv) {
+          console.log(data);
           chat.setActiveConversations([
             ...(chat.activeConversations || []),
             data.chatId,
