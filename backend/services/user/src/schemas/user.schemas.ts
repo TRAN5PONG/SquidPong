@@ -71,6 +71,20 @@ export const createProfileSchema: FastifySchema = {
         type: "string",
         description: "Avatar image filename (optional)",
       },
+      banner: {
+        type: "string",
+        description: "Banner image filename (optional)",
+      },
+      rankDivision: {
+        type: "string",
+        enum: ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "ASCENDANT", "IMMORTAL", "MASTER"],
+        description: "User's rank division (optional)",
+      },
+      rankTier: {
+        type: "string",
+        enum: ["I", "II", "III"],
+        description: "User's rank tier (optional)",
+      },
     },
     required: ["userId", "username", "firstName", "lastName"],
     additionalProperties: false,

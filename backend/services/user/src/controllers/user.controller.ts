@@ -23,32 +23,52 @@ import { removeFriendFromChat } from "../integration/chat.restapi";
 import { deleteAccountInChat } from "../integration/chat.restapi";
 import { deleteAccountInNotify } from "../integration/notify.restapi";
 
-export async function createProfileHandler(
-  req: FastifyRequest,
-  res: FastifyReply
-) {
+export async function createProfileHandler(req: FastifyRequest,res: FastifyReply) 
+{
   const response: ApiResponse<null> = {
     success: true,
     message: ProfileMessages.CREATE_SUCCESS,
   };
+
   const body = req.body as {
     userId: number;
     username: string;
     firstName: string;
     lastName: string;
     avatar?: string;
+    banner?: string;
+    rankDivision?: string;
+    rankTier?: string;
+    playerSelectedCharacter?: string;
+    playerPaddles?: string[];
+    playerSelectedPaddle?: string;
+    level?: number;
+    score?: number;
+    walletBalance?: number;
+    isVerified?: boolean;
   };
 
-  body["avatar"] =
-    body["avatar"] ||
-    `${
-      process.env.BACKEND_URL || "http://localhost:4000"
-    }:4433/api/user/avatars/default.png`;
-  try {
+  body["avatar"] = body["avatar"] ||`${process.env.BACKEND_URL || "http://localhost:4000"}:4433/api/user/avatars/default.png`;
+  try 
+  {
+
+
     checkSecretToken(req);
+
+    console.log("body to create profile:", body);
+
     await prisma.profile.create({
       data: {
         ...body,
+        playerSelectedCharacter: (body.playerSelectedCharacter as any) || "Tbib",
+        playerPaddles: body.playerPaddles as any || ["Boss"],
+        playerSelectedPaddle: (body.playerSelectedPaddle as any) || "Boss",
+        rankDivision: (body.rankDivision as any) || "BRONZE",
+        rankTier: (body.rankTier as any) || "I",
+        level: body.level || 0,
+        score: body.score || 0,
+        walletBalance: body.walletBalance || 0,
+        isVerified: body.isVerified || false,
         preferences: { create: { notifications: { create: {} } } },
       },
     });
@@ -85,7 +105,6 @@ export async function updateProfileHandlerDB(
   let newData: { isVerified?: boolean; walletBalance?: number } = {};
   let body = req.body as any;
 
-  console.log("UpdateProfileHandlerDB body:", body);
   try 
   {
     let existingProfile = await prisma.profile.findUnique({

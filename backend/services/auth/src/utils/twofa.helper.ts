@@ -30,7 +30,11 @@ export async function setupAuthenticatorApp(user: any)
     const twoFAKey = otpauth.split("=")[1].split("&")[0];
     const twoFAQRCode = await QRCode.toDataURL(otpauth, {
     color: {
+<<<<<<< HEAD
     dark: '#1a1a1aff',
+=======
+    dark: '#1B1B1B',
+>>>>>>> ed42b36266893f283f4d78916c776f253d93ec8a
     light: '#ffffffff'
     }
     });
