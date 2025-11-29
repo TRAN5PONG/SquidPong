@@ -190,6 +190,22 @@ export async function SearchUsers(query: string): Promise<ApiResponse<User[]>> {
   }
   return await response.json();
 }
+export async function getUserStats(playerId: string): Promise<ApiResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/game/player/${playerId}/stats`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to fetch user stats: ${response.statusText}`);
+  }
+  return await response.json();
+}
 
 export const changeAvatar = async (avatarFile: File): Promise<ApiResponse> => {
   const formData = new FormData();

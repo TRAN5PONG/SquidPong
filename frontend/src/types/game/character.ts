@@ -23,8 +23,8 @@ export const characters: GameCharacter[] = [
     powerShot: 85,
   },
   {
-    id: "Med",
-    name: "Med",
+    id: "Bssita",
+    name: "Bssita",
     description: "A skilled fighter with a sharp mind and quick reflexes.",
     image: "/characters/green_m1.webp",
     avatar: "/characters/green_m1_avatar.png",
