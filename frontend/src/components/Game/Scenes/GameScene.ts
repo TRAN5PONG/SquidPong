@@ -217,6 +217,7 @@ export class Game {
    * Public entry point for starting the game.
    */
   async start() {
+    console.log("Game initialized and started.");
     await this.Init();
     this.arena.updateTableEdgesMaterial(true, true);
     this.camera.GameIntroAnimation();
