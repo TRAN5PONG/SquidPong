@@ -30,6 +30,7 @@ import {
   matchesParamsValidators,
   matchesValidators,
 } from "../validators/matchesValidators";
+import { getPlayerStats } from "../controllers/statsController";
 
 export async function matchRoutes(server: FastifyInstance) {
   // Create a new match
@@ -100,5 +101,20 @@ export async function matchRoutes(server: FastifyInstance) {
       },
     },
     EndMatch
+  );
+  server.get(
+    "/api/game/player/:playerId/stats",
+    {
+      schema: {
+        params: {
+          type: "object",
+          properties: {
+            playerId: { type: "string" },
+          },
+          required: ["playerId"],
+        },
+      },
+    },
+    getPlayerStats
   );
 }

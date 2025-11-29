@@ -206,7 +206,9 @@ model UserStats {
 
   score Int @default(0)
 
-  totalMatches Int @default(0)
+  gamesPlayed Int @default(0)
+  gamesWon     Int @default(0)
+  gamesLost    Int @default(0)
 
   // 1v1 Stats
   played1v1 Int @default(0)

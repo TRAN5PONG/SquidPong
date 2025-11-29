@@ -170,7 +170,7 @@ export async function changePassword(
 export async function TwoFA_status(): Promise<
   ApiResponse<{ is2FAEnabled: boolean }>
 > {
-  const response = await fetch(`${API_BASE_URL}/2fa/status`, {
+  const response = await fetch(`${API_BASE_URL}/2fa/authenticator/status`, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -183,10 +183,9 @@ export async function TwoFA_status(): Promise<
   return await response.json();
 }
 export async function TwoFA_enable(
-  method: string,
   code: string
 ): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/2fa/${method}/enable`, {
+  const response = await fetch(`${API_BASE_URL}/2fa/authenticator/enable`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -201,8 +200,8 @@ export async function TwoFA_enable(
 
   return await response.json();
 }
-export async function TwoFA_disable(method: string): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/2fa/${method}/disable`, {
+export async function TwoFA_disable(): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE_URL}/2fa/authenticator/disable`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -215,15 +214,12 @@ export async function TwoFA_disable(method: string): Promise<ApiResponse> {
   return await response.json();
 }
 export async function TwoFA_setup(): Promise<
-  ApiResponse<{ QRCode: string; key: string }>
+  ApiResponse<{ twoFAQRCode: string; twoFAKey: string }>
 > {
   // endpoint => /2fa/setup
-  const response = await fetch(`${API_BASE_URL}/2fa/setup`, {
-    method: "POST",
+  const response = await fetch(`${API_BASE_URL}/2fa/authenticator/setup`, {
+    method: "GET",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
   if (!response.ok) {
     throw new Error(`2FA setup failed: ${response.statusText}`);
@@ -231,11 +227,10 @@ export async function TwoFA_setup(): Promise<
   return await response.json();
 }
 export async function TwoFA_verify(
-  method: string,
   twoFAToken: string,
   code: string
 ): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/2fa/${method}/verify`, {
+  const response = await fetch(`${API_BASE_URL}/2fa/$authenticator/verify`, {
     method: "POST",
     credentials: "include",
     headers: {

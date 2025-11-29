@@ -2,6 +2,7 @@ import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { CopyIcon, ScanIcon } from "../Svg/Svg";
 import { useAppContext } from "@/contexts/AppProviders";
+import { TwoFA_enable, TwoFA_setup } from "@/api/auth";
 
 const StyledTwoFAModal = styled("div")`
   width: 500px;
@@ -181,8 +182,13 @@ const TwoFAModal = (props: TwoFAModalProps) => {
   const modalRef = Zeroact.useRef<HTMLDivElement>(null);
   const [isScanned, setIsScanned] = useState(false);
   const [showScanEffect, setShowScanEffect] = useState(false);
+  const [twoFAData, setTwoFAData] = useState<{
+    twoFAQRCode: string;
+    twoFAKey: string;
+  } | null>(null);
+  const [verificationCode, setVerificationCode] = useState<string>("");
 
-  const { user } = useAppContext();
+  const { user, toasts } = useAppContext();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -199,20 +205,45 @@ const TwoFAModal = (props: TwoFAModalProps) => {
     };
   }, [modalRef, props]);
 
+  useEffect(() => {
+    const handleSetupTwoFA = async () => {
+      try {
+        const resp = await TwoFA_setup();
+        if (resp.success && resp.data) {
+          setTwoFAData(resp.data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    handleSetupTwoFA();
+  }, []);
+
+  const onVerify = async () => {
+    if (verificationCode === "") return;
+    try {
+      const resp = await TwoFA_enable(verificationCode);
+      if (resp.success && resp.data) props.onEnabled();
+      else
+        toasts.addToastToQueue({
+          type: "error",
+          message: "error enabling two fa!",
+        });
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const onContinue = () => {
     setShowScanEffect(true);
+
     setTimeout(() => {
       setIsScanned(true);
-      props.onEnabled();
     }, 2000); // Simulate scan effect for 3 seconds
     // setIsScanned(true);
   };
 
   return (
-    <StyledTwoFAModal
-      ref={modalRef}
-      qrImgUrl="https://codigosdebarrasbrasil.com.br/wp-content/uploads/2019/09/codigo_qr-300x300.png"
-    >
+    <StyledTwoFAModal ref={modalRef} qrImgUrl={twoFAData?.twoFAQRCode}>
       <div className="QRCodeHeader">
         <ScanIcon fill="rgba(255, 255, 255, 0.8)" size={40} />
         <h2>Turn on Two-Factor Authentication</h2>
@@ -221,8 +252,14 @@ const TwoFAModal = (props: TwoFAModalProps) => {
       <div className="Main">
         {isScanned ? (
           <div className="VerificationCode">
-            <input placeholder="put your verification code" />
-            <button className="ProgBtn" onClick={props.onClose}>
+            <input
+              placeholder="put your verification code"
+              value={verificationCode}
+              onChange={(e: any) => {
+                setVerificationCode(e.target.value);
+              }}
+            />
+            <button className="ProgBtn" onClick={onVerify}>
               Verify
             </button>
           </div>
@@ -237,7 +274,7 @@ const TwoFAModal = (props: TwoFAModalProps) => {
                 type="text"
                 placeholder="Enter your 2FA code"
                 className="QRCodeInput"
-                value="LKJH-1234-5678"
+                value={twoFAData?.twoFAKey}
               />
               <div className="CopyIcon">
                 <CopyIcon fill="rgba(255, 255, 255, 0.8)" size={25} />
