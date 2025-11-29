@@ -481,10 +481,7 @@ export const getAllUsersSchema: FastifySchema = {
       properties: {
         success: { type: "boolean" },
         message: { type: "string" },
-        data: {
-          type: "array",
-          items: {},
-        },
+        data: {},
       },
       description: "Users retrieved successfully",
     },
@@ -516,10 +513,7 @@ export const searchUsersSchema: FastifySchema = {
       properties: {
         success: { type: "boolean" },
         message: { type: "string" },
-        data: {
-          type: "array",
-          items: {},
-        },
+        data: {},
       },
       description: "Search results retrieved successfully",
     },

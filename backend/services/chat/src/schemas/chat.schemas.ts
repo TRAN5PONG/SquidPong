@@ -10,7 +10,7 @@ const successResponse = {
   properties: {
     success: { type: 'boolean' },
     message: { type: 'string' },
-    data: { type: 'object', nullable: true }
+  data: {}
   },
   required: ['success', 'message']
 };
@@ -291,15 +291,7 @@ export const createChatSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            chatId: {
-              type: 'number',
-              description: 'ID of the created or existing chat'
-            }
-          }
-        }
+        data: {}
       },
       description: 'Chat created or retrieved successfully'
     },

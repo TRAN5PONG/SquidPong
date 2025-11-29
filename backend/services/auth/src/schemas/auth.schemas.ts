@@ -10,7 +10,7 @@ const successResponse = {
   properties: {
     success: { type: 'boolean' },
     message: { type: 'string' },
-    data: { type: 'object', nullable: true }
+  data: {}
   },
   required: ['success', 'message']
 };
@@ -116,20 +116,7 @@ export const loginSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            is2FAEnabled: { 
-              type: 'boolean',
-              description: 'Whether two-factor authentication is enabled'
-            },
-            twoFAToken: {
-              type: 'string',
-              description: 'Token for completing two-factor authentication',
-              nullable: true
-            }
-          }
-        }
+        data: {}
       },
       description: 'Login successful'
     },
@@ -393,12 +380,7 @@ export const googleCallbackSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            is2FAEnabled: { type: 'boolean' }
-          }
-        }
+        data: {}
       },
       description: 'OAuth login successful'
     },
@@ -433,12 +415,7 @@ export const intraCallbackSchema: FastifySchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            is2FAEnabled: { type: 'boolean' }
-          }
-        }
+        data: {}
       },
       description: 'OAuth login successful'
     },
