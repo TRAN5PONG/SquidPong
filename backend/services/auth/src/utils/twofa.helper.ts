@@ -31,7 +31,7 @@ export async function setupAuthenticatorApp(user: any)
     const twoFAQRCode = await QRCode.toDataURL(otpauth, {
     color: {
     dark: '#1B1B1B',
-    light: '#00B894'
+    light: '#ffffffff'
     }
     });
 

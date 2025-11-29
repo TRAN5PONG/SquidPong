@@ -126,8 +126,8 @@ model Profile {
 
   preferences         ProfilePreferences?
 
-  playerCharacters   Json @default("[\"Zero\"]")
-  playerSelectedCharacter PlayerCharacter @default(Zero)
+  playerCharacters   Json @default("[\"Tbib\"]")
+  playerSelectedCharacter PlayerCharacter 
 
   playerPaddles Json @default("[\"Boss\"]")
   playerSelectedPaddle    PlayerPaddle @default(Boss)
