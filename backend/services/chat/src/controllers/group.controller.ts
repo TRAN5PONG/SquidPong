@@ -317,6 +317,7 @@ export async function updateGroupImage(req: FastifyRequest, res: FastifyReply) {
 
   return res.send(respond);
 }
+
 export async function updateMember(req: FastifyRequest, res: FastifyReply) {
   const respond: ApiResponse<null> = {
     success: true,
