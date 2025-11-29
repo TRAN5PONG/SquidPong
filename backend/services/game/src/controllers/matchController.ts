@@ -45,6 +45,38 @@ export async function OneVsOneMatch(
   // create match setting
 }
 
+export async function AiMatch(request: FastifyRequest, reply: FastifyReply) {
+  const body = request.body as Extract<CreateMatchBody, { mode: "ONE_VS_AI" }>;
+  const { mode, difficulty } = body;
+  const userId = Number(request.headers["x-user-id"]);
+
+  const res = prisma.$transaction(async (tx) => {
+    // check if user exists
+    const user = await tx.user.findUnique({
+      where: { userId: userId },
+    });
+    if (!user) {
+      throw new Error("User not found");
+    }
+    // create match player for user
+    const userPlayer = await createMatchPlayer(
+      userId,
+      user.id,
+      true,
+      false,
+      tx
+    );
+    // create match player for AI
+    const aiPlayer = await createMatchPlayer(
+      0, // AI has no remote user ID
+      `ai-${Date.now()}`, // local UUID for AI
+      false,
+      true,
+      tx
+    );
+    // create match
+  });
+}
 // === Core ===
 export async function MatchFromInvitation(invitation: any): Promise<Match> {
   const {

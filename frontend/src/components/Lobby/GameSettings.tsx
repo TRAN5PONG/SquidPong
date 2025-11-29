@@ -359,6 +359,16 @@ const GameSettings = (props: GameSettingsProps) => {
     null
   );
 
+  const handle1vsAiReady = async () => {
+    try {
+      // const resp = awia
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "An error occurred while setuping the match.",
+      });
+    }
+  };
   const OnReadyClick = () => {
     if (!props.selectedMode && !match) {
       toasts.addToastToQueue({
@@ -731,10 +741,13 @@ const GameSettings = (props: GameSettingsProps) => {
             </button>
           ) : null}
 
-          {match.currentMatch?.status === "WAITING" ? (
+          {match.currentMatch?.status === "WAITING" ||
+          props.selectedMode === "1vsAI" ? (
             <button
               className={`ReadyBtn ${userPlayer?.isReady ? "ready" : ""}`}
-              onClick={OnReadyClick}
+              onClick={
+                props.selectedMode === "1vsAI" ? handle1vsAiReady : OnReadyClick
+              }
             >
               Ready
               {userPlayer?.isReady ? (

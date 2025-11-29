@@ -559,7 +559,10 @@ type SettingsMod =
   | "BlockedUsers"
   | "404";
 const Settings = () => {
-  const [profileData, setProfileData] = Zeroact.useState<User | null>(null);
+  /**
+   * States
+   */
+  const [profileData, setProfileData] = Zeroact.useState<Partial<User>>({});
   const [Error, setError] = Zeroact.useState<string>("");
   const [currentMod, setCurrentMod] = Zeroact.useState<SettingsMod | null>(
     null
@@ -574,22 +577,32 @@ const Settings = () => {
     MiniUser[]
   >([]);
   const [blockedUsers, setBlockedUsers] = Zeroact.useState<MiniUser[]>([]);
-  const [Preferences, setPreferences] = Zeroact.useState<UserPreferences>(
-    db.FakeUserPreferences
-  );
+  const [Preferences, setPreferences] =
+    Zeroact.useState<UserPreferences | null>(null);
   const [showTwoFAModal, setShowTwoFAModal] = Zeroact.useState(false);
+
+  /**
+   * Refs
+   */
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Ctx
+   */
   const modName = useRouteParam("/settings/:key", "key");
   const navigate = useNavigate();
   const { modal, toasts, user } = useAppContext();
 
+  /**
+   * Effects
+   */
   useEffect(() => {
     if (modName === undefined) return;
     if (modName === "account") {
       setCurrentMod("account");
     } else if (modName === "preferences") {
       setCurrentMod("preferences");
+      if (user) setPreferences(user?.preferences);
     } else if (modName === "privacy") {
       setCurrentMod("privacy");
     } else if (modName === "friendRequests") {
@@ -601,9 +614,10 @@ const Settings = () => {
     } else {
       setCurrentMod("404");
     }
-  }, [modName]);
+  }, [modName, user]);
 
-  const onProfileDataChange = (data: User) => {
+  const onProfileDataChange = () => {
+    if (!profileData) return;
     modal
       .showConfirmationModal(
         "Are you sure you want to save changes?",
@@ -613,11 +627,11 @@ const Settings = () => {
         if (confirmed) {
           try {
             const resp = await updateProfile({
-              firstName: data.firstName,
-              lastName: data.lastName,
-              username: data.username,
-              bio: data.bio,
-              banner: data.banner,
+              firstName: profileData.firstName,
+              lastName: profileData.lastName,
+              username: profileData.username,
+              bio: profileData.bio,
+              banner: profileData.banner,
             });
             if (resp.success) {
               toasts.addToastToQueue({
@@ -649,7 +663,7 @@ const Settings = () => {
   };
   const onInputChange = (field: string, value: string) => {
     if (!user) return;
-    const updatedUser = { ...user, [field]: value };
+    const updatedUser = { ...profileData, [field]: value };
     setProfileData(updatedUser);
   };
   const onDeleteAccount = () => {
@@ -675,9 +689,9 @@ const Settings = () => {
       });
   };
   const onTwoFAToggle = () => {
-    if (Preferences.twoFactorEnabled) {
+    if (Preferences?.twoFactorEnabled) {
       toasts.addToastToQueue({
-        type: "success",
+        type: "info",
         message: "Two-factor already enabled.",
       });
     } else {
@@ -685,7 +699,9 @@ const Settings = () => {
     }
   };
 
-  // Fetches
+  /**
+   * Fetches
+   */
   const fetchFriendRequests = async () => {
     const resp = await getPendingFriendRequests();
 
@@ -768,7 +784,10 @@ const Settings = () => {
       });
     }
   };
-  // Avatar upload handler
+
+  /**
+   * Handlers
+   */
   const handleAvatarUpload = async (file: File) => {
     try {
       const reader = new FileReader();
@@ -799,18 +818,30 @@ const Settings = () => {
       });
     }
   };
+  const handlePreferencesChange = (path: string, value: any) => {
+    if (!Preferences) return;
 
-  useEffect(() => {
-    setProfileData(user);
-  }, [user]);
+    const keys = path.split(".");
+    const updated = { ...Preferences };
+    let curr: any = updated;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+      curr[keys[i]] = { ...curr[keys[i]] };
+      curr = curr[keys[i]];
+    }
+
+    curr[keys[keys.length - 1]] = value;
+
+    setPreferences(updated);
+  };
 
   if (currentMod === "404") return <NotFound />;
-  if (!currentMod || !profileData) return <LoaderSpinner />;
+  if (!currentMod || !user) return <LoaderSpinner />;
 
   return (
     <StyledSettings
-      avatar={profileData.avatar}
-      banner={profileData.banner}
+      avatar={user.avatar}
+      banner={user.banner}
       className="scroll-y"
     >
       <div className="Banner">
@@ -833,12 +864,12 @@ const Settings = () => {
         </div>
         <div className="ProfileDetails">
           <h1 className="ProfileDetailsUserName">
-            {profileData.firstName + " " + profileData.lastName}
-            {profileData.isVerified && (
+            {user.firstName + " " + user.lastName}
+            {user.isVerified && (
               <VerifiedIcon fill="var(--main_color)" size={20} />
             )}
           </h1>
-          <p>@{profileData.username}</p>
+          <p>@{user.username}</p>
         </div>
       </div>
 
@@ -894,7 +925,7 @@ const Settings = () => {
                 <input
                   className="textInput"
                   type="text"
-                  value={profileData.firstName}
+                  value={user.firstName}
                   onChange={(e: any) => {
                     onInputChange("firstName", e.currentTarget.value);
                     setError(
@@ -912,7 +943,7 @@ const Settings = () => {
                 <input
                   className="textInput"
                   type="text"
-                  value={profileData.lastName}
+                  value={user.lastName}
                   onChange={(e: any) => {
                     onInputChange("lastName", e.currentTarget.value);
                     setError(
@@ -930,7 +961,7 @@ const Settings = () => {
                 <input
                   className="textInput"
                   type="text"
-                  value={profileData.username}
+                  value={user.username}
                   onChange={(e: any) => {
                     onInputChange("username", e.currentTarget.value);
                     setError(
@@ -948,7 +979,7 @@ const Settings = () => {
                 <input
                   className="textInput"
                   type="text"
-                  value={profileData.banner}
+                  value={user.banner}
                   onChange={(e: any) => {
                     onInputChange("banner", e.currentTarget.value);
                     setError(
@@ -966,7 +997,7 @@ const Settings = () => {
                 <textarea
                   className="textInput"
                   style={{ height: "100px", resize: "vertical" }}
-                  value={profileData.bio}
+                  value={user.bio}
                   onChange={(e: any) => {
                     onInputChange("bio", e.currentTarget.value);
                     setError(
@@ -977,7 +1008,7 @@ const Settings = () => {
                   }}
                   maxLength={160}
                 >
-                  {profileData.bio}
+                  {user.bio}
                 </textarea>
               </div>
               <span className="ErrorSpn">{Error}</span>
@@ -985,7 +1016,7 @@ const Settings = () => {
               <div className="ProfileDataActions">
                 <button
                   className="SaveChangesBtn"
-                  onClick={() => onProfileDataChange(profileData)}
+                  onClick={() => onProfileDataChange()}
                 >
                   <SaveIcon fill="rgba(116, 218, 116, 0.2)" size={20} />
                   Save Changes
@@ -998,55 +1029,83 @@ const Settings = () => {
               <div className="PrefElement">
                 <span>Enable Game Sounds</span>
                 <PrefToggle
-                  enabled={Preferences.soundEnabled}
-                  onClick={() => {}}
+                  enabled={Preferences?.soundEnabled}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "soundEnabled",
+                      !Preferences?.soundEnabled
+                    )
+                  }
                 />
               </div>
               <div className="PrefElement">
                 <span>Enable Background Music</span>
                 <PrefToggle
-                  enabled={Preferences.musicEnabled}
-                  onClick={() => {
-                    // Implement background music toggle logic here
-                  }}
+                  enabled={Preferences?.musicEnabled}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "musicEnabled",
+                      !Preferences?.musicEnabled
+                    )
+                  }
                 />
               </div>
 
               <span className="Spliter">notifications</span>
               <div className="PrefElement">
-                <span>Enable Notifications</span>
+                <span>Friend Requests</span>
                 <PrefToggle
-                  enabled={Preferences.notifications.friendRequests}
-                  onClick={() => {}}
+                  enabled={Preferences?.notifications.friendRequests}
+                  onClick={() => {
+                    handlePreferencesChange(
+                      "notifications.friendRequests",
+                      !Preferences?.notifications.friendRequests
+                    );
+                  }}
                 />
               </div>
               <div className="PrefElement">
                 <span>Chat Messages</span>
                 <PrefToggle
-                  enabled={Preferences.notifications.chatMessages}
-                  onClick={() => {}}
+                  enabled={Preferences?.notifications.chatMessages}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "notifications.chatMessages",
+                      !Preferences?.notifications.chatMessages
+                    )
+                  }
                 />
               </div>
               <div className="PrefElement">
                 <span>Game Invites</span>
                 <PrefToggle
-                  enabled={Preferences.notifications.gameInvites}
-                  onClick={() => {}}
+                  enabled={Preferences?.notifications.gameInvites}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "notifications.gameInvites",
+                      !Preferences?.notifications.gameInvites
+                    )
+                  }
                 />
               </div>
               <div className="PrefElement">
                 <span>Tournament Updates</span>
                 <PrefToggle
-                  enabled={Preferences.notifications.tournamentUpdates}
-                  onClick={() => {}}
+                  enabled={Preferences?.notifications.tournamentUpdates}
+                  onClick={() =>
+                    handlePreferencesChange(
+                      "notifications.tournamentUpdates",
+                      !Preferences?.notifications.tournamentUpdates
+                    )
+                  }
                 />
               </div>
 
               <span className="Spliter">security</span>
-              <div className="PrefElement" onClick={() => {}}>
+              <div className="PrefElement">
                 <span>Enable two factor authentication</span>
                 <PrefToggle
-                  enabled={false}
+                  enabled={Preferences?.twoFactorEnabled}
                   onClick={() => {
                     onTwoFAToggle();
                   }}
@@ -1187,6 +1246,14 @@ const Settings = () => {
           onClose={() => {
             setShowTwoFAModal(false);
           }}
+          onEnabled={() => {
+            setShowTwoFAModal(false);
+            handlePreferencesChange("twoFactorEnabled", true);
+            toasts.addToastToQueue({
+              type: "success",
+              message: "Two-factor authentication enabled successfully!",
+            });
+          }}
         />
       )}
     </StyledSettings>
@@ -1218,11 +1285,15 @@ const StyledPrefToggle = styled("div")`
   }
 `;
 interface PrefToggleProps {
-  enabled: boolean;
+  enabled: boolean | null | undefined;
   onClick: () => void;
 }
 const PrefToggle = (props: PrefToggleProps) => {
-  const [enabled, setEnabled] = useState(props.enabled);
+  const [enabled, setEnabled] = useState(props.enabled || false);
+
+  useEffect(() => {
+    setEnabled(props.enabled || false);
+  }, [props.enabled]);
 
   return (
     <StyledPrefToggle isEnabled={enabled} onClick={() => props.onClick()}>

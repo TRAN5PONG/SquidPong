@@ -8,6 +8,9 @@ import {
   PaddleTexture,
   paddleTextures,
 } from "@/types/game/paddle";
+import { useAppContext } from "@/contexts/AppProviders";
+import { updateProfile } from "@/api/user";
+import { PasswordIcon } from "../Svg/Svg";
 
 const StyledColor = styled("div")`
   width: 90px;
@@ -37,6 +40,7 @@ const StyledTexture = styled("div")`
   cursor: pointer;
   position: relative;
   transition: 0.2s ease-in-out;
+  filter: ${(props: any) => (props.isLocked ? "grayscale(1)" : "none")};
   .paddleImg {
     width: 80%;
     height: 80%;
@@ -44,6 +48,11 @@ const StyledTexture = styled("div")`
     background-position: center;
     background-repeat: no-repeat;
     background-image: url(${(props: any) => props.path});
+    svg {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+    }
   }
   .paddleName {
     bottom: 0;
@@ -59,10 +68,12 @@ const StyledTexture = styled("div")`
   &:hover {
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
     background-color: rgba(0, 0, 0, 0.2);
+    filter: none;
   }
 
   &.selected {
     border: 2px solid var(--main_color);
+    filter: none;
     .paddleName {
       background-color: var(--main_color);
     }
@@ -201,7 +212,6 @@ const StyledSelectPaddle = styled("div")`
       gap: 5px;
       justify-content: flex-start;
       button {
-        width: 130px;
         height: 45px;
         border-radius: 5px;
         border: none;
@@ -210,10 +220,10 @@ const StyledSelectPaddle = styled("div")`
         font-size: 1rem;
         font-family: var(--squid_font);
         transition: 0.2s ease-in-out;
+        padding: 0px 20px;
       }
       .PurchBtn {
         background-color: rgba(255, 217, 68, 1);
-        width: 150px;
       }
       .SelectBtn {
         background-color: transparent;
@@ -228,17 +238,37 @@ const StyledSelectPaddle = styled("div")`
 `;
 
 const SelectPaddle = () => {
-  // Refs
+  /**
+   * Refs
+   */
   const canvasRef = Zeroact.useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<CustomizeScene | null>(null);
 
-  // States
+  /**
+   * States
+   */
   const [selectedColor, setSelectedColor] = Zeroact.useState<PaddleColor>(
     paddleColors[0]
   );
   const [selectedTexture, setSelectedTexture] =
     Zeroact.useState<PaddleTexture | null>(null);
+  /**
+   * Context
+   */
+  const { user, toasts } = useAppContext();
 
+  /**
+   * Utils
+   */
+  const getPaddleTextureById = (id: string | null): PaddleTexture | null => {
+    if (!id) return null;
+    const texture = paddleTextures.find((texture) => texture.id === id);
+    return texture || null;
+  };
+
+  /**
+   * Effects
+   */
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -250,13 +280,67 @@ const SelectPaddle = () => {
       sceneRef.current = null;
     };
   }, []);
+  useEffect(() => {
+    if (!user) return;
 
-  const onSaveCustomization = () => {
+    setSelectedTexture(getPaddleTextureById(user.playerSelectedPaddle));
+  }, [user]);
 
-  }
-  const onPurchaseCustomization = () => {
-    
-  }
+  const onSelectTexture = async () => {
+    if (!selectedTexture || !user) return;
+    try {
+      const resp = await updateProfile({
+        playerSelectedPaddle: selectedTexture.id,
+      });
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: `Successfully selected ${selectedTexture.name} paddle texture!`,
+        });
+      } else
+        throw new Error(resp.message || "Failed to select paddle texture.");
+    } catch (error) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: "An error occurred while selecting the paddle texture.",
+      });
+    }
+  };
+  const onPurchaseCustomization = async () => {
+    if (!selectedTexture || !user) return;
+    if (user.playerPaddles.includes(selectedTexture.id)) {
+      toasts.addToastToQueue({
+        type: "info",
+        message: "You already own this paddle texture.",
+      });
+      return;
+    }
+    if (user?.walletBalance < selectedTexture.price) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: "Insufficient funds to purchase this paddle texture.",
+      });
+      return;
+    }
+    try {
+      const resp = await updateProfile({
+        playerPaddles: selectedTexture.id,
+      });
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: `Successfully purchased ${selectedTexture.name} paddle texture!`,
+        });
+      } else {
+        throw new Error(resp.message || "Failed to purchase paddle texture.");
+      }
+    } catch (error: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: error.message || "An error occurred during purchase.",
+      });
+    }
+  };
 
   return (
     <StyledSelectPaddle paddleColor={selectedColor.color}>
@@ -287,25 +371,45 @@ const SelectPaddle = () => {
           >
             <span>None</span>
           </div>
-          {paddleTextures.map((texture, index) => (
-            <StyledTexture
-              path={texture.image}
-              className={`${selectedTexture === texture ? "selected" : ""}`}
-              onClick={() => {
-                setSelectedTexture(texture);
-                sceneRef.current?.paddle.setTexture(texture.image);
-              }}
-              key={index}
-            >
-              <div className="paddleImg" />
-              <h1 className="paddleName">{texture.name}</h1>
-            </StyledTexture>
-          ))}
+          {paddleTextures.map((texture, index) => {
+            const isLocked = user?.playerPaddles.includes(texture.id)
+              ? false
+              : true;
+            return (
+              <StyledTexture
+                path={texture.image}
+                isLocked={isLocked}
+                className={`${selectedTexture === texture ? "selected" : ""}`}
+                onClick={() => {
+                  setSelectedTexture(texture);
+                  sceneRef.current?.paddle.setTexture(texture.image);
+                }}
+                key={index}
+              >
+                <div className="paddleImg">
+                  {isLocked && (
+                    <PasswordIcon
+                      stroke="white"
+                      className="LockedIcon"
+                      size={15}
+                    />
+                  )}
+                </div>
+                <h1 className="paddleName">{texture.name}</h1>
+              </StyledTexture>
+            );
+          })}
         </div>
 
         <div className="Actions">
-          <button className="PurchBtn">Purchase</button>
-          <button className="SelectBtn">select</button>
+          {selectedTexture && (
+            <button className="PurchBtn" onClick={onPurchaseCustomization}>
+              Purchase - {selectedTexture?.price}
+            </button>
+          )}
+          <button className="SelectBtn" onClick={onSelectTexture}>
+            select
+          </button>
         </div>
       </div>
       <div className="PaddleCanvasContainer">
