@@ -302,7 +302,6 @@ export const updateUserNotifySchema: FastifySchema = {
       },
       status: {
         type: 'string',
-        enum: ['ONLINE', 'OFFLINE', 'AWAY', 'IN_GAME'],
         description: 'User status'
       },
       customStatus: {
