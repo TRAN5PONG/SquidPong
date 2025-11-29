@@ -17,11 +17,14 @@ enum UserStatus {
 }
 
 enum RankDivision {
+  IRON
   BRONZE
   SILVER
   GOLD
   PLATINUM
   DIAMOND
+  ASCENDANT
+  IMMORTAL
   MASTER
 }
 

@@ -282,7 +282,8 @@ export async function updateGroupImage(req: FastifyRequest, res: FastifyReply) {
 
   const { groupId } = req.params as { groupId: string };
 
-  try {
+  try 
+  {
     const group = await prisma.group.findUnique({
       where: { id: Number(groupId) },
       include: { members: true },
