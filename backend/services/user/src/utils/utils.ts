@@ -168,7 +168,18 @@ export async function sendServiceRequestSimple(serviceName : string , userId : n
 
 export function getPromotedRank(profileRedis: any, newScore: number) 
 {
-  const rankDivisions = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'MASTER'];
+  // full ordered divisions (each division has 3 tiers except MASTER which has no tier)
+  const rankDivisions = [
+    'IRON',
+    'BRONZE',
+    'SILVER',
+    'GOLD',
+    'PLATINUM',
+    'DIAMOND',
+    'ASCENDANT',
+    'IMMORTAL',
+    'MASTER',
+  ];
   
   // Ensure score doesn't go below 0
   if (newScore < 0) {
@@ -185,17 +196,16 @@ export function getPromotedRank(profileRedis: any, newScore: number)
   const divisionIndex = Math.floor(tierNumber / 3); // 0=BRONZE, 1=SILVER, 2=GOLD...
   const tierWithinDivision = tierNumber % 3; // 0=I, 1=II, 2=III
 
-  // Cap at MASTER III (max division)
+  // Determine new division and tier. MASTER is the final division and has no tier.
   let newRankDivision: string;
-  let newRankTier: string;
+  let newRankTier: string | null;
 
-  if (divisionIndex >= rankDivisions.length) {
-    // Beyond MASTER III
+  // If we've reached or passed the last index (MASTER), set to MASTER with no tier
+  if (divisionIndex >= rankDivisions.length - 1) {
     newRankDivision = 'MASTER';
-    newRankTier = 'III';
+    newRankTier = null;
   } else {
     newRankDivision = rankDivisions[divisionIndex];
-    
     switch (tierWithinDivision) {
       case 0:
         newRankTier = 'I';
@@ -213,7 +223,6 @@ export function getPromotedRank(profileRedis: any, newScore: number)
 
   return { newRankTier, newRankDivision, newScore };
 }
-
 
 
 
@@ -255,29 +264,16 @@ export async function purchaseItem(user : any, itemType: 'playerCharacters' | 'p
     itemPrice = getPaddlePrice(itemName);
   }
 
-  let existsInRedis = false;
-  const userId = user.userId; 
-  const userKey = `profile:${userId}`;
   let walletBalance : number = 0;
 
-  if (await redis.exists(userKey)) 
-  {
-    existsInRedis = true;
-    walletBalance = (await redis.get(userKey))?.walletBalance;
-  } 
-  else 
-    walletBalance = user.walletBalance;
+  walletBalance = user.walletBalance;
 
   if (walletBalance < itemPrice)
     throw new Error(`Insufficient wallet balance. Required: ${itemPrice}, Available: ${walletBalance}`);  
   const newWalletBalance = walletBalance - itemPrice;
-  if(existsInRedis)
-    await redis.update( userKey , '$' , {walletBalance : newWalletBalance} );
-  else
-  {
-    user.walletBalance = newWalletBalance;
-    new_data['walletBalance'] = newWalletBalance;
-  }
+
+  user.walletBalance = newWalletBalance;
+  new_data['walletBalance'] = newWalletBalance;
 
   new_data[itemType].push(itemName);
   return new_data[itemType];

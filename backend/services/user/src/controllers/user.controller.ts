@@ -84,11 +84,14 @@ export async function updateProfileHandlerDB(
   let newData: { isVerified?: boolean; walletBalance?: number } = {};
   let body = req.body as any;
 
-  try {
+  try 
+  {
     let existingProfile = await prisma.profile.findUnique({
       where: { userId },
     });
     if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
+
+    console.log("profile before update:", existingProfile);
 
     if (await isReadyExists(body.username, existingProfile.username))
       throw new Error(ProfileMessages.READY_EXISTS);
@@ -98,17 +101,14 @@ export async function updateProfileHandlerDB(
       "playerCharacters",
       body.playerCharacters
     );
+
     body.playerPaddles = await purchaseItem(
       existingProfile,
       "playerPaddles",
       body.playerPaddles
     );
 
-    newData.walletBalance = existingProfile.walletBalance;
-
-    if (body.isVerified === true) newData = await buyVerified(existingProfile);
-
-    body = { ...body, ...newData };
+    
 
     if (body.playerSelectedCharacter) {
       const exists = await SelectedItemExists(
@@ -126,6 +126,13 @@ export async function updateProfileHandlerDB(
       );
       if (!exists) throw new Error(ProfileMessages.PADDLE_IS_NOT_OWNED);
     }
+
+    newData.walletBalance = existingProfile.walletBalance;
+
+    if (body.isVerified === true) 
+      newData = await buyVerified(existingProfile);
+
+    body = { ...body, ...newData };
 
     const updatedProfile = await prisma.profile.update({
       where: { userId },
@@ -145,13 +152,15 @@ export async function updateProfileHandlerDB(
         }),
       },
     });
-    respond.data = updatedProfile;
+    respond.data = await mergeProfileWithRedis(updatedProfile);
 
     if (body.username)
+    {
       await sendServiceRequestSimple("auth", userId, "PUT", {
         username: body.username,
       });
-
+    }
+      
     if (body.customStatus) {
       await redis.update(`profile:${userId}`, "$", {
         customStatus: body.customStatus,
@@ -180,7 +189,8 @@ export async function updateProfileHandlerDB(
     if (await redis.exists(redisKey)) {
       await redis.update(redisKey, "$", dataSend);
     }
-  } catch (error) {
+  } 
+  catch (error) {
     return sendError(res, error);
   }
   return res.send(respond);
@@ -208,7 +218,8 @@ export async function updateProfileHandler(
   };
   let profile;
 
-  try {
+  try 
+  {
     if (Token !== process.env.SECRET_TOKEN)
       throw new Error(GeneralMessages.UNAUTHORIZED);
 
@@ -466,9 +477,10 @@ export async function updateProfileImageHandler(
   const headers = req.headers as any;
   const userId = Number(headers["x-user-id"]);
 
-  try {
+  try 
+  {
     const parsed = (await convertParsedMultipartToJson(req)) as any;
-    await prisma.profile.update({
+    const data = await prisma.profile.update({
       where: { userId },
       data: { avatar: parsed },
     });
@@ -479,7 +491,9 @@ export async function updateProfileImageHandler(
 
     await sendServiceRequestSimple("chat", userId, "PUT", { avatar: parsed });
     await sendServiceRequestSimple("notify", userId, "PUT", { avatar: parsed });
-  } catch (error) {
+    respond.data = await mergeProfileWithRedis(data);
+  } 
+  catch (error) {
     return sendError(res, error);
   }
 

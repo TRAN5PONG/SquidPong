@@ -8,9 +8,9 @@ import { FastifySchema } from "fastify";
 const successResponse = {
   type: "object",
   properties: {
-    success: { type: "boolean" },
+    success: { type: "boolean" }, 
     message: { type: "string" },
-    data: { type: "object", nullable: true },
+    data: {},
   },
   required: ["success", "message"],
 };
