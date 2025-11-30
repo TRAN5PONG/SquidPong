@@ -31,6 +31,7 @@ export interface User {
   // Paddle related
   playerPaddles: string[]; // Array of paddle IDs owned by the player
   playerSelectedPaddle: string | null; // Currently selected paddle ID
+  paddleColor: string;
 }
 
 export interface UserPreferences {

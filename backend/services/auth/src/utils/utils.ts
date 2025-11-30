@@ -1,12 +1,22 @@
 import prisma from '../db/database';
 import { sendToService } from '../integration/restfullApi.integration';
 
-
-
+async function waitForService(url: string, retries: number = 10, delay: number = 1000): Promise<void> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, { method: 'HEAD' }); // Use HEAD to check if service is up
+      if (response.ok) return;
+    } catch (e) {
+      // Ignore errors
+    }
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  throw new Error(`Service at ${url} is not available after ${retries} retries`);
+}
 
 export async function createAccount(data: any): Promise<any> 
 {
-  const { email, username, password, firstName, lastName, avatar, banner, rankDivision, rankTier } = data;
+  const { email, username, password, firstName, lastName, avatar, banner, rankDivision, rankTier, playerSelectedCharacter, paddleColor } = data;
   const existingUser = await prisma.user.findUnique({ where: { email } });
 
   const user = await prisma.user.upsert({
@@ -16,15 +26,8 @@ export async function createAccount(data: any): Promise<any>
   });
 
   if (!existingUser) 
-   {
-      const profile = { userId: user.id, username, firstName, lastName, avatar, banner, rankDivision, rankTier };
-      await fetch(`http://user:4002/api/user/me`, {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json', 'x-secret-token': process.env.SECRET_TOKEN || '' },
-        body: JSON.stringify(profile),
-      });
-
-      // Seed in chat service
+  {
+    // Seed in chat service
       await fetch(`http://chat:4003/api/chat/create`, {
         method: "POST",
         headers: { 'Content-Type': 'application/json', 'x-secret-token': process.env.SECRET_TOKEN || '' },
@@ -50,8 +53,14 @@ export async function createAccount(data: any): Promise<any>
           avatar: avatar || "/uploads/user/avatar/default.png",
           isVerified: true
         }),
-      });
+    });
 
+    const profile = { userId: user.id, username, firstName, lastName, avatar, banner, rankDivision, rankTier, playerSelectedCharacter, paddleColor };
+      await fetch(`http://user:4002/api/user/me`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json', 'x-secret-token': process.env.SECRET_TOKEN || '' },
+        body: JSON.stringify(profile),
+      });
       
    }
 
