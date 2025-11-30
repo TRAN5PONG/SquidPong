@@ -254,7 +254,7 @@ const SelectPaddle = () => {
   /**
    * Context
    */
-  const { user, toasts } = useAppContext();
+  const { user, setUser, toasts } = useAppContext();
 
   /**
    * Utils
@@ -290,9 +290,7 @@ const SelectPaddle = () => {
 
   useEffect(() => {
     if (selectedColor) sceneRef.current?.paddle.setColor(selectedColor.color);
-    if (selectedTexture)
-    {
-      console.log("reaaa", selectedTexture)
+    if (selectedTexture) {
       sceneRef.current?.paddle.setTexture(selectedTexture.image);
     }
   }, [selectedColor, selectedTexture]);
@@ -302,6 +300,7 @@ const SelectPaddle = () => {
     try {
       const resp = await updateProfile({
         playerSelectedPaddle: selectedTexture.id,
+        paddleColor: selectedColor?.id,
       });
       if (resp.success) {
         toasts.addToastToQueue({
@@ -342,6 +341,7 @@ const SelectPaddle = () => {
           type: "success",
           message: `Successfully purchased ${selectedTexture.name} paddle texture!`,
         });
+        setUser(resp.data);
       } else {
         throw new Error(resp.message || "Failed to purchase paddle texture.");
       }

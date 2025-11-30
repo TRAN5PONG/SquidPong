@@ -111,11 +111,12 @@ export class Game {
         this.userId === this.hostId ? 1 : -1,
       );
 
-      this.camera.attach(this.canvas);
+      // this.camera.attach(this.canvas);
 
       // Network
       if (!this.isAIMode) {
-        this.net = new Network(`wss://10.13.7.7:4433/matches`, this.match);
+        console.log("usssssssssssssssssssssssssss:", this.userId)
+        this.net = new Network(`wss://10.13.3.5:4433/matches`, this.match);
         this.room = await this.net.join(this.userId);
       } else {
         this.net = null as any;
@@ -185,7 +186,7 @@ export class Game {
     }
   }
 
-  /*****DORA Adventures
+  /*****
    * Start the render/update loop.
    */
   private startRenderLoop() {

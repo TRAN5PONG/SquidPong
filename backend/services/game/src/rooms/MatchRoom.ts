@@ -59,9 +59,13 @@ export class MatchRoom extends Room<MatchState> {
   onAuth(client: Client, options: any) {
     const _client = client as any;
     const { players, spectators } = this.metadata;
+
     if (players.includes(options.userId)) {
       _client.meta = { role: "player", userId: options.userId };
       return true;
+    }
+    else {
+      console.log(players, "not includes :", options.userId)
     }
 
     if (options.spectate) {
@@ -70,7 +74,7 @@ export class MatchRoom extends Room<MatchState> {
       return true;
     }
 
-    console.log("reachs");
+    console.log("client", client,"options:", options);
     return false;
   }
 
@@ -79,7 +83,7 @@ export class MatchRoom extends Room<MatchState> {
 
     // prints ID of the client that just joined
     console.log(
-      `Client joined room ${this.roomId} with id ${client.sessionId}`,
+      `Client joined room ${this.roomId} with id ${client.sessionId}`
     );
     if (_client.meta.role === "player") {
       // check if player already in room
@@ -256,7 +260,7 @@ export class MatchRoom extends Room<MatchState> {
 
       player.pauseTimeout = setTimeout(
         () => this.forceResume(player),
-        player.remainingPauseTime * 1000,
+        player.remainingPauseTime * 1000
       );
 
       this.startPauseInterval(player);
@@ -277,11 +281,11 @@ export class MatchRoom extends Room<MatchState> {
 
       if (player.pauseStartTime) {
         const pausedDuration = Math.floor(
-          (Date.now() - player.pauseStartTime) / 1000,
+          (Date.now() - player.pauseStartTime) / 1000
         );
         player.remainingPauseTime = Math.max(
           player.remainingPauseTime - pausedDuration,
-          0,
+          0
         );
         player.pauseStartTime = null;
       }
@@ -343,7 +347,7 @@ export class MatchRoom extends Room<MatchState> {
 
   private migrateHost(disconnectedHostId: string) {
     const remainingPlayers = Array.from(this.state.players.values()).filter(
-      (p) => p.isConnected && p.id !== disconnectedHostId,
+      (p) => p.isConnected && p.id !== disconnectedHostId
     );
 
     if (remainingPlayers.length > 0) {
@@ -362,5 +366,5 @@ export class MatchRoom extends Room<MatchState> {
     }
   }
 
-  private sendGameStateToPlayer(client: Client, playerId: string) { }
+  private sendGameStateToPlayer(client: Client, playerId: string) {}
 }

@@ -18,7 +18,7 @@ import { useAppContext } from "@/contexts/AppProviders";
 import { GameInvitation } from "@/types/game/game";
 import { getRankMetaData } from "@/utils/game";
 import { socketManager } from "@/utils/socket";
-import { getUserCurrentMatch } from "@/api/match";
+import { createAIMatch, getUserCurrentMatch } from "@/api/match";
 import { useSounds } from "@/contexts/SoundProvider";
 import Avatar from "../Tournament/Avatar";
 import { InviteOponent } from "./InvitationModal";
@@ -346,6 +346,9 @@ const GameSettings = (props: GameSettingsProps) => {
         allowPowerUps: false,
       },
     });
+  const [aiDifficulty, setAiDifficulty] = useState<"EASY" | "MEDIUM" | "HARD">(
+    "EASY"
+  );
   // Invitations
   const [SelectedInvitation, setSelectedInvitation] =
     useState<GameInvitation | null>(null);
@@ -359,14 +362,21 @@ const GameSettings = (props: GameSettingsProps) => {
     null
   );
 
-  const handle1vsAiReady = async () => {
+  /**
+   * Ai
+   */
+  const handleCreateAIMatch = async () => {
     try {
-      // const resp = awia
+      const resp = await createAIMatch(aiDifficulty);
+      if (resp.data)
+        toasts.addToastToQueue({ message: "match created!", type: "success" });
+      else
+        toasts.addToastToQueue({
+          message: "failed to create match",
+          type: "error",
+        });
     } catch (err: any) {
-      toasts.addToastToQueue({
-        type: "error",
-        message: err.message || "An error occurred while setuping the match.",
-      });
+      console.log(err);
     }
   };
   const OnReadyClick = () => {
@@ -518,6 +528,10 @@ const GameSettings = (props: GameSettingsProps) => {
     };
   }, []);
 
+  useEffect(() => {
+    console.log(aiDifficulty);
+  }, [aiDifficulty]);
+
   return (
     <StyledGameSettings
       oponentOneAvatar={userPlayer?.avatarUrl || user?.avatar}
@@ -651,10 +665,16 @@ const GameSettings = (props: GameSettingsProps) => {
           <div className="_1vsAiSettings GameSettings">
             <div className="Option">
               <span>Difficulty</span>
-              <select className="ModeDifficulty">
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
+              <select
+                className="ModeDifficulty"
+                value={aiDifficulty}
+                onChange={(e: any) => {
+                  setAiDifficulty(e.target.value);
+                }}
+              >
+                <option value="EASY">Easy</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HARD ">Hard</option>
               </select>
             </div>
           </div>
@@ -741,13 +761,10 @@ const GameSettings = (props: GameSettingsProps) => {
             </button>
           ) : null}
 
-          {match.currentMatch?.status === "WAITING" ||
-          props.selectedMode === "1vsAI" ? (
+          {match.currentMatch?.status === "WAITING" ? (
             <button
               className={`ReadyBtn ${userPlayer?.isReady ? "ready" : ""}`}
-              onClick={
-                props.selectedMode === "1vsAI" ? handle1vsAiReady : OnReadyClick
-              }
+              onClick={OnReadyClick}
             >
               Ready
               {userPlayer?.isReady ? (
@@ -755,6 +772,15 @@ const GameSettings = (props: GameSettingsProps) => {
               ) : (
                 <PendingIcon fill="white" size={20} />
               )}
+            </button>
+          ) : null}
+
+          {props.selectedMode === "1vsAI" ? (
+            <button
+              className={`ReadyBtn ${userPlayer?.isReady ? "ready" : ""}`}
+              onClick={handleCreateAIMatch}
+            >
+              Create
             </button>
           ) : null}
         </div>
