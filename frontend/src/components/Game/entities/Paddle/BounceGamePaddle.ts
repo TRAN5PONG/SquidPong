@@ -30,13 +30,23 @@ export class BounceGamePaddle {
 
       container.addAllToScene();
       
-      // Find the main paddle mesh (like original: find mesh with "paddle" in name)
       this.mainMesh = 
         container.meshes.find((m: any) => m.name.toLowerCase().includes("paddle")) || 
         container.meshes[0];
 
-      // Store reference - the mainMesh IS the paddle (like original)
       this.mesh = this.mainMesh as any;
+      
+      container.meshes.forEach((mesh: AbstractMesh) => {
+        mesh.receiveShadows = true;
+        
+
+        if (mesh.material) {
+          const mat = mesh.material as any;
+          if (mat.disableLighting !== undefined) {
+            mat.disableLighting = false;
+          }
+        }
+      });
       
       this.setupInitialPosition();
     } catch (err) {
@@ -46,15 +56,20 @@ export class BounceGamePaddle {
 
   private setupInitialPosition() {
     if (!this.mesh) return;
-    // Scale exactly like original Bounce-pong-3D
     this.mesh.scaling.set(0.15, 0.15, 0.15);
-    // Position exactly like original
-    this.mesh.position.set(-4, 1, 0);
+    this.mesh.position.set(0, 0, 0);
+    this.mesh.rotation.set(0, 0, 0);
   }
 
   public updateVisual(pos: Vector3): void {
     if (!this.mesh) return;
     this.mesh.position.set(pos.x, pos.y, pos.z);
+  }
+  
+  public setRotation(x: number, y: number, z: number): void {
+    if (!this.mesh) return;
+    // Keep the base Y rotation (Math.PI) and add the dynamic Z rotation
+    this.mesh.rotation.set(x, Math.PI, z);
   }
 
   public updatePaddlePosition(x: number, y: number, z: number) {

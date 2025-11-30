@@ -1,26 +1,22 @@
 import { Scene, Vector3 } from "@babylonjs/core";
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 
 export class BounceGameCamera {
-  camera: ArcRotateCamera;
+  camera: UniversalCamera;
   scene: Scene;
 
   constructor(scene: Scene) {
 	this.scene = scene;
 
-	this.camera = new ArcRotateCamera(
+	this.camera = new UniversalCamera(
       "camera",
-      -Math.PI / 2,      // Alpha: looking from the side
-      Math.PI / 2.5,     // Beta: angle from top
-      16,                // Radius: distance from target
-      Vector3.Zero(),    // Target: center of scene
+      new Vector3(0, 5, -12), 
       scene
     );
 
-	// FOV: 50 degrees (like original Bounce-pong-3D)
-    this.camera.fov = (50 * Math.PI) / 180; // Convert degrees to radians
+    this.camera.setTarget(Vector3.Zero());
+
+    this.camera.fov = (50 * Math.PI) / 180;
     
-    // Attach camera controls to canvas
-    this.camera.attachControl(true);
   }
 }

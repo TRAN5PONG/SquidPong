@@ -31,10 +31,19 @@ export class Ball {
 
     this.freeze();
     
-    // Use mode-specific physics values
-    const restitution = mode === "BounceGame" ? (ballConstants as any).restitution || 0.7 : 0.8;
-    const friction = mode === "BounceGame" ? (ballConstants as any).friction || 0.8 : 0;
-    const density = mode === "BounceGame" ? (ballConstants as any).density || 0.5 : 0.8;
+    let restitution: number;
+    let friction: number;
+    let density: number;
+    
+    if (mode === "BounceGame") {
+      restitution = (ballConstants as any).restitution;
+      friction = (ballConstants as any).friction;
+      density = (ballConstants as any).density
+    } else {
+      restitution = 0.8;
+      friction = 0;
+      density = 0.8;
+    }
     
     const colliderDesc = RAPIER.ColliderDesc.ball(ballConstants.radius)
       .setRestitution(restitution)
@@ -93,27 +102,21 @@ export class Ball {
     }
   }
   public freeze(): void {
-    // stop movement
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
-    // disable gravity
     this.body.setGravityScale(0, true);
 
-    // lock movement & rotation
     this.body.lockTranslations(true, true);
     this.body.lockRotations(true, true);
   }
 
   public unfreeze(): void {
-    // unlock movement
     this.body.lockTranslations(false, true);
     this.body.lockRotations(false, true);
 
-    // restore gravity
     this.body.setGravityScale(1, true);
 
-    // ensure no weird leftover velocity
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
   }

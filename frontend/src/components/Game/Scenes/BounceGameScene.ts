@@ -17,6 +17,8 @@ import { BounceGameLight } from "../entities/BounceGameLight";
 import { MiniGameController } from "../controllers/miniGameController";
 
 export class BounceGameScene {
+  // callback for UI to listen to game over event
+  public onGameOver?: () => void;
   // Entities
   mainPaddle!: BounceGamePaddle;
   ball: BounceGameBall;
@@ -38,8 +40,6 @@ export class BounceGameScene {
   isGameReady: boolean = false;
   isRunning: boolean = false;
   
-  // UI callbacks
-  public onGameOver?: () => void;
 
   constructor(canvas: HTMLCanvasElement) {
     if (!canvas) {
@@ -48,12 +48,6 @@ export class BounceGameScene {
     this.canvas = canvas;
     this.engine = new Engine(canvas, true, { adaptToDeviceRatio: true });
     this.scene = new Scene(this.engine);
-    
-    // Create default environment like original Bounce-pong-3D
-    (this.scene as any).createDefaultEnvironment({
-      createGround: false,
-      createSkybox: false,
-    });
   }
 
   /****
@@ -75,14 +69,11 @@ export class BounceGameScene {
       // Paddles
       this.mainPaddle = new BounceGamePaddle(this.scene);
 
-      // Load assets (ball is created immediately, only paddle needs loading)
+      this.createShadowWall();
+      
       this.ball.Load();
       await this.mainPaddle.load();
       
-      // Create back wall for shadows
-      this.createShadowWall();
-      
-      // Setup shadows
       this.setupShadows();
 
       // Controller
@@ -93,113 +84,88 @@ export class BounceGameScene {
         this.scene
       );
 
-      // Setup collision callbacks
-      this.physics.onBallPaddleCollision = () => {
-        // Increment score when ball hits paddle
-        this.controller.incrementScore();
-        console.log(`Ball hit paddle! Score: ${this.controller.score}`);
+      this.controller.onGameOver = () => {
+        try {
+          this.onGameOver?.();
+        } catch (e) {
+          console.warn("onGameOver handler threw:", e);
+        }
       };
 
-      this.physics.onBallFloorCollision = () => {
-        // Ball dropped - game over will be handled by controller
-        console.log("Ball hit floor - Game Over!");
-      };
-
-      // Debugging tools
-      // this.debug = new Debug(this.scene, this.engine);
-      // this.debug.ShowDebuger();
-      // this.debug.ShowAxisLines();
-      // this.debug.ShowGroundGrid();
     } catch (error) {
       console.error("Error during game initialization:", error);
       throw error;
     }
   }
-
-  /**
-   * Create vertical back wall to receive shadows (like in original)
-   */
+  
   private createShadowWall(): void {
-    // Create a large vertical plane as back wall
     const shadowWall = MeshBuilder.CreatePlane(
       "shadowWall",
-      { width: 40, height: 40 },
+      { width: 120, height: 120 },
       this.scene
     );
     
-    // Position it far behind the game area
-    shadowWall.position.set(0, 0, -8);
-    // Flip wall 180 degrees so it faces the camera (shadows visible from front)
-    shadowWall.rotation.y = Math.PI;
+    shadowWall.position.set(-2, 0, 30);
     shadowWall.receiveShadows = true;
     
-    // Dark material for backdrop
+
     const wallMat = new StandardMaterial("shadowWallMat", this.scene);
-    wallMat.diffuseColor = new Color3(0.08, 0.12, 0.18); // Dark bluish
-    wallMat.alpha = 1.0;
-    wallMat.backFaceCulling = false; // Render both sides
+    wallMat.diffuseColor = Color3.FromHexString("#5081ca");
+    wallMat.specularColor = new Color3(0.5, 0.5, 0.5);
+    wallMat.backFaceCulling = false;
+    
     shadowWall.material = wallMat;
   }
 
-  /**
-   * Setup shadow rendering for better visuals
-   */
   private setupShadows(): void {
-    if (!this.light.spot) return;
-
-    // Create shadow generator using spot light
-    this.shadowGenerator = new ShadowGenerator(2048, this.light.spot);
-    this.shadowGenerator.useBlurExponentialShadowMap = true;
-    this.shadowGenerator.blurScale = 2;
-    this.shadowGenerator.blurBoxOffset = 1;
-    this.shadowGenerator.setDarkness(0.5);
-  // Use non-transparent shadowing for predictable results
-  this.shadowGenerator.transparencyShadow = false;
-
-    // Add shadow casters
+    if (!this.light.spot) {
+      console.error("SpotLight not found! Cannot create shadows");
+      return;
+    }
+    
+    this.shadowGenerator = new ShadowGenerator(1024, this.light.spot);
+    
     if (this.ball.mesh) {
       this.shadowGenerator.addShadowCaster(this.ball.mesh);
       this.ball.mesh.receiveShadows = true;
+    } else {
+      console.warn("Ball mesh not found!");
     }
     
     if (this.mainPaddle.mesh) {
-      this.shadowGenerator.addShadowCaster(this.mainPaddle.mesh);
-      this.mainPaddle.mesh.receiveShadows = true;
+      const paddleMeshes = this.mainPaddle.mesh.getChildMeshes(false);
+      paddleMeshes.forEach((mesh) => {
+        if (mesh) {
+          this.shadowGenerator.addShadowCaster(mesh, true);
+        }
+      });
+    } else {
+      console.warn("Paddle mesh not found!");
     }
-
-    console.log("Shadows enabled with floor");
   }
 
   /*
    * Start the render/update loop.
    */
   private startRenderLoop() {
-    const FIXED_DT = 1 / 60; // Physics timestep: 60Hz
+    const FIXED_DT = 1 / 60;
     let accumulator = 0;
     let lastTime = performance.now();
 
     this.engine.runRenderLoop(() => {
       const now = performance.now();
-      const frameTime = (now - lastTime) / 1000; // convert ms → seconds
+      const frameTime = (now - lastTime) / 1000;
       lastTime = now;
 
       accumulator += frameTime;
 
-      // --- Fixed-step physics loop ---
       while (accumulator >= FIXED_DT) {
         this.controller.FixedUpdate();
         accumulator -= FIXED_DT;
       }
 
-      // --- Compute interpolation factor for visuals ---
       const alpha = accumulator / FIXED_DT;
       this.controller.UpdateVisuals(alpha);
-
-      // Check for game over and trigger callback
-      if (this.controller.isGameOver && this.onGameOver) {
-        this.onGameOver();
-        this.onGameOver = undefined; // Call only once
-      }
 
       this.scene.render();
     });
@@ -215,7 +181,6 @@ export class BounceGameScene {
     this.isRunning = true;
     this.startRenderLoop();
     
-    // Start the mini game after a short delay
     setTimeout(() => {
       this.controller.startGame();
     }, 1000);

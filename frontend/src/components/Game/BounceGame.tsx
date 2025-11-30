@@ -22,7 +22,6 @@ const BounceGame = () => {
   const gameRef = useRef<BounceGameScene | null>(null);
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
-  const [showWelcome, setShowWelcome] = useState(true);
 
   // Start game once
   useEffect(() => {
@@ -36,11 +35,6 @@ const BounceGame = () => {
       };
       
       gameRef.current.start();
-      
-      // Hide welcome message after 3 seconds
-      setTimeout(() => {
-        setShowWelcome(false);
-      }, 3000);
     }
 
     // Cleanup on unmount
@@ -65,38 +59,28 @@ const BounceGame = () => {
     return () => clearInterval(interval);
   }, [isGameOver]);
 
-  // Handle restart
-  const handleRestart = () => {
-    if (gameRef.current) {
-      setIsGameOver(false);
-      setScore(0);
-      setShowWelcome(false);
-      
-      // Setup game over callback again
-      gameRef.current.onGameOver = () => {
-        setIsGameOver(true);
-        setScore(gameRef.current?.getScore() || 0);
-      };
-      
-      gameRef.current.restart();
-    }
-  };
-
   // Handle go home
   const handleGoHome = () => {
     // Navigate to home - adjust this based on your routing setup
     window.location.href = "/";
   };
 
+  const handleRetry = () => {
+    if (gameRef.current) {
+      gameRef.current.restart();
+      setIsGameOver(false);
+      setScore(0);
+    }
+  };
+
   return (
     <StyledBounceGame>
       <GameCanvas ref={canvasRef} />
       <BounceGameUI
-        isGameOver={isGameOver}
         score={score}
-        onRestart={handleRestart}
         onGoHome={handleGoHome}
-        showWelcome={showWelcome}
+        onRetry={handleRetry}
+        showControls={isGameOver}
       />
     </StyledBounceGame>
   );
