@@ -1,8 +1,8 @@
 import { BounceGamePaddle } from "../entities/Paddle/BounceGamePaddle";
 import { BounceGameBall } from "../entities/Ball/BounceGameBall";
 import { Physics_miniGame } from "../physics/Bounce";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Scene } from "@babylonjs/core/scene";
+import { Vector3, Quaternion } from "@babylonjs/core";
+import { Scene } from "@babylonjs/core";
 
 export class MiniGameController {
   private paddle: BounceGamePaddle;
@@ -13,12 +13,12 @@ export class MiniGameController {
   // Game state
   public score: number = 0;
   public isGameOver: boolean = false;
-  private targetPaddlePos: Vector3 = new Vector3(-4, 1, 0);
-  
-  // Bounce delay before game over
-  private ballHitFloor: boolean = false;
-  private floorHitTime: number = 0;
-  private readonly BOUNCE_DELAY_MS: number = 300;
+  private countingPaused: boolean = false;
+  // callback to notify outer code (scene) when game over occurs
+  public onGameOver?: () => void;
+  private targetPaddlePos: Vector3 = new Vector3(0, 0, 0);
+  private mouseX: number = 0;
+  private mouseY: number = 0;
 
   constructor(
     paddle: BounceGamePaddle,
@@ -32,25 +32,65 @@ export class MiniGameController {
     this.scene = scene;
     
     this.setupInputHandlers();
+    this.setupPhysicsCallbacks();
+  }
+
+  /**
+   * Setup physics collision callbacks
+   */
+  private setupPhysicsCallbacks(): void {
+    this.physics.onBallPaddleCollision = () => {
+
+      const ballVel = this.physics.ball.body.linvel();
+      const velocityMagnitude = Math.sqrt(
+        ballVel.x * ballVel.x + 
+        ballVel.y * ballVel.y + 
+        ballVel.z * ballVel.z
+      );
+      
+      const MIN_BOUNCE_VELOCITY = 10.0;
+      
+      if (velocityMagnitude >= MIN_BOUNCE_VELOCITY) {
+        this.incrementScore();
+      }
+    };
+
+    this.physics.onBallFloorCollision = () => {
+      this.gameOver();
+    };
+  }
+
+
+  private checkBallBounds(): void {
+    if (this.isGameOver) return;
+
+    const ballPos = this.physics.ball.body.translation();
+    const MAX_DISTANCE = 50;
+
+    // Check if ball is too far from origin
+    const distanceFromOrigin = Math.sqrt(
+      ballPos.x * ballPos.x + 
+      ballPos.y * ballPos.y + 
+      ballPos.z * ballPos.z
+    );
+
+    if (distanceFromOrigin > MAX_DISTANCE) {
+      this.gameOver();
+    }
   }
 
   /**
    * Setup mouse/touch input handlers for paddle movement
-   * Uses normalized screen coordinates like original Bounce-pong-3D
    */
   private setupInputHandlers(): void {
     this.scene.onPointerMove = (evt: any) => {
       if (this.isGameOver) return;
 
-      // Convert screen coordinates to normalized -1 to 1 range
-      const mouseX = (evt.clientX / window.innerWidth) * 2 - 1;
-      const mouseY = -(evt.clientY / window.innerHeight) * 2 + 1;
-      
-      // Map to world space (like original game)
-      this.targetPaddlePos.x = mouseX * 12;
-      this.targetPaddlePos.y = mouseY * 6;
-      
-      // Keep Z at 0 for 2D movement
+      this.mouseX = (evt.clientX / window.innerWidth) * 2 - 1;
+      this.mouseY = -(evt.clientY / window.innerHeight) * 2 + 1;
+    
+      this.targetPaddlePos.x = this.mouseX * 12;
+      this.targetPaddlePos.y = this.mouseY * 6;
       this.targetPaddlePos.z = 0;
     };
   }
@@ -61,129 +101,104 @@ export class MiniGameController {
   public UpdateVisuals(alpha: number): void {
     if (!this.paddle || !this.ball || !this.physics) return;
 
-    // Update paddle visual position with interpolation
     const paddlePos = this.physics.paddle.getInterpolatedPos(alpha);
     this.paddle.updateVisual(paddlePos as Vector3);
+  
+    this.updatePaddleRotation();
 
-    // Update ball visual position with interpolation
     this.updateVisualsBall(alpha);
   }
 
   /**
-   * Update ball visuals with interpolation
-   * Simple version like the main ping pong game
+   * Update paddle rotation based on mouse X position
+   */
+  private updatePaddleRotation(): void {
+    if (!this.paddle.mesh || !this.physics) return;
+  
+    const clampedMouseX = Math.max(-1, Math.min(1, this.mouseX));
+    
+    const targetRot = (clampedMouseX * Math.PI) / 5;
+    this.physics.paddle.setRotationZ(targetRot);
+    const paddleRot = this.physics.paddle.body.rotation();
+    
+    if (!this.paddle.mesh.rotationQuaternion) {
+      this.paddle.mesh.rotationQuaternion = new Quaternion();
+    }
+    
+    this.paddle.mesh.rotationQuaternion.set(paddleRot.x, paddleRot.y, paddleRot.z, paddleRot.w);
+  }
+
+  /**
+   * Update ball visuals with interpolation 
    */
   private updateVisualsBall(alpha: number): void {
     if (!this.ball || !this.physics) return;
 
-    // Interpolate position between previous and current
     const renderPos = Vector3.Lerp(
       this.physics.ball.getPrevPosition(),
       this.physics.ball.getCurrentPosition(),
       alpha,
     );
 
-    // Update rotation directly from physics
     const rot = this.physics.ball.body.rotation();
-    this.ball.mesh.rotationQuaternion.set(rot.x, rot.y, rot.z, rot.w);
-
-    // Update visual position
+    this.ball.mesh.rotationQuaternion!.set(rot.x, rot.y, rot.z, rot.w);
     this.ball.setMeshPosition(renderPos.x, renderPos.y, renderPos.z);
   }
 
   /**
    * Fixed update for physics
-   * Simple version like main ping pong game
    */
   public FixedUpdate(): void {
-    if (!this.paddle || !this.ball || !this.physics || this.isGameOver) return;
+    if (!this.paddle || !this.ball || !this.physics) return;
 
-    // Update paddle target position (physics will smooth it)
     this.physics.paddle.setTarget(
       this.targetPaddlePos.x,
       this.targetPaddlePos.y,
       this.targetPaddlePos.z
     );
 
-    // Store previous ball position
     this.physics.ball.setPosition("PREV");
-
-    // Step physics simulation
     this.physics.Step();
-
-    // Store current ball position
     this.physics.ball.setPosition("CURR");
 
-    // Check if ball dropped (game over condition)
-    this.checkBallDropped();
+    // Check if ball went too far
+    this.checkBallBounds();
   }
 
-  /**
-   * Check if ball has dropped below paddle (game over)
-   * Ball bounces for 300ms before triggering game over
-   */
-  private checkBallDropped(): void {
-    const ballPos = this.physics.getBallPosition();
-    
-    // Check if ball hit the floor (below y = -9)
-    if (ballPos.y < -9 && !this.ballHitFloor) {
-      this.ballHitFloor = true;
-      this.floorHitTime = performance.now();
-      console.log("Ball hit floor! Waiting 300ms before game over...");
-    }
-    
-    // If 300ms has passed since floor hit, trigger game over
-    if (this.ballHitFloor) {
-      const elapsed = performance.now() - this.floorHitTime;
-      if (elapsed >= this.BOUNCE_DELAY_MS) {
-        this.gameOver();
-      }
-    }
-  }
+  public gameOver(): void {
+    if (this.isGameOver) return;
 
-  /**
-   * Handle game over
-   */
-  private gameOver(): void {
-    if (this.isGameOver) return; // Prevent multiple calls
-    
     this.isGameOver = true;
-    console.log(`Game Over! Final Score: ${this.score}`);
-    
-    // Freeze the ball
-    this.physics.setBallFrozen(true);
+    this.countingPaused = true;
+
+    // notify listeners (e.g., the scene / UI) that game is over so they can show controls
+    try {
+      this.onGameOver?.();
+    } catch (e) {
+      console.warn("onGameOver callback threw:", e);
+    }
   }
 
-  /**
-   * Increment score (call this on successful paddle hit)
-   */
   public incrementScore(): void {
+    if (this.countingPaused) return;
     this.score++;
-    console.log(`Score: ${this.score}`);
   }
 
-  /**
-   * Reset the game
-   */
+
   public reset(): void {
     this.score = 0;
     this.isGameOver = false;
-    this.ballHitFloor = false;
-    this.floorHitTime = 0;
-    this.targetPaddlePos.set(-4, 1, 0);
+    this.countingPaused = false;
+    this.targetPaddlePos.set(0, 0, 0);
     
-    // Reset ball and paddle physics
     this.physics.setBallPosition(0, 5, 0);
     this.physics.setBallVelocity(0, 0, 0);
     this.physics.setBallFrozen(false);
   }
 
-  /**
-   * Start the game
-   */
+
   public startGame(): void {
     this.reset();
-    // Give ball initial upward velocity (like original Bounce-pong-3D)
     this.physics.setBallFrozen(false);
     this.physics.setBallVelocity(0, 5, 0);
   }

@@ -454,6 +454,7 @@ body {
 
 /* ============================================
    Bounce Game UI - Minimal & Clean
+   COPILOT CHANGES: Added bounce game styles
    ============================================ */
 
 .bounce-game-ui {
@@ -510,7 +511,7 @@ body {
 .bounce-game-over-content {
   width: 500px;
   background-color: var(--bg_color_light);
-  /* removed border to match app style */
+  /* COPILOT CHANGE: removed border to match app style */
   border-radius: 10px;
   padding: 40px;
   text-align: center;
@@ -557,6 +558,26 @@ body {
   transition: all 0.2s ease-in-out;
   outline: none;
   box-shadow: none;
+}
+
+/* Leave Game Button (bottom right like main game) */
+.bounce-leave-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 150px;
+  height: 45px;
+  font-size: 1em;
+  z-index: 1001;
+}
+
+/* Controls group fixed bottom-right (reuses same button styling; no extra border/modal) */
+.bounce-controls-fixed {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
 }
 
 /* Responsive */

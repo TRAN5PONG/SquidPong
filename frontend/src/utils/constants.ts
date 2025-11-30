@@ -20,9 +20,9 @@ export const constants = {
   BOUNCE_GAME_BALL: {
     position: { x: 0, y: 5, z: 0 } as Vector3,
     radius: 0.5,
-    restitution: 0.7,
-    friction: 0.8,
-    density: 0.5,
+    restitution: 1.2,
+    friction: 0.6,
+    density: 0.4,
   },
   FLOOR: {
     position: { x: 0, y: -10, z: 0 } as Vector3,
@@ -39,10 +39,10 @@ export const constants = {
     } as Vector3,
   },
   BOUNCE_GAME_PADDLE: {
-    size: { width: 1.6, height: 0.2, length: 1.4 } as Size3D,
+    size: { width: 3, height: 0.22, length: 3 } as Size3D,
     position: {
-      x: -4,
-      y: 1,
+      x: 0,
+      y: 0,
       z: 0,
     } as Vector3,
     restitution: 0.4,
