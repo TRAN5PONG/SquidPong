@@ -115,8 +115,7 @@ export class Game {
 
       // Network
       if (!this.isAIMode) {
-        console.log("usssssssssssssssssssssssssss:", this.userId)
-        this.net = new Network(`wss://10.13.3.5:4433/matches`, this.match);
+        this.net = new Network(`wss://10.13.3.3:4433/matches`, this.match);
         this.room = await this.net.join(this.userId);
       } else {
         this.net = null as any;
