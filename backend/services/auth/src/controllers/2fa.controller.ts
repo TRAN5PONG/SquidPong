@@ -64,6 +64,7 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 
   const method = (req.params as any).method;
 
+
   try 
   {
     const user = await prisma.user.findUnique({ where: { id } });
@@ -71,26 +72,16 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 
 
     if (user.twoFAMethod != NONE) {
-      if (user.twoFAMethod == EMAIL)
-        throw new Error(TwoFaEmaiL.TWO_FA_ALREADY_ENABLED);
       throw new Error(TwoFA.TWO_FA_ALREADY_ENABLED);
     }
 
     if (method == AUTHENTICATOR)
     {
-      await enableAuthenticatorCode(id, user.twoFASecret!, code);
+      if(await enableAuthenticatorCode(id, user.twoFASecret!, code.toString()) == false)
+        throw new Error("Error in 2fa  change later")
+
     }
-    
-    // send to user-service to update 2FA status
-    const serviceUrl = `http://user:4002/api/user/db`;
-    await fetch(serviceUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'x-user-id': id.toString()},
-      body: JSON.stringify({
-        preferences: { twoFactorEnabled: true },
-      }),
-    });
-    
+
   }
   catch (error) {
     sendError(res, error);

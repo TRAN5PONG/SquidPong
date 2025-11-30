@@ -77,7 +77,7 @@ enum PlayerCharacter {
   Tbib
   Med
   Ryu
-  Hama9a
+  Younajja
   Mnachit
   Mira
   Zero
@@ -131,7 +131,7 @@ model Profile {
 
   playerPaddles Json @default("[\"Boss\"]")
   playerSelectedPaddle    PlayerPaddle @default(Boss)
-
+  
 }
 
 
