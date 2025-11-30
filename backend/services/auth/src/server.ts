@@ -30,6 +30,9 @@ async function start()
 
 	await initRabbitMQ()
 
+	// Wait a bit for other services to be ready
+	await new Promise(resolve => setTimeout(resolve, 10000));
+
 	try 
 	{
 		await seedRecommendedPlayers();

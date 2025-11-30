@@ -33,11 +33,13 @@ export async function seedRecommendedPlayers(): Promise<void>
 
       while (!success && attempts < maxAttempts) {
         attempts++;
-        try {
+        try 
+        {
           const user = await createAccount(payload);
           console.log(`Seeded account: ${user.email} (id=${user.id}, username=${user.username})`);
           success = true;
-        } catch (err) {
+        } 
+        catch (err) {
           console.log(`Failed to seed user ${p.email} (attempt ${attempts}/${maxAttempts}):`, err);
           if (attempts < maxAttempts) {
             console.log(`Waiting 5 seconds before retry...`);
