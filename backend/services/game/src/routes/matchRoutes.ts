@@ -25,22 +25,31 @@ import {
   getMatch,
   getCurrenMatch,
   EndMatch,
+  AiMatch,
 } from "../controllers/matchController";
 import {
   matchesParamsValidators,
   matchesValidators,
 } from "../validators/matchesValidators";
+import { getPlayerStats } from "../controllers/statsController";
 
 export async function matchRoutes(server: FastifyInstance) {
-  // Create a new match
+  // ai match
   server.post(
-    "/match",
+    "/api/game/ai/create",
     {
       schema: {
-        body: matchesValidators.Body,
+        body: {
+          type: "object",
+          properties: {
+            mode: { type: "string" },
+            difficulty: { type: "string" },
+          },
+          required: ["mode", "difficulty"],
+        },
       },
     },
-    createMatch
+    AiMatch
   );
   // get Match by ID
   server.get(
@@ -100,5 +109,20 @@ export async function matchRoutes(server: FastifyInstance) {
       },
     },
     EndMatch
+  );
+  server.get(
+    "/api/game/player/:playerId/stats",
+    {
+      schema: {
+        params: {
+          type: "object",
+          properties: {
+            playerId: { type: "string" },
+          },
+          required: ["playerId"],
+        },
+      },
+    },
+    getPlayerStats
   );
 }

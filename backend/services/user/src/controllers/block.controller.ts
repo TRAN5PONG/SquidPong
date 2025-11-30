@@ -5,8 +5,6 @@ import { ApiResponse, sendError } from '../utils/errorHandler';
 import { getProfile } from '../utils/utils';
 import { iSameUser } from '../utils/utils';
 import { BlockMessages , FriendMessages } from '../utils/responseMessages';
-import { redis } from '../integration/redis.integration';
-import { mergeProfileWithRedis } from '../utils/utils';
 import { blockUserInChat , unblockUserInChat } from '../integration/chat.restapi';
 
 
@@ -193,8 +191,7 @@ export async function getBlockedUsersHandler(req: FastifyRequest, res: FastifyRe
     const profiles = await prisma.profile.findMany({ 
       where: { userId: { in: blockedUserIds } } 
     });
-    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
-    respond.data = mergedProfiles;
+    respond.data = profiles;
   } 
   catch (error) {
     return sendError(res, error);
@@ -229,8 +226,7 @@ export async function getUsersWhoBlockedMeHandler(req: FastifyRequest, res: Fast
     const profiles = await prisma.profile.findMany({ 
       where: { userId: { in: blockerUserIds } } 
     });
-    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
-    respond.data = mergedProfiles;
+    respond.data = profiles;
   } 
   catch (error) {
     return sendError(res, error);

@@ -77,7 +77,7 @@ enum PlayerCharacter {
   Tbib
   Med
   Ryu
-  Hama9a
+  Younajja
   Mnachit
   Mira
   Zero
@@ -90,6 +90,14 @@ enum PlayerPaddle {
   Survivor
   Guard
   Army
+}
+
+enum PaddleColor {
+  Red
+  Blue
+  Yellow
+  Orange
+  Purple
 }
 
 
@@ -126,12 +134,12 @@ model Profile {
 
   preferences         ProfilePreferences?
 
-  playerCharacters   Json @default("[\"Zero\"]")
-  playerSelectedCharacter PlayerCharacter @default(Zero)
+  playerCharacters   Json @default("[\"Tbib\"]")
+  playerSelectedCharacter PlayerCharacter @default(Tbib)
 
   playerPaddles Json @default("[\"Boss\"]")
   playerSelectedPaddle    PlayerPaddle @default(Boss)
-
+  paddleColor             PaddleColor   @default(Red)
 }
 
 

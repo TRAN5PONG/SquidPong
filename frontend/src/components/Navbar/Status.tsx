@@ -69,7 +69,10 @@ interface StatusProps {
 const Status = (props: StatusProps) => {
   const onStatusClick = async (status: string) => {
     try {
-      const resp = await updateProfile({ status: status.toUpperCase() });
+      const resp = await updateProfile({ customStatus: status.toUpperCase() });
+      if (resp.data) {
+        alert("OK");
+      } else alert("Failed");
     } catch (err) {
       console.error("Failed to update status:", err);
     }

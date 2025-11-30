@@ -13,7 +13,7 @@ export interface PaddleColor {
 
 export const paddleColors: PaddleColor[] = [
   { id: "Red", name: "Red", color: "#f22c2c" },
-  { id: "Gold", name: "Gold", color: "#ffa500" },
+  { id: "Yellow", name: "Yellow", color: "#ffa500" },
   { id: "Orange", name: "Orange", color: "#FF5733" },
   { id: "Blue", name: "Blue", color: "#3498DB" },
   { id: "Purple", name: "Purple", color: "#9B59B6" },
