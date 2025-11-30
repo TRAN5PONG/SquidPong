@@ -129,15 +129,15 @@ export class BounceGameScene {
     
     // Position it far behind the game area
     shadowWall.position.set(0, 0, -8);
-    shadowWall.rotation.x = 0; // Keep it vertical
+    // Flip wall 180 degrees so it faces the camera (shadows visible from front)
+    shadowWall.rotation.y = Math.PI;
     shadowWall.receiveShadows = true;
     
-    // Semi-transparent dark material for subtle shadows
+    // Dark material for backdrop
     const wallMat = new StandardMaterial("shadowWallMat", this.scene);
     wallMat.diffuseColor = new Color3(0.08, 0.12, 0.18); // Dark bluish
-    // Make the wall fully opaque so shadows are clearly visible (like reference)
     wallMat.alpha = 1.0;
-    wallMat.backFaceCulling = false;
+    wallMat.backFaceCulling = false; // Render both sides
     shadowWall.material = wallMat;
   }
 
