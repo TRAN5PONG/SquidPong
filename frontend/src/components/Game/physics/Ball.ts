@@ -9,12 +9,18 @@ export class Ball {
   public body: RAPIER.RigidBody;
   public collider: RAPIER.Collider;
 
-  constructor(world: RAPIER.World) {
+  constructor(
+    world: RAPIER.World,
+    mode: "BounceGame" | "PongGame" = "PongGame",
+  ) {
+    const ballConstants =
+      mode === "PongGame" ? constants.BALL : constants.BOUNCE_GAME_BALL;
+
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(
-        constants.BALL.position.x,
-        constants.BALL.position.y,
-        constants.BALL.position.z,
+        ballConstants.position.x,
+        ballConstants.position.y,
+        ballConstants.position.z,
       )
       .setLinearDamping(0.1)
       .setAngularDamping(0.1)
@@ -24,10 +30,16 @@ export class Ball {
     this.body = world.createRigidBody(bodyDesc);
 
     this.freeze();
-    const colliderDesc = RAPIER.ColliderDesc.ball(constants.BALL.radius)
-      .setRestitution(0.8)
-      .setFriction(0)
-      .setDensity(0.8)
+    
+    // Use mode-specific physics values
+    const restitution = mode === "BounceGame" ? (ballConstants as any).restitution || 0.7 : 0.8;
+    const friction = mode === "BounceGame" ? (ballConstants as any).friction || 0.8 : 0;
+    const density = mode === "BounceGame" ? (ballConstants as any).density || 0.5 : 0.8;
+    
+    const colliderDesc = RAPIER.ColliderDesc.ball(ballConstants.radius)
+      .setRestitution(restitution)
+      .setFriction(friction)
+      .setDensity(density)
       .setSensor(false);
     this.collider = world.createCollider(colliderDesc, this.body);
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);

@@ -11,27 +11,39 @@ export class Paddle {
   private prevPos = new RAPIER.Vector3(0, 0, 0);
   private currPos = new RAPIER.Vector3(0, 0, 0);
 
-  constructor(world: RAPIER.World) {
+  constructor(
+    world: RAPIER.World,
+    mode: "BounceGame" | "PongGame" = "PongGame",
+  ) {
+    const paddleConstants =
+      mode === "PongGame" ? constants.PADDLE : constants.BOUNCE_GAME_PADDLE;
+
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(
-        constants.PADDLE.position.x,
-        constants.PADDLE.position.y,
-        constants.PADDLE.position.z,
+        paddleConstants.position.x,
+        paddleConstants.position.y,
+        paddleConstants.position.z,
       )
       .setCcdEnabled(true)
       .lockRotations()
-      .setLinearDamping(4);
+      .setLinearDamping(mode === "BounceGame" ? 0 : 4);
 
     this.body = world.createRigidBody(bodyDesc);
 
+    // Use mode-specific physics values
+    const restitution = mode === "BounceGame" ? (paddleConstants as any).restitution || 0.4 : 0;
+    const friction = mode === "BounceGame" ? (paddleConstants as any).friction || 0.8 : 0;
+    const isSensor = mode === "PongGame"; // Only PongGame uses sensor
+
     const colliderDesc = RAPIER.ColliderDesc.cuboid(
-      constants.PADDLE.size.width / 2,
-      constants.PADDLE.size.height / 2,
-      constants.PADDLE.size.length / 2,
+      paddleConstants.size.width / 2,
+      paddleConstants.size.height / 2,
+      paddleConstants.size.length / 2,
     )
       .setDensity(4)
-      .setFriction(0)
-      .setSensor(true); // Set as sensor to avoid physical collisions
+      .setRestitution(restitution)
+      .setFriction(friction)
+      .setSensor(isSensor);
 
     this.collider = world.createCollider(colliderDesc, this.body);
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);

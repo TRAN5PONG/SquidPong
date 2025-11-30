@@ -11,6 +11,7 @@ import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 export class BounceGamePaddle {
   scene: Scene;
   protected mainMesh!: AbstractMesh;
+  public mesh!: TransformNode;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -28,36 +29,36 @@ export class BounceGamePaddle {
       }
 
       container.addAllToScene();
-      const group = new TransformNode("PaddleGroup", this.scene);
-
-      this.mainMesh =
-        container.meshes.find((m) => m.name.toLowerCase().includes("paddle")) ||
+      
+      // Find the main paddle mesh (like original: find mesh with "paddle" in name)
+      this.mainMesh = 
+        container.meshes.find((m: any) => m.name.toLowerCase().includes("paddle")) || 
         container.meshes[0];
 
-      this.mainMesh = group;
+      // Store reference - the mainMesh IS the paddle (like original)
+      this.mesh = this.mainMesh as any;
+      
       this.setupInitialPosition();
     } catch (err) {
       console.error("Error loading paddle model:", err);
     }
   }
-  private setupInitialPosition() {
-    if (!this.mainMesh) return;
-    this.mainMesh.scaling.set(0.15, 0.15, 0.15);
-    this.mainMesh.position.set(-4, 1, 0);
-  }
-  public updateVisual(pos: Vector3): void {
-    this.mesh.position.set(pos.x, pos.y, pos.z);
 
-    const boundaries = this.getBoundaries();
-    const pct =
-      (pos.x - boundaries.x.min) / (boundaries.x.max - boundaries.x.min);
-    const centered = pct * 2 - 1;
-    const targetRot = centered * -(Math.PI / 2);
-    this.mesh.rotation.z = targetRot;
+  private setupInitialPosition() {
+    if (!this.mesh) return;
+    // Scale exactly like original Bounce-pong-3D
+    this.mesh.scaling.set(0.15, 0.15, 0.15);
+    // Position exactly like original
+    this.mesh.position.set(-4, 1, 0);
   }
+
+  public updateVisual(pos: Vector3): void {
+    if (!this.mesh) return;
+    this.mesh.position.set(pos.x, pos.y, pos.z);
+  }
+
   public updatePaddlePosition(x: number, y: number, z: number) {
     if (!this.mesh) return;
-
     this.mesh.position.set(x, y, z);
   }
 
@@ -65,6 +66,7 @@ export class BounceGamePaddle {
     if (!this.mesh) return Vector3.Zero();
     return this.mesh.position.clone();
   }
+
   getMeshRotation() {
     if (!this.mesh) return Vector3.Zero();
     return this.mesh.rotation.clone();
