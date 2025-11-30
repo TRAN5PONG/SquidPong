@@ -247,9 +247,8 @@ const SelectPaddle = () => {
   /**
    * States
    */
-  const [selectedColor, setSelectedColor] = Zeroact.useState<PaddleColor>(
-    paddleColors[0]
-  );
+  const [selectedColor, setSelectedColor] =
+    Zeroact.useState<PaddleColor | null>(null);
   const [selectedTexture, setSelectedTexture] =
     Zeroact.useState<PaddleTexture | null>(null);
   /**
@@ -283,8 +282,20 @@ const SelectPaddle = () => {
   useEffect(() => {
     if (!user) return;
 
+    const userPaddleColor = paddleColors.find((p) => p.id === user.paddleColor);
+
+    setSelectedColor((userPaddleColor || null) as PaddleColor | null);
     setSelectedTexture(getPaddleTextureById(user.playerSelectedPaddle));
   }, [user]);
+
+  useEffect(() => {
+    if (selectedColor) sceneRef.current?.paddle.setColor(selectedColor.color);
+    if (selectedTexture)
+    {
+      console.log("reaaa", selectedTexture)
+      sceneRef.current?.paddle.setTexture(selectedTexture.image);
+    }
+  }, [selectedColor, selectedTexture]);
 
   const onSelectTexture = async () => {
     if (!selectedTexture || !user) return;
@@ -343,7 +354,7 @@ const SelectPaddle = () => {
   };
 
   return (
-    <StyledSelectPaddle paddleColor={selectedColor.color}>
+    <StyledSelectPaddle paddleColor={selectedColor?.color}>
       <div className="CustomizationsContainer">
         <h1 className="HeaderTxt">Select color :</h1>
         <div className="ColorContainer">
@@ -352,7 +363,6 @@ const SelectPaddle = () => {
               color={color.color}
               isSelected={color === selectedColor}
               onClick={() => {
-                sceneRef.current?.paddle.setColor(color.color);
                 setSelectedColor(color);
               }}
               key={index}
@@ -382,7 +392,6 @@ const SelectPaddle = () => {
                 className={`${selectedTexture === texture ? "selected" : ""}`}
                 onClick={() => {
                   setSelectedTexture(texture);
-                  sceneRef.current?.paddle.setTexture(texture.image);
                 }}
                 key={index}
               >

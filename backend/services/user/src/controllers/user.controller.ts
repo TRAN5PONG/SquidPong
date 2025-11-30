@@ -5,6 +5,13 @@ import { Profile } from "../utils/types";
 import { redis } from "../integration/redis.integration";
 import { ProfileMessages, GeneralMessages } from "../utils/responseMessages";
 import { checkSecretToken } from "../utils/utils";
+enum PaddleColor {
+  Red = "Red",
+  Blue = "Blue",
+  Yellow = "Yellow",
+  Orange = "Orange",
+  Purple = "Purple",
+}
 import {
   sendServiceRequest,
   getPromotedRank,
@@ -42,6 +49,7 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
     playerSelectedCharacter?: string;
     playerPaddles?: string[];
     playerSelectedPaddle?: string;
+    paddleColor?: PaddleColor;
     level?: number;
     score?: number;
     walletBalance?: number;
@@ -52,7 +60,6 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
   try 
   {
 
-
     checkSecretToken(req);
 
     console.log("body to create profile:", body);
@@ -60,15 +67,15 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
     await prisma.profile.create({
       data: {
         ...body,
-        playerSelectedCharacter: (body.playerSelectedCharacter as any) || "Tbib",
-        playerPaddles: body.playerPaddles as any || ["Boss"],
-        playerSelectedPaddle: (body.playerSelectedPaddle as any) || "Boss",
-        rankDivision: (body.rankDivision as any) || "BRONZE",
-        rankTier: (body.rankTier as any) || "I",
-        level: body.level || 0,
-        score: body.score || 0,
-        walletBalance: body.walletBalance || 0,
-        isVerified: body.isVerified || false,
+        playerSelectedCharacter: (body.playerSelectedCharacter as any),
+        playerPaddles: body.playerPaddles as any,
+        playerSelectedPaddle: (body.playerSelectedPaddle as any),
+        rankDivision: (body.rankDivision as any),
+        rankTier: (body.rankTier as any),
+        level: body.level ,
+        score: body.score ,
+        walletBalance: body.walletBalance,
+        paddleColor: body.paddleColor,
         preferences: { create: { notifications: { create: {} } } },
       },
     });

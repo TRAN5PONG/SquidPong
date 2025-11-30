@@ -40,7 +40,7 @@ type Route = {
 
 const userRoutes: Route[] = [
 
-  { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler, schema: createProfileSchema },
+  { method: 'POST', url: '/api/user/me', handler: userController.createProfileHandler },
   { method: 'PUT', url: '/api/user/db', handler: userController.updateProfileHandlerDB, schema: updateProfileDBSchema },
   { method: 'PUT', url: '/api/user/realtime', handler: userController.updateProfileHandler },
   { method: 'PUT', url: '/api/user/avatar', handler: userController.updateProfileImageHandler, schema: updateAvatarSchema },
