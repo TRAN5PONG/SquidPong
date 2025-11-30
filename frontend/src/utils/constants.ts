@@ -17,9 +17,18 @@ export const constants = {
 
     diameter: 0.18,
   },
+  BOUNCE_GAME_BALL: {
+    position: { x: 0, y: 5, z: 0 } as Vector3,
+    radius: 0.5,
+    restitution: 0.7,
+    friction: 0.8,
+    density: 0.5,
+  },
   FLOOR: {
-    position: { x: 0, y: 0.1, z: 0 } as Vector3,
-    size: { width: 40, height: 0.1, length: 40 } as Size3D,
+    position: { x: 0, y: -10, z: 0 } as Vector3,
+    size: { width: 20, height: 0.1, length: 50 } as Size3D,
+    restitution: 0.5,
+    friction: 0.7,
   },
   PADDLE: {
     size: { width: 0.8, height: 0.8, length: 0.2 } as Size3D,
@@ -28,6 +37,16 @@ export const constants = {
       y: 2.8,
       z: 2.8,
     } as Vector3,
+  },
+  BOUNCE_GAME_PADDLE: {
+    size: { width: 1.6, height: 0.2, length: 1.4 } as Size3D,
+    position: {
+      x: -4,
+      y: 1,
+      z: 0,
+    } as Vector3,
+    restitution: 0.4,
+    friction: 0.8,
   },
   NET: {
     size: {
