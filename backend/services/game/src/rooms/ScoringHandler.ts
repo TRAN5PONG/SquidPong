@@ -228,7 +228,7 @@ export class ScoringHandler {
         data: {
           userId,
           score: won ? 10 : 5, // Award points (10 for win, 5 for loss)
-          totalMatches: 1,
+          gamesPlayed: 1,
           // 1v1 Stats
           played1v1: 1,
           won1v1: won ? 1 : 0,
@@ -267,7 +267,7 @@ export class ScoringHandler {
       );
 
       // Calculate new average game duration
-      const totalMatches = existing.totalMatches + 1;
+      const totalMatches = existing.gamesPlayed + 1;
       const totalDuration = existing.totalPlayTime + matchDuration;
       const newAverageDuration = Math.floor(totalDuration / totalMatches);
 
@@ -279,7 +279,7 @@ export class ScoringHandler {
           score: { increment: won ? 10 : 5 },
 
           // Total matches
-          totalMatches: { increment: 1 },
+          gamesPlayed: { increment: 1 },
 
           // 1v1 Stats
           played1v1: { increment: 1 },

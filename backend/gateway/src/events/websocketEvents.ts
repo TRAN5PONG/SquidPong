@@ -45,7 +45,7 @@ export async function handleWsConnect(ws: any, req: FastifyRequest)
     sockets.add(ws);
     // mark user as online in redis (set membership by userId)
     await redis.sadd('online_users', userId);
-
+    console.log("=======================================")
 
     ws.on("message", onChatNotificationMessage);
     ws.on("close", () => onClientDisconnect(ws));

@@ -536,8 +536,10 @@ const Profile = () => {
   const setUser = async (id: string) => {
     setProfileData(null);
     setTimeout(async () => {
+      console.log("fetching user=>");
       const user = await getUserById(id);
       if (user.success && user.data) {
+        setIsUserNotFound(false);
         setProfileData(user.data as UserWithRelations);
       } else {
         setIsUserNotFound(true);
@@ -817,7 +819,7 @@ const Profile = () => {
           </div>
           <div className="Friends">
             <h1 className="ProfileHeadline">
-              Friends -
+              Friends -{" "}
               <span className="ProfileHeadlineSpn">
                 {profileFriends.length}
               </span>
@@ -843,16 +845,16 @@ const Profile = () => {
 
           <div className="Friends">
             <h1 className="ProfileHeadline">
-              Recommended Players -
+              Recommended Players -{" "}
               <span className="ProfileHeadlineSpn">
-                {profileFriends.length}
+                {recommandedPlayers.length}
               </span>
             </h1>
             <div className="FriendsList">
               {recommandedPlayers.map((p) => (
                 <div
                   className="FriendItem"
-                  // style={{ backgroundImage: `url(${friend.avatar})` }}
+                  style={{ backgroundImage: `url(${p.avatar})` }}
                   key={p.id}
                   onClick={() => navigate(`/user/${p.nickname}`)}
                   title={p.nickname}

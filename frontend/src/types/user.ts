@@ -1,3 +1,4 @@
+import Avatar from "@/components/Tournament/Avatar";
 import { rank_tier, RankDivision, RANKS } from "./game/rank";
 
 export type UserStatus = "ONLINE" | "OFFLINE" | "IDLE" | "DONOTDISTURB";
@@ -130,6 +131,11 @@ export const recommandedPlayers = [
     email: "hassan.winners@gmail.com",
     rankDivision: "IMMORTAL",
     rankTier: "III",
+    avatar:
+      "https://i.pinimg.com/564x/6e/2e/91/6e2e914b49c7aa38572a8668d527b6e2.jpg",
+    banner:
+      "https://www.bodegafilms.com/wp-content/uploads/2015/11/CASANEGRAHD1.jpg",
+    playerSelectedCharacter: "Zero",
   },
   {
     id: 1,
@@ -139,6 +145,11 @@ export const recommandedPlayers = [
     email: "khalid@gmail.com",
     rankDivision: "MASTER",
     rankTier: "III",
+    avatar:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUrmBGFB6_xCbCiM1Nrdun8nIOezsdXqM4-yhlQ5doJHnyqWQljD5KW37qaGEaIw_Sb6k",
+    banner:
+      "https://i.pinimg.com/originals/1e/0c/10/1e0c10c130960c2acfddd62712a90fc8.gif",
+    playerSelectedCharacter: "Zenitsu",
   },
   {
     id: 3,
@@ -148,6 +159,10 @@ export const recommandedPlayers = [
     email: "medd@gmail.com",
     rankDivision: "ASCENDANT",
     rankTier: "III",
+    avatar:
+      "https://i.pinimg.com/280x280_RS/80/5a/94/805a9434cb210fb836581c94fd8cb3dc.jpg",
+    banner: "https://giffiles.alphacoders.com/220/220122.gif",
+    playerSelectedCharacter: "Med",
   },
   {
     id: 2,
@@ -157,6 +172,11 @@ export const recommandedPlayers = [
     email: "abdelbassat.quaoubai99@gmail.com",
     rankDivision: "PLATINUM",
     rankTier: "III",
+    avatar:
+      "https://cdn.shopify.com/s/files/1/0689/6061/6685/files/Attack_On_Titan_600x600.webp?v=1716378598",
+    banner:
+      "https://i.pinimg.com/originals/75/1e/bd/751ebdacf66989319109a326d2f7efcc.gif",
+    playerSelectedCharacter: "Xylar",
   },
   {
     id: 3,
@@ -166,5 +186,10 @@ export const recommandedPlayers = [
     email: "squidPongAi@gmail.com",
     rankDivision: "MASTER",
     rankTier: "I",
+    avatar:
+      "https://media.tenor.com/CVLHiD2orA8AAAAe/squid-game-dolls-staring-at-each-other.png",
+    banner:
+      "https://i.pinimg.com/originals/33/9f/f8/339ff86fa450d4083240c3d29189f850.gif",
+    playerSelectedCharacter: "Younajja",
   },
 ];

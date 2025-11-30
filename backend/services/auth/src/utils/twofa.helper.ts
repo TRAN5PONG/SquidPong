@@ -30,11 +30,7 @@ export async function setupAuthenticatorApp(user: any)
     const twoFAKey = otpauth.split("=")[1].split("&")[0];
     const twoFAQRCode = await QRCode.toDataURL(otpauth, {
     color: {
-<<<<<<< HEAD
-    dark: '#1a1a1aff',
-=======
     dark: '#1B1B1B',
->>>>>>> ed42b36266893f283f4d78916c776f253d93ec8a
     light: '#ffffffff'
     }
     });
@@ -82,11 +78,12 @@ export async function enableAuthenticatorCode(id: number,twoFASecret : string , 
 {
 
   if(!twoFASecret)
-    throw new Error("2FA secret not found. Please setup 2FA first.");
+    return false;
+    // throw new Error("2FA secret not found. Please setup 2FA first.");
 
   const isValid = authenticator.check(code, twoFASecret);
   if (!isValid)
-    throw new Error(TwoFA.INVALID_2FA_CODE);
+    return false;
 
   await prisma.user.update({
     where: { id },
