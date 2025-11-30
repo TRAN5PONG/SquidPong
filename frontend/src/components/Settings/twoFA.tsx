@@ -223,7 +223,7 @@ const TwoFAModal = (props: TwoFAModalProps) => {
     if (verificationCode === "") return;
     try {
       const resp = await TwoFA_enable(verificationCode);
-      if (resp.success && resp.data) props.onEnabled();
+      if (resp.success) props.onEnabled();
       else
         toasts.addToastToQueue({
           type: "error",

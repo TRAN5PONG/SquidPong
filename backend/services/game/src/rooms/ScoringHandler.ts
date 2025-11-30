@@ -1,6 +1,7 @@
 import { MatchRoom } from "./MatchRoom";
 import { ballResetMessage } from "../types/match";
 import { prisma } from "../lib/prisma";
+import { EndMatch } from "../controllers/matchController";
 
 export class ScoringHandler {
   private SERVES_PER_TURN = 2;
@@ -154,6 +155,16 @@ export class ScoringHandler {
 
       const winner = [player1, player2].find((p) => p.id === winnerId);
       const loser = [player1, player2].find((p) => p.id !== winnerId);
+
+      if (match.tournamentId && winner && loser)
+        return EndMatch(
+          match.tournamentId,
+          matchId,
+          winner.id,
+          loser.id,
+          this.room.state.scores.get(winner?.id) || 0,
+          this.room.state.scores.get(loser?.id) || 0
+        );
 
       // Update MatchPlayers
       await prisma.matchPlayer.update({

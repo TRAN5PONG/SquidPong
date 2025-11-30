@@ -29,6 +29,7 @@ import {
   getBlockedUsers,
   unblockUser,
 } from "@/api/user";
+import { TwoFA_disable } from "@/api/auth";
 
 const StyledSettings = styled("div")`
   width: 100%;
@@ -591,7 +592,7 @@ const Settings = () => {
    */
   const modName = useRouteParam("/settings/:key", "key");
   const navigate = useNavigate();
-  const { modal, toasts, user } = useAppContext();
+  const { modal, toasts, user, setUser } = useAppContext();
 
   /**
    * Effects
@@ -690,10 +691,15 @@ const Settings = () => {
   };
   const onTwoFAToggle = () => {
     if (Preferences?.twoFactorEnabled) {
-      toasts.addToastToQueue({
-        type: "info",
-        message: "Two-factor already enabled.",
-      });
+      const handleDisableTwoFA = async () => {
+        try {
+          const resp = await TwoFA_disable();
+          if (resp.success) handlePreferencesChange("twoFactorEnabled", false);
+        } catch (err) {
+          console.log("error disabling twofa!");
+        }
+      };
+      handleDisableTwoFA();
     } else {
       setShowTwoFAModal(true);
     }
@@ -834,6 +840,20 @@ const Settings = () => {
 
     setPreferences(updated);
   };
+  const handleUpdatePref = async () => {
+    if (!Preferences) return;
+    try {
+      const resp = await updateProfile(Preferences);
+
+      if (resp.data && resp.success) setUser(resp.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    console.log(Preferences)
+  },[Preferences])
 
   if (currentMod === "404") return <NotFound />;
   if (!currentMod || !user) return <LoaderSpinner />;
