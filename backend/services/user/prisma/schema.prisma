@@ -92,6 +92,14 @@ enum PlayerPaddle {
   Army
 }
 
+enum PaddleColor {
+  Red
+  Blue
+  Yellow
+  Orange
+  Purple
+}
+
 
 
 // Main Profile model
@@ -127,11 +135,11 @@ model Profile {
   preferences         ProfilePreferences?
 
   playerCharacters   Json @default("[\"Tbib\"]")
-  playerSelectedCharacter PlayerCharacter 
+  playerSelectedCharacter PlayerCharacter @default(Tbib)
 
   playerPaddles Json @default("[\"Boss\"]")
   playerSelectedPaddle    PlayerPaddle @default(Boss)
-
+  paddleColor             PaddleColor   @default(Red)
 }
 
 

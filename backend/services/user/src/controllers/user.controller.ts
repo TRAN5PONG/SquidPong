@@ -5,6 +5,13 @@ import { Profile } from "../utils/types";
 import { redis } from "../integration/redis.integration";
 import { ProfileMessages, GeneralMessages } from "../utils/responseMessages";
 import { checkSecretToken } from "../utils/utils";
+enum PaddleColor {
+  Red = "Red",
+  Blue = "Blue",
+  Yellow = "Yellow",
+  Orange = "Orange",
+  Purple = "Purple",
+}
 import {
   sendServiceRequest,
   getPromotedRank,
@@ -42,6 +49,7 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
     playerSelectedCharacter?: string;
     playerPaddles?: string[];
     playerSelectedPaddle?: string;
+    paddleColor?: PaddleColor;
     level?: number;
     score?: number;
     walletBalance?: number;
@@ -68,7 +76,7 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
         level: body.level || 0,
         score: body.score || 0,
         walletBalance: body.walletBalance || 0,
-        isVerified: body.isVerified || false,
+        paddleColor: body.paddleColor || PaddleColor.Red,
         preferences: { create: { notifications: { create: {} } } },
       },
     });

@@ -24,15 +24,30 @@ export async function seedRecommendedPlayers(): Promise<void>
         banner: p.banner,
         rankDivision: p.rankDivision,
         rankTier: p.rankTier,
+        playerSelectedCharacter: p.playerSelectedCharacter,
       };
 
-      try 
-      {
-        const user = await createAccount(payload);
-        console.log(`Seeded account: ${user.email} (id=${user.id}, username=${user.username})`);
-      } 
-      catch (err) {
-        console.log(`Failed to seed user ${p.email}:`, err);
+      let success = false;
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (!success && attempts < maxAttempts) {
+        attempts++;
+        try {
+          const user = await createAccount(payload);
+          console.log(`Seeded account: ${user.email} (id=${user.id}, username=${user.username})`);
+          success = true;
+        } catch (err) {
+          console.log(`Failed to seed user ${p.email} (attempt ${attempts}/${maxAttempts}):`, err);
+          if (attempts < maxAttempts) {
+            console.log(`Waiting 5 seconds before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+        }
+      }
+
+      if (!success) {
+        console.log(`Failed to seed user ${p.email} after ${maxAttempts} attempts`);
       }
     }
   } 
