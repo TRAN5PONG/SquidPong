@@ -11,6 +11,7 @@ import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 export class BounceGamePaddle {
   scene: Scene;
   protected mainMesh!: AbstractMesh;
+  public mesh!: TransformNode;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -28,36 +29,51 @@ export class BounceGamePaddle {
       }
 
       container.addAllToScene();
-      const group = new TransformNode("PaddleGroup", this.scene);
-
-      this.mainMesh =
-        container.meshes.find((m) => m.name.toLowerCase().includes("paddle")) ||
+      
+      this.mainMesh = 
+        container.meshes.find((m: any) => m.name.toLowerCase().includes("paddle")) || 
         container.meshes[0];
 
-      this.mainMesh = group;
+      this.mesh = this.mainMesh as any;
+      
+      container.meshes.forEach((mesh: AbstractMesh) => {
+        mesh.receiveShadows = true;
+        
+
+        if (mesh.material) {
+          const mat = mesh.material as any;
+          if (mat.disableLighting !== undefined) {
+            mat.disableLighting = false;
+          }
+        }
+      });
+      
       this.setupInitialPosition();
     } catch (err) {
       console.error("Error loading paddle model:", err);
     }
   }
-  private setupInitialPosition() {
-    if (!this.mainMesh) return;
-    this.mainMesh.scaling.set(0.15, 0.15, 0.15);
-    this.mainMesh.position.set(-4, 1, 0);
-  }
-  public updateVisual(pos: Vector3): void {
-    this.mesh.position.set(pos.x, pos.y, pos.z);
 
-    const boundaries = this.getBoundaries();
-    const pct =
-      (pos.x - boundaries.x.min) / (boundaries.x.max - boundaries.x.min);
-    const centered = pct * 2 - 1;
-    const targetRot = centered * -(Math.PI / 2);
-    this.mesh.rotation.z = targetRot;
+  private setupInitialPosition() {
+    if (!this.mesh) return;
+    this.mesh.scaling.set(0.15, 0.15, 0.15);
+    this.mesh.position.set(0, 0, 0);
+    this.mesh.rotation.set(0, 0, 0);
   }
+
+  public updateVisual(pos: Vector3): void {
+    if (!this.mesh) return;
+    this.mesh.position.set(pos.x, pos.y, pos.z);
+  }
+  
+  public setRotation(x: number, y: number, z: number): void {
+    if (!this.mesh) return;
+    // Keep the base Y rotation (Math.PI) and add the dynamic Z rotation
+    this.mesh.rotation.set(x, Math.PI, z);
+  }
+
   public updatePaddlePosition(x: number, y: number, z: number) {
     if (!this.mesh) return;
-
     this.mesh.position.set(x, y, z);
   }
 
@@ -65,6 +81,7 @@ export class BounceGamePaddle {
     if (!this.mesh) return Vector3.Zero();
     return this.mesh.position.clone();
   }
+
   getMeshRotation() {
     if (!this.mesh) return Vector3.Zero();
     return this.mesh.rotation.clone();
