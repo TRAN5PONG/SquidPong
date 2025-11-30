@@ -4,9 +4,8 @@ import { ApiResponse, sendError } from '../utils/errorHandler';
 import { Profile } from '../utils/types';
 import { getProfile } from '../utils/utils';
 import { sendDataToQueue } from '../integration/rabbitmq.integration';
-import { redis } from '../integration/redis.integration';
 import { FriendMessages , ProfileMessages } from '../utils/responseMessages';
-import { iSameUser  , mergeProfileWithRedis} from '../utils/utils';
+import { iSameUser} from '../utils/utils';
 import { removeFriendFromChat } from '../integration/chat.restapi';
 
 // Import block checking helpers
@@ -45,9 +44,7 @@ export async function getFriendsListHandler(req: FastifyRequest, res: FastifyRep
     const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
     
     console.log('profiles from DB:', profiles);
-    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
-    console.log('merged profiles:', mergedProfiles);
-    respond.data = mergedProfiles;
+    respond.data = profiles;
   } 
   catch (error) {
     return sendError(res, error);
@@ -80,10 +77,9 @@ export async function getPendingRequestsHandler(req: FastifyRequest, res: Fastif
     });
     const allIds = [...sentIds, ...receivedIds];
     const profiles = await prisma.profile.findMany({ where: { userId: { in: allIds } } });
-    // Merge DB and Redis profiles for all pending friends
-    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
-    respond.data.sent = mergedProfiles.filter((p:any) => sentIds.includes(p.userId));
-    respond.data.received = mergedProfiles.filter((p:any) => receivedIds.includes(p.userId));
+    // Removed Redis merge
+    respond.data.sent = profiles.filter((p:any) => sentIds.includes(p.userId));
+    respond.data.received = profiles.filter((p:any) => receivedIds.includes(p.userId));
   } 
   catch (error) {
     return sendError(res, error);
@@ -316,8 +312,7 @@ export async function getAllFriendsOfUserHandler(req: FastifyRequest, res: Fasti
     const friendIds = friendships.map((f:any) => f.senderId === Number(userId) ? f.receiverId : f.senderId);
     const profiles = await prisma.profile.findMany({ where: { userId: { in: friendIds } } });
     
-    const mergedProfiles = await Promise.all(profiles.map(mergeProfileWithRedis));
-    respond.data = mergedProfiles;
+    respond.data = profiles;
   } 
   catch (error) {
     return sendError(res, error);

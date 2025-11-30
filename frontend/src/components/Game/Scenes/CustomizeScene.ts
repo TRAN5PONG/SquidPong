@@ -54,7 +54,6 @@ export class CustomizeScene {
     });
     this.startRenderLoop();
   }
-
   private registerInputHandlers() {
     const mesh = this.paddle.meshGroup;
     if (!mesh) return;

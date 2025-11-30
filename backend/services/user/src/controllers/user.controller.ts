@@ -2,9 +2,15 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import prisma from "../db/database";
 import { ApiResponse, sendError } from "../utils/errorHandler";
 import { Profile } from "../utils/types";
-import { redis } from "../integration/redis.integration";
 import { ProfileMessages, GeneralMessages } from "../utils/responseMessages";
 import { checkSecretToken } from "../utils/utils";
+enum PaddleColor {
+  Red = "Red",
+  Blue = "Blue",
+  Yellow = "Yellow",
+  Orange = "Orange",
+  Purple = "Purple",
+}
 import {
   sendServiceRequest,
   getPromotedRank,
@@ -13,7 +19,6 @@ import {
 import {
   purchaseItem,
   buyVerified,
-  mergeProfileWithRedis,
   sendServiceRequestSimple,
   SelectedItemExists,
   convertParsedMultipartToJson,
@@ -23,32 +28,52 @@ import { removeFriendFromChat } from "../integration/chat.restapi";
 import { deleteAccountInChat } from "../integration/chat.restapi";
 import { deleteAccountInNotify } from "../integration/notify.restapi";
 
-export async function createProfileHandler(
-  req: FastifyRequest,
-  res: FastifyReply
-) {
+export async function createProfileHandler(req: FastifyRequest,res: FastifyReply) 
+{
   const response: ApiResponse<null> = {
     success: true,
     message: ProfileMessages.CREATE_SUCCESS,
   };
+
   const body = req.body as {
     userId: number;
     username: string;
     firstName: string;
     lastName: string;
     avatar?: string;
+    banner?: string;
+    rankDivision?: string;
+    rankTier?: string;
+    playerSelectedCharacter?: string;
+    playerPaddles?: string[];
+    playerSelectedPaddle?: string;
+    paddleColor?: PaddleColor;
+    level?: number;
+    score?: number;
+    walletBalance?: number;
+    isVerified?: boolean;
   };
 
-  body["avatar"] =
-    body["avatar"] ||
-    `${
-      process.env.BACKEND_URL || "http://localhost:4000"
-    }:4433/api/user/avatars/default.png`;
-  try {
+  body["avatar"] = body["avatar"] ||`${process.env.BACKEND_URL || "http://localhost:4000"}:4433/api/user/avatars/default.png`;
+  try 
+  {
+
     checkSecretToken(req);
+
+    console.log("body to create profile:", body);
+
     await prisma.profile.create({
       data: {
         ...body,
+        playerSelectedCharacter: (body.playerSelectedCharacter as any),
+        playerPaddles: body.playerPaddles as any,
+        playerSelectedPaddle: (body.playerSelectedPaddle as any),
+        rankDivision: (body.rankDivision as any),
+        rankTier: (body.rankTier as any),
+        level: body.level ,
+        score: body.score ,
+        walletBalance: body.walletBalance,
+        paddleColor: body.paddleColor,
         preferences: { create: { notifications: { create: {} } } },
       },
     });
@@ -71,7 +96,8 @@ export async function createProfileHandler(
 export async function updateProfileHandlerDB(
   req: FastifyRequest,
   res: FastifyReply
-) {
+) 
+{
   const respond: ApiResponse<any> = {
     success: true,
     message: ProfileMessages.UPDATE_SUCCESS,
@@ -90,8 +116,6 @@ export async function updateProfileHandlerDB(
       where: { userId },
     });
     if (!existingProfile) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
-
-    console.log("profile before update:", existingProfile);
 
     if (await isReadyExists(body.username, existingProfile.username))
       throw new Error(ProfileMessages.READY_EXISTS);
@@ -134,6 +158,9 @@ export async function updateProfileHandlerDB(
 
     body = { ...body, ...newData };
 
+    body['status'] = body.customStatus;
+
+    console.log("Final body to update:", body);
     const updatedProfile = await prisma.profile.update({
       where: { userId },
       data: {
@@ -152,7 +179,6 @@ export async function updateProfileHandlerDB(
         }),
       },
     });
-    respond.data = await mergeProfileWithRedis(updatedProfile);
 
     if (body.username)
     {
@@ -161,11 +187,7 @@ export async function updateProfileHandlerDB(
       });
     }
       
-    if (body.customStatus) {
-      await redis.update(`profile:${userId}`, "$", {
-        customStatus: body.customStatus,
-      });
-    }
+    // Removed Redis update for status
 
     const dataSend = {
       ...(body.username && { username: body.username }),
@@ -173,6 +195,7 @@ export async function updateProfileHandlerDB(
       ...(body.lastName && { lastName: body.lastName }),
       ...(body.isVerified && { isVerified: body.isVerified }),
       ...(body.customStatus && { customStatus: body.customStatus }),
+      ...(body.customStatus && { status: body.customStatus }),
     };
 
     await sendServiceRequestSimple("chat", userId, "PUT", dataSend);
@@ -185,16 +208,17 @@ export async function updateProfileHandlerDB(
       },
     });
 
-    const redisKey = `profile:${userId}`;
-    if (await redis.exists(redisKey)) {
-      await redis.update(redisKey, "$", dataSend);
-    }
+    // Removed Redis update
+
+    respond.data = updatedProfile;
+
   } 
   catch (error) {
     return sendError(res, error);
   }
   return res.send(respond);
 }
+
 
 export async function updateProfileHandler(
   req: FastifyRequest,
@@ -208,7 +232,6 @@ export async function updateProfileHandler(
   const headers = req.headers as any;
   const userId = Number(headers["x-user-id"]);
   const Token = headers["x-secret-token"];
-  const cacheKey = `profile:${userId}`;
 
   const body = req.body as {
     score?: number;
@@ -220,15 +243,24 @@ export async function updateProfileHandler(
 
   try 
   {
+    const profileExists = await prisma.profile.findUnique({ where: { userId } });
+    if (!profileExists) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
+
+
     if (Token !== process.env.SECRET_TOKEN)
       throw new Error(GeneralMessages.UNAUTHORIZED);
 
-    if (body.status !== undefined) {
-      let dataToUpdate: any = { status: body.status };
-      const redisProfile = await redis.get(cacheKey);
-      if (body.status === "OFFLINE") {
+    let dataToUpdate: any = {};
+    if (body.status !== undefined) 
+    {
+      if (body.status === "OFFLINE") 
+      {
+        dataToUpdate.status = "OFFLINE";
         dataToUpdate.lastSeen = new Date();
-        dataToUpdate = { ...dataToUpdate, ...redisProfile };
+      }
+      else
+      {
+        dataToUpdate.status = profileExists.customStatus;
       }
 
       await prisma.profile.update({
@@ -237,35 +269,18 @@ export async function updateProfileHandler(
       });
 
       await sendServiceRequestSimple("chat", userId, "PUT", {
-        status: body.status,
+        status: dataToUpdate.status,
       });
       await sendServiceRequestSimple("notify", userId, "PUT", {
-        status: body.status,
+        status: dataToUpdate.status,
       });
-      if (await redis.exists(cacheKey))
-        await redis.update(cacheKey, "$", {
-          status: body.status,
-          ...(body.status === "OFFLINE" && { lastSeen: new Date() }),
-        });
 
       return res.send(respond);
     }
 
     // Handle score/level updates
-    if (!(await redis.exists(cacheKey))) {
-      profile = await prisma.profile.findUnique({ where: { userId } });
-      if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
-
-      await redis.set(cacheKey, {
-        status: profile.status,
-        avatar: profile.avatar,
-        username: profile.username,
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-      });
-    } else {
-      profile = await redis.get(cacheKey);
-    }
+    profile = await prisma.profile.findUnique({ where: { userId } });
+    if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
 
     const new_score = profile.score + (body.score || 0);
     const { newRankTier, newRankDivision, newScore } = getPromotedRank(
@@ -278,12 +293,7 @@ export async function updateProfileHandler(
         ? profile.level + (body.score || 0) / 10
         : profile.level + (body.level || 0);
 
-    await redis.update(cacheKey, "$", {
-      score: newScore,
-      level: newLevel,
-      rankTier: newRankTier,
-      rankDivision: newRankDivision,
-    });
+    // Removed Redis update
   } catch (error) {
     return sendError(res, error);
   }
@@ -302,10 +312,7 @@ export async function getAllUserHandler(
     const profiles = await prisma.profile.findMany({
       include: { preferences: true },
     });
-    const mergedProfiles = await Promise.all(
-      profiles.map(mergeProfileWithRedis)
-    );
-    respond.data = mergedProfiles;
+    respond.data = profiles;
   } catch (error) {
     return sendError(res, error);
   }
@@ -336,7 +343,7 @@ export async function deleteProfileHandler(
       where: { userId },
       data: { isDeleted: true, username: deletedUsername },
     });
-    await redis.del(cacheKey);
+    // Removed Redis delete
 
     // Notify other services about account deletion
     await deleteAccountInChat(userId);
@@ -365,20 +372,9 @@ export async function getCurrentUserHandler(
     });
     if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
 
-    respond.data = await mergeProfileWithRedis(profile);
+    respond.data = profile;
 
-    if (!(await redis.exists(`profile:${userId}`))) {
-      await redis.set(`profile:${userId}`, {
-        status: profile.status,
-        customStatus: profile.customStatus,
-        username: profile.username,
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        avatar: profile.avatar,
-        score: profile.score,
-        level: profile.level,
-      });
-    }
+    // Removed Redis caching
   } catch (error) {
     return sendError(res, error);
   }
@@ -401,7 +397,7 @@ export async function getUserByIdHandler(
       include: { preferences: true },
     });
     if (!profile) throw new Error(ProfileMessages.FETCH_NOT_FOUND);
-    respond.data = await mergeProfileWithRedis(profile);
+    respond.data = profile;
   } catch (error) {
     return sendError(res, error);
   }
@@ -426,7 +422,7 @@ export async function getUserByUserNameHandler(
     let profile = await prisma.profile.findUnique({ where: { username } });
     if (!profile) throw new Error(GeneralMessages.NOT_FOUND);
 
-    let profileWithStatus: any = await mergeProfileWithRedis(profile);
+    let profileWithStatus: any = profile;
 
     if (userId !== profile.userId) {
       const statusFriends = await prisma.friendship.findFirst({
@@ -485,13 +481,11 @@ export async function updateProfileImageHandler(
       data: { avatar: parsed },
     });
 
-    const redisKey = `profile:${userId}`;
-    if (await redis.exists(redisKey))
-      await redis.update(redisKey, "$", { avatar: parsed });
+    // Removed Redis update
 
     await sendServiceRequestSimple("chat", userId, "PUT", { avatar: parsed });
     await sendServiceRequestSimple("notify", userId, "PUT", { avatar: parsed });
-    respond.data = await mergeProfileWithRedis(data);
+    respond.data = data;
   } 
   catch (error) {
     return sendError(res, error);
@@ -523,10 +517,7 @@ export async function searchUsersHandler(
       },
       include: { preferences: { include: { notifications: true } } },
     });
-    const mergedProfiles = await Promise.all(
-      dbProfiles.map(mergeProfileWithRedis)
-    );
-    respond.data = mergedProfiles;
+    respond.data = dbProfiles;
   } catch (error) {
     return sendError(res, error);
   }

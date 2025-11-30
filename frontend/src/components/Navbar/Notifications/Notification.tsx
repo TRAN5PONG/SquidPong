@@ -128,7 +128,6 @@ const Notification = (props: NotificationProps) => {
   >("All");
 
   useEffect(() => {
-    console.log("Notifications:", props.notifications);
     function handleClickOutside(event: MouseEvent) {
       if (
         ModalRef.current &&
@@ -180,7 +179,7 @@ const Notification = (props: NotificationProps) => {
           );
         })
       ) : (
-        <span>No notifications</span>
+        <span className="NotsEnd">No notifications</span>
       )}
       {props.notifications.length > 0 ? (
         <span className="NotsEnd">no more notifications</span>

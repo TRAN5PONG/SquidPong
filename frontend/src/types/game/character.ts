@@ -23,8 +23,8 @@ export const characters: GameCharacter[] = [
     powerShot: 85,
   },
   {
-    id: "Med",
-    name: "Med",
+    id: "Xylar",
+    name: "Xylar",
     description: "A skilled fighter with a sharp mind and quick reflexes.",
     image: "/characters/green_m1.webp",
     avatar: "/characters/green_m1_avatar.png",
@@ -45,8 +45,8 @@ export const characters: GameCharacter[] = [
     powerShot: 100,
   },
   {
-    id: "Hama9a",
-    name: "Hama9a",
+    id: "Med",
+    name: "Med",
     description: "A brave hero with a heart of gold and a spirit of adventure.",
     image: "/characters/green_f2.webp",
     avatar: "/characters/green_f2_avatar.png",
@@ -102,8 +102,8 @@ export const characters: GameCharacter[] = [
     powerShot: 95,
   },
   {
-    id: "Xylar",
-    name: "Xylar",
+    id: "Younajja",
+    name: "Younajja",
     description:
       "An eerie doll-like challenger that mimics every move you make.",
     image: "/characters/doll.png",

@@ -2,6 +2,7 @@ import app from './app'
 import dotenv from 'dotenv'
 import { initRabbitMQ } from './integration/rabbitmq.integration'
 import { validateEnvironmentVariables } from './utils/envValidator'
+import { seedRecommendedPlayers } from './utils/seedUsers'
 
 
 dotenv.config()
@@ -28,6 +29,18 @@ async function start()
 	}
 
 	await initRabbitMQ()
+
+	// Wait a bit for other services to be ready
+	await new Promise(resolve => setTimeout(resolve, 10000));
+
+	try 
+	{
+		await seedRecommendedPlayers();
+		console.log('Recommended players seeding completed.');
+	} 
+	catch (err) {
+		console.log('Recommended players seeding failed:', err);
+	}
 }
 
 

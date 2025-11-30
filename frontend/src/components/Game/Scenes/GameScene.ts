@@ -111,7 +111,7 @@ export class Game {
         this.userId === this.hostId ? 1 : -1,
       );
 
-      this.camera.attach(this.canvas);
+      // this.camera.attach(this.canvas);
 
       // Network
       if (!this.isAIMode) {
@@ -185,7 +185,7 @@ export class Game {
     }
   }
 
-  /*****DORA Adventures
+  /*****
    * Start the render/update loop.
    */
   private startRenderLoop() {

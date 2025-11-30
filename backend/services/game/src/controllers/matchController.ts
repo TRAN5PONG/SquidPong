@@ -50,32 +50,89 @@ export async function AiMatch(request: FastifyRequest, reply: FastifyReply) {
   const { mode, difficulty } = body;
   const userId = Number(request.headers["x-user-id"]);
 
-  const res = prisma.$transaction(async (tx) => {
-    // check if user exists
-    const user = await tx.user.findUnique({
-      where: { userId: userId },
+  try {
+    const res = prisma.$transaction(async (tx) => {
+      // check if user exists
+      const user = await tx.user.upsert({
+        where: { userId },
+        create: { userId },
+        update: { userId },
+      });
+      if (!user) {
+        throw new Error("Error creating user player");
+      }
+
+      // fetch ai player
+      const aiPlayer = await tx.user.upsert({
+        where: { userId: 5 },
+        create: {
+          userId: 5,
+        },
+        update: {},
+      });
+
+      if (!aiPlayer) throw new Error("Erro creating AI player");
+
+      // create match player for user
+      const userMatchPlayer = await createMatchPlayer(
+        userId,
+        user.id,
+        true,
+        false,
+        tx
+      );
+      // create match player for AI
+      const aiMatchPlayer = await createMatchPlayer(
+        5,
+        aiPlayer.id,
+        false,
+        true,
+        tx
+      );
+      // create match
+      const match = await tx.match.create({
+        data: {
+          duration: 0,
+          mode: "ONE_VS_AI",
+          status: "WAITING",
+          opponent1Id: userMatchPlayer.id,
+          opponent2Id: aiMatchPlayer.id,
+        },
+        include: {
+          opponent1: true,
+          opponent2: true,
+          matchSetting: true,
+        },
+      });
+
+      // create settings
+      await createMatchSetting(
+        match.id,
+        "ONE_VS_AI",
+        {
+          pauseTime: 60,
+          scoreLimit: 10,
+          allowPowerUps: true,
+          requiredCurrency: 0,
+          difficulty: difficulty,
+        },
+        tx
+      );
+
+      return match;
     });
-    if (!user) {
-      throw new Error("User not found");
-    }
-    // create match player for user
-    const userPlayer = await createMatchPlayer(
-      userId,
-      user.id,
-      true,
-      false,
-      tx
-    );
-    // create match player for AI
-    const aiPlayer = await createMatchPlayer(
-      0, // AI has no remote user ID
-      `ai-${Date.now()}`, // local UUID for AI
-      false,
-      true,
-      tx
-    );
-    // create match
-  });
+
+    reply.send({
+      data: res,
+      succuss: true,
+      message: "match created!",
+    });
+  } catch (err: any) {
+    reply.send({
+      succuss: false,
+      message: "failed to create match",
+    });
+  }
 }
 // === Core ===
 export async function MatchFromInvitation(invitation: any): Promise<Match> {
@@ -474,26 +531,36 @@ export async function startGame(matchId: string, playerId: string) {
     }
 
     console.log("player starting =====", player);
-    if (!player.isHost) {
+    if (!player.isHost && !match.tournamentId) {
       throw new Error("Only the host can start the match");
     }
 
-    if (!player.isReady) {
+    if (!player.isReady && !match.tournamentId) {
       throw new Error("You must be ready to start the match");
     }
 
     const opponent =
       match.opponent1.id === player.id ? match.opponent2 : match.opponent1;
 
-    if (opponent && !opponent.isReady) {
+    if (opponent && !opponent.isReady && !match.tournamentId) {
       throw new Error("Opponent is not ready");
     }
 
     const updatedMatch = await prisma.match.update({
       where: { id: matchId },
-      data: { status: "IN_PROGRESS" },
+      data: { status: "IN_PROGRESS", roomId: match.id },
       include: { opponent1: true, opponent2: true, matchSetting: true },
     });
+
+    if (match.tournamentId && opponent) {
+      const room = await matchMaker.createRoom("ping-pong-game", {
+        matchId: match.id,
+        roomId: match.id,
+        players: [player.userId, opponent.userId],
+        spectator: [],
+      });
+      if (!room) throw new Error("cannot create tournament match room!");
+    }
 
     if (opponent?.gmUserId) {
       await sendDataToQueue(
@@ -515,19 +582,15 @@ export async function startGame(matchId: string, playerId: string) {
     throw error;
   }
 }
-export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
+export async function EndMatch(
+  tournamentId: string,
+  matchId: string,
+  winnerId: string,
+  loserId: string,
+  winnerScore: number,
+  loserScore: number
+) {
   try {
-    const { tournamentId, matchId } = request.params as {
-      tournamentId: string;
-      matchId: string;
-    };
-    const { winnerId, loserId, winnerScore, loserScore } = request.body as {
-      winnerId: string;
-      loserId: string;
-      winnerScore: number;
-      loserScore: number;
-    };
-
     const match = await prisma.match.findUnique({
       where: { id: matchId },
       include: {
@@ -537,9 +600,7 @@ export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
     });
 
     if (!match) {
-      return reply
-        .status(404)
-        .send({ error: "Match not found", success: false });
+      throw ("match not found")
     }
 
     const player1 = match.opponent1;
@@ -559,9 +620,7 @@ export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
         : null;
 
     if (!winner || !loser) {
-      return reply
-        .status(400)
-        .send({ error: "Invalid winner or loser ID", success: false });
+      throw ("invalid players")
     }
 
     await prisma.$transaction(async (tx) => {
@@ -607,11 +666,7 @@ export async function EndMatch(request: FastifyRequest, reply: FastifyReply) {
         throw new Error("Failed to report match result to tournament service");
     });
 
-    return reply
-      .status(200)
-      .send({ success: true, message: "Match ended successfully" });
   } catch (error) {
     console.log("========", error);
-    reply.status(500).send({ error: "Failed to end match", success: false });
   }
 }

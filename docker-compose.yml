@@ -76,6 +76,13 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      user:
+        condition: service_started
+      chat:
+        condition: service_started
+      notify:
+        condition: service_started
+      
     command: sh -c "npx prisma db push  && npx prisma studio  & npm run dev"
     env_file:
       - ./backend/services/auth/.env

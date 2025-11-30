@@ -71,6 +71,30 @@ export const createProfileSchema: FastifySchema = {
         type: "string",
         description: "Avatar image filename (optional)",
       },
+      banner: {
+        type: "string",
+        description: "Banner image filename (optional)",
+      },
+      rankDivision: {
+        type: "string",
+        enum: ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "ASCENDANT", "IMMORTAL", "MASTER"],
+        description: "User's rank division (optional)",
+      },
+      rankTier: {
+        type: "string",
+        enum: ["I", "II", "III"],
+        description: "User's rank tier (optional)",
+      },
+      playerSelectedCharacter: {
+        type: "string",
+        enum: ["Tbib", "Med", "Ryu", "Hama9a", "Mnachit", "Mira", "Zero", "Zenitsu", "Xylar"],
+        description: "User's selected player character (optional)",
+      },
+      paddleColor: {
+        type: "string",
+        enum: ["Red", "Blue", "Yellow", "Orange", "Purple"],
+        description: "Paddle color (optional)",
+      },
     },
     required: ["userId", "username", "firstName", "lastName"],
     additionalProperties: false,
@@ -309,6 +333,11 @@ export const updateProfileDBSchema: FastifySchema = {
         type: "string",
         enum: ["Boss", "Survivor", "Guard", "Army"],
         description: "Selected player paddle",
+      },
+      paddleColor: {
+        type: "string",
+        enum: ["Red", "Blue", "Yellow", "Orange", "Purple"],
+        description: "Paddle color",
       },
       isVerified: {
         type: "boolean",

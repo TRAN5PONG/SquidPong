@@ -25,6 +25,7 @@ app.register(async () => {groupRoutes.forEach(route => app.route(route))});
 app.register(async () => {messageRoutes.forEach(route => app.route(route))});
 
 
+
 app.get('/api/chat/health', async (req:any, res:any) => {
   return { status: 'auth service is healthy' };
 })

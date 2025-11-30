@@ -1,5 +1,11 @@
 import Zeroact, { useEffect } from "@/lib/Zeroact";
-import { User, UserStatus } from "@/types/user";
+import {
+  defaultStats,
+  PlayerStats,
+  recommandedPlayers,
+  User,
+  UserStatus,
+} from "@/types/user";
 import { styled } from "@/lib/Zerostyle";
 import {
   AddFriendIcon,
@@ -29,12 +35,14 @@ import {
   blockUser,
   getUserById,
   getUserFriends,
+  getUserStats,
   MiniUser,
   removeFriend,
   sendFriendRequest,
 } from "@/api/user";
 import Skeleton from "../Skeleton/Skeleton";
 import { sendMessage } from "@/api/chat";
+import { timeAgo } from "@/utils/time";
 
 const StyledProfileModal = styled("div")`
   height: 100%;
@@ -419,7 +427,8 @@ interface UserWithRelations extends User {
 const Profile = () => {
   const [profileData, setProfileData] =
     Zeroact.useState<UserWithRelations | null>(null);
-  const [profileStats, setProfileStats] = Zeroact.useState<any>(null);
+  const [profileStats, setProfileStats] =
+    Zeroact.useState<PlayerStats>(defaultStats);
   const [profileFriends, setProfileFriends] = Zeroact.useState<MiniUser[]>([]);
   const [isUserNotFound, setIsUserNotFound] = Zeroact.useState(false);
   const [showConfirmationModal, setShowConfirmationModal] =
@@ -527,8 +536,10 @@ const Profile = () => {
   const setUser = async (id: string) => {
     setProfileData(null);
     setTimeout(async () => {
+      console.log("fetching user=>");
       const user = await getUserById(id);
       if (user.success && user.data) {
+        setIsUserNotFound(false);
         setProfileData(user.data as UserWithRelations);
       } else {
         setIsUserNotFound(true);
@@ -536,17 +547,14 @@ const Profile = () => {
     }, 1000);
   };
   const getStats = async (id: string) => {
-    const fakeUserStats = {
-      gamesPlayed: 120,
-      gamesWon: 75,
-      gamesLost: 45,
-      winStreak: 5,
-      loseStreak: 0,
-      rank: 250,
-      tournamentsPlayed: 20,
-      tournamentsWon: 12,
-    };
-    setProfileStats(fakeUserStats);
+    try {
+      const resp = await getUserStats(id);
+      if (resp.success && resp.data) {
+        setProfileStats(resp.data);
+      }
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+    }
   };
   const getFriends = async (userId: string) => {
     const resp = await getUserFriends(userId);
@@ -557,15 +565,19 @@ const Profile = () => {
   Zeroact.useEffect(() => {
     if (userId != null) {
       setUser(userId);
-      getStats(userId);
       getFriends(userId);
     }
   }, [userId]);
+  Zeroact.useEffect(() => {
+    if (profileData) {
+      getStats(profileData.userId.toString());
+    }
+  }, [profileData]);
 
   if (isUserNotFound) {
     return <NotFound />;
   }
-  if (!profileData)
+  if (!profileData || !profileStats)
     return (
       <ProfileSkeleton>
         <Skeleton
@@ -744,8 +756,8 @@ const Profile = () => {
               <h2>Tournament</h2>
               <WinLossDonut
                 winRate={
-                  (profileStats.tournamentsWon /
-                    (profileStats.tournamentsPlayed || 1)) *
+                  (profileStats.wonTournament /
+                    (profileStats.playedTournament || 1)) *
                   100
                 }
               />
@@ -756,7 +768,13 @@ const Profile = () => {
 
             <div className="MainStatsEl BorderBottomEffect">
               <h2>vs AI</h2>
-              <WinLossDonut winRate={50} />
+              <WinLossDonut
+                winRate={
+                  (profileStats.easyWins +
+                    profileStats.mediumWins +
+                    profileStats.hardWins / profileStats.playedVsAI || 0) * 100
+                }
+              />
               <div className="MainStatsElDesc">
                 <span>win rate</span>
               </div>
@@ -778,9 +796,12 @@ const Profile = () => {
 
             <div className="BioItem">
               <SeenIcon fill="rgba(255,255,255,0.3)" size={25} />
-              <span>Last seen : 3H ago</span>
+              <span>
+                {profileData.status === "OFFLINE"
+                  ? `last seen: ${timeAgo(profileData.lastSeen)}`
+                  : profileData.status}
+              </span>
             </div>
-
             <div className="BioItem">
               <DateIcon fill="rgba(255,255,255,0.3)" size={25} />
               <span>
@@ -819,6 +840,26 @@ const Profile = () => {
               ) : (
                 <span className="NoFriendsText">No friends to show</span>
               )}
+            </div>
+          </div>
+
+          <div className="Friends">
+            <h1 className="ProfileHeadline">
+              Recommended Players -{" "}
+              <span className="ProfileHeadlineSpn">
+                {recommandedPlayers.length}
+              </span>
+            </h1>
+            <div className="FriendsList">
+              {recommandedPlayers.map((p) => (
+                <div
+                  className="FriendItem"
+                  style={{ backgroundImage: `url(${p.avatar})` }}
+                  key={p.id}
+                  onClick={() => navigate(`/user/${p.nickname}`)}
+                  title={p.nickname}
+                ></div>
+              ))}
             </div>
           </div>
         </div>
