@@ -60,7 +60,6 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
   try 
   {
 
-
     checkSecretToken(req);
 
     console.log("body to create profile:", body);
@@ -68,15 +67,15 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
     await prisma.profile.create({
       data: {
         ...body,
-        playerSelectedCharacter: (body.playerSelectedCharacter as any) || "Tbib",
-        playerPaddles: body.playerPaddles as any || ["Boss"],
-        playerSelectedPaddle: (body.playerSelectedPaddle as any) || "Boss",
-        rankDivision: (body.rankDivision as any) || "BRONZE",
-        rankTier: (body.rankTier as any) || "I",
-        level: body.level || 0,
-        score: body.score || 0,
-        walletBalance: body.walletBalance || 0,
-        paddleColor: body.paddleColor || PaddleColor.Red,
+        playerSelectedCharacter: (body.playerSelectedCharacter as any),
+        playerPaddles: body.playerPaddles as any,
+        playerSelectedPaddle: (body.playerSelectedPaddle as any),
+        rankDivision: (body.rankDivision as any),
+        rankTier: (body.rankTier as any),
+        level: body.level ,
+        score: body.score ,
+        walletBalance: body.walletBalance,
+        paddleColor: body.paddleColor,
         preferences: { create: { notifications: { create: {} } } },
       },
     });
