@@ -115,6 +115,7 @@ const GameHistoryItem = (props: GameHistoryItemProps) => {
       ? props.match.opponent1
       : props.match.opponent2;
   const characterImg = characters.find((c) => c.id === user.characterId)?.image;
+  const rankChange = user.rankChange || 0;
 
   return (
     <StyledGameHistoryItem
@@ -124,7 +125,7 @@ const GameHistoryItem = (props: GameHistoryItemProps) => {
       <div className="player-char"></div>
       <div className="Rank">
         <img src="/badges/Radiant_Rank.png" />
-        <span>+30</span>
+        <span>{rankChange > 0 ? `+${rankChange}` : rankChange}</span>
       </div>
 
       <div className="game-mode">

@@ -199,10 +199,10 @@ export class ScoringHandler {
       const updates: Promise<any>[] = [];
 
       if (winner?.userId) {
-        updates.push(this.updateUserStats(winner.userId, true, matchDuration));
+        updates.push(this.updateUserStats(winner.userId, true, matchDuration, match.mode));
       }
       if (loser?.userId) {
-        updates.push(this.updateUserStats(loser.userId, false, matchDuration));
+        updates.push(this.updateUserStats(loser.userId, false, matchDuration, match.mode));
       }
 
       await Promise.all(updates);
@@ -216,7 +216,8 @@ export class ScoringHandler {
   private async updateUserStats(
     userId: string,
     won: boolean,
-    matchDuration: number
+    matchDuration: number,
+    gameMode: string
   ): Promise<void> {
     const existing = await prisma.userStats.findUnique({
       where: { userId },
@@ -224,19 +225,22 @@ export class ScoringHandler {
 
     if (!existing) {
       // Create new stats entry with all fields
+      const isTournament = gameMode === "TOURNAMENT";
+      const is1v1 = gameMode === "ONE_VS_ONE";
+      
       await prisma.userStats.create({
         data: {
           userId,
           score: won ? 10 : 5, // Award points (10 for win, 5 for loss)
           gamesPlayed: 1,
           // 1v1 Stats
-          played1v1: 1,
-          won1v1: won ? 1 : 0,
-          lost1v1: won ? 0 : 1,
-          // Tournament Stats (not applicable for 1v1)
-          playedTournament: 0,
-          wonTournament: 0,
-          lostTournament: 0,
+          played1v1: is1v1 ? 1 : 0,
+          won1v1: is1v1 && won ? 1 : 0,
+          lost1v1: is1v1 && !won ? 1 : 0,
+          // Tournament Stats
+          playedTournament: isTournament ? 1 : 0,
+          wonTournament: isTournament && won ? 1 : 0,
+          lostTournament: isTournament && !won ? 1 : 0,
           // vs AI Stats (not applicable for 1v1)
           playedVsAI: 0,
           easyPlayed: 0,
@@ -271,6 +275,10 @@ export class ScoringHandler {
       const totalDuration = existing.totalPlayTime + matchDuration;
       const newAverageDuration = Math.floor(totalDuration / totalMatches);
 
+      // Determine game mode
+      const isTournament = gameMode === "TOURNAMENT";
+      const is1v1 = gameMode === "ONE_VS_ONE";
+
       // Update existing stats
       await prisma.userStats.update({
         where: { userId },
@@ -282,9 +290,14 @@ export class ScoringHandler {
           gamesPlayed: { increment: 1 },
 
           // 1v1 Stats
-          played1v1: { increment: 1 },
-          won1v1: won ? { increment: 1 } : undefined,
-          lost1v1: !won ? { increment: 1 } : undefined,
+          played1v1: is1v1 ? { increment: 1 } : undefined,
+          won1v1: is1v1 && won ? { increment: 1 } : undefined,
+          lost1v1: is1v1 && !won ? { increment: 1 } : undefined,
+
+          // Tournament Stats
+          playedTournament: isTournament ? { increment: 1 } : undefined,
+          wonTournament: isTournament && won ? { increment: 1 } : undefined,
+          lostTournament: isTournament && !won ? { increment: 1 } : undefined,
 
           // Streak Stats
           winStreak: newWinStreak,
