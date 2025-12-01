@@ -92,16 +92,20 @@ export async function getPlayerLastMatches(
 
       const isWinner = playerData?.isWinner || false;
       const opponentUserId = opponentData?.userId || null;
+      const opponentUsername = opponentData?.username || "Unknown";
       const playerScore = playerData?.finalScore || 0;
       const opponentScore = opponentData?.finalScore || 0;
+      const playerRankChange = playerData?.rankChange || 0;
 
       return {
         matchId: match.id,
         matchType: match.mode === "ONE_VS_ONE" ? "1v1" : "tournament",
         result: isWinner ? "win" : "loss",
         vsPlayerId: opponentUserId,
+        vsPlayerUsername: opponentUsername,
         playerScore: playerScore,
         opponentScore: opponentScore,
+        rankChange: playerRankChange,
         createdAt: match.createdAt,
       };
     });
