@@ -49,8 +49,8 @@ set_urls_in_file() {
  
   # Replace VITE_API_BASE_URL if it exists
   if grep -q -E '^\s*VITE_API_BASE_URL\s*=' "$file"; then
-    sed -i "s|^\s*VITE_API_BASE_URL\s*=.*|VITE_API_BASE_URL=https://${IP}:4433/api|" "$file"
-    sed -i "s|^\s*VITE_IP\s*=.*|VITE_IP=wss://${IP}:4433/events|" "$file"
+    sed -i "s|^\s*VITE_API_BASE_URL\s*=.*|VITE_API_BASE_URL=https://${IP}:443/api|" "$file"
+    sed -i "s|^\s*VITE_IP\s*=.*|VITE_IP=wss://${IP}:443/events|" "$file"
   fi
 
   # Replace BACKEND_URL if it exists

@@ -82,7 +82,7 @@ export class SpectateScene {
 
       // network
       this.net = new Network(
-        "wss://10.13.3.3:4433/matches",
+        "wss://10.13.3.3:443/matches",
         this.match,
         "spectate",
       );

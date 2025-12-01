@@ -737,7 +737,7 @@ const Tournament = () => {
     try {
       alert(matchId);
       const resp = await fetch(
-        `https://10.13.3.5:4433/api/game/tournament/${tournamentId}/match/${matchId}/end`,
+        `https://10.13.3.5:443/api/game/tournament/${tournamentId}/match/${matchId}/end`,
         {
           method: "POST",
           headers: {
