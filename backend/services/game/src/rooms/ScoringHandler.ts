@@ -13,15 +13,11 @@ export class ScoringHandler {
   incrementScore(playerId: string) {
     const current = this.room.state.scores.get(playerId) || 0;
 
-    console.log(
-      `➕ Incrementing score for player ${playerId}. Current score: ${current}`
-    );
 
     this.room.state.scores.set(playerId, current + 1);
 
-    // const totalPoints = this.room.state.totalPointsScored;
+    const totalPoints = this.room.state.totalPointsScored;
 
-    const totalPoints = 1;
 
     console.log(`🏆 Total points to win: ${totalPoints}`);
 
