@@ -14,6 +14,7 @@ import { MatchPhase, MatchState } from "./network/GameState";
 import { Network } from "./network/network";
 import { Game } from "./Scenes/GameScene";
 import { db } from "@/db";
+import { useNavigate } from "@/contexts/RouterProvider";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -86,6 +87,24 @@ const StyledGame = styled("div")`
         }
       }
     }
+    .ReadyBtn {
+      width: 120px;
+      height: 40px;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%,-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      border-radius: 5px;
+      border: 1px solid rgba(255,255,255, 0.1);
+      background-color: var(--main_color2);
+      font-size: 1.2rem;
+      font-family: var(--squid_font);
+      color : white;
+    }
   }
 
   .game-canvas {
@@ -153,6 +172,7 @@ const GameContiner = () => {
     netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
   }, [gameRef.current]);
 
+  const navigate = useNavigate();
 
   const onPause = () => {
     if (!netRef.current) return;
@@ -165,7 +185,7 @@ const GameContiner = () => {
   };
   const onReady = () => {
     if (!netRef.current) return;
-    
+
     gameRef.current?.arena.stopTableEdgesPulse();
     gameRef.current?.camera.setupPosition();
     netRef.current.sendMessage("player:ready");
@@ -191,34 +211,24 @@ const GameContiner = () => {
       <ScoreBoard
         net={netRef.current}
         match={match}
-        startCinematicCamera={() => { }}
-        resetCamera={() => { }}
+        startCinematicCamera={() => {}}
+        resetCamera={() => {}}
       />
-      <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
-        <button onClick={onReady}>Ready</button>
-        <button onClick={onReset}>Reset</button>
-      </div>
-      <h1
-        style={{
-          position: "absolute",
-          top: "160px",
-          left: 60,
-          zIndex: 10,
-          color: "white",
-        }}
-      >
-        GAME STATUS :{matchPhase}
-      </h1>
       <div className="GameSettings">
         {matchPhase === "playing" ||
-          matchPhase === "paused" ||
-          matchPhase === "waiting" ? (
+        matchPhase === "paused" ||
+        matchPhase === "waiting" ? (
           <button className="GiveUpButton BtnSecondary" onClick={onGiveUp}>
             <GiveUpIcon size={20} fill="var(--main_color)" />
             Give up
           </button>
         ) : (
-          <button className="GiveUpButton BtnSecondary">Back to lobby</button>
+          <button
+            className="GiveUpButton BtnSecondary"
+            onClick={() => navigate("/lobby")}
+          >
+            Back to lobby
+          </button>
         )}
 
         <button className="PauseButton" onClick={onPause} title="Pause">
@@ -232,6 +242,12 @@ const GameContiner = () => {
             </div>
           ))}
         </div>
+
+        {matchPhase === "waiting" && (
+          <button className="ReadyBtn" onClick={onReady}>
+            Ready
+          </button>
+        )}
       </div>
       <canvas ref={canvasRef} className="game-canvas"></canvas>;
     </StyledGame>
