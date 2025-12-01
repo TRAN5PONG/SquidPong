@@ -103,7 +103,7 @@ export async function convertParsedMultipartToJson(req: FastifyRequest): Promise
       const buffer = await field.toBuffer();
       fs.writeFileSync(filePath, buffer);
 
-      file = `${process.env.BACKEND_URL || 'http://localhost:4000'}:4433/api/group/avatars/${randomName}`;
+      file = `${process.env.BACKEND_URL || 'http://localhost:4000'}:443/api/group/avatars/${randomName}`;
     } 
   }
 

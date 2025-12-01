@@ -54,7 +54,7 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
     isVerified?: boolean;
   };
 
-  body["avatar"] = body["avatar"] ||`${process.env.BACKEND_URL || "http://localhost:4000"}:4433/api/user/avatars/default.png`;
+  body["avatar"] = body["avatar"] ||`${process.env.BACKEND_URL || "http://localhost:4000"}:443/api/user/avatars/default.png`;
   try 
   {
 
