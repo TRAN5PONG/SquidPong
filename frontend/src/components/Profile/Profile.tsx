@@ -1,4 +1,4 @@
-import Zeroact, { useEffect } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import {
   defaultStats,
   PlayerStats,
@@ -740,13 +740,13 @@ const Profile = () => {
           <div className="MainStats">
             <div className="MainStatsEl BorderBottomEffect">
               <h2>1 vs 1</h2>
-              <WinLossDonut
-                winRate={
-                  (profileStats.gamesWon / (profileStats.gamesPlayed || 1)) *
-                  100
-                }
-              />
-
+              {profileStats && (
+                <WinLossDonut
+                  winRate={
+                    (profileStats.gamesWon / profileStats.gamesPlayed) * 100
+                  }
+                />
+              )}
               <div className="MainStatsElDesc">
                 <span>win rate</span>
               </div>
@@ -756,8 +756,7 @@ const Profile = () => {
               <h2>Tournament</h2>
               <WinLossDonut
                 winRate={
-                  (profileStats.wonTournament /
-                    (profileStats.playedTournament || 1)) *
+                  (profileStats.wonTournament / profileStats.playedTournament) *
                   100
                 }
               />
@@ -903,8 +902,16 @@ const StyledDonutChart = styled("div")`
   }
 `;
 
-export function WinLossDonut({ winRate }: { winRate: number }) {
-  return <StyledDonutChart winRate={winRate} />;
+export function WinLossDonut(props: { winRate: number }) {
+  console.log(props.winRate);
+  const [winRT, setWinRate] = useState(props.winRate || 0);
+  useEffect(() => {
+    if (props.winRate) {
+      console.log(winRT);
+      setWinRate(winRT);
+    }
+  }, [props]);
+  return <StyledDonutChart winRate={winRT} />;
 }
 
 const ProfileSkeleton = styled("div")`
