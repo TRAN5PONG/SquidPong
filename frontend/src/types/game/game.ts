@@ -116,16 +116,5 @@ export const GamePowerUps: {
     description:
       "Freeze the ball to decrease its speed and make it easier to return.",
   },
-  {
-    type: "shield",
-    image: "/assets/powerUps/shield.png",
-    description:
-      "Activate a shield that protects your paddle from one opponent's power-up.",
-  },
-  {
-    type: "Confusion",
-    image: "/assets/powerUps/confusion.png",
-    description:
-      "Confuse your opponent by reversing their paddle controls for a short duration.",
-  },
+
 ];
