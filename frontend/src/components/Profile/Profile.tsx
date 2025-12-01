@@ -824,7 +824,9 @@ const Profile = () => {
               {profileStats && (
                 <WinLossDonut
                   winRate={
-                    (profileStats.gamesWon / profileStats.gamesPlayed) * 100
+                    profileStats.played1v1 > 0
+                      ? (profileStats.won1v1 / profileStats.played1v1) * 100
+                      : 0
                   }
                 />
               )}
@@ -837,8 +839,9 @@ const Profile = () => {
               <h2>Tournament</h2>
               <WinLossDonut
                 winRate={
-                  (profileStats.wonTournament / profileStats.playedTournament) *
-                  100
+                  profileStats.playedTournament > 0
+                    ? (profileStats.wonTournament / profileStats.playedTournament) * 100
+                    : 0
                 }
               />
               <div className="MainStatsElDesc">
@@ -850,11 +853,13 @@ const Profile = () => {
               <h2>vs AI</h2>
               <WinLossDonut
                 winRate={
-                  ((profileStats.easyWins +
-                    profileStats.mediumWins +
-                    profileStats.hardWins) /
-                    (profileStats.playedVsAI || 1)) *
-                  100
+                  profileStats.playedVsAI > 0
+                    ? ((profileStats.easyWins +
+                        profileStats.mediumWins +
+                        profileStats.hardWins) /
+                        profileStats.playedVsAI) *
+                      100
+                    : 0
                 }
               />
               <div className="MainStatsElDesc">
