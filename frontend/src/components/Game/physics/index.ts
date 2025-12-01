@@ -74,13 +74,13 @@ export class Physics {
     this.opponentPaddle = new Paddle(this.world);
   }
 
-  updatePaddle(currPos: Vector3) {
-    this.paddle.body.setNextKinematicTranslation({
-      x: currPos.x,
-      y: currPos.y,
-      z: currPos.z,
-    });
-  }
+  // updatePaddle(currPos: Vector3) {
+  //   this.paddle.body.setNextKinematicTranslation({
+  //     x: currPos.x,
+  //     y: currPos.y,
+  //     z: currPos.z,
+  //   });
+  // }
   queueBallImpulse(impulse: Vector3) {
     this.Impulse = impulse;
   }
@@ -163,20 +163,20 @@ export class Physics {
     }
   }
 
-  updatePaddleRotationZ(angleDeg: number) {
-    // Convert degrees → radians
-    const angleRad = (angleDeg * Math.PI) / 180;
-
-    // Rotation only around Z
-    const quat = {
-      x: 0,
-      y: 0,
-      z: Math.sin(angleRad / 2),
-      w: Math.cos(angleRad / 2),
-    };
-
-    this.paddle.body.setNextKinematicRotation(quat);
-  }
+  // updatePaddleRotationZ(angleDeg: number) {
+  //   // Convert degrees → radians
+  //   const angleRad = (angleDeg * Math.PI) / 180;
+  //
+  //   // Rotation only around Z
+  //   const quat = {
+  //     x: 0,
+  //     y: 0,
+  //     z: Math.sin(angleRad / 2),
+  //     w: Math.cos(angleRad / 2),
+  //   };
+  //
+  //   this.paddle.body.setNextKinematicRotation(quat);
+  // }
 
   // ================= Magnus Effect =================
   private applyMagnusEffect(): void {

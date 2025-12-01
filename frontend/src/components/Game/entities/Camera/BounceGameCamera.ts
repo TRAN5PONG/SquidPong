@@ -1,23 +1,22 @@
 import { Scene, Vector3 } from "@babylonjs/core";
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 
 export class BounceGameCamera {
-  camera: ArcRotateCamera;
+  camera: UniversalCamera;
   scene: Scene;
 
   constructor(scene: Scene) {
 	this.scene = scene;
 
-	this.camera = new ArcRotateCamera(
+	this.camera = new UniversalCamera(
       "camera",
-      -Math.PI / 2,
-      Math.PI / 2.5,
-      16,
-      Vector3.Zero(),
+      new Vector3(0, 5, -12), 
       scene
     );
 
-	// fov to 50rad
-    this.camera.fov = 0.5; 
+    this.camera.setTarget(Vector3.Zero());
+
+    this.camera.fov = (50 * Math.PI) / 180;
+    
   }
 }

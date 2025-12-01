@@ -86,7 +86,7 @@ export async function createInvitation(
         status: "EXPIRED",
       },
     });
-
+    
     // validate user's create invitation limit
     const userInvitationsCount = await prisma.invitation.count({
       where: {

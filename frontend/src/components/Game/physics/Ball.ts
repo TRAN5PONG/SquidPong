@@ -9,12 +9,18 @@ export class Ball {
   public body: RAPIER.RigidBody;
   public collider: RAPIER.Collider;
 
-  constructor(world: RAPIER.World) {
+  constructor(
+    world: RAPIER.World,
+    mode: "BounceGame" | "PongGame" = "PongGame",
+  ) {
+    const ballConstants =
+      mode === "PongGame" ? constants.BALL : constants.BOUNCE_GAME_BALL;
+
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(
-        constants.BALL.position.x,
-        constants.BALL.position.y,
-        constants.BALL.position.z,
+        ballConstants.position.x,
+        ballConstants.position.y,
+        ballConstants.position.z,
       )
       .setLinearDamping(0.1)
       .setAngularDamping(0.1)
@@ -24,10 +30,25 @@ export class Ball {
     this.body = world.createRigidBody(bodyDesc);
 
     this.freeze();
-    const colliderDesc = RAPIER.ColliderDesc.ball(constants.BALL.radius)
-      .setRestitution(0.8)
-      .setFriction(0)
-      .setDensity(0.8)
+    
+    let restitution: number;
+    let friction: number;
+    let density: number;
+    
+    if (mode === "BounceGame") {
+      restitution = (ballConstants as any).restitution;
+      friction = (ballConstants as any).friction;
+      density = (ballConstants as any).density
+    } else {
+      restitution = 0.8;
+      friction = 0;
+      density = 0.8;
+    }
+    
+    const colliderDesc = RAPIER.ColliderDesc.ball(ballConstants.radius)
+      .setRestitution(restitution)
+      .setFriction(friction)
+      .setDensity(density)
       .setSensor(false);
     this.collider = world.createCollider(colliderDesc, this.body);
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
@@ -81,27 +102,21 @@ export class Ball {
     }
   }
   public freeze(): void {
-    // stop movement
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
-    // disable gravity
     this.body.setGravityScale(0, true);
 
-    // lock movement & rotation
     this.body.lockTranslations(true, true);
     this.body.lockRotations(true, true);
   }
 
   public unfreeze(): void {
-    // unlock movement
     this.body.lockTranslations(false, true);
     this.body.lockRotations(false, true);
 
-    // restore gravity
     this.body.setGravityScale(1, true);
 
-    // ensure no weird leftover velocity
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
   }

@@ -6,32 +6,43 @@ export class Paddle {
   public body: RAPIER.RigidBody;
   public collider: RAPIER.Collider;
 
-  // TEST:
   private target = new RAPIER.Vector3(0, 0, 0);
   private prevPos = new RAPIER.Vector3(0, 0, 0);
   private currPos = new RAPIER.Vector3(0, 0, 0);
 
-  constructor(world: RAPIER.World) {
+  constructor(
+    world: RAPIER.World,
+    mode: "BounceGame" | "PongGame" = "PongGame",
+  ) {
+    const paddleConstants =
+      mode === "PongGame" ? constants.PADDLE : constants.BOUNCE_GAME_PADDLE;
+
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(
-        constants.PADDLE.position.x,
-        constants.PADDLE.position.y,
-        constants.PADDLE.position.z,
+        paddleConstants.position.x,
+        paddleConstants.position.y,
+        paddleConstants.position.z,
       )
       .setCcdEnabled(true)
-      .lockRotations()
-      .setLinearDamping(4);
+      .setLinearDamping(mode === "BounceGame" ? 2 : 4);
+    
+      bodyDesc.lockRotations();
 
     this.body = world.createRigidBody(bodyDesc);
 
+    const restitution = mode === "BounceGame" ? (paddleConstants as any).restitution || 0.4 : 0;
+    const friction = mode === "BounceGame" ? (paddleConstants as any).friction || 0.8 : 0;
+    const isSensor = mode === "PongGame";
+
     const colliderDesc = RAPIER.ColliderDesc.cuboid(
-      constants.PADDLE.size.width / 2,
-      constants.PADDLE.size.height / 2,
-      constants.PADDLE.size.length / 2,
+      paddleConstants.size.width / 2,
+      paddleConstants.size.height / 2,
+      paddleConstants.size.length / 2,
     )
       .setDensity(4)
-      .setFriction(0)
-      .setSensor(true); // Set as sensor to avoid physical collisions
+      .setRestitution(restitution)
+      .setFriction(friction)
+      .setSensor(isSensor);
 
     this.collider = world.createCollider(colliderDesc, this.body);
     this.collider.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
@@ -40,6 +51,7 @@ export class Paddle {
   getVelocity(): RAPIER.Vector3 {
     return this.body.linvel();
   }
+
   getBody(): RAPIER.RigidBody {
     return this.body;
   }
@@ -58,6 +70,17 @@ export class Paddle {
     this.target.z = z;
   }
 
+  setRotationZ(angleRad: number) {
+    // Create quaternion from Z-axis rotation
+    const quat = new RAPIER.Quaternion(0, 0, 0, 1);
+    quat.x = 0;
+    quat.y = 0;
+    quat.z = Math.sin(angleRad / 2);
+    quat.w = Math.cos(angleRad / 2);
+    
+    this.body.setRotation(quat, true);
+  }
+
   update() {
     this.prevPos = this.currPos;
     this.currPos = this.body.translation();
@@ -68,7 +91,7 @@ export class Paddle {
       y: this.target.y - curr.y,
       z: this.target.z - curr.z,
     };
-    const SMOOTH = 40; // adjust for responsiveness
+    const SMOOTH = 40; 
     this.body.setLinvel(
       { x: diff.x * SMOOTH, y: diff.y * SMOOTH, z: diff.z * SMOOTH },
       true,
