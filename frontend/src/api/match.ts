@@ -58,3 +58,19 @@ export async function createAIMatch(difficulty: string) {
 
   return await resp.json();
 }
+
+export async function getPlayerLastMatches(playerId: string) {
+  const response = await fetch(`${API_BASE_URL}/game/player/${playerId}/last-matches`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch player last matches");
+  }
+
+  return await response.json();
+}

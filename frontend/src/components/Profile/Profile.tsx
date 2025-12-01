@@ -20,12 +20,11 @@ import {
   VerifiedIcon,
 } from "../Svg/Svg";
 
-import { db } from "@/db";
 import { useRouteParam } from "@/hooks/useParam";
 import NotFound from "../NotFound/NotFound";
 import Tournament from "../Tournament/Tournament";
 import GameHistoryItem from "./GameHistoryItem";
-import { Match } from "@/types/game/game";
+import { Match, MatchPlayer } from "@/types/game/game";
 import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 import { useAppContext } from "@/contexts/AppProviders";
 import Toast from "../Toast/Toast";
@@ -43,6 +42,7 @@ import {
 import Skeleton from "../Skeleton/Skeleton";
 import { sendMessage } from "@/api/chat";
 import { timeAgo } from "@/utils/time";
+import { getPlayerLastMatches } from "@/api/match";
 
 const StyledProfileModal = styled("div")`
   height: 100%;
@@ -412,6 +412,14 @@ const StyledProfileModal = styled("div")`
     display: flex;
     flex-direction: column;
     gap: 5px;
+    
+    .NoMatchHistory {
+      text-align: center;
+      padding: 30px;
+      color: rgba(255, 255, 255, 0.5);
+      font-family: var(--main_font);
+      font-size: 1rem;
+    }
   }
 `;
 
@@ -430,6 +438,7 @@ const Profile = () => {
   const [profileStats, setProfileStats] =
     Zeroact.useState<PlayerStats>(defaultStats);
   const [profileFriends, setProfileFriends] = Zeroact.useState<MiniUser[]>([]);
+  const [matchHistory, setMatchHistory] = Zeroact.useState<Match[]>([]);
   const [isUserNotFound, setIsUserNotFound] = Zeroact.useState(false);
   const [showConfirmationModal, setShowConfirmationModal] =
     Zeroact.useState(false);
@@ -562,6 +571,77 @@ const Profile = () => {
       setProfileFriends(resp.data);
     }
   };
+  const getMatchHistory = async (userId: string) => {
+    try {
+      const resp = await getPlayerLastMatches(userId);
+      if (resp.success && resp.data) {
+        // Transform API response to Match format
+        const transformedMatches: Match[] = resp.data.map((item: any) => {
+          const isPlayer1Winner = item.result === "win";
+          
+          // Create player and opponent data
+          const playerData: MatchPlayer = {
+            id: userId,
+            userId: userId,
+            gmUserId: userId,
+            username: profileData?.username || "You",
+            finalScore: item.playerScore,
+            isReady: true,
+            isHost: true,
+            isResigned: false,
+            isWinner: isPlayer1Winner,
+            isConnected: true,
+            pauseRequests: 0,
+            remainingPauseTime: 0,
+            characterId: "default",
+            paddleId: "default",
+            avatarUrl: profileData?.avatar || "",
+            rankDivision: profileData?.rankDivision || "BRONZE",
+            rankTier: profileData?.rankTier || "I",
+            rankChange: item.rankChange || 0,
+          };
+
+          const opponentData: MatchPlayer = {
+            id: item.vsPlayerId || "ai",
+            userId: item.vsPlayerId || "ai",
+            gmUserId: item.vsPlayerId || "ai",
+            username: item.vsPlayerUsername || "Unknown",
+            finalScore: item.opponentScore,
+            isReady: true,
+            isHost: false,
+            isResigned: false,
+            isWinner: !isPlayer1Winner,
+            isConnected: true,
+            pauseRequests: 0,
+            remainingPauseTime: 0,
+            characterId: "default",
+            paddleId: "default",
+            avatarUrl: "",
+            rankDivision: "BRONZE",
+            rankTier: "I",
+            rankChange: 0,
+          };
+
+          return {
+            id: item.matchId,
+            roomId: item.matchId,
+            mode: item.matchType === "1v1" ? "ONE_VS_ONE" : "TOURNAMENT",
+            status: "COMPLETED" as any,
+            opponent1: playerData,
+            opponent2: opponentData,
+            duration: 0,
+            createdAt: new Date(item.createdAt),
+            completedAt: new Date(item.createdAt),
+            winnerId: isPlayer1Winner ? userId : item.vsPlayerId,
+          };
+        });
+        
+        setMatchHistory(transformedMatches);
+      }
+    } catch (error) {
+      console.error("Error fetching match history:", error);
+    }
+  };
   Zeroact.useEffect(() => {
     if (userId != null) {
       setUser(userId);
@@ -571,6 +651,7 @@ const Profile = () => {
   Zeroact.useEffect(() => {
     if (profileData) {
       getStats(profileData.userId.toString());
+      getMatchHistory(profileData.userId.toString());
     }
   }, [profileData]);
 
@@ -742,8 +823,7 @@ const Profile = () => {
               <h2>1 vs 1</h2>
               <WinLossDonut
                 winRate={
-                  (profileStats.gamesWon / (profileStats.gamesPlayed || 1)) *
-                  100
+                  (profileStats.won1v1 / (profileStats.played1v1 || 1)) * 100
                 }
               />
 
@@ -770,9 +850,11 @@ const Profile = () => {
               <h2>vs AI</h2>
               <WinLossDonut
                 winRate={
-                  (profileStats.easyWins +
+                  ((profileStats.easyWins +
                     profileStats.mediumWins +
-                    profileStats.hardWins / profileStats.playedVsAI || 0) * 100
+                    profileStats.hardWins) /
+                    (profileStats.playedVsAI || 1)) *
+                  100
                 }
               />
               <div className="MainStatsElDesc">
@@ -784,9 +866,13 @@ const Profile = () => {
           <h1 className="ProfileHeadline">Recent Games</h1>
 
           <div className="LastGames">
-            {db.MatchHistoryItems.map((Match: Match) => {
-              return <GameHistoryItem match={Match} userId={userId!} />;
-            })}
+            {matchHistory.length > 0 ? (
+              matchHistory.map((match) => {
+                return <GameHistoryItem key={match.id} match={match} userId={userId!} />;
+              })
+            ) : (
+              <div className="NoMatchHistory">No recent matches found</div>
+            )}
           </div>
         </div>
         <div className="RightContainer">
