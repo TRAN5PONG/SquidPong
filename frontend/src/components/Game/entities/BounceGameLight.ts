@@ -17,30 +17,30 @@ export class BounceGameLight {
 
 
   constructor(scene: Scene) {
-    // Lights to mirror R3F setup
     this.ambient = new HemisphericLight(
       "ambientLight",
       new Vector3(0, 1, 0),
       scene
     );
-    this.ambient.intensity = 0.5;
-
+    this.ambient.intensity = 0.8;
     this.point = new PointLight(
       "pointLight",
-      new Vector3(-10, -10, -10),
+      new Vector3(-18, -10, 10),
       scene
     );
-    this.point.intensity = 0.5;
+    this.point.intensity = 0.6;
 
     this.spot = new SpotLight(
       "spotLight",
-      new Vector3(10, 10, 10),
-      new Vector3(-1, -1, -1),
-      0.3,
-      1,
+      new Vector3(10, 10, -10), 
+      new Vector3(-1, -1, 1),  
+      0.4,
+      2, 
       scene
     );
-    this.spot.intensity = 1;
-    this.spot.shadowEnabled = true;
+    this.spot.intensity = 0.2;
+    
+    this.spot.shadowMinZ = 0;
+    this.spot.shadowMaxZ = 250;
   }
 }

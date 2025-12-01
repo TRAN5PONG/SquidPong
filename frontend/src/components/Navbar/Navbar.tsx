@@ -187,7 +187,7 @@ const Navbar = () => {
   const { currentPath } = useContext(RouterContext);
   const { user, toasts } = useAppContext();
 
-  if (!user || currentPath === "/" || currentPath.startsWith("/game")) {
+  if (!user || currentPath === "/" || currentPath.startsWith("/game") || currentPath === "/bounce-game") {
     return null;
   }
 
