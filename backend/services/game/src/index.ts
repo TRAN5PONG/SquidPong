@@ -10,7 +10,7 @@ import { prisma } from "./lib/prisma";
 
 dotenv.config();
 
-const port = Number(process.env.PORT) || 3000;
+const port = Number(process.env.PORT);
 const host = process.env.HOST || "0.0.0.0";
 
 async function recreateActiveRooms() {
