@@ -22,6 +22,7 @@ import { createAIMatch, getUserCurrentMatch } from "@/api/match";
 import { useSounds } from "@/contexts/SoundProvider";
 import Avatar from "../Tournament/Avatar";
 import { InviteOponent } from "./InvitationModal";
+import { useNavigate } from "@/contexts/RouterProvider";
 
 const StyledGameSettings = styled("div")`
   width: 450px;
@@ -354,6 +355,7 @@ const GameSettings = (props: GameSettingsProps) => {
     useState<GameInvitation | null>(null);
 
   const { toasts, user, match, inviteModal } = useAppContext();
+  const navigate = useNavigate();
   const { currentMatch, setCurrentMatch } = match;
 
   // Match Ready
@@ -444,6 +446,7 @@ const GameSettings = (props: GameSettingsProps) => {
     setOpponentPlayer(null);
     props.setSelectedMode(null);
   };
+
   // Set User/Opponent Player
   useEffect(() => {
     if (!currentMatch || !user) return;
@@ -772,6 +775,13 @@ const GameSettings = (props: GameSettingsProps) => {
               ) : (
                 <PendingIcon fill="white" size={20} />
               )}
+            </button>
+          ) : currentMatch?.status === "IN_PROGRESS" ? (
+            <button
+              className={`ReadyBtn`}
+              onClick={() => navigate(`/game/${match.currentMatch?.id}`)}
+            >
+              Back to Game
             </button>
           ) : null}
 

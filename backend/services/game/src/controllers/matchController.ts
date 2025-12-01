@@ -6,6 +6,46 @@ import { User } from "../types/users";
 import { sendDataToQueue } from "../integration/rabbitmqClient";
 import { matchMaker } from "colyseus";
 
+export async function getActiveMatches(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const matches = await prisma.match.findMany({
+      where: {
+        status: {
+          in: ["IN_PROGRESS", "WAITING"],
+        },
+      },
+      include: {
+        opponent1: {
+          include: {
+            User: true,
+          },
+        },
+        opponent2: {
+          include: {
+            User: true,
+          },
+        },
+      },
+    });
+
+    let matchesData = matches || [];
+
+    reply.send({
+      data: matchesData,
+      success: true,
+      message: "matches fetched!",
+    });
+  } catch (err) {
+    reply.send({
+      success: false,
+      message: "error while getting matches",
+    });
+  }
+}
+
 export async function createMatch(
   request: FastifyRequest,
   reply: FastifyReply
@@ -600,7 +640,7 @@ export async function EndMatch(
     });
 
     if (!match) {
-      throw ("match not found")
+      throw "match not found";
     }
 
     const player1 = match.opponent1;
@@ -620,7 +660,7 @@ export async function EndMatch(
         : null;
 
     if (!winner || !loser) {
-      throw ("invalid players")
+      throw "invalid players";
     }
 
     await prisma.$transaction(async (tx) => {
@@ -665,7 +705,6 @@ export async function EndMatch(
       if (!tournamentResp.success)
         throw new Error("Failed to report match result to tournament service");
     });
-
   } catch (error) {
     console.log("========", error);
   }

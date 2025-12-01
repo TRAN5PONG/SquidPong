@@ -230,7 +230,7 @@ const GameMenu = () => {
 
   if (
     currentPath.startsWith("/game") ||
-    currentPath.startsWith("/spectate") ||
+    currentPath.startsWith("/spectate/game") ||
     currentPath === "/"
   )
     return null; // Don't show the menu in game or spectate mode

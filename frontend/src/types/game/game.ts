@@ -22,6 +22,7 @@ export type GameStatus =
 export interface MatchPlayer {
   id: string;
   userId: string; // User ID of the player
+  gmUserId: string;
   username: string; // Name of the player
   finalScore: number; // Current score of the player
   isReady: boolean; // Whether the player is ready to start the match
@@ -128,4 +129,3 @@ export const GamePowerUps: {
       "Confuse your opponent by reversing their paddle controls for a short duration.",
   },
 ];
-

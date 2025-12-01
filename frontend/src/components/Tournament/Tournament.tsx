@@ -1245,7 +1245,7 @@ const TournamentPlayer = (
     </StyledTournamentPlayer>
   );
 };
-const StyleTournamentMatch = styled("div")`
+export const StyleTournamentMatch = styled("div")`
   width: 70%;
   height: 70px;
   background-color: var(--bg_color);
