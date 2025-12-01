@@ -32,7 +32,7 @@ import {
   matchesParamsValidators,
   matchesValidators,
 } from "../validators/matchesValidators";
-import { getPlayerStats } from "../controllers/statsController";
+import { getPlayerStats, getPlayerLastMatches } from "../controllers/statsController";
 
 export async function matchRoutes(server: FastifyInstance) {
   // ai match
@@ -89,6 +89,24 @@ export async function matchRoutes(server: FastifyInstance) {
     },
     getCurrenMatch
   );
+  
+  // Get last 5 matches for a player
+  server.get(
+    "/api/game/player/:playerId/last-matches",
+    {
+      schema: {
+        params: {
+          type: "object",
+          properties: {
+            playerId: { type: "string" },
+          },
+          required: ["playerId"],
+        },
+      },
+    },
+    getPlayerLastMatches
+  );
+
   server.get(
     "/api/game/player/:playerId/stats",
     {
