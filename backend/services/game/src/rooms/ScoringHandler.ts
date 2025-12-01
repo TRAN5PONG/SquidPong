@@ -224,14 +224,14 @@ export class ScoringHandler {
     });
 
     if (!existing) {
-      // Create new stats entry with all fields
+
       const isTournament = gameMode === "TOURNAMENT";
       const is1v1 = gameMode === "ONE_VS_ONE";
       
       await prisma.userStats.create({
         data: {
           userId,
-          score: won ? 10 : 5, // Award points (10 for win, 5 for loss)
+          score: won ? 10 : 5,
           gamesPlayed: 1,
           // 1v1 Stats
           played1v1: is1v1 ? 1 : 0,
@@ -262,7 +262,6 @@ export class ScoringHandler {
         },
       });
     } else {
-      // Calculate new streaks
       const newWinStreak = won ? existing.winStreak + 1 : 0;
       const newLoseStreak = won ? 0 : existing.loseStreak + 1;
       const newLongestWinStreak = Math.max(
@@ -270,20 +269,20 @@ export class ScoringHandler {
         newWinStreak
       );
 
-      // Calculate new average game duration
+
       const totalMatches = existing.gamesPlayed + 1;
       const totalDuration = existing.totalPlayTime + matchDuration;
       const newAverageDuration = Math.floor(totalDuration / totalMatches);
 
-      // Determine game mode
+
       const isTournament = gameMode === "TOURNAMENT";
       const is1v1 = gameMode === "ONE_VS_ONE";
 
-      // Update existing stats
+
       await prisma.userStats.update({
         where: { userId },
         data: {
-          // Score update (add points for participation)
+          // Score update
           score: { increment: won ? 10 : 5 },
 
           // Total matches
@@ -311,10 +310,19 @@ export class ScoringHandler {
       });
     }
 
+
+    const scoreIncrement = won ? 15 : 5; 
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        score: { increment: scoreIncrement },
+      },
+    });
+
     console.log(
       `✅ Updated stats for user ${userId}: ${
         won ? "WIN" : "LOSS"
-      }, Duration: ${matchDuration}s`
+      }, Duration: ${matchDuration}s, Score: +${scoreIncrement}`
     );
   }
 }

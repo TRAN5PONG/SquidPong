@@ -141,6 +141,8 @@ model User {
   id     String @id @default(cuid())
   userId Int    @unique // id from GM
 
+  score Int @default(0) // Total score for leaderboard
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
