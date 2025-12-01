@@ -3,6 +3,7 @@ import { fastify, gameServer } from "./colyseus";
 import { matchMaker } from "colyseus";
 import { matchRoutes } from "./routes/matchRoutes";
 import { invitationRoutes } from "./routes/invitationRoutes";
+import { leaderboardRoutes } from "./routes/leaderboardRoutes";
 import { initRabbitMQ, receiveFromQueue } from "./integration/rabbitmqClient";
 import cors from "@fastify/cors";
 import { MatchRoom } from "./rooms/MatchRoom";
@@ -77,6 +78,7 @@ const start = async () => {
     // Register routes
     fastify.register(matchRoutes);
     fastify.register(invitationRoutes);
+    fastify.register(leaderboardRoutes);
 
     // Init RabbitMQ
     await initRabbitMQ();
