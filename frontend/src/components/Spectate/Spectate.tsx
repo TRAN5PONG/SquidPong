@@ -376,7 +376,7 @@ const Spectate = () => {
   /**
    * MATCH
    */
-  const matchId = useRouteParam("/spectate/:id", "id");
+  const matchId = useRouteParam("/spectate/game/:id", "id");
   const { user } = useAppContext();
 
   /**
@@ -416,6 +416,7 @@ const Spectate = () => {
    * Effects
    */
   useEffect(() => {
+    console.log(matchId)
     if (!matchId) return;
 
     const fetchMatchData = async () => {

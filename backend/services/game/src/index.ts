@@ -29,7 +29,7 @@ async function recreateActiveRooms() {
         opponent2: true,
       },
     });
-
+    
     if (activeMatches.length === 0) {
       console.log("✅ No active matches found that need room recreation");
       return;
@@ -39,12 +39,14 @@ async function recreateActiveRooms() {
       `🎮 Found ${activeMatches.length} active matches, recreating rooms...`,
     );
 
+    
     for (const match of activeMatches) {
+      console.log(match)
       try {
         const room = await matchMaker.createRoom("ping-pong-game", {
           matchId: match.id,
           roomId: match.roomId, // Reuse the same roomId
-          players: [match.opponent1.gmUserId, match.opponent2?.gmUserId],
+          players: [match.opponent1.userId, match.opponent2?.userId],
           spectators: [],
         });
 

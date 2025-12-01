@@ -23,15 +23,21 @@ export async function TournamentMatch(
   const result = await prisma.$transaction(async (tx) => {
     const localOpponent1 = await tx.user.upsert({
       where: { userId: opponent1User.userId },
-      update: {},
+      update: {
+        userId: opponent1User.userId,
+      },
       create: {
+        id: opponent1User.id,
         userId: opponent1User.userId,
       },
     });
     const localOpponent2 = await tx.user.upsert({
       where: { userId: opponent2User.userId },
-      update: {},
+      update: {
+        userId: opponent2User.userId,
+      },
       create: {
+        id: opponent2User.id,
         userId: opponent2User.userId,
       },
     });
@@ -39,6 +45,7 @@ export async function TournamentMatch(
     const matchPlayer1 = await tx.matchPlayer.create({
       data: {
         userId: localOpponent1.id,
+
         gmUserId: opponent1User.userId.toString(),
         username: opponent1User.username,
         avatarUrl: opponent1User.avatar,
@@ -46,11 +53,13 @@ export async function TournamentMatch(
         paddleId: opponent1User.playerSelectedPaddle,
         rankTier: opponent1User.rankTier,
         rankDivision: opponent1User.rankDivision,
+        isHost: true,
       },
     });
     const matchPlayer2 = await tx.matchPlayer.create({
       data: {
         userId: localOpponent2.id,
+
         gmUserId: opponent2User.userId.toString(),
         username: opponent2User.username,
         avatarUrl: opponent2User.avatar,
@@ -58,6 +67,7 @@ export async function TournamentMatch(
         paddleId: opponent2User.playerSelectedPaddle,
         rankTier: opponent2User.rankTier,
         rankDivision: opponent2User.rankDivision,
+        isHost: false,
       },
     });
 

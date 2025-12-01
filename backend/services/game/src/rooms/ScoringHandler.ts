@@ -21,7 +21,7 @@ export class ScoringHandler {
 
     // const totalPoints = this.room.state.totalPointsScored;
 
-    const totalPoints = 30;
+    const totalPoints = 1;
 
     console.log(`🏆 Total points to win: ${totalPoints}`);
 
@@ -156,16 +156,6 @@ export class ScoringHandler {
       const winner = [player1, player2].find((p) => p.id === winnerId);
       const loser = [player1, player2].find((p) => p.id !== winnerId);
 
-      if (match.tournamentId && winner && loser)
-        return EndMatch(
-          match.tournamentId,
-          matchId,
-          winner.id,
-          loser.id,
-          this.room.state.scores.get(winner?.id) || 0,
-          this.room.state.scores.get(loser?.id) || 0
-        );
-
       // Update MatchPlayers
       await prisma.matchPlayer.update({
         where: { id: player1.id },
@@ -183,6 +173,22 @@ export class ScoringHandler {
         },
       });
 
+      if (match.tournamentId) {
+        const resp = await fetch(
+          `http://tournament:4006/api/tournament/tournaments/${match.tournamentId}/reportMatchResult/${match.tournamentMatchId}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              winnerId: winner?.User?.userId,
+              loserId: loser?.User?.userId,
+              winnerScore: this.room.state.scores.get(winner?.id!) || 0,
+              loserScore: this.room.state.scores.get(loser?.id!) || 0,
+            }),
+          }
+        );
+      }
+
       // Update Match itself
       await prisma.match.update({
         where: { id: matchId },
@@ -198,23 +204,6 @@ export class ScoringHandler {
       if (loser?.userId) {
         updates.push(this.updateUserStats(loser.userId, false, matchDuration));
       }
-
-      // If tournament match, report to tournament Service
-      // if (match.tournamentId) {
-      //   const tournamentResp = await fetch(
-      //     `http://tournament:4006/api/tournament/tournaments/${match.tournamentId}/reportMatchResult/${matchId}`,
-      //     {
-      //       method: "POST",
-      //       headers: { "Content-Type": "application/json" },
-      //       body: JSON.stringify({
-      //         winnerId: winnerId,
-      //         loserId: loser?.id,
-      //         winnerScore: this.room.state.scores.get(winnerId) || 0,
-      //         loserScore: this.room.state.scores.get(loser?.id!) || 0,
-      //       }),
-      //     }
-      //   );
-      // }
 
       await Promise.all(updates);
 

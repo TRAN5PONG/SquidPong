@@ -28,6 +28,17 @@ export async function getMatchById(matchId: string) {
   return await response.json();
 }
 
+export async function getAllMatches() {
+  const resp = await fetch(`${API_BASE_URL}/game/match/all`, {
+    method: "GET",
+    credentials: "include"
+  })
+
+  if (!resp.ok)
+    throw new Error("error getting matches")
+  return await resp.json();
+}
+
 export async function createAIMatch(difficulty: string) {
   const resp = await fetch(`${API_BASE_URL}/game/ai/create`, {
     method: "POST",

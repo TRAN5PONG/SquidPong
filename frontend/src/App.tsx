@@ -48,6 +48,7 @@ import { InviteOponent } from "./components/Lobby/InvitationModal";
 import { Match, MatchPlayer } from "./types/game/game";
 import { useSounds } from "./contexts/SoundProvider";
 import BounceGame from "./components/Game/BounceGame";
+import SpectatePage from "./components/Spectate/SpectatePage";
 
 const StyledApp = styled("div")`
   width: 100vw;
@@ -98,7 +99,13 @@ export const routes: Route[] = [
     exact: true,
     showLoader: false,
   },
-  { path: "/spectate", component: Spectate, exact: false, showLoader: true },
+  {
+    path: "/spectate/game",
+    component: Spectate,
+    exact: false,
+    showLoader: true,
+  },
+  { path: "/spectate", component: SpectatePage, exact: true, showLoader: true },
   { path: "/settings", component: Settings, exact: false, showLoader: false },
   {
     path: "/leaderboard",

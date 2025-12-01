@@ -26,6 +26,7 @@ import {
   getCurrenMatch,
   EndMatch,
   AiMatch,
+  getActiveMatches,
 } from "../controllers/matchController";
 import {
   matchesParamsValidators,
@@ -67,6 +68,11 @@ export async function matchRoutes(server: FastifyInstance) {
     },
     getMatch
   );
+  // get all matches
+  server.get(
+    "/api/game/match/all",
+    getActiveMatches
+  )
   // current user's pending match (limited to one)
   server.get(
     "/api/game/match/current/:userId",
@@ -82,33 +88,6 @@ export async function matchRoutes(server: FastifyInstance) {
       },
     },
     getCurrenMatch
-  );
-  // End game
-  server.post(
-    "/api/game/tournament/:tournamentId/match/:matchId/end",
-    {
-      schema: {
-        params: {
-          type: "object",
-          properties: {
-            tournamentId: { type: "string" },
-            matchId: { type: "string" },
-          },
-          required: ["matchId", "tournamentId"],
-        },
-        body: {
-          type: "object",
-          properties: {
-            winnerId: { type: "string" },
-            loserId: { type: "string" },
-            winnerScore: { type: "number" },
-            loserScore: { type: "number" },
-          },
-          required: ["winnerId", "loserId", "winnerScore", "loserScore"],
-        },
-      },
-    },
-    EndMatch
   );
   server.get(
     "/api/game/player/:playerId/stats",
