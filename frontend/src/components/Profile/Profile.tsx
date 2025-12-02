@@ -412,7 +412,7 @@ const StyledProfileModal = styled("div")`
     display: flex;
     flex-direction: column;
     gap: 5px;
-    
+
     .NoMatchHistory {
       text-align: center;
       padding: 30px;
@@ -575,68 +575,7 @@ const Profile = () => {
     try {
       const resp = await getPlayerLastMatches(userId);
       if (resp.success && resp.data) {
-        // Transform API response to Match format
-        const transformedMatches: Match[] = resp.data.map((item: any) => {
-          const isPlayer1Winner = item.result === "win";
-          
-          // Create player and opponent data
-          const playerData: MatchPlayer = {
-            id: userId,
-            userId: userId,
-            gmUserId: userId,
-            username: profileData?.username || "You",
-            finalScore: item.playerScore,
-            isReady: true,
-            isHost: true,
-            isResigned: false,
-            isWinner: isPlayer1Winner,
-            isConnected: true,
-            pauseRequests: 0,
-            remainingPauseTime: 0,
-            characterId: "default",
-            paddleId: "default",
-            avatarUrl: profileData?.avatar || "",
-            rankDivision: profileData?.rankDivision || "BRONZE",
-            rankTier: profileData?.rankTier || "I",
-            rankChange: item.rankChange || 0,
-          };
-
-          const opponentData: MatchPlayer = {
-            id: item.vsPlayerId || "ai",
-            userId: item.vsPlayerId || "ai",
-            gmUserId: item.vsPlayerId || "ai",
-            username: item.vsPlayerUsername || "Unknown",
-            finalScore: item.opponentScore,
-            isReady: true,
-            isHost: false,
-            isResigned: false,
-            isWinner: !isPlayer1Winner,
-            isConnected: true,
-            pauseRequests: 0,
-            remainingPauseTime: 0,
-            characterId: "default",
-            paddleId: "default",
-            avatarUrl: "",
-            rankDivision: "BRONZE",
-            rankTier: "I",
-            rankChange: 0,
-          };
-
-          return {
-            id: item.matchId,
-            roomId: item.matchId,
-            mode: item.matchType === "1v1" ? "ONE_VS_ONE" : "TOURNAMENT",
-            status: "COMPLETED" as any,
-            opponent1: playerData,
-            opponent2: opponentData,
-            duration: 0,
-            createdAt: new Date(item.createdAt),
-            completedAt: new Date(item.createdAt),
-            winnerId: isPlayer1Winner ? userId : item.vsPlayerId,
-          };
-        });
-        
-        setMatchHistory(transformedMatches);
+        setMatchHistory(resp.data);
       }
     } catch (error) {
       console.error("Error fetching match history:", error);
@@ -840,7 +779,9 @@ const Profile = () => {
               <WinLossDonut
                 winRate={
                   profileStats.playedTournament > 0
-                    ? (profileStats.wonTournament / profileStats.playedTournament) * 100
+                    ? (profileStats.wonTournament /
+                        profileStats.playedTournament) *
+                      100
                     : 0
                 }
               />
@@ -873,7 +814,13 @@ const Profile = () => {
           <div className="LastGames">
             {matchHistory.length > 0 ? (
               matchHistory.map((match) => {
-                return <GameHistoryItem key={match.id} match={match} userId={userId!} />;
+                return (
+                  <GameHistoryItem
+                    key={match.id}
+                    match={match}
+                    userId={profileData.userId}
+                  />
+                );
               })
             ) : (
               <div className="NoMatchHistory">No recent matches found</div>

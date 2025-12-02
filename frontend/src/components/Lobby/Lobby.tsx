@@ -446,9 +446,9 @@ const Lobby = () => {
         <div className="SecModes">
           <div
             className={`TOURNAMENTMode secMode ${
-              selectedMode === "Tournament" ? "selected" : ""
+              selectedMode === "TOURNAMENT" ? "selected" : ""
             }`}
-            onClick={() => onModeSelect("Tournament")}
+            onClick={() => onModeSelect("TOURNAMENT")}
             onMouseEnter={() => el_hoverSound.play()}
           >
             <img src="/icons/trophy.webp" />

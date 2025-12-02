@@ -5,7 +5,7 @@ export type powerUps = "fireBall" | "freezeBall" | "shield" | "Confusion";
 export type GameMode =
   | "ONE_VS_ONE"
   | "1vsAI"
-  | "Tournament"
+  | "TOURNAMENT"
   | "BounceChallenge";
 export type ScoreLimit = 5 | 10 | 15 | 20;
 export type PauseTime = 30 | 60 | 90; // in seconds

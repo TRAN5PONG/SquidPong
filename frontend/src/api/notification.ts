@@ -17,6 +17,7 @@ export async function getNotifications(): Promise<
   });
 
   const data = (await resp.json()) as ApiResponse<NotificationEl[]>;
+
   return data;
 }
 export async function markNotificationAsRead(

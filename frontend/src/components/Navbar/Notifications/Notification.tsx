@@ -142,6 +142,10 @@ const Notification = (props: NotificationProps) => {
     };
   }, [ModalRef, props]);
 
+  useEffect(() => {
+    console.log(props.notifications)
+  }, [])
+
   return (
     <StyledModal className="scroll-y" ref={ModalRef}>
       <div className="NotoficationHeader">
@@ -319,7 +323,9 @@ const NotificationItem = (props: NotificationItemProps) => {
       </div>
       <div className="NotificationContent">
         <h1>
-          {props.element.by?.username
+          {props.element.payload?.tournamentName
+            ? props.element.payload?.tournamentName + ' Tournament'
+            : props.element.by?.username
             ? `${props.element.by.username} `
             : "unknown"}
           <span>
@@ -338,6 +344,8 @@ const NotificationItem = (props: NotificationItemProps) => {
               ? `has invited you to join the tournament ${props.element.payload?.tournamentName}`
               : props.element.type === "TOURNAMENT_CANCELLED"
               ? `The tournament ${props.element.payload?.tournamentName} has been cancelled`
+              : props.element.type === "TOURNAMENT_UPDATE"
+              ? props.element.payload?.info
               : props.element.type === "COIN_GIFT_RECEIVED"
               ? `has sent you a coin gift of ${props.element.payload?.coinAmount} coins`
               : props.element.type === "ACHIEVEMENT_UNLOCKED"
@@ -477,6 +485,9 @@ const StyledNotificationItem = styled("div")`
       font-size: 0.9rem;
       color: #ffffffcc;
       font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      gap : 2px;
       span {
         font-size: 0.9rem;
         color: #ffffff89;

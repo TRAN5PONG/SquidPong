@@ -5,30 +5,34 @@ import { getVisibleStatus } from '../utils/statusHelper';
 
 
 
-export async function getNotificationHistoryHandler(req: FastifyRequest, res: FastifyReply) 
-{
+export async function getNotificationHistoryHandler(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const headers = req.headers as any;
-  const userId = String(headers['x-user-id']);
-  const respond: ApiResponse<any[]> = { success: true, message: 'Notifications fetched successfully' };
+  const userId = String(headers["x-user-id"]);
 
-  try 
-  {
+  const respond: ApiResponse<any[]> = {
+    success: true,
+    message: "Notifications fetched successfully",
+  };
+
+  try {
     const notifications = await prisma.notification.findMany({
-      where: { targetId : userId },
-      select: {
-        id: true,
-        type: true,
-        isRead: true,
-        createdAt: true,
-        by : { select : { userId: true, username: true  , firstName : true , lastName : true , isVerified : true , avatar : true, status: true, customStatus: true } },
-        payload: { select: { friendRequest: { select: { status: true}}}}},
-      orderBy: { createdAt: 'desc' },
+      where: { targetId: userId },
+      include: {
+        by: true,              // include full user
+        payload: {
+          include: {
+            friendRequest: true,   // include nested FK relation
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
     });
-    
+
     respond.data = notifications;
-  } 
-  catch (error) 
-  {
+  } catch (error) {
     respond.success = false;
     if (error instanceof Error) respond.message = error.message;
     return res.status(400).send(respond);
@@ -36,6 +40,7 @@ export async function getNotificationHistoryHandler(req: FastifyRequest, res: Fa
 
   return res.send(respond);
 }
+
 
 
 export async function markNotificationAsReadHandler(req: FastifyRequest, res: FastifyReply)

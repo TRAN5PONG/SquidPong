@@ -32,7 +32,7 @@ const notificationSchema = {
     id: { type: 'number' },
     type: { 
       type: 'string',
-      enum: ['FRIEND_REQUEST', 'FRIEND_ACCEPTED', 'MESSAGE', 'GAME_INVITE', 'TOURNAMENT_INVITE', 'SYSTEM']
+      enum: ['FRIEND_REQUEST', 'FRIEND_ACCEPTED', 'MESSAGE', 'GAME_INVITE', 'TOURNAMENT_UPDATE', 'SYSTEM']
     },
     isRead: { type: 'boolean' },
     createdAt: { type: 'string', format: 'date-time' },

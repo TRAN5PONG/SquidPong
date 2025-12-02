@@ -88,6 +88,7 @@ export async function deleteTournament(
 
     const tournamentToDelete = await prisma.tournament.findUnique({
       where: { id },
+      include: { participants: true },
     });
 
     if (!tournamentToDelete) {
@@ -96,12 +97,6 @@ export async function deleteTournament(
         message: "Tournament not found.",
       });
     }
-
-    console.log(
-      "====================,",
-      tournamentToDelete.organizerId,
-      userId
-    );
 
     if (tournamentToDelete.organizerId !== userId) {
       return reply.code(403).send({
@@ -139,6 +134,32 @@ export async function deleteTournament(
       "game"
     );
 
+    const participantUserIds = tournamentToDelete?.participants
+      .filter((p) => p.userId !== userId)
+      .map((p) => p.userId);
+
+    await sendDataToQueue(
+      {
+        type: "tournamentUpdate",
+        fromId: userId,
+        targetId: participantUserIds,
+        data: {
+          tournamentName: tournamentToDelete.name,
+          info: `organizer has deleted the tournament!`,
+        },
+      },
+      "eventhub"
+    );
+
+    await sendDataToQueue(
+      {
+        targetId: participantUserIds,
+        event: "tournament-update",
+        data: { tournament: tournamentToDelete, isDeleted: true },
+      },
+      "broadcastData"
+    );
+
     return reply.code(200).send({
       success: true,
       message: "Tournament deleted successfully.",
@@ -152,11 +173,6 @@ export async function deleteTournament(
     });
   }
 }
-
-export async function updateTournamentStatus(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {}
 
 export async function getTournament(
   request: FastifyRequest,
@@ -292,6 +308,7 @@ export async function joinTournament(
       },
       create: {
         userId,
+        // gmUserId: user.id,
         tournamentId,
         avatar: user.data.avatar,
         firstName: user.data.firstName,
@@ -303,7 +320,7 @@ export async function joinTournament(
     });
 
     // Reload tournament participants count
-    const updatedTournament = await prisma.tournament.findUnique({
+    let updatedTournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
       include: {
         participants: true,
@@ -314,7 +331,6 @@ export async function joinTournament(
       },
     });
 
-    // If maxPlayers reached, set status to READY
     if (
       updatedTournament &&
       updatedTournament.participants.length === updatedTournament.maxPlayers
@@ -323,7 +339,44 @@ export async function joinTournament(
         where: { id: tournamentId },
         data: { status: TournamentStatus.READY },
       });
+
+      updatedTournament = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        include: {
+          participants: true,
+          rounds: {
+            include: { matches: true },
+            orderBy: { order: "asc" },
+          },
+        },
+      });
     }
+
+    const participantUserIds = updatedTournament?.participants
+      .filter((p) => p.userId !== userId)
+      .map((p) => p.userId);
+
+    await sendDataToQueue(
+      {
+        type: "tournamentUpdate",
+        fromId: userId,
+        targetId: participantUserIds,
+        data: {
+          tournamentName: updatedTournament.name,
+          info: `${participant.userName} has joined the tournament!`,
+        },
+      },
+      "eventhub"
+    );
+
+    await sendDataToQueue(
+      {
+        targetId: participantUserIds,
+        event: "tournament-update",
+        data: { tournament: updatedTournament },
+      },
+      "broadcastData"
+    );
 
     return reply.code(201).send({
       success: true,
@@ -400,6 +453,32 @@ export async function leaveTournament(
         },
       },
     });
+
+    const participantUserIds = updatedTournament?.participants
+      .filter((p) => p.userId !== participantId)
+      .map((p) => p.userId);
+
+    await sendDataToQueue(
+      {
+        type: "tournamentUpdate",
+        fromId: participantId,
+        targetId: participantUserIds,
+        data: {
+          tournamentName: updatedTournament.name,
+          info: `${participant.userName} has left the tournament!`,
+        },
+      },
+      "eventhub"
+    );
+
+    await sendDataToQueue(
+      {
+        targetId: participantUserIds,
+        event: "tournament-update",
+        data: { tournament: updatedTournament },
+      },
+      "broadcastData"
+    );
 
     return reply.code(200).send({
       success: true,
@@ -573,6 +652,32 @@ export async function launchTournament(
         },
       });
 
+      const participantUserIds = updatedTournament?.participants
+        .filter((p) => p.userId !== userId)
+        .map((p) => p.userId);
+
+      await sendDataToQueue(
+        {
+          type: "tournamentUpdate",
+          fromId: userId,
+          targetId: participantUserIds,
+          data: {
+            tournamentName: updatedTournament.name,
+            info: `organizer has started the tournament!`,
+          },
+        },
+        "eventhub"
+      );
+
+      await sendDataToQueue(
+        {
+          targetId: participantUserIds,
+          event: "tournament-update",
+          data: { tournament: updatedTournament },
+        },
+        "broadcastData"
+      );
+
       return updatedTournament;
     });
 
@@ -608,13 +713,15 @@ export async function resetTournament(
 ) {
   try {
     const { tournamentId } = request.params as { tournamentId: string };
+    const headers = request.headers as { "x-user-id": string };
+    const userId = headers["x-user-id"];
 
     const tournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
     });
 
     // Reset tournament data
-    await prisma.$transaction(async (tx: any) => {
+    const updatedTournament = await prisma.$transaction(async (tx: any) => {
       // Delete matches
       await tx.tournamentMatch.deleteMany({
         where: { round: { tournamentId } },
@@ -643,6 +750,13 @@ export async function resetTournament(
         },
       });
 
+      const updatedTournament = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        include: {
+          participants: true,
+        },
+      });
+
       // hit game service to delete all games related to this tournament
       await sendDataToQueue(
         {
@@ -651,13 +765,43 @@ export async function resetTournament(
         },
         "game"
       );
+
+      const participantUserIds = updatedTournament?.participants
+        .filter((p) => p.userId !== userId)
+        .map((p) => p.userId);
+
+      await sendDataToQueue(
+        {
+          type: "tournamentUpdate",
+          fromId: userId,
+          targetId: participantUserIds,
+          data: {
+            tournamentName: updatedTournament.name,
+            info: `organizer has reseted the tournament!`,
+          },
+        },
+        "eventhub"
+      );
+
+      await sendDataToQueue(
+        {
+          targetId: participantUserIds,
+          event: "tournament-update",
+          data: { tournament: updatedTournament },
+        },
+        "broadcastData"
+      );
+
+      return updatedTournament;
     });
 
     return reply.code(200).send({
-      message: "Tournament has been reset successfully2.",
+      message: "Tournament has been reset successfully.",
       success: true,
+      data: updatedTournament,
     });
   } catch (error: any) {
+    console.log(error);
     return reply.code(500).send({
       message: "Failed to reset tournament.",
       success: false,

@@ -40,6 +40,7 @@ import { Button } from "@babylonjs/inspector/components/Button";
 import { StyledTournamentCardAvatar } from "./Tournaments";
 import { Length } from "@babylonjs/core";
 import Avatar from "./Avatar";
+import { socketManager } from "@/utils/socket";
 
 const StyledTournament = styled("div")`
   width: 100vw;
@@ -621,6 +622,19 @@ const Tournament = () => {
   const { user, toasts } = useAppContext();
   const navigate = useNavigate();
 
+  /**
+   * Effects
+   */
+  useEffect(() => {
+    socketManager.subscribe("tournament-update", (data: any) => {
+      setTournament(data.tournament);
+      if (data.isDeleted) navigate("/tournaments");
+    });
+
+    return () => {
+      socketManager.unsubscribe("tournament-update", () => {});
+    };
+  }, []);
   useEffect(() => {
     if (tournamentId != null) {
       const getTournamentData = async () => {
@@ -1414,7 +1428,10 @@ const TournamentMatch = ({
         <span>{matchData.status}</span>
       </div>
       <div className="Opponent">
-        <Avatar rank={opponent1Rank ? opponent1Rank : undefined} avatarUrl={opponent1.avatar}/>
+        <Avatar
+          rank={opponent1Rank ? opponent1Rank : undefined}
+          avatarUrl={opponent1.avatar}
+        />
 
         <div className="OpponentInfo">
           <span className="OpponentUsername">
@@ -1429,7 +1446,10 @@ const TournamentMatch = ({
         <span className="Round">{roundName}</span>
       </div>
       <div className="Opponent reverse">
-        <Avatar rank={opponent2Rank ? opponent2Rank : undefined} avatarUrl={opponent2.avatar}/>
+        <Avatar
+          rank={opponent2Rank ? opponent2Rank : undefined}
+          avatarUrl={opponent2.avatar}
+        />
 
         <div className="OpponentInfo">
           <span className="OpponentUsername">

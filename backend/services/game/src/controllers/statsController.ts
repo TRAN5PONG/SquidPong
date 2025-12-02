@@ -85,37 +85,10 @@ export async function getPlayerLastMatches(
     });
 
 
-    const matchHistory = matches.map((match) => {
-      const isOpponent1 = match.opponent1.userId === user.id;
-      const playerData = isOpponent1 ? match.opponent1 : match.opponent2;
-      const opponentData = isOpponent1 ? match.opponent2 : match.opponent1;
-
-      const isWinner = playerData?.isWinner || false;
-      const opponentUserId = opponentData?.userId || null;
-      const opponentUsername = opponentData?.username || "Unknown";
-      const playerScore = playerData?.finalScore || 0;
-      const opponentScore = opponentData?.finalScore || 0;
-      const playerRankChange = playerData?.rankChange || 0;
-
-      return {
-        matchId: match.id,
-        matchType: match.mode === "ONE_VS_ONE" ? "1v1" : "tournament",
-        result: isWinner ? "win" : "loss",
-        vsPlayerId: opponentUserId,
-        vsPlayerUsername: opponentUsername,
-        playerScore: playerScore,
-        opponentScore: opponentScore,
-        rankChange: playerRankChange,
-        createdAt: match.createdAt,
-      };
-    });
-
-    console.log(`Found ${matchHistory.length} matches for playerId:`, playerId);
-
     return reply.status(200).send({
       success: true,
       message: "Last matches retrieved successfully",
-      data: matchHistory,
+      data: matches,
     });
   } catch (error) {
     console.error("Error retrieving last matches:", error);

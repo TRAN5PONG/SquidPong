@@ -2,6 +2,7 @@ import Zeroact from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { characters } from "@/types/game/character";
 import { Match } from "@/types/game/game";
+import { getRankMetaData } from "@/utils/game";
 import { timeAgo } from "@/utils/time";
 
 const StyledGameHistoryItem = styled("div")`
@@ -21,8 +22,7 @@ const StyledGameHistoryItem = styled("div")`
     width: 60px;
     height: 60px;
     background-color: var(--bg_color_super_light);
-    /* background-image: url(${(props: any) => props.characterAvatar}); */
-    background-image: url("/characters/guard_avatar.png");
+    background-image: url(${(props: any) => props.characterAvatar});
     background-size: cover;
     background-position: center;
   }
@@ -92,16 +92,16 @@ const StyledGameHistoryItem = styled("div")`
   }
   .game-date {
     width: 150px;
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	margin-left: auto;
-	span {
-	  font-family: var(--main_font);
-	  font-size: 0.8rem;
-	  color: rgba(255, 255, 255, 0.6);
-	  font-weight: 500;
-	}
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-left: auto;
+    span {
+      font-family: var(--main_font);
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+    }
   }
 `;
 
@@ -110,21 +110,29 @@ interface GameHistoryItemProps {
   userId: string;
 }
 const GameHistoryItem = (props: GameHistoryItemProps) => {
-  const user =
-    props.match.opponent1.userId === props.userId
+  const UserPlayer =
+    Number(props.match.opponent1.gmUserId) === Number(props.userId)
       ? props.match.opponent1
       : props.match.opponent2;
-  const characterImg = characters.find((c) => c.id === user.characterId)?.image;
-  const rankChange = user.rankChange || 0;
+  const rankChange = UserPlayer.rankChange || 0;
+  const characterImg = characters.find(
+    (c) => c.id === UserPlayer.characterId
+  )?.avatar;
+
+  console.log(props);
 
   return (
     <StyledGameHistoryItem
-      userWon={props.match.winnerId === props.userId}
+      userWon={props.match.winnerId === UserPlayer.id}
       characterAvatar={characterImg}
     >
       <div className="player-char"></div>
       <div className="Rank">
-        <img src="/badges/Radiant_Rank.png" />
+        <img
+          src={
+            getRankMetaData(UserPlayer.rankDivision, UserPlayer.rankTier)?.image
+          }
+        />
         <span>{rankChange > 0 ? `+${rankChange}` : rankChange}</span>
       </div>
 
@@ -134,7 +142,7 @@ const GameHistoryItem = (props: GameHistoryItemProps) => {
 
       <div className="game-result">
         <span className="result-text">
-          {props.match.winnerId === props.userId ? "VICTORY" : "DEFEAT"}
+          {props.match.winnerId === UserPlayer.id ? "VICTORY" : "DEFEAT"}
         </span>
         <span>
           {props.match.opponent1.finalScore} -{" "}
@@ -144,10 +152,10 @@ const GameHistoryItem = (props: GameHistoryItemProps) => {
 
       <div className="oponent">
         {(props.match.mode === "ONE_VS_ONE" ||
-          props.match.mode === "Tournament") && (
+          props.match.mode === "TOURNAMENT") && (
           <span>
             VS -{" "}
-            {props.match.opponent1.userId === props.userId
+            {Number(props.match.opponent1.gmUserId) === Number(props.userId)
               ? props.match.opponent2.username
               : props.match.opponent1.username}
           </span>

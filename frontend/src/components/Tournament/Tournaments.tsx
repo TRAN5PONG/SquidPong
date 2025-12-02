@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import Zeroact, { useEffect } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import {
   ChallengeIcon,
@@ -261,12 +261,11 @@ const StyledTournamentCard = styled("div")`
   }
 `;
 const TournamentCard = (props: Tournament) => {
+  const [tournament, setTournament] = useState(props);
+  const [isUserParticipant, setIsUserParticipant] = useState<boolean>(false);
+
   const navigate = useNavigate();
   const { user, toasts } = useAppContext();
-
-  const isUserParticipant = props.participants.some(
-    (p) => Number(p.userId) === Number(user?.userId)
-  );
 
   const handleJoinTournament = async () => {
     try {
@@ -277,38 +276,48 @@ const TournamentCard = (props: Tournament) => {
           type: "success",
           message: "Successfully joined the tournament.",
         });
-        navigate(`/tournament/${props.id}`);
+        setTournament(resp.data);
+        setIsUserParticipant(
+          resp.data.participants.some((p) => Number(p.userId) === Number(user?.userId))
+        );
       } else throw new Error(resp.message);
     } catch (err) {
       console.error("Failed to join tournament:", err);
     }
   };
+
+  useEffect(() => {
+    setIsUserParticipant(
+      props.participants.some((p) => Number(p.userId) === Number(user?.userId))
+    );
+  }, []);
+
   return (
     <StyledTournamentCard>
       <div
         className="CardHeader"
-        onClick={() => navigate(`/tournament/${props.id}`)}
+        onClick={() => navigate(`/tournament/${tournament.id}`)}
       >
         <div className="CardHeaderAvatar">
           <TrophyIcon size={50} fill="var(--bg_color_super_light)" />
         </div>
         <div className="CardHeaderInfos">
-          <h1 className="CardHeaderInfosName">{props.name}</h1>
-          <span className="CardHeaderInfosDesc">{props.description}</span>
+          <h1 className="CardHeaderInfosName">{tournament.name}</h1>
+          <span className="CardHeaderInfosDesc">{tournament.description}</span>
           <div className="CardBodyParticipants">
             <div className="CardBodyParticipantsAvatars">
-              {props.participants.slice(0, 3).map((participant) => {
+              {tournament.participants.slice(0, 3).map((participant) => {
                 return (
                   <StyledTournamentCardAvatar avatar={participant.avatar} />
                 );
               })}
-              {props.participants.length > 3 && (
+              {tournament.participants.length > 3 && (
                 <StyledTournamentCardAvatar className="Extra">
-                  +{props.participants.length - 3}
+                  +{tournament.participants.length - 3}
                 </StyledTournamentCardAvatar>
               )}
             </div>
-            <span>{props.participants.length > 0 && "have joined"}</span>
+            <span>{tournament.participants.length > 0 && "have joined"}</span>
           </div>
         </div>
       </div>
@@ -317,13 +326,13 @@ const TournamentCard = (props: Tournament) => {
         <div className="CardBodyTournamentStatus">
           <InfosIcon size={20} fill="rgba(255, 255, 255, 0.8)" />
           <span>
-            {props.status === "REGISTRATION"
+            {tournament.status === "REGISTRATION"
               ? "Registration Open"
-              : props.status === "READY"
+              : tournament.status === "READY"
               ? "Ready to Start"
-              : props.status === "IN_PROGRESS"
+              : tournament.status === "IN_PROGRESS"
               ? "In Progress"
-              : props.status === "COMPLETED"
+              : tournament.status === "COMPLETED"
               ? "Completed"
               : "Cancelled"}
           </span>
@@ -331,22 +340,24 @@ const TournamentCard = (props: Tournament) => {
         <div className="CardBodyParticipationFee">
           <CoinIcon size={20} fill="rgba(255, 255, 255, 0.8)" />
           <span>
-            {props.participationFee
-              ? `Participation Fee: ${props.participationFee} Coins`
+            {tournament.participationFee
+              ? `Participation Fee: ${tournament.participationFee} Coins`
               : "Free Participation"}
           </span>
         </div>
         <div className="CardBodyParticipantsCount">
           <PersonIcon size={20} fill="rgba(255, 255, 255, 0.8)" />
           <span>
-            {props.participants.length} / {props.maxPlayers} Participants
+            {tournament.participants.length} / {tournament.maxPlayers}{" "}
+            Participants
           </span>
         </div>
       </div>
 
       <button
         className={`CardBtn ${
-          (props.status !== "REGISTRATION" && props.status !== "COMPLETED") ||
+          (tournament.status !== "REGISTRATION" &&
+            tournament.status !== "COMPLETED") ||
           isUserParticipant
             ? "disabled"
             : ""
@@ -357,13 +368,13 @@ const TournamentCard = (props: Tournament) => {
       >
         {isUserParticipant
           ? "Joined"
-          : props.status === "REGISTRATION"
+          : tournament.status === "REGISTRATION"
           ? "Join"
-          : props.status === "READY"
+          : tournament.status === "READY"
           ? "full"
-          : props.status === "IN_PROGRESS"
+          : tournament.status === "IN_PROGRESS"
           ? "full"
-          : props.status === "COMPLETED"
+          : tournament.status === "COMPLETED"
           ? "View Results"
           : "Cancelled"}
       </button>

@@ -30,14 +30,6 @@ const tournamentRoutes: Route[] = [
     handler: tournamentController.getTournament,
   },
 
-  // Update status
-  {
-    method: "POST",
-    url: "/api/tournament/tournaments/:id/status",
-    handler: tournamentController.updateTournamentStatus,
-    schema: updateTournamentStatusSchema,
-  },
-
   // Tournament management
   {
     method: "POST",

@@ -7,8 +7,7 @@ export const enum NotificationType {
   FRIEND_REQUEST = "friendRequest",
   FRIEND_REQUEST_ACCEPTED = "friendRequestAccepted",
   GAME_INVITE = "gameInvite",
-  TOURNAMENT_INVITE = "tournamentInvite",
-  TOURNAMENT_CANCELLED = "tournamentCancelled",
+  TOURNAMENT_UPDATE = "tournamentUpdate",
   COIN_GIFT_RECEIVED = "coinGiftReceived",
   ACHIEVEMENT_UNLOCKED = "achievementUnlocked",
   SPECTATE_INVITE = "spectateInvite",
@@ -19,8 +18,6 @@ export const enum NotificationType {
   DELETE_MESSAGE = "deleteMessage",
   NEW_REACTION = "newReaction",
   REMOVE_REACTION = "removeReaction",
-
-
 }
 
 export enum NotificationPriority {
@@ -37,8 +34,7 @@ export enum NotificationPriority {
 //   createdAt?: string;
 // }
 
-export async function processFriendNotification(data: any) 
-{
+export async function processFriendNotification(data: any) {
   const setting = await prisma.user.findUnique({
     where: { userId: data.targetId.toString() },
     select: { notificationSettings: { select: { friendRequests: true } } },
@@ -78,9 +74,7 @@ export async function processFriendNotification(data: any)
       },
       "broadcastData"
     );
-  } 
-  else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) 
-    {
+  } else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
     const existNotification = await prisma.notification.findFirst({
       where: {
         targetId: data.fromId.toString(),
@@ -124,15 +118,14 @@ export async function processFriendNotification(data: any)
       {
         targetId: data.targetId.toString(),
         event: "notification",
-        data : {
+        data: {
           message: `${notification?.by?.username} accepted your friend request.`,
-        }
+        },
       },
       "broadcastData"
     );
   }
 }
-
 
 export async function processGameNotification(data: any) {
   const setting = await prisma.user.findUnique({
@@ -143,7 +136,6 @@ export async function processGameNotification(data: any) {
   if (!setting || !setting.notificationSettings) return;
   if (!setting.notificationSettings.gameInvites) return;
 
-  console.log("hlllllllllllllllllllllllllllllllll")
   await sendDataToQueue(
     {
       targetId: data.targetId.toString(),
@@ -154,16 +146,12 @@ export async function processGameNotification(data: any) {
   );
 }
 
-
-
-export async function processChatNotification(data: any) 
-{
-  const {targetId} = data;
+export async function processChatNotification(data: any) {
+  const { targetId } = data;
 
   const targetIds = Array.isArray(targetId) ? targetId : [targetId];
 
-  for (const tId of targetIds) 
-  {
+  for (const tId of targetIds) {
     await sendDataToQueue(
       {
         targetId: tId,
@@ -176,42 +164,51 @@ export async function processChatNotification(data: any)
   }
 }
 
-
-
 export async function processTournamentNotification(data: any) {
   const setting = await prisma.user.findUnique({
     where: { userId: data.targetId.toString() },
     select: { notificationSettings: { select: { tournamentUpdates: true } } },
   });
-  if (!setting || !setting.notificationSettings) return;
-  if (!setting.notificationSettings.tournamentUpdates) return;
+  // if (!setting || !setting.notificationSettings) return;
+  // if (!setting.notificationSettings.tournamentUpdates) return;
+  console.log("----", data);
+
+  const notifications = await Promise.all(
+    data.targetId.map(async (id) => {
+      return prisma.notification.create({
+        data: {
+          targetId: id, // single ID
+          byId: data.fromId,
+          type: "TOURNAMENT_UPDATE",
+          payload: {
+            create: {
+              tournamentName: data.data.tournamentName,
+              info: data.data.info,
+            },
+          },
+        },
+        include: {
+          by: true,
+          payload: true,
+        },
+      });
+    })
+  );
 
   await sendDataToQueue(
     {
-      targetId: data.targetId.toString(),
-      type: data.type,
-      timestamp: new Date().toISOString(),
+      targetId: data.targetId,
+      event: "notification",
+      data: {
+        message: `${data.data.info}`,
+      },
     },
     "broadcastData"
   );
 }
 
-// | "info"
-// | "warning"
-// | "friendRequest"
-// | "friendRequestAccepted"
-// | "gameInvite"
-// | "tournamentInvite"
-// | "tournamentCancelled"
-// | "CoinGiftReceived" // a coin gift has been received
-// | "AchievementUnlocked" // an achievement has been unlocked
-// | "coinGiftReceived"
-// | "spectateInvite" // a friend invites you to spectate a game
-// | "predictionWon"; // a prediction you made has been won
-
 export async function processNotificationFromRabbitMQ(msg: any) {
-  try 
-  {
+  try {
     const data = JSON.parse(msg.content.toString()) as any;
 
     if (!data || !data.type)
@@ -241,7 +238,7 @@ export async function processNotificationFromRabbitMQ(msg: any) {
 
       // Tournament notifications
 
-      case NotificationType.TOURNAMENT_INVITE:
+      case NotificationType.TOURNAMENT_UPDATE:
         await processTournamentNotification(data);
         break;
 
