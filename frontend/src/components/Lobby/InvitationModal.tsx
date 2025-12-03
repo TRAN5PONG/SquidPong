@@ -219,11 +219,12 @@ const StyledInviteOponent = styled("div")`
           }
         }
         .SelectedOpponent {
-          width: 150px;
+          width: auto;
           height: 35px;
           background-color: rgba(255, 255, 255, 0.1);
           border-radius: 30px;
           padding: 2px;
+          padding-right: 10px;
           display: flex;
           align-items: center;
           justify-content: flex-start;

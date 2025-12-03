@@ -128,7 +128,7 @@ interface ScoreBoardProps {
 const ScoreBoard = (props: ScoreBoardProps) => {
   const { toasts } = useAppContext();
   // Sounds
-  const { countDownSound, countDownEndSound, ambianceSound } = useSounds();
+  const { countDownSound, countDownEndSound, pauseAmbientSound } = useSounds();
 
   // Players
   const [host, setHost] = useState<MatchPlayer | null>(null);
@@ -240,18 +240,18 @@ const ScoreBoard = (props: ScoreBoardProps) => {
 
     // Handle pause sound — only play once when pause starts
     if (matchPhase === "paused" && !lastPausedRef.current) {
-      if (ambianceSound.isMuffled) ambianceSound.setMuffled(false);
-      ambianceSound.play();
+      if (pauseAmbientSound.isMuffled) pauseAmbientSound.setMuffled(false);
+      pauseAmbientSound.play();
       props.startCinematicCamera();
       lastPausedRef.current = true;
     } else if (matchPhase !== "paused") {
-      ambianceSound.stop();
+      pauseAmbientSound.stop();
       props.resetCamera();
       lastPausedRef.current = false;
     }
 
     if (activeCountdown === 5 && matchPhase !== "paused") {
-      ambianceSound.setMuffled(true);
+      pauseAmbientSound.setMuffled(true);
       props.resetCamera();
     }
 

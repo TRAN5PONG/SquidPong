@@ -64,7 +64,6 @@ function recieveHandler(msg: any) {
 
   try {
     const data = JSON.parse(msg.content.toString());
-    console.log("GOT DATA:", data);
 
     if (data.tournamentId) processTournamentMessage(data);
     else processMatchMessage(data);

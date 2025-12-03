@@ -15,13 +15,16 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
 import "@babylonjs/inspector";
 import { Light } from "@/components/Game/entities/Light";
-
+import { Network } from "@/components/Game/network/network";
 import {
   AdvancedDynamicTexture,
   TextBlock,
   Rectangle,
   Control,
+  Button,
 } from "@babylonjs/gui";
+import { Match, MatchPlayer } from "@/types/game/game";
+import { match } from "assert";
 
 // Impact effect interface
 interface ImpactEffect {
@@ -36,9 +39,10 @@ export class Arena {
   private scene: Scene;
   private TableBaseMesh: AbstractMesh | null = null;
   private BoardMesh: AbstractMesh | null = null;
+  private net: Network;
 
   private boardGUI: AdvancedDynamicTexture | null = null;
-  private boardText1: TextBlock | null = null;
+  private ScoreText: TextBlock | null = null;
   private gameStatusText: TextBlock | null = null;
   private playersNamesText: TextBlock | null = null;
 
@@ -51,9 +55,20 @@ export class Arena {
   private impactEffects: ImpactEffect[] = [];
   private impactObserver: Nullable<Observer<Scene>> = null;
 
-  constructor(scene: Scene, light: Light) {
+  // callbacks
+  private onReady?: () => void;
+  private onReadyHover?: (isMuffled: boolean) => void;
+
+  // Score
+  private match: Match;
+  private opponent1Score: number = 0;
+  private opponent2Score: number = 0;
+
+  constructor(scene: Scene, light: Light, net: Network, match: Match) {
     this.scene = scene;
     this.Light = light;
+    this.net = net;
+    this.match = match;
 
     // Start impact animation loop
     this.startImpactAnimationLoop();
@@ -79,7 +94,7 @@ export class Arena {
       this.BoardMesh,
       2048,
       1024,
-      true,
+      true
     );
 
     this.boardGUI.background = "transparent";
@@ -91,45 +106,90 @@ export class Arena {
     container.background = "black";
     this.boardGUI.addControl(container);
 
-    this.boardText1 = this.setupBoardText(
-      "line1",
-      "Welcome to the Arena!",
-      120,
+    this.gameStatusText = this.setupBoardText(
+      "line2",
+      `${this.net.getPhase()}`,
+      70,
       "rgb(33, 136, 85)",
       "black",
       2,
       "Pixel LCD7",
       undefined,
-      -300,
-      true,
-    );
-    this.gameStatusText = this.setupBoardText(
-      "line2",
-      "--------- Get Ready! ---------",
-      80,
-      "red",
-      "black",
-      2,
-      "Pixel LCD7",
-      undefined,
-      -100,
-      true,
+      450,
+      true
     );
     this.playersNamesText = this.setupBoardText(
       "line3",
-      "HOST VS GUEST",
+      `${this.match.opponent1.username} VS ${this.match.opponent2.username}`,
       130,
       "rgb(33, 136, 85)",
       "#5C5C5C",
       2,
       "Pixel LCD7",
       undefined,
+      -200,
+      true
+    );
+    this.ScoreText = this.setupBoardText(
+      "line3",
+      `${this.opponent1Score} - ${this.opponent2Score}`,
+      200,
+      "rgb(33, 136, 85)",
+      "black",
+      2,
+      "Pixel LCD7",
       undefined,
-      true,
+      100,
+      true
     );
 
-    container.addControl(this.boardText1);
     container.addControl(this.playersNamesText);
+    container.addControl(this.gameStatusText);
+    container.addControl(this.ScoreText);
+  }
+
+  private initReadyBTN() {
+    // Ready BTN
+    const plane = MeshBuilder.CreatePlane(
+      "buttonPlane",
+      { width: 2, height: 1 },
+      this.scene
+    );
+
+    plane.position = this.TableBaseMesh?.position.clone()!;
+    plane.position.y += 4; // 2 units above
+    plane.scaling.x *= -1;
+
+    const guiTexture = AdvancedDynamicTexture.CreateForMesh(plane);
+
+    // 3. Create a button
+    const button = Button.CreateSimpleButton("readyButton", "READY");
+    button.width = 1;
+    button.height = 0.4;
+    button.fontSize = 200;
+    button.color = "white";
+    button.background = "#ca2f3ce6";
+    button.fontFamily = "Game Of Squids";
+    button.onPointerUpObservable.add(() => {
+      if (this.onReady) this.onReady();
+      this.Light.setDirecionLightIntensity(0.8);
+      this.Light.setAambientLightIntensity(0.2);
+      guiTexture.dispose();
+      plane.dispose();
+    });
+    button.onPointerEnterObservable.add(() => {
+      if (this.onReadyHover) this.onReadyHover(true);
+      this.Light.setDirecionLightIntensity(0);
+      this.Light.setAambientLightIntensity(0.05);
+    });
+    button.onPointerOutObservable.add(() => {
+      if (this.onReadyHover) this.onReadyHover(false);
+      this.Light.setDirecionLightIntensity(0.8);
+      this.Light.setAambientLightIntensity(0.2);
+    });
+
+    // 4. Add button to the plane
+    guiTexture.addControl(button);
   }
 
   private setupBoardText(
@@ -142,7 +202,7 @@ export class Arena {
     fontFamily: string,
     left?: number,
     top?: number,
-    isCentered?: boolean,
+    isCentered?: boolean
   ): TextBlock {
     const text = new TextBlock(headline, value);
     text.fontSize = size;
@@ -170,7 +230,7 @@ export class Arena {
   async Load() {
     const Container = await LoadAssetContainerAsync(
       "/models/Lobby.glb",
-      this.scene,
+      this.scene
     );
 
     Container.addAllToScene();
@@ -200,6 +260,7 @@ export class Arena {
     this.Mesh = ObjGroup;
 
     this.initializeBoardGUI();
+    this.initReadyBTN();
   }
 
   // ----------------------------------
@@ -236,8 +297,8 @@ export class Arena {
     const baseColor = intro
       ? IntroColor
       : isWon
-        ? new Color3(0, 1, 0)
-        : new Color3(1, 0, 0);
+      ? new Color3(0, 1, 0)
+      : new Color3(1, 0, 0);
     const mat = new StandardMaterial("pulseMat", this.scene);
     this.TableEdgesMesh.material = mat;
 
@@ -259,6 +320,25 @@ export class Arena {
     }
   }
 
+  setOnReadyHover(func: (isMuffled: boolean) => void) {
+    this.onReadyHover = func;
+  }
+  setOnReadyClick(func: () => void) {
+    this.onReady = func;
+  }
+  setOpponent1Score(val: number) {
+    this.opponent1Score = val;
+    if (this.ScoreText) {
+      this.ScoreText.text = `${this.opponent1Score} - ${this.opponent2Score}`;
+    }
+  }
+  setOpponent2Score(val: number) {
+    this.opponent2Score = val;
+    if (this.ScoreText) {
+      this.ScoreText.text = `${this.opponent1Score} - ${this.opponent2Score}`;
+    }
+  }
+
   // ----------------------------------
   //  IMPACT EFFECT SYSTEM
   // ----------------------------------
@@ -277,7 +357,7 @@ export class Arena {
         thickness: 0.06,
         tessellation: 8,
       },
-      this.scene,
+      this.scene
     );
 
     // Position slightly above table surface to avoid z-fighting
@@ -334,7 +414,7 @@ export class Arena {
           mat.emissiveColor = new Color3(
             brightness,
             brightness * 0.05,
-            brightness * 0.5,
+            brightness * 0.5
           );
         }
       }

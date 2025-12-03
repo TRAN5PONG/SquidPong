@@ -18,11 +18,9 @@
   "dependencies": {
     "@babylonjs/inspector": "^8.14.2",
     "@babylonjs/loaders": "^8.14.2",
-    "@babylonjs/materials": "^8.14.2",
     "@dimforge/rapier3d-compat": "^0.18.0",
     "colyseus.js": "^0.16.19",
     "gsap": "^3.13.0",
     "scheduler": "^0.26.0"
-
   }
 }

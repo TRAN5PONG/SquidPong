@@ -172,6 +172,19 @@ export async function getUsers(): Promise<ApiResponse<User[]>> {
   }
   return await response.json();
 }
+export async function getLeaderboard(): Promise<ApiResponse<User[]>> {
+  const response = await fetch(`${API_BASE_URL}/user/leaderboard`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch users: ${response.statusText}`);
+  }
+  return await response.json();
+}
 
 // Search
 export async function SearchUsers(query: string): Promise<ApiResponse<User[]>> {

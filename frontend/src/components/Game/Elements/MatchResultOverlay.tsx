@@ -115,7 +115,8 @@ export const MatchResultOverlay = (props: MatchResultOverlayProps) => {
   const { wonSound, lostSound } = useSounds();
 
   useEffect(() => {
-    console.log(props.isWinner);
+    if (props.isWinner === null || props.isWinner === undefined) return;
+
     if (props.isWinner) {
       wonSound.play();
     } else {

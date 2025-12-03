@@ -27,9 +27,16 @@ import { removeFriendFromChat } from "../integration/chat.restapi";
 
 import { deleteAccountInChat } from "../integration/chat.restapi";
 import { deleteAccountInNotify } from "../integration/notify.restapi";
+import {
+  calculateLevel,
+  calculateNewScore,
+  calculateRank,
+} from "../utils/scoreHandler";
 
-export async function createProfileHandler(req: FastifyRequest,res: FastifyReply) 
-{
+export async function createProfileHandler(
+  req: FastifyRequest,
+  res: FastifyReply
+) {
   const response: ApiResponse<null> = {
     success: true,
     message: ProfileMessages.CREATE_SUCCESS,
@@ -54,10 +61,12 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
     isVerified?: boolean;
   };
 
-  body["avatar"] = body["avatar"] ||`${process.env.BACKEND_URL || "http://localhost:4000"}:4433/api/user/avatars/default.png`;
-  try 
-  {
-
+  body["avatar"] =
+    body["avatar"] ||
+    `${
+      process.env.BACKEND_URL || "http://localhost:4000"
+    }:4433/api/user/avatars/default.png`;
+  try {
     checkSecretToken(req);
 
     console.log("body to create profile:", body);
@@ -65,13 +74,13 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
     await prisma.profile.create({
       data: {
         ...body,
-        playerSelectedCharacter: (body.playerSelectedCharacter as any),
+        playerSelectedCharacter: body.playerSelectedCharacter as any,
         playerPaddles: body.playerPaddles as any,
-        playerSelectedPaddle: (body.playerSelectedPaddle as any),
-        rankDivision: (body.rankDivision as any),
-        rankTier: (body.rankTier as any),
-        level: body.level ,
-        score: body.score ,
+        playerSelectedPaddle: body.playerSelectedPaddle as any,
+        rankDivision: body.rankDivision as any,
+        rankTier: body.rankTier as any,
+        level: body.level,
+        score: body.score,
         walletBalance: body.walletBalance,
         paddleColor: body.paddleColor,
         preferences: { create: { notifications: { create: {} } } },
@@ -96,8 +105,7 @@ export async function createProfileHandler(req: FastifyRequest,res: FastifyReply
 export async function updateProfileHandlerDB(
   req: FastifyRequest,
   res: FastifyReply
-) 
-{
+) {
   const respond: ApiResponse<any> = {
     success: true,
     message: ProfileMessages.UPDATE_SUCCESS,
@@ -110,8 +118,7 @@ export async function updateProfileHandlerDB(
   let newData: { isVerified?: boolean; walletBalance?: number } = {};
   let body = req.body as any;
 
-  try 
-  {
+  try {
     let existingProfile = await prisma.profile.findUnique({
       where: { userId },
     });
@@ -132,8 +139,6 @@ export async function updateProfileHandlerDB(
       body.playerPaddles
     );
 
-    
-
     if (body.playerSelectedCharacter) {
       const exists = await SelectedItemExists(
         existingProfile,
@@ -153,12 +158,11 @@ export async function updateProfileHandlerDB(
 
     newData.walletBalance = existingProfile.walletBalance;
 
-    if (body.isVerified === true) 
-      newData = await buyVerified(existingProfile);
+    if (body.isVerified === true) newData = await buyVerified(existingProfile);
 
     body = { ...body, ...newData };
 
-    body['status'] = body.customStatus;
+    body["status"] = body.customStatus;
 
     console.log("Final body to update:", body);
     const updatedProfile = await prisma.profile.update({
@@ -180,13 +184,12 @@ export async function updateProfileHandlerDB(
       },
     });
 
-    if (body.username)
-    {
+    if (body.username) {
       await sendServiceRequestSimple("auth", userId, "PUT", {
         username: body.username,
       });
     }
-      
+
     // Removed Redis update for status
 
     const dataSend = {
@@ -211,14 +214,11 @@ export async function updateProfileHandlerDB(
     // Removed Redis update
 
     respond.data = updatedProfile;
-
-  } 
-  catch (error) {
+  } catch (error) {
     return sendError(res, error);
   }
   return res.send(respond);
 }
-
 
 export async function updateProfileHandler(
   req: FastifyRequest,
@@ -241,25 +241,21 @@ export async function updateProfileHandler(
   };
   let profile;
 
-  try 
-  {
-    const profileExists = await prisma.profile.findUnique({ where: { userId } });
+  try {
+    const profileExists = await prisma.profile.findUnique({
+      where: { userId },
+    });
     if (!profileExists) throw new Error(ProfileMessages.UPDATE_NOT_FOUND);
-
 
     if (Token !== process.env.SECRET_TOKEN)
       throw new Error(GeneralMessages.UNAUTHORIZED);
 
     let dataToUpdate: any = {};
-    if (body.status !== undefined) 
-    {
-      if (body.status === "OFFLINE") 
-      {
+    if (body.status !== undefined) {
+      if (body.status === "OFFLINE") {
         dataToUpdate.status = "OFFLINE";
         dataToUpdate.lastSeen = new Date();
-      }
-      else
-      {
+      } else {
         dataToUpdate.status = profileExists.customStatus;
       }
 
@@ -473,8 +469,7 @@ export async function updateProfileImageHandler(
   const headers = req.headers as any;
   const userId = Number(headers["x-user-id"]);
 
-  try 
-  {
+  try {
     const parsed = (await convertParsedMultipartToJson(req)) as any;
     const data = await prisma.profile.update({
       where: { userId },
@@ -486,8 +481,7 @@ export async function updateProfileImageHandler(
     await sendServiceRequestSimple("chat", userId, "PUT", { avatar: parsed });
     await sendServiceRequestSimple("notify", userId, "PUT", { avatar: parsed });
     respond.data = data;
-  } 
-  catch (error) {
+  } catch (error) {
     return sendError(res, error);
   }
 
@@ -522,4 +516,73 @@ export async function searchUsersHandler(
     return sendError(res, error);
   }
   return res.send(respond);
+}
+
+export async function leaderboard(eq: FastifyRequest, res: FastifyReply) {
+  const respond: ApiResponse<Profile[]> = {
+    success: true,
+    message: ProfileMessages.FETCH_SUCCESS,
+  };
+
+  try {
+    const leaderboard = await prisma.profile.findMany({
+      where: {
+        isDeleted: false,
+      },
+      orderBy: {
+        level: "desc",
+      },
+    });
+
+    respond.data = leaderboard;
+    return res.send(respond);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function applyMatchResult(req: FastifyRequest, res: FastifyReply) {
+  const { player1Id, player2Id, player1Result, player2Result } = req.body as {
+    player1Id: number;
+    player2Id: number;
+    player1Result: "WIN" | "LOSS";
+    player2Result: "WIN" | "LOSS";
+  };
+
+  const applyForPlayer = async (playerId: number, result: "WIN" | "LOSS") => {
+    const profile = await prisma.profile.findUnique({
+      where: { userId: playerId },
+    });
+
+    if (!profile) return;
+
+    const newScore = calculateNewScore(profile.score, result);
+    const newLevel = calculateLevel(newScore);
+    const { rankDivision, rankTier } = calculateRank(newScore);
+
+    await prisma.profile.update({
+      where: { userId: playerId },
+      data: {
+        score: newScore,
+        level: newLevel,
+        rankDivision,
+        rankTier,
+      },
+    });
+  };
+
+  await Promise.all([
+    applyForPlayer(player1Id, player1Result),
+    applyForPlayer(player2Id, player2Result),
+  ]);
+
+  console.log("reaaaaaaaaaaaaaaaaaaaaaaaaaaaach222222222222222222222")
+  return res.send({
+    success: true,
+    message: "Match results applied successfully",
+  });
 }

@@ -15,8 +15,8 @@ export class ScoringHandler {
 
     this.room.state.scores.set(playerId, current + 1);
 
-    // const totalPoints = this.room.state.totalPointsScored;
-    const totalPoints = 1;
+    const totalPoints = this.room.state.totalPointsScored;
+    // const totalPoints = 1;
 
     console.log(`🏆 Total points to win: ${totalPoints}`);
 
@@ -187,7 +187,7 @@ export class ScoringHandler {
       // Update Match itself
       await prisma.match.update({
         where: { id: matchId },
-        data: { status: "COMPLETED", winnerId },
+        data: { status: "COMPLETED", winnerId, confirmedAt: new Date() },
       });
 
       // Update comprehensive stats for both players
@@ -203,6 +203,21 @@ export class ScoringHandler {
           this.updateUserStats(loser.userId, false, matchDuration, match.mode)
         );
       }
+
+      updates.push(
+        (async () => {
+          await fetch("/api/user/apply-match-result", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              player1Id: player1.gmUserId,
+              player2Id: player2.gmUserId,
+              player1Result: winnerId === player1.id ? "WIN" : "LOSS",
+              player2Result: winnerId === player2.id ? "WIN" : "LOSS",
+            }),
+          });
+        })()
+      );
 
       await Promise.all(updates);
 

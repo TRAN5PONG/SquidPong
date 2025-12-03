@@ -76,7 +76,7 @@
   /* Main Colors */
   --bg_color: rgb(19, 18, 23);
   --bg_color_rgba: 19, 18, 23;
-  --bg_color_light: #1b1a1f;
+  --bg_color_light: rgb(27, 26, 31);
   --bg_color_super_light: rgb(32, 31, 36);
   --bg_color_dark: #12161F;
   --main_color2: rgb(202, 47, 60);
@@ -126,7 +126,7 @@ body {
 }
 
 .BtnPrimary:hover {
-  background-color: rgba(202, 47, 60, 0.9);
+  background-color: #ca2f3ce6;
 }
 
 .BtnSecondary {

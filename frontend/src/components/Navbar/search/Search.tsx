@@ -244,7 +244,11 @@ const StyledSearchGroupBox = styled("div")`
     background-color: var(--bg_color_light);
   }
 `;
-const SearchModal = (props: { onClose: () => void; query: string, refetchConvs: () => void }) => {
+const SearchModal = (props: {
+  onClose: () => void;
+  query: string;
+  refetchConvs: () => void;
+}) => {
   const ModalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, toasts } = useAppContext();
@@ -377,16 +381,17 @@ const SearchModal = (props: { onClose: () => void; query: string, refetchConvs: 
             ))
           : players.length > 0 &&
             players.map((player: User) => {
+              console.log(player)
               return (
-                <StyledSearchPlayerBox
-                  avatar={player.avatar}
-                  onClick={() => {
-                    navigate(`/user/${player.username}`);
-                    props.onClose();
-                  }}
-                >
+                <StyledSearchPlayerBox avatar={player.avatar}>
                   <div className="Avatar" />
-                  <div className="SearchPlayerInfos">
+                  <div
+                    className="SearchPlayerInfos"
+                    onClick={() => {
+                      navigate(`/user/${player.username}`);
+                      props.onClose();
+                    }}
+                  >
                     <span className="SearchPlayerInfosFullName">
                       {player.firstName + " " + player.lastName}
                       {player.isVerified && (

@@ -28,4 +28,5 @@ export interface MatchState extends Schema {
   currentServer: string | null;
   serveState: ServeState;
   hostPlayerId: string | null;
+  gameStartAt: Date;
 }

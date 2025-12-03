@@ -15,6 +15,7 @@ import { Network } from "./network/network";
 import { Game } from "./Scenes/GameScene";
 import { db } from "@/db";
 import { useNavigate } from "@/contexts/RouterProvider";
+import { useSounds } from "@/contexts/SoundProvider";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -93,17 +94,17 @@ const StyledGame = styled("div")`
       position: absolute;
       left: 50%;
       top: 50%;
-      transform: translate(-50%,-50%);
+      transform: translate(-50%, -50%);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 5px;
       border-radius: 5px;
-      border: 1px solid rgba(255,255,255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       background-color: var(--main_color2);
       font-size: 1.2rem;
       font-family: var(--squid_font);
-      color : white;
+      color: white;
     }
   }
 
@@ -131,6 +132,20 @@ const GameContiner = () => {
   // Game States
   const [matchPhase, setMatchPhase] = useState<MatchPhase>("waiting");
   const [winnerId, setWinnerId] = useState<string | null>(null);
+  // Sounds
+  const { entranceSound } = useSounds();
+
+  // InGame callbacks
+  const inGameOnReadyHover = (isMuffled: boolean) => {
+    entranceSound.setMuffled(isMuffled);
+  };
+  const inGameOnReadyClick = () => {
+    if (!gameRef.current) return;
+    gameRef.current.arena.stopTableEdgesPulse();
+    gameRef.current.camera.setupPosition();
+    gameRef.current.net.sendMessage("player:ready");
+    entranceSound.stop();
+  };
 
   // == Get Match
   useEffect(() => {
@@ -157,6 +172,9 @@ const GameContiner = () => {
 
     gameRef.current = new Game(canvasRef.current, match, user.id, false);
     gameRef.current.start();
+    setTimeout(() => {
+      // entranceSound.play();
+    }, 500);
     netRef.current = gameRef.current.net;
 
     return () => {
@@ -164,12 +182,30 @@ const GameContiner = () => {
       netRef.current = null;
     };
   }, [match, user?.id, canvasRef.current]);
+  useEffect(() => {
+    if (gameRef.current?.arena) {
+      gameRef.current.arena.setOnReadyHover(inGameOnReadyHover);
+      gameRef.current.arena.setOnReadyClick(inGameOnReadyClick);
+    }
+  }, [gameRef.current?.arena]);
   // == Network Listeners
   useEffect(() => {
     if (!netRef.current) return;
     netRef.current.on("phase:changed", setMatchPhase);
     netRef.current.on("winner:declared", setWinnerId);
     netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
+
+    netRef.current.on("score:update", (data) => {
+      Object.entries(data.scores).forEach(([playerId, score]) => {
+        if (playerId === match?.opponent1.id) {
+          console.log("reaaaaaaaaaaaaaaaaaaaaaaa-------")
+          gameRef.current?.arena.setOpponent1Score(Number(score));
+        } else if (playerId === match?.opponent2.id) {
+          console.log("roooooooooooooooooooooooo-------")
+          gameRef.current?.arena.setOpponent2Score(Number(score));
+        }
+      });
+    });
   }, [gameRef.current]);
 
   const navigate = useNavigate();
@@ -243,11 +279,11 @@ const GameContiner = () => {
           ))}
         </div>
 
-        {matchPhase === "waiting" && (
+        {/* {matchPhase === "waiting" && (
           <button className="ReadyBtn" onClick={onReady}>
             Ready
           </button>
-        )}
+        )} */}
       </div>
       <canvas ref={canvasRef} className="game-canvas"></canvas>;
     </StyledGame>

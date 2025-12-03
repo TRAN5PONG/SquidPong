@@ -1,8 +1,10 @@
 import { db } from "@/db";
-import Zeroact from "@/lib/Zeroact";
+import Zeroact, { useEffect, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { User } from "@/types/user";
+import { getLeaderboard } from "@/api/user";
+import { getRankMetaData } from "@/utils/game";
 
 const StyledLeaderboard = styled("div")`
   display: flex;
@@ -36,44 +38,75 @@ const StyledLeaderboard = styled("div")`
 `;
 
 const Leaderboard = () => {
+  const [leaderboard, setLeaderboard] = useState<User[]>([]);
+  const [podium, setPodium] = useState<User[]>([]);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleFetchLeaderboard = async () => {
+      try {
+        const resp = await getLeaderboard();
+        if (resp.data) {
+          setPodium(resp.data.slice(0, 3));
+          setLeaderboard(resp.data.slice(3));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    handleFetchLeaderboard();
+  }, []);
   return (
     <StyledLeaderboard className="scroll-y">
-      <div className="podium">
-        <StyledPodiumCard avatar={db.users[0].avatar} className="sec" rank="2">
-          <div className="PodiumFrame">
-            <img src="/assets/podium2.png" />
-          </div>
-        </StyledPodiumCard>
-        <StyledPodiumCard
-          avatar={db.users[1].avatar}
-          className="first"
-          rank="1"
-        >
-          <div className="PodiumFrame">
-            <img src="/assets/podium1.png" />
-          </div>
-        </StyledPodiumCard>
-        <StyledPodiumCard
-          avatar={db.users[2].avatar}
-          className="third"
-          rank="3"
-        >
-          <div className="PodiumFrame">
-            <img src="/assets/podium2.png" />
-          </div>
-        </StyledPodiumCard>
-      </div>
+      {podium.length > 0 && (
+        <div className="podium">
+          <StyledPodiumCard avatar={podium[0].avatar} className="sec" rank="2">
+            <div
+              className="PodiumFrame"
+              onClick={() => navigate(`/user/${podium[0].username}`)}
+            >
+              <img src="/assets/podium2.png" />
+            </div>
+          </StyledPodiumCard>
+          <StyledPodiumCard
+            avatar={podium[1].avatar}
+            className="first"
+            rank="1"
+          >
+            <div
+              className="PodiumFrame"
+              onClick={() => navigate(`/user/${podium[1].username}`)}
+            >
+              <img src="/assets/podium1.png" />
+            </div>
+          </StyledPodiumCard>
+          <StyledPodiumCard
+            avatar={podium[2].avatar}
+            className="third"
+            rank="3"
+          >
+            <div
+              className="PodiumFrame"
+              onClick={() => navigate(`/user/${podium[2].username}`)}
+            >
+              <img src="/assets/podium2.png" />
+            </div>
+          </StyledPodiumCard>
+        </div>
+      )}
 
       <div className="leaderboard-list">
-        <LeaderboardCard {...db.users[0]} />
-        <LeaderboardCard {...db.users[1]} />
+        {leaderboard.length > 0 &&
+          leaderboard.map((p) => <LeaderboardCard {...p} />)}
       </div>
     </StyledLeaderboard>
   );
 };
 
 const StyledLeaderboardCard = styled("div")`
-  width: 95%;
+  width: 100%;
   height: 60px;
   display: flex;
   align-items: center;
@@ -82,38 +115,57 @@ const StyledLeaderboardCard = styled("div")`
   cursor: pointer;
   position: relative;
   z-index: 2;
+  background-color: var(--bg_color_light);
+  transition: 0.2s ease-in-out;
+  &:hover {
+    box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
+  }
   &:after {
     border-radius: 7px;
-    background-color: var(--bg_color_light);
-    width: 100%;
+    background-image: linear-gradient(
+        90deg,
+        rgba(27, 26, 31, 0) 0%,
+        rgba(27, 26, 31, 0.8) 20%,
+        rgba(27, 26, 31, 1) 80%
+      ),
+      url(${(props: any) => props.banner});
+    background-size: cover;
+    background-position: center;
+    border: none;
+    width: 40%;
     height: 100%;
     content: "";
     position: absolute;
     z-index: -1;
-    transform: skew(-10deg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
   }
   .Avatar {
-    height: 55px;
-    width: 55px;
+    height: 56px;
+    width: 56px;
     background-color: var(--bg_color_super_light);
     border-radius: 5px;
     background-image: url(${(props: any) => props.avatar});
     background-size: cover;
     background-position: center;
-    transform: skew(-10deg);
-    margin-left: 5px;
+    margin-left: 3px;
   }
   .UserDetails {
     display: flex;
     flex-direction: column;
     justify-content: center;
     margin-left: 10px;
+    z-index: 3;
     h1 {
       font-size: 1.2rem;
       margin: 0;
       color: rgba(255, 255, 255, 0.7);
       font-family: var(--main_font);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      img {
+        height: 25px;
+      }
     }
     span {
       font-size: 0.9rem;
@@ -135,27 +187,30 @@ const StyledLeaderboardCard = styled("div")`
     display: flex;
     align-items: center;
     justify-content: center;
-    transform: skew(-10deg);
-    margin-right: -7px;
   }
 `;
 const LeaderboardCard = (props: User) => {
+  console.log(props);
   const navigate = useNavigate();
   return (
     <StyledLeaderboardCard
       avatar={props.avatar}
-      onClick={() => navigate(`/user/${props.id}`)}
+      banner={props.banner}
+      onClick={() => navigate(`/user/${props.username}`)}
     >
       <div className="Avatar" />
       <div className="UserDetails">
         <h1>
           {props.firstName} {props.lastName}
+          <img
+            src={getRankMetaData(props.rankDivision, props.rankTier)?.image}
+          />
         </h1>
         <span>@{props.username}</span>
       </div>
 
       <div className="UserScore">
-        <span>{props.playerStats.score}</span>
+        <span>{props.level}</span>
       </div>
     </StyledLeaderboardCard>
   );
@@ -222,6 +277,7 @@ const StyledPodiumCard = styled("div")`
     display: flex;
     justify-content: center;
     align-items: center;
+    cursor: pointer;
     img {
       height: 150%;
     }

@@ -21,6 +21,7 @@ import { paddleColors, paddleTextures } from "@/types/game/paddle";
 
 // Environment variable
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const IP = import.meta.env.VITE_IP;
 
 export class Game {
   // Game data
@@ -63,7 +64,7 @@ export class Game {
     canvas: HTMLCanvasElement,
     match: Match,
     userId: string,
-    isAIMode: boolean = false,
+    isAIMode: boolean = false
   ) {
     if (!canvas) {
       throw new Error("Canvas not found before initializing Game!");
@@ -108,14 +109,14 @@ export class Game {
       // Camera
       this.camera = new GameCamera(
         this.scene,
-        this.userId === this.hostId ? 1 : -1,
+        this.userId === this.hostId ? 1 : -1
       );
 
-      // this.camera.attach(this.canvas);
+      this.camera.attach(this.canvas);
 
       // Network
       if (!this.isAIMode) {
-        this.net = new Network(`wss://10.13.2.6:4433/matches`, this.match);
+        this.net = new Network(`wss://10.13.5.5:4433/matches`, this.match);
         this.room = await this.net.join(this.userId);
       } else {
         this.net = null as any;
@@ -125,7 +126,7 @@ export class Game {
       // Entities
       this.ball = new Ball(this.scene);
       this.light = new Light(this.scene);
-      this.arena = new Arena(this.scene, this.light);
+      this.arena = new Arena(this.scene, this.light, this.net, this.match);
 
       // Paddles setup
       this.hostPaddle = new Paddle(
@@ -135,7 +136,7 @@ export class Game {
         {
           color: paddleColors[0],
           // texture: paddleTextures[1],
-        },
+        }
       );
       this.guestPaddle = new Paddle(
         this.scene,
@@ -143,7 +144,7 @@ export class Game {
         this.isAIMode || this.userId === this.guestId,
         {
           color: paddleColors[1],
-        },
+        }
       );
 
       this.localPaddle =
@@ -160,7 +161,7 @@ export class Game {
         this.physics,
         this.net,
         this.scene,
-        this.isAIMode,
+        this.isAIMode
       );
 
       // Debugging tools

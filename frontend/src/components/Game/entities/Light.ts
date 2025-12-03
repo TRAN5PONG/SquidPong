@@ -5,6 +5,7 @@ import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
 import {
   AbstractMesh,
   DirectionalLight,
+  float,
   HemisphericLight,
   ShadowGenerator,
   SpotLight,
@@ -13,16 +14,17 @@ import {
 export class Light {
   private shadowGenerator: ShadowGenerator | null = null;
   private directionalLight: DirectionalLight | null = null;
+  private ambientLight: HemisphericLight | null = null;
 
   constructor(scene: Scene) {
     // Ambient light
-    const ambientLight = new HemisphericLight(
+    this.ambientLight = new HemisphericLight(
       "hemiLight",
       new Vector3(0, 1, 0),
       scene
     );
-    ambientLight.intensity = 0.2;
-    ambientLight.groundColor = new Color3(0.3, 0.3, 0.3);
+    this.ambientLight.intensity = 0.2;
+    this.ambientLight.groundColor = new Color3(0.3, 0.3, 0.3);
 
     // Directional light
     this.directionalLight = new DirectionalLight(
@@ -31,7 +33,7 @@ export class Light {
       scene
     );
 
-    this.directionalLight.position = new Vector3(0, 20, 0);  // Position for shadow calculation
+    this.directionalLight.position = new Vector3(0, 20, 0); // Position for shadow calculation
     this.directionalLight.intensity = 0.8;
     this.directionalLight.diffuse = new Color3(1, 0.95, 0.9); // Warm white light
     this.directionalLight.specular = new Color3(0.3, 0.3, 0.3); // Subtle specular highlights
@@ -56,5 +58,16 @@ export class Light {
   }
   setShadowReceiver(mesh: AbstractMesh, receive: boolean = true) {
     mesh.receiveShadows = receive;
+  }
+
+  setDirecionLightIntensity(val: number) {
+    if (this.directionalLight) {
+      this.directionalLight.intensity = val;
+    }
+  }
+  setAambientLightIntensity(val: number) {
+    if (this.ambientLight) {
+      this.ambientLight.intensity = val;
+    }
   }
 }

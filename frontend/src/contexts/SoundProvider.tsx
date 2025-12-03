@@ -3,7 +3,7 @@ import { SoundValue, useSound } from "@/hooks/useSound";
 
 // Define all your sounds in a single object
 export type AppSounds = {
-  ambianceSound: SoundValue;
+  pauseAmbientSound: SoundValue;
   backgroundSound: SoundValue;
   wonSound: SoundValue;
   lostSound: SoundValue;
@@ -18,16 +18,18 @@ export type AppSounds = {
   countDownEndSound: SoundValue;
   msgSentSound: SoundValue;
   msgReceivedSound: SoundValue;
+  entranceSound: SoundValue
 };
 
 const SoundContext = createContext<AppSounds | null>(null);
 
 export function SoundProvider({ children }: { children: ZeroactNode[] }) {
   // Preload all sounds immediately
-  const ambianceSound = useSound("/sounds/pause_ambient.mp3", { volume: 0.7 });
-  const backgroundSound = useSound("/sounds/background.wav", { volume: 0.5 });
-  const wonSound = useSound("/sounds/won.mp3", { volume: 0.5 });
-  const lostSound = useSound("/sounds/lost.mp3", { volume: 0.5 });
+  const pauseAmbientSound = useSound("/sounds/pause_ambient.mp3");
+  const backgroundSound = useSound("/sounds/background.mp3");
+  const entranceSound = useSound("/sounds/ambient.mp3");
+  const wonSound = useSound("/sounds/won.mp3");
+  const lostSound = useSound("/sounds/lost.mp3");
   const el_clickSound = useSound("/sounds/elSelect.mp3");
   const el_hoverSound = useSound("/sounds/elHover.mp3");
   const errorSound = useSound("/sounds/error.mp3");
@@ -41,7 +43,7 @@ export function SoundProvider({ children }: { children: ZeroactNode[] }) {
   const msgReceivedSound = useSound("/sounds/msgReceived.mp3");
 
   const sounds: AppSounds = {
-    ambianceSound,
+    pauseAmbientSound,
     backgroundSound,
     wonSound,
     lostSound,
@@ -56,6 +58,7 @@ export function SoundProvider({ children }: { children: ZeroactNode[] }) {
     countDownEndSound,
     msgSentSound,
     msgReceivedSound,
+    entranceSound
   };
 
   return {
