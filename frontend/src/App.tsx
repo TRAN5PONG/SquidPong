@@ -31,7 +31,7 @@ import { useSound } from "./hooks/useSound";
 import Lobby from "./components/Lobby/Lobby";
 import SelectPaddle from "./components/SelectPaddle/SelectPaddle";
 import Profile from "./components/Profile/Profile";
-import { Route, RouterContext } from "@/contexts/RouterProvider";
+import { Route, RouterContext, useNavigate } from "@/contexts/RouterProvider";
 import NotFound from "./components/NotFound/NotFound";
 import Tournaments from "./components/Tournament/Tournaments";
 import Spectate from "./components/Spectate/Spectate";
@@ -118,6 +118,7 @@ export const routes: Route[] = [
 function RouterSwitch({ routes }: { routes: Route[] }) {
   const { currentPath } = useContext(RouterContext);
   const previousPath = useRef(currentPath);
+  
 
   const findMatchingRoute = (path: string) => {
     for (const route of routes) {
@@ -169,6 +170,7 @@ function RouterSwitch({ routes }: { routes: Route[] }) {
 
 const App = () => {
   const { modal, setUser, user, inviteModal, toasts, match } = useAppContext();
+  const navigate = useNavigate();
   const { errorSound, notificationSound } = useSounds();
 
   useEffect(() => {
@@ -176,8 +178,9 @@ const App = () => {
       try {
         const userData = await getUserProfile();
         if (userData.success && userData.data) setUser(userData.data);
-        else throw new Error("No valid session");
+        
       } catch (error) {
+        navigate("/");
         console.log("No valid session found");
       }
     };

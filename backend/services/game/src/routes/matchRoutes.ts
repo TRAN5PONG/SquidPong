@@ -21,7 +21,6 @@
 import { FastifyInstance } from "fastify";
 
 import {
-  createMatch,
   getMatch,
   getCurrenMatch,
   EndMatch,

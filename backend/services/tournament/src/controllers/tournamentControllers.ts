@@ -290,6 +290,8 @@ export async function joinTournament(
       });
     }
 
+    console.log("==", user);
+
     // Add the user to the tournament participants
     const participant = await prisma.tournamentPlayer.upsert({
       where: {
@@ -308,7 +310,6 @@ export async function joinTournament(
       },
       create: {
         userId,
-        // gmUserId: user.id,
         tournamentId,
         avatar: user.data.avatar,
         firstName: user.data.firstName,
@@ -353,8 +354,8 @@ export async function joinTournament(
     }
 
     const participantUserIds = updatedTournament?.participants
-      .filter((p) => p.userId !== userId)
-      .map((p) => p.userId);
+      .filter((p: any) => p.userId !== userId)
+      .map((p: any) => p.userId);
 
     await sendDataToQueue(
       {
@@ -362,7 +363,7 @@ export async function joinTournament(
         fromId: userId,
         targetId: participantUserIds,
         data: {
-          tournamentName: updatedTournament.name,
+          tournamentName: updatedTournament?.name,
           info: `${participant.userName} has joined the tournament!`,
         },
       },
@@ -455,8 +456,8 @@ export async function leaveTournament(
     });
 
     const participantUserIds = updatedTournament?.participants
-      .filter((p) => p.userId !== participantId)
-      .map((p) => p.userId);
+      .filter((p: any) => p.userId !== participantId)
+      .map((p: any) => p.userId);
 
     await sendDataToQueue(
       {
@@ -464,7 +465,7 @@ export async function leaveTournament(
         fromId: participantId,
         targetId: participantUserIds,
         data: {
-          tournamentName: updatedTournament.name,
+          tournamentName: updatedTournament?.name,
           info: `${participant.userName} has left the tournament!`,
         },
       },
@@ -653,8 +654,8 @@ export async function launchTournament(
       });
 
       const participantUserIds = updatedTournament?.participants
-        .filter((p) => p.userId !== userId)
-        .map((p) => p.userId);
+        .filter((p: any) => p.userId !== userId)
+        .map((p: any) => p.userId);
 
       await sendDataToQueue(
         {
@@ -767,8 +768,8 @@ export async function resetTournament(
       );
 
       const participantUserIds = updatedTournament?.participants
-        .filter((p) => p.userId !== userId)
-        .map((p) => p.userId);
+        .filter((p: any) => p.userId !== userId)
+        .map((p: any) => p.userId);
 
       await sendDataToQueue(
         {
@@ -776,7 +777,7 @@ export async function resetTournament(
           fromId: userId,
           targetId: participantUserIds,
           data: {
-            tournamentName: updatedTournament.name,
+            tournamentName: updatedTournament?.name,
             info: `organizer has reseted the tournament!`,
           },
         },
@@ -879,10 +880,10 @@ export async function reportMatchResult(
       return reply.code(404).send({ message: "Tournament not found." });
 
     const winnerPlayer = tournament.participants.find(
-      (p) => p.userId === winnerId
+      (p: any) => p.userId === winnerId
     );
     const loserPlayer = tournament.participants.find(
-      (p) => p.userId === loserId
+      (p: any) => p.userId === loserId
     );
     if (!winnerPlayer)
       return reply
@@ -923,6 +924,18 @@ export async function reportMatchResult(
         where: { id: loserPlayer.id },
         data: { isEliminated: true },
       });
+      await sendDataToQueue(
+        {
+          type: "tournamentUpdate",
+          fromId: loserPlayer.userId,
+          targetId: loserPlayer.userId,
+          data: {
+            tournamentName: tournament.name,
+            info: `you have been eliminated!`,
+          },
+        },
+        "eventhub"
+      );
 
       await tx.tournamentPlayer.update({
         where: { id: winnerPlayer.id },
@@ -946,6 +959,23 @@ export async function reportMatchResult(
         });
 
         if (remainingPlayers.length === 1) {
+          const participantUserIds = tournament?.participants
+            .filter((p: any) => p.userId !== remainingPlayers[0].userId)
+            .map((p: any) => p.userId);
+
+          await sendDataToQueue(
+            {
+              type: "tournamentUpdate",
+              fromId: remainingPlayers[0].userId,
+              targetId: participantUserIds,
+              data: {
+                tournamentName: tournament.name,
+                info: `${remainingPlayers[0].userName} won the tournament!`,
+              },
+            },
+            "eventhub"
+          );
+
           await tx.tournament.update({
             where: { id: tournamentId },
             data: {

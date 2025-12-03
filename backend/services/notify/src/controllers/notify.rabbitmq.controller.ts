@@ -171,13 +171,18 @@ export async function processTournamentNotification(data: any) {
   });
   // if (!setting || !setting.notificationSettings) return;
   // if (!setting.notificationSettings.tournamentUpdates) return;
+  // Normalize targetId into an array
+  const targetIds = Array.isArray(data.targetId)
+    ? data.targetId
+    : [data.targetId];
+
   console.log("----", data);
 
   const notifications = await Promise.all(
-    data.targetId.map(async (id) => {
+    targetIds.map(async (id :any) => {
       return prisma.notification.create({
         data: {
-          targetId: id, // single ID
+          targetId: id,
           byId: data.fromId,
           type: "TOURNAMENT_UPDATE",
           payload: {

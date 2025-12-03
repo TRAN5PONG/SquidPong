@@ -108,12 +108,20 @@ export async function assignWinnerToNextMatch(
     include: {
       opponent1: true,
       opponent2: true,
+      round: {
+        include: {
+          tournament: {
+            include: {
+              participants: true,
+            },
+          },
+        },
+      },
     },
   });
 
   // If now FULL → notify game service
   if (updatedNextMatch.opponent1Id && updatedNextMatch.opponent2Id) {
-    console.log("---->", updatedNextMatch);
     await sendDataToQueue(
       {
         event: "tournament-match-created",
@@ -123,6 +131,58 @@ export async function assignWinnerToNextMatch(
         opponent2Id: updatedNextMatch.opponent2.userId,
       },
       "game"
+    );
+    await sendDataToQueue(
+      {
+        type: "tournamentUpdate",
+        fromId: updatedNextMatch.opponent1.userId,
+        targetId: updatedNextMatch.opponent2.userId,
+        data: {
+          tournamentName: updatedNextMatch.round.tournament.name,
+          info: `you will face ${updatedNextMatch.opponent1.userName} in ${updatedNextMatch.round.name}`,
+        },
+      },
+      "eventhub"
+    );
+    await sendDataToQueue(
+      {
+        type: "tournamentUpdate",
+        fromId: updatedNextMatch.opponent2.userId,
+        targetId: updatedNextMatch.opponent1.userId,
+        data: {
+          tournamentName: updatedNextMatch.round.tournament.name,
+          info: `you will face ${updatedNextMatch.opponent2.userName} in ${updatedNextMatch.round.name}`,
+        },
+      },
+      "eventhub"
+    );
+  } else if (updatedNextMatch.opponent1Id) {
+    console.log("+++", updatedNextMatch)
+    await sendDataToQueue(
+      {
+        type: "tournamentUpdate",
+        fromId: updatedNextMatch.opponent1.userId,
+        targetId: updatedNextMatch.opponent1.userId,
+        data: {
+          tournamentName: updatedNextMatch.round.tournament.name,
+          info: `you are qualified to ${updatedNextMatch.round.name}`,
+        },
+      },
+      "eventhub"
+    );
+  } else if (updatedNextMatch.opponent2Id) {
+    console.log("+++", updatedNextMatch)
+    await sendDataToQueue(
+      {
+        type: "tournamentUpdate",
+        fromId: updatedNextMatch.opponent2.userId,
+        targetId: updatedNextMatch.opponent2.userId,
+        data: {
+          tournamentName: updatedNextMatch.round.tournament.name,
+          info: `you are qualified to ${updatedNextMatch.round.name}`,
+        },
+      },
+      "eventhub"
     );
   }
 }

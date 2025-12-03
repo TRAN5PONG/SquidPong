@@ -46,45 +46,6 @@ export async function getActiveMatches(
   }
 }
 
-export async function createMatch(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  const body = request.body as CreateMatchBody;
-
-  switch (body.mode) {
-    case "ONE_VS_ONE":
-      {
-        reply.status(201).send({ success: true, message: "one vs one" }); // Placeholder response
-      }
-      break;
-    case "TOURNAMENT":
-      {
-        reply.status(201).send({ success: true, message: "tournament" }); // Placeholder response
-      }
-      break;
-    case "ONE_VS_AI":
-      {
-        reply.status(201).send({ success: true, message: "one vs ai" }); // Placeholder response
-      }
-      break;
-    case "BOUNCE_CHALLENGE":
-      {
-        reply.status(201).send({ success: true, message: "bounce challenge" }); // Placeholder response
-      }
-      break;
-    default:
-      return reply.status(400).send({ error: "Invalid match mode" });
-  }
-}
-export async function OneVsOneMatch(
-  body: Extract<CreateMatchBody, { mode: "ONE_VS_ONE" }>
-) {
-  // create match players
-  // create match
-  // create match setting
-}
-
 export async function AiMatch(request: FastifyRequest, reply: FastifyReply) {
   const body = request.body as Extract<CreateMatchBody, { mode: "ONE_VS_AI" }>;
   const { mode, difficulty } = body;
@@ -243,10 +204,6 @@ export async function MatchFromInvitation(invitation: any): Promise<Match> {
     players: [hostPlayer.userId, guestPlayer.userId],
     spectator: [],
   });
-
-  console.log(
-    `✅ Created Colyseus room for match  ============================================ ${match.id}: ${room.roomId}`
-  );
 
   const updatedMatch = await prisma.match.update({
     where: { id: match.id },

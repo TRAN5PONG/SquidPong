@@ -13,11 +13,10 @@ export class ScoringHandler {
   incrementScore(playerId: string) {
     const current = this.room.state.scores.get(playerId) || 0;
 
-
     this.room.state.scores.set(playerId, current + 1);
 
-    const totalPoints = this.room.state.totalPointsScored;
-
+    // const totalPoints = this.room.state.totalPointsScored;
+    const totalPoints = 1;
 
     console.log(`🏆 Total points to win: ${totalPoints}`);
 
@@ -195,10 +194,14 @@ export class ScoringHandler {
       const updates: Promise<any>[] = [];
 
       if (winner?.userId) {
-        updates.push(this.updateUserStats(winner.userId, true, matchDuration, match.mode));
+        updates.push(
+          this.updateUserStats(winner.userId, true, matchDuration, match.mode)
+        );
       }
       if (loser?.userId) {
-        updates.push(this.updateUserStats(loser.userId, false, matchDuration, match.mode));
+        updates.push(
+          this.updateUserStats(loser.userId, false, matchDuration, match.mode)
+        );
       }
 
       await Promise.all(updates);
@@ -220,10 +223,9 @@ export class ScoringHandler {
     });
 
     if (!existing) {
-
       const isTournament = gameMode === "TOURNAMENT";
       const is1v1 = gameMode === "ONE_VS_ONE";
-      
+
       await prisma.userStats.create({
         data: {
           userId,
@@ -265,15 +267,12 @@ export class ScoringHandler {
         newWinStreak
       );
 
-
       const totalMatches = existing.gamesPlayed + 1;
       const totalDuration = existing.totalPlayTime + matchDuration;
       const newAverageDuration = Math.floor(totalDuration / totalMatches);
 
-
       const isTournament = gameMode === "TOURNAMENT";
       const is1v1 = gameMode === "ONE_VS_ONE";
-
 
       await prisma.userStats.update({
         where: { userId },
@@ -306,8 +305,7 @@ export class ScoringHandler {
       });
     }
 
-
-    const scoreIncrement = won ? 15 : 5; 
+    const scoreIncrement = won ? 15 : 5;
     await prisma.user.update({
       where: { id: userId },
       data: {

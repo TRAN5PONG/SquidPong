@@ -36,9 +36,7 @@ import {
 } from "@/api/tournament";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { useAppContext } from "@/contexts/AppProviders";
-import { Button } from "@babylonjs/inspector/components/Button";
 import { StyledTournamentCardAvatar } from "./Tournaments";
-import { Length } from "@babylonjs/core";
 import Avatar from "./Avatar";
 import { socketManager } from "@/utils/socket";
 
@@ -78,14 +76,13 @@ const StyledTournament = styled("div")`
       left: 0;
       background-image: linear-gradient(
           0deg,
-          rgba(19, 18, 23, 1) 0%,
-          rgba(19, 18, 23, 0.95) 50%,
-          rgba(19, 18, 23, 0) 100%
+          rgba(19, 18, 23, 0.8) 0%,
+          rgba(19, 18, 23, 0.8) 50%,
+          rgba(19, 18, 23, 0.8) 100%
         ),
         url("/assets/TournamentAvatar.jpg");
       background-position: center;
       background-size: cover;
-      filter: grayscale(1);
       z-index: -1;
     }
 
@@ -180,6 +177,8 @@ const StyledTournament = styled("div")`
           height: 30px;
           border-radius: 5px;
           background-color: lightgray;
+          background-position: center;
+          background-size: cover;
         }
       }
       .TournamentActions {
@@ -341,10 +340,9 @@ const StyledTournament = styled("div")`
           position: relative;
           display: flex;
           justify-content: center;
+          align-items: center;
+          gap: 0px;
           .TrophyIcon {
-            position: absolute;
-            top: -20px;
-            z-index: 3;
           }
           .FinalText {
             padding: 0px 10px;
@@ -543,6 +541,7 @@ const StyledTournament = styled("div")`
         display: flex;
         gap: 10px;
         overflow: hidden;
+        cursor: pointer;
         .TournamentPlayerAvatar {
           width: 55px;
           height: 100%;
@@ -586,24 +585,6 @@ const StyledTournament = styled("div")`
       }
     }
   }
-  .TournamentPlayers {
-    width: 80%;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    align-items: center;
-    justify-content: center;
-    padding: 5px;
-    position: relative;
-    .PlayersList {
-      width: 100%;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      max-height: 400px;
-    }
-  }
 `;
 const Tournament = () => {
   const tournamentId = useRouteParam("/tournament/:id", "id");
@@ -614,7 +595,7 @@ const Tournament = () => {
   );
   const [currentMode, setCurrentMode] = Zeroact.useState<
     "OVERVIEW" | "MATCHES" | "PLAYERS"
-  >("MATCHES");
+  >("OVERVIEW");
 
   /**
    * Contexts
@@ -743,43 +724,6 @@ const Tournament = () => {
       console.error("Error participating in tournament:", err);
     }
   };
-  const handleTournamentMatchEnded = async (
-    matchId: string,
-    winnerId: string,
-    loserId: string
-  ) => {
-    try {
-      alert(matchId);
-      const resp = await fetch(
-        `https://10.13.3.5:4433/api/game/tournament/${tournamentId}/match/${matchId}/end`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            winnerId,
-            loserId,
-            winnerScore: 10,
-            loserScore: 5,
-          }),
-        }
-      );
-      const data = await resp.json();
-      if (data.success) {
-        toasts.addToastToQueue({
-          type: "success",
-          message: "Tournament match updated successfully",
-        });
-      } else
-        throw new Error(data.message || "Failed to update tournament match");
-    } catch (err) {
-      toasts.addToastToQueue({
-        type: "error",
-        message: "Error updating tournament match",
-      });
-    }
-  };
 
   if (isTournamentNotFound) return <NotFound />;
   if (!tournament) return <h1>loading</h1>;
@@ -807,7 +751,6 @@ const Tournament = () => {
     const matches = Matches.map((game) => {
       const player1 = getPlayer(game.opponent1Id);
       const player2 = getPlayer(game.opponent2Id);
-      console.log("Rendering game:", game.matchId);
 
       return (
         <div
@@ -817,13 +760,6 @@ const Tournament = () => {
           data-round={round + 1}
           players-count={playersCount}
           key={`${game.opponent1Id}-${game.opponent2Id}`}
-          onClick={() =>
-            handleTournamentMatchEnded(
-              game.matchId,
-              player1.userId,
-              player2.userId
-            )
-          }
         >
           <TournamentPlayer
             {...player1}
@@ -857,6 +793,9 @@ const Tournament = () => {
   const isOrganizer = Number(user?.userId) === Number(tournament.organizerId);
   const isParticipant = tournament.participants.find(
     (p) => Number(p.userId) === Number(user?.userId)
+  );
+  const organizer = tournament.participants.find(
+    (p) => p.userId === tournament.organizerId
   );
 
   return (
@@ -930,8 +869,11 @@ const Tournament = () => {
         <div className="TournamentOrganizer">
           <div className="OrganizerInfo">
             <span>oganized by: </span>
-            <div className="OrganizerAvatar" />
-            <span>@ZERO</span>
+            <div
+              className="OrganizerAvatar"
+              style={{ backgroundImage: `url(${organizer?.avatar})` }}
+            />
+            <span>@{organizer?.userName.toUpperCase()}</span>
           </div>
           <div className="TournamentActions">
             {isParticipant ? (
@@ -1066,27 +1008,23 @@ const Tournament = () => {
                 );
               }).reverse()}
             </div>
-            <div
-              className="FinalGame"
-              onClick={() =>
-                handleTournamentMatchEnded(
-                  FinalMatch!.matchId,
-                  getPlayer(FinalMatch?.opponent1Id).userId,
-                  getPlayer(FinalMatch?.opponent2Id).userId
-                )
-              }
-            >
+            <div className="FinalGame">
               <div className="FinalScoreBoard">
-                <TournamentPlayer {...getPlayer(FinalMatch?.opponent1Id)} />
                 <TournamentPlayer
-                  reversed
-                  {...getPlayer(FinalMatch?.opponent2Id)}
+                  {...getPlayer(FinalMatch?.opponent1Id)}
+                  Score={FinalMatch?.opponent1Score}
                 />
                 <TrophyIcon
                   fill="var(--main_color)"
                   size={65}
                   className="TrophyIcon"
                 />
+                <TournamentPlayer
+                  reversed
+                  Score={FinalMatch?.opponent2Score}
+                  {...getPlayer(FinalMatch?.opponent2Id)}
+                />
+
                 <div className="FinalText GlassMorphism">
                   <h1>Final</h1>
                 </div>
@@ -1097,15 +1035,19 @@ const Tournament = () => {
       ) : currentMode === "MATCHES" ? (
         <div className="MatchesMode">
           <div className="MatchesList">
-            {tournament.rounds?.map((r) =>
-              r.matches.map((m, index) => (
-                <TournamentMatch
-                  key={index}
-                  matchData={m}
-                  getPlayer={getPlayer}
-                  roundName={r.name}
-                />
-              ))
+            {tournament.rounds[0] ? (
+              tournament.rounds.map((r) =>
+                r.matches.map((m, index) => (
+                  <TournamentMatch
+                    key={index}
+                    matchData={m}
+                    getPlayer={getPlayer}
+                    roundName={r.name}
+                  />
+                ))
+              )
+            ) : (
+              <span>No matches scheduled yet!</span>
             )}
           </div>
         </div>
@@ -1113,7 +1055,11 @@ const Tournament = () => {
         <div className="PlayersMode">
           <div className="PlayersList">
             {tournament.participants.map((p) => (
-              <div className="TournamentPlayer" key={p.id}>
+              <div
+                className="TournamentPlayer"
+                key={p.id}
+                onClick={() => navigate(`/user/${p.userName}`)}
+              >
                 <div
                   className="TournamentPlayerAvatar"
                   style={{ backgroundImage: `url(${p.avatar})` }}
@@ -1190,7 +1136,7 @@ const StyledTournamentPlayer = styled("div")`
     .TournamentPlayerInfoUsername {
       font-weight: 300;
       font-size: 1rem;
-      font-family: var(--main_font);
+      font-family: var(--squid_font);
     }
     .TournamentPlayerInfoUsername.Eliminated {
       opacity: 0.5;
@@ -1240,7 +1186,9 @@ const TournamentPlayer = (
 
       <div
         className="TournamentPlayerInfo"
-        onClick={() => navigate(`/user/${props?.userName}`)}
+        onClick={() => {
+          props?.userName !== "TBD" && navigate(`/user/${props?.userName}`);
+        }}
       >
         <h3
           className={`TournamentPlayerInfoUsername ${
@@ -1249,9 +1197,6 @@ const TournamentPlayer = (
         >
           <span>{props?.userName}</span>
         </h3>
-        {!props?.isReady && props?.userId && !props?.toBeDisplayed && (
-          <PendingIcon fill="white" size={18} />
-        )}
       </div>
       <div className="Right__">
         <span>{props?.Score}</span>
