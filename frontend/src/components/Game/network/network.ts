@@ -39,6 +39,8 @@ interface NetworkEvents {
   "Ball:Toss": (data: ballTossMessage) => void;
   "host:assigned": (data: { hostPlayerId: string }) => void;
   "host:migrated": (data: { oldHostId: string; newHostId: string }) => void;
+  // spectators
+  "game:spectators": (spectators: Record<string, any>) => void;
 }
 
 export class Network {
@@ -65,7 +67,7 @@ export class Network {
   constructor(
     serverUrl: string,
     match: Match,
-    mode: "spectate" | "play" = "play",
+    mode: "spectate" | "play" = "play"
   ) {
     this.serverUrl = serverUrl;
     this.client = new Client(serverUrl);
@@ -95,11 +97,12 @@ export class Network {
       throw err;
     }
   }
-  async spectate(userId: string) {
+  async spectate(userId: string, username: string) {
     if (!this.match) throw new Error("Match data is required to spectate");
     try {
       this.room = await this.client.joinById<MatchState>(this.match?.id, {
         spectate: true,
+        username,
         userId,
       });
       this.setupMatchListeners();
@@ -136,7 +139,7 @@ export class Network {
             else this.emit("player:disconnected", playerId);
           }
         });
-      },
+      }
     );
 
     $(this.room.state as any).players.onChange(
@@ -148,9 +151,21 @@ export class Network {
           this.players[playerId].pauseRequests = 0;
           this.emit("player:disconnected", playerId);
         }
-      },
+      }
     );
-    // P
+    // Spectators
+    $(this.room.state as any).spectators.onAdd(
+      (spectator: any, spectatorId: string) => {
+        this.spectators[spectatorId] = spectator;
+        this.emit("game:spectators", this.spectators);
+      }
+    );
+    $(this.room.state as any).spectators.onRemove(
+      (_: any, spectatorId: string) => {
+        delete this.spectators[spectatorId];
+        this.emit("game:spectators", this.spectators);
+      }
+    );
     // Match States
     $(this.room.state as any).listen("phase", (phase: MatchPhase) => {
       this.phase = phase;
@@ -161,7 +176,7 @@ export class Network {
       (newWinnerId: string | null) => {
         this.winnerId = newWinnerId;
         this.emit("winner:declared", newWinnerId);
-      },
+      }
     );
     $(this.room.state as any).listen("countdown", (countdown: number) => {
       this.countdown =
@@ -175,7 +190,7 @@ export class Network {
       "lastHitPlayer",
       (lastHitPlayer: string) => {
         this.emit("lastHitPlayer:updated", lastHitPlayer);
-      },
+      }
     );
     $(this.room.state as any).listen("serveState", (serveState: string) => {
       this.emit("serveState:changed", serveState);
@@ -193,7 +208,7 @@ export class Network {
           scores: allScores,
           pointBy: playerId,
         });
-      },
+      }
     );
     $(this.room.state as any).listen("currentServer", (currentServer) => {
       console.log("Current server changed to:", currentServer);
@@ -221,10 +236,10 @@ export class Network {
 
         console.log(
           "Host migrated: ========================= ",
-          data.newHostId,
+          data.newHostId
         );
         this.emit("host:migrated", data);
-      },
+      }
     );
 
     this.room.onMessage("game:paused", (data) => {
@@ -335,10 +350,9 @@ export class Network {
   getLastHitPlayer() {
     return this.lastHitPlayer;
   }
-  // Leave
-  leave() {
+  async leave() {
     if (this.room) {
-      this.room.leave();
+      await this.room.leave(); 
       this.room = null;
       this.players = {};
       this.spectators = {};

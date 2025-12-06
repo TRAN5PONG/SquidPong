@@ -58,63 +58,53 @@ export class MatchRoom extends Room<MatchState> {
 
   onAuth(client: Client, options: any) {
     const _client = client as any;
-    const { players, spectators } = this.metadata;
-
+    const { players } = this.metadata;
+  
+    // PLAYER
     if (players.includes(options.userId)) {
       _client.meta = { role: "player", userId: options.userId };
       return true;
     }
-    else {
-      console.log(players, "not includes :", options.userId)
-    }
-
+  
+    // SPECTATOR
     if (options.spectate) {
-      // auto assign spectator role
       _client.meta = { role: "spectator", userId: options.userId };
       return true;
     }
-
-    console.log("client", client,"options:", options);
+  
     return false;
   }
-
+  
   onJoin = async (client: Client, options: any) => {
     const _client = client as any;
-
-    // prints ID of the client that just joined
-    console.log(
-      `Client joined room ${this.roomId} with id ${client.sessionId}`
-    );
+  
+    // --- PLAYER JOIN ---
     if (_client.meta.role === "player") {
-      // check if player already in room
+  
       const matchPlayer = await prisma.matchPlayer.findFirst({
         where: {
           userId: options.userId,
           OR: [
-            {
-              matchAsOpponent1: { status: { in: ["WAITING", "IN_PROGRESS"] } },
-            },
-            {
-              matchAsOpponent2: { status: { in: ["WAITING", "IN_PROGRESS"] } },
-            },
+            { matchAsOpponent1: { status: { in: ["WAITING", "IN_PROGRESS"] } } },
+            { matchAsOpponent2: { status: { in: ["WAITING", "IN_PROGRESS"] } } },
           ],
         },
       });
-
+  
       if (!matchPlayer) {
         console.error(`No match player found for userId ${options.userId}`);
         client.leave();
         return;
       }
-
+  
       _client.matchPlayerId = matchPlayer.id;
-
+  
       let player = this.state.players.get(matchPlayer.id);
-
+  
       if (player) {
         this.sendGameStateToPlayer(client, matchPlayer.id);
         player.isConnected = true;
-
+  
         if (this.allPlayersReady() && this.state.phase === "waiting") {
           this.state.phase = "playing";
         }
@@ -123,49 +113,64 @@ export class MatchRoom extends Room<MatchState> {
         player.id = matchPlayer.id;
         player.isConnected = true;
         player.remainingPauseTime = this.state.maxPauseTime;
-
+  
         this.state.players.set(matchPlayer.id, player);
         this.state.scores.set(matchPlayer.id, 0);
       }
-
+  
       if (matchPlayer.isHost) {
         this.state.hostPlayerId = matchPlayer.id;
-        console.log(`🎮 Player ${matchPlayer.id} set as HOST from database`);
         this.broadcast("host:assigned", { hostPlayerId: matchPlayer.id });
       }
-
+  
       if (this.state.players.size === 2 && !this.state.currentServer) {
         const playerIds = Array.from(this.state.players.keys());
         this.state.currentServer = playerIds[0];
       }
-    } else {
-      const spectator = new Spectator();
-      spectator.id = _client.sessionId;
-      spectator.username = options.username || "unknown";
-      this.state.spectators.set(client.sessionId, spectator);
-      console.log(`Spectator ${spectator.id} joined room ${this.roomId}`);
+  
+      return;
     }
+  
+    // --- SPECTATOR ---
+    const spectator = new Spectator();
+    spectator.id = _client.sessionId;
+    spectator.username = options.username || "unknown";
+    
+    // store by sessionId
+    this.state.spectators.set(_client.sessionId, spectator);
   };
-
+  
   onLeave = async (client: Client, consented: boolean) => {
+    console.log("Spectator leaving:", client.sessionId);
+  
     const _client = client as any;
-
+  
+    // --- PLAYER LEAVING ---
     if (_client.matchPlayerId) {
+  
       const player = this.state.players.get(_client.matchPlayerId);
-
       if (player) {
-        if (player.pauseTimeout) {
-          clearTimeout(player.pauseTimeout);
-        }
+        if (player.pauseTimeout) clearTimeout(player.pauseTimeout);
         player.isConnected = false;
         this.state.phase = "waiting";
-
+  
         if (this.state.hostPlayerId === _client.matchPlayerId) {
           await this.migrateHost(_client.matchPlayerId);
         }
       }
+      return;
+    }
+  
+    // Try deleting by username and sessionId just in case
+    const removed = this.state.spectators.delete(client.sessionId);
+    if (!removed) {
+      console.warn(
+        `Spectator with sessionId ${client.sessionId} not found in spectators list`
+      );
     }
   };
+  
+  
 
   onDispose() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);

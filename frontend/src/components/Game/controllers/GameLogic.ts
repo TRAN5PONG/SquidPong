@@ -39,6 +39,10 @@ export class GameLogic {
   private serverSideBounced: boolean = false;
   private isPointEnded: boolean = false;
 
+  // Sounds
+  private paddleHitSound: HTMLAudioElement = new Audio("/sounds/PaddleHit.mp3");
+  private tabbleHitSound: HTMLAudioElement = new Audio("/sounds/TabbleHit.mp3");
+
   // Constants
   private readonly SERVE_VELOCITY_Y: number = 2.5;
   private readonly SPIN_THRESHOLD: number = 28;
@@ -54,7 +58,7 @@ export class GameLogic {
     playerId: string,
     networkSync: NetworkSync,
     arena: Arena,
-    getCurrentTickFn: () => number,
+    getCurrentTickFn: () => number
   ) {
     this.net = net;
     this.ball = ball;
@@ -85,7 +89,7 @@ export class GameLogic {
         data.position,
         data.velocity,
         data.angVelocity,
-        data.spin!,
+        data.spin!
       );
     });
 
@@ -99,7 +103,7 @@ export class GameLogic {
         data.position,
         data.velocity,
         data.angVelocity,
-        data.spin!,
+        data.spin!
       );
     });
 
@@ -113,7 +117,7 @@ export class GameLogic {
         data.position,
         data.velocity,
         { x: 0, y: 0, z: 0 },
-        { x: 0, y: 0, z: 0 },
+        { x: 0, y: 0, z: 0 }
       );
     });
 
@@ -151,14 +155,16 @@ export class GameLogic {
     });
   }
 
+  // Sound
   // ================= Physics Callbacks =================
   private setupPhysicsCallbacks(): void {
     this.physics.onBallPaddleCollision = (ball, paddle) => {
+      this.paddleHitSound.currentTime = 0;
+      this.paddleHitSound.play();
       this.handleBallPaddleCollision(ball, paddle);
     };
 
     this.physics.onBallFloorCollision = (ball) => {
-      console.log("Ball hit the floor");
       if (this.shouldSendEvent()) {
         this.ballOut();
       }
@@ -175,10 +181,12 @@ export class GameLogic {
       ball,
       table,
       contactPoint,
-      contactNormal,
+      contactNormal
     ) => {
       this.arena.createImpact(contactPoint, contactNormal, 0);
       if (this.shouldSendEvent()) {
+        this.tabbleHitSound.currentTime = 0;
+        this.tabbleHitSound.play();
         this.handleTableBounce(ball);
       }
     };
@@ -221,7 +229,7 @@ export class GameLogic {
         paddleVel,
         false,
         paddleSpeed,
-        "serve",
+        "serve"
       );
       this.physics.setBallSpin(0, 0, 0);
       this.physics.setApplySpin(false);
@@ -240,7 +248,7 @@ export class GameLogic {
         paddleVel,
         spinCalc.applySpin,
         paddleSpeed,
-        "play",
+        "play"
       );
     }
 
@@ -298,7 +306,7 @@ export class GameLogic {
     this.physics.ball.body.applyImpulse(impulse, true);
     this.physics.ball.body.applyTorqueImpulse(
       { x: angX, y: angY, z: angZ },
-      true,
+      true
     );
 
     // --- Send network update ---
@@ -322,7 +330,7 @@ export class GameLogic {
     const currentSide: "LEFT" | "RIGHT" = ballZ > 0 ? "RIGHT" : "LEFT";
     const lastHitterSide = this.getPlayerSide(this.lasthitPlayerId);
     const serverSide = this.getPlayerSide(
-      this.MyTurnToServe ? this.playerId : this.getOpponentId(),
+      this.MyTurnToServe ? this.playerId : this.getOpponentId()
     );
 
     if (this.gameState === GameState.WAITING_FOR_SERVE) {
@@ -356,7 +364,7 @@ export class GameLogic {
   // ================= Spin Calculation =================
   private calculateMagnusSpin(
     paddleSpeed: number,
-    paddleVelocityX: number,
+    paddleVelocityX: number
   ): { spinY: number; applySpin: boolean } {
     let spinY = 0;
     let applySpin = false;
@@ -364,7 +372,7 @@ export class GameLogic {
     if (paddleSpeed >= this.SPIN_THRESHOLD) {
       const clampedVelX = Math.max(
         -this.SPIN_THRESHOLD,
-        Math.min(this.SPIN_THRESHOLD, paddleVelocityX),
+        Math.min(this.SPIN_THRESHOLD, paddleVelocityX)
       );
 
       if (Math.abs(clampedVelX) > this.SPIN_ACTIVATION_THRESHOLD) {
@@ -429,7 +437,7 @@ export class GameLogic {
     this.physics.setBallVelocity(
       serveVelocity.x,
       serveVelocity.y,
-      serveVelocity.z,
+      serveVelocity.z
     );
 
     const tossMsg: ballTossMessage = {

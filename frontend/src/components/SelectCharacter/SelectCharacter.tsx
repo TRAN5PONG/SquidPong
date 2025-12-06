@@ -226,7 +226,7 @@ const StyledCharacterCard = styled("div")`
   border-radius: 5px;
   border: 1px solid
     ${(props: any) =>
-      props.isSelected ? "rgba(202, 47, 60, 0.6)" : "transparent"};
+      props.isSelected ? "rgba(255, 105, 117, 0.6)" : "rgba(255,255,255, 0.1)"};
   display: flex;
   justify-content: center;
   align-items: center;
@@ -266,6 +266,20 @@ const StyledCharacterCard = styled("div")`
     );
     opacity: ${(props: any) => (props.isSelected ? 1 : 0)};
     transition: 0.3s ease-in-out;
+  }
+  &:before {
+    content: "${(props: any) => props.content || ""}";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20rem;
+    font-family: var(--squid_font);
+    color: ${(props: any) =>
+      props.isSelected ? "rgba(112, 33, 39, 0.6)" : "rgba(255,255,255,0.05)"};
   }
   &:hover {
     &:after {
@@ -318,6 +332,7 @@ const CharacterCard = (props: CharacterCardProps) => {
         charHoverSound.play();
       }}
       avatar={props.character.image}
+      content={props.character.name[0]}
     >
       <div className="CharacterImgContainer">
         <img src={props.character.avatar} className="CharacterImg" />

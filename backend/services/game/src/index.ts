@@ -8,6 +8,7 @@ import { initRabbitMQ, receiveFromQueue } from "./integration/rabbitmqClient";
 import cors from "@fastify/cors";
 import { MatchRoom } from "./rooms/MatchRoom";
 import { prisma } from "./lib/prisma";
+import { betsRoutes } from "./routes/betsRoutes";
 
 dotenv.config();
 
@@ -30,19 +31,18 @@ async function recreateActiveRooms() {
         opponent2: true,
       },
     });
-    
+
     if (activeMatches.length === 0) {
       console.log("✅ No active matches found that need room recreation");
       return;
     }
 
     console.log(
-      `🎮 Found ${activeMatches.length} active matches, recreating rooms...`,
+      `🎮 Found ${activeMatches.length} active matches, recreating rooms...`
     );
 
-    
     for (const match of activeMatches) {
-      console.log(match)
+      console.log(match);
       try {
         const room = await matchMaker.createRoom("ping-pong-game", {
           matchId: match.id,
@@ -55,7 +55,7 @@ async function recreateActiveRooms() {
       } catch (error) {
         console.error(
           `❌ Failed to recreate room for match ${match.id}:`,
-          error,
+          error
         );
 
         // Clear the roomId if recreation fails
@@ -79,6 +79,7 @@ const start = async () => {
     fastify.register(matchRoutes);
     fastify.register(invitationRoutes);
     fastify.register(leaderboardRoutes);
+    fastify.register(betsRoutes);
 
     // Init RabbitMQ
     await initRabbitMQ();
@@ -106,7 +107,7 @@ const start = async () => {
           clients: r.clients,
           locked: r.locked,
           metadata: r.metadata.players,
-        })),
+        }))
       );
     }, 10000); // every 10s
 

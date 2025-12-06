@@ -1,4 +1,4 @@
-import Zeroact, { useEffect, useRef } from "@/lib/Zeroact";
+import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import {
   CameraIcon,
@@ -25,6 +25,8 @@ import {
 } from "../Game/entities/Camera/SpectatorCamera";
 import { getSpectateGroupByMatchId, sendMessage } from "@/api/chat";
 import { socketManager } from "@/utils/socket";
+import { useSounds } from "@/contexts/SoundProvider";
+import { placeBet } from "@/api/betting";
 // import { CameraModeName, cameraModes } from "../Game/entities/cameras/camera";
 
 const StyledSpectate = styled("div")`
@@ -42,6 +44,14 @@ const StyledSpectate = styled("div")`
     border-radius: 10px;
     position: relative;
     overflow: hidden;
+    .SpectatorsCount {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      font-family: var(--squid_font);
+      font-size: 0.8rem;
+      color: white;
+    }
     .gameCanvas {
       width: 100%;
       height: 100%;
@@ -356,28 +366,29 @@ const Spectate = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const SpectateSceneRef = useRef<SpectateScene | null>(null);
   const netWorkRef = useRef<Network | null>(null);
-  const cameraRef = useRef<SpectatorCamera | null>(null);
   /**
    *STATE
    */
-  const [selectedBet, setSelectedBet] = Zeroact.useState<string | null>(null);
-  const [ammountBet, setAmmountBet] = Zeroact.useState<number | null>(null);
-  const [showCameraModes, setShowCameraModes] = Zeroact.useState(false);
-  const [isLoading, setIsLoading] = Zeroact.useState(false);
-  const [match, setMatch] = Zeroact.useState<Match | null>(null);
-  const [chatGroup, setChatGroup] = Zeroact.useState<any>(null);
-  const [message, setMessage] = Zeroact.useState<string>("");
-  const [notFound, setNotFound] = Zeroact.useState(false);
+  const [selectedBet, setSelectedBet] = useState<string | null>(null);
+  const [ammountBet, setAmmountBet] = useState<number | null>(null);
+  const [showCameraModes, setShowCameraModes] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [match, setMatch] = useState<Match | null>(null);
+  const [chatGroup, setChatGroup] = useState<any>(null);
+  const [message, setMessage] = useState<string>("");
+  const [notFound, setNotFound] = useState(false);
+  const [spectators, setSpectators] = useState<any[]>([]);
+
   /**
    * Contexts
    */
   const navigate = useNavigate();
-
+  const { entranceSound } = useSounds();
   /**
    * MATCH
    */
   const matchId = useRouteParam("/spectate/game/:id", "id");
-  const { user } = useAppContext();
+  const { user, toasts } = useAppContext();
 
   /**
    * handlers
@@ -412,11 +423,30 @@ const Spectate = () => {
       console.log("error sending a msg.", err);
     }
   };
+  const handlePlaceBet = async () => {
+    try {
+      if (!match || !selectedBet || !ammountBet || !user) return;
+      console.log("reach")
+      const resp = await placeBet(
+        match.id,
+        ammountBet,
+        selectedBet === "W1" ? match.opponent1.id : match.opponent2.id
+      );
+
+      if (resp.success) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Bet placed successfully!",
+        });
+      } else throw new Error(resp.message);
+    } catch (err: any) {
+      console.error("Error placing bet:", err);
+    }
+  };
   /**
    * Effects
    */
   useEffect(() => {
-    console.log(matchId)
     if (!matchId) return;
 
     const fetchMatchData = async () => {
@@ -437,7 +467,6 @@ const Spectate = () => {
       try {
         const resp = await getSpectateGroupByMatchId(matchId);
         if (resp && resp.data) {
-          console.log(resp.data);
           setChatGroup(resp.data);
         } else throw new Error("No data received");
       } catch (error) {
@@ -458,24 +487,43 @@ const Spectate = () => {
     SpectateSceneRef.current = new SpectateScene(
       canvasRef.current,
       match,
-      user.id
+      user.id,
+      user.username
     );
     SpectateSceneRef.current.start();
     netWorkRef.current = SpectateSceneRef.current.net;
-    cameraRef.current = SpectateSceneRef.current.camera;
-  }, [match, canvasRef.current, user]);
+    setTimeout(() => {
+      // entranceSound.play();
+    }, 500);
+  }, [match, user]);
+
+  useEffect(() => {
+    if (!netWorkRef.current) return;
+
+    netWorkRef.current.on("game:spectators", (data: any) => {
+      console.log("Spectators update:", data);
+
+      // Convert object to array
+      const spectatorsArray = Object.values(data);
+      setSpectators(spectatorsArray);
+    });
+
+    return () => {
+      netWorkRef.current?.off("game:spectators", () => {});
+      netWorkRef.current?.leave();
+    };
+  }, [netWorkRef.current]);
+
   useEffect(() => {
     requestAnimationFrame(() => {
       if (messagesRef.current) {
-        console.log("Scrolling messages to bottom");
         messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
       }
     });
   }, [messagesRef.current]);
   useEffect(() => {
     const handler = (data: any) => {
-      console.log("socket chat event:", data);
-      setChatGroup((prev) => {
+      setChatGroup((prev: any) => {
         if (!prev) return prev;
 
         // Try to avoid applying messages for other chat groups
@@ -521,9 +569,9 @@ const Spectate = () => {
     )?.user;
   };
 
-  // const onCameraModeChange = (mode: CameraModeName) => {
-  //   camera.setCurrentMode(mode);
-  // };
+  if (!match || !user) {
+    return <LoaderSpinner />;
+  }
 
   return (
     <StyledSpectate
@@ -531,6 +579,7 @@ const Spectate = () => {
       oponent2avatar={match?.opponent2.avatarUrl}
     >
       <div className="GameContainer">
+        <span className="SpectatorsCount">{spectators.length} watching</span>
         <ScoreBoard
           match={match}
           net={netWorkRef.current}
@@ -558,7 +607,6 @@ const Spectate = () => {
           </div>
         </div>
 
-        {isLoading && <LoaderSpinner />}
         <canvas className="gameCanvas" ref={canvasRef} />
 
         {showCameraModes && (
@@ -567,12 +615,12 @@ const Spectate = () => {
               <div
                 key={mode.mode_name}
                 className={`CameraModeOption ${
-                  cameraRef.current?.getMode() === mode.mode_name
+                  SpectateSceneRef.current?.camera.getMode() === mode.mode_name
                     ? "selected"
                     : ""
                 }`}
                 onClick={() => {
-                  cameraRef.current?.setMode(mode.mode_name);
+                  SpectateSceneRef.current?.camera.setMode(mode.mode_name);
                   setShowCameraModes(false);
                 }}
               >
@@ -640,7 +688,9 @@ const Spectate = () => {
               </div>
             )}
           </div>
-          <button className="betButton">Bet</button>
+          <button className="betButton" onClick={() => handlePlaceBet()}>
+            Bet
+          </button>
         </div>
         <div className="ChatContainer">
           <div className="ChatMessages scroll-y" ref={messagesRef}>

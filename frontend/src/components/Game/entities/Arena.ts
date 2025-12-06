@@ -1,6 +1,3 @@
-// Arena.ts - Replace the decal system with dynamic impact effects
-
-import { useEffect, useState } from "@/lib/Zeroact";
 import {
   Scene,
   TransformNode,
@@ -9,6 +6,10 @@ import {
   StandardMaterial,
   Nullable,
   Observer,
+  PBRMaterial,
+  Texture,
+  Mesh,
+  VertexData,
 } from "@babylonjs/core";
 
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
@@ -24,7 +25,6 @@ import {
   Button,
 } from "@babylonjs/gui";
 import { Match, MatchPlayer } from "@/types/game/game";
-import { match } from "assert";
 
 // Impact effect interface
 interface ImpactEffect {
@@ -37,8 +37,10 @@ export class Arena {
   private Mesh: TransformNode | null = null;
   private Light: Light;
   private scene: Scene;
+  // meshes
   private TableBaseMesh: AbstractMesh | null = null;
   private BoardMesh: AbstractMesh | null = null;
+  private floorMesh: AbstractMesh | null = null;
   private net: Network;
 
   private boardGUI: AdvancedDynamicTexture | null = null;
@@ -64,11 +66,21 @@ export class Arena {
   private opponent1Score: number = 0;
   private opponent2Score: number = 0;
 
-  constructor(scene: Scene, light: Light, net: Network, match: Match) {
+  // Spectator
+  private isSpectator: boolean = false;
+
+  constructor(
+    scene: Scene,
+    light: Light,
+    net: Network,
+    match: Match,
+    isSpectator?: boolean
+  ) {
     this.scene = scene;
     this.Light = light;
     this.net = net;
     this.match = match;
+    this.isSpectator = isSpectator || false;
 
     // Start impact animation loop
     this.startImpactAnimationLoop();
@@ -108,7 +120,8 @@ export class Arena {
 
     this.gameStatusText = this.setupBoardText(
       "line2",
-      `${this.net.getPhase()}`,
+      // `${this.net.getPhase()}`,
+      "",
       70,
       "rgb(33, 136, 85)",
       "black",
@@ -147,7 +160,6 @@ export class Arena {
     container.addControl(this.gameStatusText);
     container.addControl(this.ScoreText);
   }
-
   private initReadyBTN() {
     // Ready BTN
     const plane = MeshBuilder.CreatePlane(
@@ -191,7 +203,6 @@ export class Arena {
     // 4. Add button to the plane
     guiTexture.addControl(button);
   }
-
   private setupBoardText(
     headline: string,
     value: string,
@@ -223,7 +234,6 @@ export class Arena {
 
     return text;
   }
-
   // ---------------------------
   //  LOAD ARENA MODEL
   // ---------------------------
@@ -243,9 +253,23 @@ export class Arena {
       }
 
       if (mesh.name === "TableBase") {
-        console.log("Found TableBase mesh:", mesh);
         this.TableBaseMesh = mesh as AbstractMesh;
       }
+
+      if (mesh.name === "Floor_Floor_0") {
+        this.floorMesh = mesh as AbstractMesh;
+      
+      }
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
 
       if (mesh.name === "ScreenBoard") {
         this.BoardMesh = mesh as AbstractMesh;
@@ -260,7 +284,9 @@ export class Arena {
     this.Mesh = ObjGroup;
 
     this.initializeBoardGUI();
-    this.initReadyBTN();
+    if (!this.isSpectator) {
+      this.initReadyBTN();
+    }
   }
 
   // ----------------------------------

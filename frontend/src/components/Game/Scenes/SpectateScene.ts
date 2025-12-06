@@ -30,9 +30,12 @@ export class SpectateScene {
   // Network
   net: Network;
   room: Room<MatchState>;
+  
+  // User
+  userId: string;
+  userName: string;
 
   // Players
-  userId: string;
   hostId: string;
   guestId: string;
 
@@ -46,10 +49,16 @@ export class SpectateScene {
   private guestCurrentPosition: Vector3 = Vector3.Zero();
   private paddleLerpAlpha: number = 0.2;
 
-  constructor(canvas: HTMLCanvasElement, match: Match, userId: string) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    match: Match,
+    userId: string,
+    userName: string
+  ) {
     this.canvas = canvas;
     this.match = match;
     this.userId = userId;
+    this.userName = userName;
 
     this.hostId = match?.opponent1.isHost
       ? match.opponent1.id
@@ -73,7 +82,7 @@ export class SpectateScene {
       // light
       this.light = new Light(this.scene);
       // arena
-      this.arena = new Arena(this.scene, this.light);
+      this.arena = new Arena(this.scene, this.light, this.net, this.match, true);
       // paddles
       this.hostPaddle = new Paddle(this.scene, "LEFT", true);
       this.guestPaddle = new Paddle(this.scene, "RIGHT", true);
@@ -84,9 +93,9 @@ export class SpectateScene {
       this.net = new Network(
         "wss://10.13.5.5:4433/matches",
         this.match,
-        "spectate",
+        "spectate"
       );
-      this.room = await this.net.spectate(this.userId);
+      this.room = await this.net.spectate(this.userId, this.userName);
       this.onPaddleMove();
       this.onBallMove();
 
@@ -114,7 +123,7 @@ export class SpectateScene {
       const targetPos = new Vector3(
         data.position.x,
         data.position.y,
-        data.position.z,
+        data.position.z
       );
 
       if (data.playerId === this.hostId) {
@@ -130,7 +139,7 @@ export class SpectateScene {
       this.ballTargetPosition = new Vector3(
         data.position.x,
         data.position.y,
-        data.position.z,
+        data.position.z
       );
     });
   }
@@ -145,7 +154,7 @@ export class SpectateScene {
       this.ballCurrentPosition = Vector3.Lerp(
         this.ballCurrentPosition,
         this.ballTargetPosition,
-        this.ballLerpAlpha,
+        this.ballLerpAlpha
       );
       this.ball.setMeshPosition(this.ballCurrentPosition);
 
@@ -153,23 +162,23 @@ export class SpectateScene {
       this.hostCurrentPosition = Vector3.Lerp(
         this.hostCurrentPosition,
         this.hostTargetPosition,
-        this.paddleLerpAlpha,
+        this.paddleLerpAlpha
       );
       this.hostPaddle.updatePaddlePosition(
         this.hostCurrentPosition.x,
         this.hostCurrentPosition.y,
-        this.hostCurrentPosition.z,
+        this.hostCurrentPosition.z
       );
 
       this.guestCurrentPosition = Vector3.Lerp(
         this.guestCurrentPosition,
         this.guestTargetPosition,
-        this.paddleLerpAlpha,
+        this.paddleLerpAlpha
       );
       this.guestPaddle.updatePaddlePosition(
         this.guestCurrentPosition.x,
         this.guestCurrentPosition.y,
-        this.guestCurrentPosition.z,
+        this.guestCurrentPosition.z
       );
 
       this.scene.render();

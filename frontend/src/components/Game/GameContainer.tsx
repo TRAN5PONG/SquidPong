@@ -173,7 +173,7 @@ const GameContiner = () => {
     gameRef.current = new Game(canvasRef.current, match, user.id, false);
     gameRef.current.start();
     setTimeout(() => {
-      // entranceSound.play();
+      entranceSound.play();
     }, 500);
     netRef.current = gameRef.current.net;
 
@@ -198,10 +198,8 @@ const GameContiner = () => {
     netRef.current.on("score:update", (data) => {
       Object.entries(data.scores).forEach(([playerId, score]) => {
         if (playerId === match?.opponent1.id) {
-          console.log("reaaaaaaaaaaaaaaaaaaaaaaa-------")
           gameRef.current?.arena.setOpponent1Score(Number(score));
         } else if (playerId === match?.opponent2.id) {
-          console.log("roooooooooooooooooooooooo-------")
           gameRef.current?.arena.setOpponent2Score(Number(score));
         }
       });
