@@ -261,16 +261,6 @@ export class Arena {
       
       }
       
-      
-      
-      
-      
-      
-      
-      
-      
-      
-
       if (mesh.name === "ScreenBoard") {
         this.BoardMesh = mesh as AbstractMesh;
       }
