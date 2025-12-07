@@ -237,77 +237,67 @@ export class Arena {
   // ---------------------------
   //  LOAD ARENA MODEL
   // ---------------------------
-async Load() {
-  const Container = await LoadAssetContainerAsync(
-    "/models/Lobby.glb",
-    this.scene
-  );
-  Container.addAllToScene();
+  async Load() {
+    const Container = await LoadAssetContainerAsync(
+      "/models/Lobby.glb",
+      this.scene
+    );
+    Container.addAllToScene();
 
-  const ObjGroup = new TransformNode("ArenaGroup", this.scene);
-  
-  Container.meshes.forEach((mesh: any) => {
-    if (mesh.name === "__root__") return;
+    const ObjGroup = new TransformNode("ArenaGroup", this.scene);
 
-    // Ensure materials are properly set up for lighting
-    const material = mesh.material as PBRMaterial;
-    // if (material) {
-    //   material.unlit = false;
-    //   material.backFaceCulling = true;
-    // }
+    Container.meshes.forEach((mesh: any) => {
+      if (mesh.name === "__root__") return;
 
-    mesh.parent = ObjGroup;
+      // Ensure materials are properly set up for lighting
+      const material = mesh.material as PBRMaterial;
+      // if (material) {
+      //   material.unlit = false;
+      //   material.backFaceCulling = true;
+      // }
 
-    // Add ALL meshes as shadow casters first
-    this.Light.addShadowCaster(mesh);
+      mesh.parent = ObjGroup;
 
-    mesh.receiveShadows = true;
+      // Add ALL meshes as shadow casters first
+      this.Light.addShadowCaster(mesh);
 
-    if (mesh.name === "TableBase") {
-      this.TableBaseMesh = mesh as AbstractMesh;
-      mesh.receiveShadows = true; // Explicitly enable
+
+      if (mesh.name === "TableBase") {
+        this.TableBaseMesh = mesh as AbstractMesh;
+      }
+
+      if (mesh.name === "Chabka")
+        mesh.receiveShadows = false;
+      else
+        mesh.receiveShadows = true;
+
+
+
+      if (mesh.name === "Floor_Floor_0") {
+        this.floorMesh = mesh as AbstractMesh;
+      }
+
+      if (mesh.name === "ScreenBoard") {
+        this.BoardMesh = mesh as AbstractMesh;
+      }
+
+      if (mesh.name === "TableEdges") {
+        this.TableEdgesMesh = mesh as AbstractMesh;
+        this.TableEdgesMaterial = mesh.material as StandardMaterial;
+        mesh.receiveShadows = true;
+      }
+    });
+
+    this.Mesh = ObjGroup;
+    this.initializeBoardGUI();
+
+    if (!this.isSpectator) {
+      this.initReadyBTN();
     }
 
-    if (mesh.name === "Floor_Floor_0") {
-      this.floorMesh = mesh as AbstractMesh;
-      mesh.receiveShadows = true; // Explicitly enable
-    }
-
-    if (mesh.name === "ScreenBoard") {
-      this.BoardMesh = mesh as AbstractMesh;
-    }
-
-    if (mesh.name === "TableEdges") {
-      this.TableEdgesMesh = mesh as AbstractMesh;
-      this.TableEdgesMaterial = mesh.material as StandardMaterial;
-      mesh.receiveShadows = true;
-    }
-  });
-
-  this.Mesh = ObjGroup;
-  this.initializeBoardGUI();
-
-  if (!this.isSpectator) {
-    this.initReadyBTN();
+    // IMPORTANT: Force a render to ensure shadows are calculated
+    this.scene.render();
   }
-
-  // IMPORTANT: Force a render to ensure shadows are calculated
-  this.scene.render();
-}
-
-// Additional debugging helper - add this method to check shadow setup:
-debugShadows() {
-  console.log("Shadow Generator:", this.Light.getShadowGenerator());
-  console.log("Shadow Map Size:", this.Light.getShadowGenerator()?.getShadowMap()?.getSize());
-  console.log("Shadow Casters:", this.Light.getShadowGenerator()?.getShadowMap()?.renderList?.length);
-  
-  // Check which meshes receive shadows
-  this.scene.meshes.forEach(mesh => {
-    if (mesh.receiveShadows) {
-      console.log(`${mesh.name} receives shadows`);
-    }
-  });
-}
 
   // ----------------------------------
   //  PHYSICS HELPER FOR TABLE BASE

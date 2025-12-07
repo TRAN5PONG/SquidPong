@@ -13,8 +13,13 @@ import {
 
 export class Light {
   private shadowGenerator: ShadowGenerator | null = null;
+  private directionalLightShadowGenerator: ShadowGenerator | null = null;
+  /**
+   * Lights
+   */
   private spotLight: SpotLight | null = null;
   private ambientLight: HemisphericLight | null = null;
+  private directionalLight: DirectionalLight | null = null;
 
   constructor(scene: Scene) {
     // Ambient light
@@ -27,7 +32,7 @@ export class Light {
     this.ambientLight.groundColor = new Color3(0.3, 0.3, 0.3);
     scene.environmentIntensity = 0;
 
-    const lightPos = new Vector3(0, 20, 0);
+    const lightPos = new Vector3(0, 25, 0);
     const target = new Vector3(0, 0, 0);
     const direction = target.subtract(lightPos).normalize();
 
@@ -40,28 +45,53 @@ export class Light {
       scene
     );
     this.spotLight.intensity = 2;
-    this.spotLight.angle = Math.PI / 2.5;
+    this.spotLight.angle = Math.PI / 2;
     this.spotLight.falloffType = SpotLight.FALLOFF_STANDARD;
     this.spotLight.diffuse = new Color3(1, 1, 1);
     this.spotLight.specular = new Color3(1, 1, 1);
 
-    // CRITICAL: Create shadow generator with proper settings
-    this.shadowGenerator = new ShadowGenerator(2048, this.spotLight);
+    this.directionalLight = new DirectionalLight(
+      "dirLight",
+      new Vector3(1, -0.9, 0.3).normalize(),
+      scene
+    );
+
+    this.directionalLight.position = new Vector3(1, 10, 0);
+    this.directionalLight.intensity = 1.2;
+
+    this.directionalLightShadowGenerator = new ShadowGenerator(
+      4096, // Increased from 2048 for better quality
+      this.directionalLight
+    );
+
+    this.directionalLightShadowGenerator.usePercentageCloserFiltering = true;
+    this.directionalLightShadowGenerator.filteringQuality = ShadowGenerator.QUALITY_HIGH;
+
+    // Core settings
+    this.directionalLightShadowGenerator.setDarkness(0.3); // Lighter shadows
+    this.directionalLightShadowGenerator.bias = 0.0001; // Slightly increased to reduce acne
     
-    // Use PCF (Percentage Closer Filtering) for better shadow quality
-    this.shadowGenerator.usePoissonSampling = true; // OR use this for better performance
-    // this.shadowGenerator.useBlurExponentialShadowMap = true; // More expensive but softer
+    // Improve filtering quality
+    this.directionalLightShadowGenerator.filteringQuality = ShadowGenerator.QUALITY_HIGH;
     
-    this.shadowGenerator.setDarkness(0.5);
-    this.shadowGenerator.bias = 0.00001; // Adjust this if you see shadow acne
+    // Enable frustum edge falloff for smoother edges at shadow boundaries
+    this.directionalLightShadowGenerator.frustumEdgeFalloff = 1.0;
     
-    // IMPORTANT: Enable filtering
-    this.shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_HIGH;
+    // Set normal bias to reduce shadow acne on slopes
+    this.directionalLightShadowGenerator.normalBias = 0.02;
+
+    // Optional: Control shadow fade distance
+    this.directionalLight.shadowMinZ = 1;
+    this.directionalLight.shadowMaxZ = 100;
+
   }
 
   addShadowCaster(mesh: AbstractMesh) {
     if (this.shadowGenerator) {
-      this.shadowGenerator.addShadowCaster(mesh, true); // true = include children
+      this.shadowGenerator.addShadowCaster(mesh, true);
+    }
+    if (this.directionalLightShadowGenerator) {
+      this.directionalLightShadowGenerator.addShadowCaster(mesh, true);
     }
   }
 
@@ -73,8 +103,14 @@ export class Light {
     return this.shadowGenerator;
   }
 
+  getDirectionalLightShadowGenerator() {
+    return this.directionalLightShadowGenerator;
+  }
+
   setDirecionLightIntensity(val: number) {
-    // Not used anymore since using SpotLight
+    if (this.directionalLight) {
+      this.directionalLight.intensity = val;
+    }
   }
 
   setAambientLightIntensity(val: number) {
@@ -83,3 +119,67 @@ export class Light {
     }
   }
 }
+
+/*
+==============================================
+SHADOW QUALITY COMPARISON GUIDE
+==============================================
+
+1. POISSON SAMPLING (Default, Good Performance)
+   - Best for: Games, real-time applications
+   - Quality: Good
+   - Performance: Fast
+   - Edge Smoothness: Moderate
+
+2. BLUR EXPONENTIAL (Smoothest)
+   - Best for: Cinematic scenes, when performance isn't critical
+   - Quality: Excellent
+   - Performance: Slow
+   - Edge Smoothness: Very high
+   - Settings to tweak: blurKernel (32-128), blurScale (1-4)
+
+3. PCF (Percentage Closer Filtering)
+   - Best for: Good balance of quality and performance
+   - Quality: Very Good
+   - Performance: Moderate
+   - Edge Smoothness: High
+
+4. CONTACT HARDENING SHADOW
+   - Best for: Realistic shadows that vary by distance
+   - Quality: Excellent (realistic)
+   - Performance: Moderate
+   - Edge Smoothness: Varies (closer = sharper, farther = softer)
+
+5. SHADOW MAP SIZE
+   - 1024: Low quality, fast
+   - 2048: Good quality, balanced (your current)
+   - 4096: High quality, slower
+   - 8192: Ultra quality, very slow
+
+==============================================
+FIXING COMMON SHADOW ISSUES
+==============================================
+
+1. SHADOW ACNE (Stripey patterns):
+   - Increase bias: 0.00001 → 0.0001
+   - Increase normalBias: 0 → 0.02
+   - Check mesh face orientation
+
+2. PETER PANNING (Shadows detached from objects):
+   - Decrease bias
+   - Decrease normalBias
+
+3. JAGGED EDGES:
+   - Increase shadow map size (2048 → 4096)
+   - Use better filtering (PCF or blur)
+   - Increase blurKernel (if using blur)
+
+4. SHADOW CUT OFF:
+   - Increase orthoLeft/Right/Top/Bottom
+   - Set autoUpdateExtends = true
+
+5. WEIRD SHAPES:
+   - Ensure mesh normals are correct
+   - Check if mesh is receiving shadows (receiveShadows = true)
+   - Verify light direction and position
+*/
