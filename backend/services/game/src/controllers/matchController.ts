@@ -243,6 +243,19 @@ export async function createMatchPlayer(
     },
   });
 }
+// export async function createAiMacthPlayer(
+//     return tx.matchPlayer.create({
+//   data: {
+//     isAI : true,
+//     characterId: ,
+//     paddleId: userData.playerSelectedPaddle,
+//     avatarUrl: userData.avatar,
+//     rankDivision: userData.rankDivision,
+//     rankTier: userData.rankTier,
+//     username: userData.username,
+//   },
+// });
+// )
 export async function createMatchSetting(
   matchId: string,
   mode: "ONE_VS_ONE" | "ONE_VS_AI",
@@ -387,8 +400,8 @@ export async function toggleReadyStatus(matchId: string, playerId: string) {
       match.opponent1.id === playerId
         ? match.opponent1
         : match.opponent2?.id === playerId
-        ? match.opponent2
-        : null;
+          ? match.opponent2
+          : null;
 
     if (!player) {
       throw new Error("Player not found in this match");
@@ -446,8 +459,8 @@ export async function giveUp(matchId: string, playerId: string) {
       match.opponent1.id === playerId
         ? match.opponent1
         : match.opponent2?.id === playerId
-        ? match.opponent2
-        : null;
+          ? match.opponent2
+          : null;
     if (!player) {
       throw new Error("Player not found in this match");
     }
@@ -520,8 +533,8 @@ export async function startGame(matchId: string, playerId: string) {
       match.opponent1.userId === playerId
         ? match.opponent1
         : match.opponent2?.userId === playerId
-        ? match.opponent2
-        : null;
+          ? match.opponent2
+          : null;
 
     if (!player) {
       throw new Error("Player not found in this match");
@@ -607,14 +620,14 @@ export async function EndMatch(
       player1.gmUserId === winnerId
         ? player1
         : player2?.gmUserId === winnerId
-        ? player2
-        : null;
+          ? player2
+          : null;
     const loser =
       player1.gmUserId === loserId
         ? player1
         : player2?.gmUserId === loserId
-        ? player2
-        : null;
+          ? player2
+          : null;
 
     if (!winner || !loser) {
       throw "invalid players";

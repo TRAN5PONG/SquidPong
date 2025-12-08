@@ -123,7 +123,7 @@ export class Game {
 
       // Network
       if (!this.isAIMode) {
-        this.net = new Network(`wss://10.13.3.10:4433/matches`, this.match);
+        this.net = new Network(`wss://10.13.2.6:4433/matches`, this.match);
         this.room = await this.net.join(this.userId);
       } else {
         this.net = null as any;
