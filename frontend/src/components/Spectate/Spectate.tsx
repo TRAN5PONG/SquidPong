@@ -509,8 +509,8 @@ const Spectate = () => {
     });
 
     return () => {
-      netWorkRef.current?.off("game:spectators", () => {});
-      netWorkRef.current?.leave();
+      netWorkRef.current?.off("game:spectators", () => { });
+      SpectateSceneRef.current?.dispose();
     };
   }, [netWorkRef.current]);
 
@@ -583,8 +583,8 @@ const Spectate = () => {
         <ScoreBoard
           match={match}
           net={netWorkRef.current}
-          resetCamera={() => {}}
-          startCinematicCamera={() => {}}
+          resetCamera={() => { }}
+          startCinematicCamera={() => { }}
         />
         <div className="GameContainerOptions">
           <div className="LiveIcon">
@@ -614,11 +614,10 @@ const Spectate = () => {
             {cameraModes.map((mode) => (
               <div
                 key={mode.mode_name}
-                className={`CameraModeOption ${
-                  SpectateSceneRef.current?.camera.getMode() === mode.mode_name
+                className={`CameraModeOption ${SpectateSceneRef.current?.camera.getMode() === mode.mode_name
                     ? "selected"
                     : ""
-                }`}
+                  }`}
                 onClick={() => {
                   SpectateSceneRef.current?.camera.setMode(mode.mode_name);
                   setShowCameraModes(false);
@@ -653,9 +652,8 @@ const Spectate = () => {
                   <div className="BettingOption">
                     <span className="BettingOptionName">W1</span>
                     <span
-                      className={`BettingOptionOdds ${
-                        selectedBet === "W1" ? "selected" : ""
-                      }`}
+                      className={`BettingOptionOdds ${selectedBet === "W1" ? "selected" : ""
+                        }`}
                       onClick={() => handleBetSelection("W1")}
                     >
                       2.5
@@ -665,9 +663,8 @@ const Spectate = () => {
                   <div className="BettingOption">
                     <span className="BettingOptionName">W2</span>
                     <span
-                      className={`BettingOptionOdds ${
-                        selectedBet === "W2" ? "selected" : ""
-                      }`}
+                      className={`BettingOptionOdds ${selectedBet === "W2" ? "selected" : ""
+                        }`}
                       onClick={() => handleBetSelection("W2")}
                     >
                       3.0

@@ -311,18 +311,38 @@ export class Ball {
     this.deactivateAllEffects();
 
     if (this.fireParticleSystem) {
+      this.fireParticleSystem.stop();
       this.fireParticleSystem.dispose();
       this.fireParticleSystem = null;
     }
 
     if (this.smokeParticleSystem) {
+      this.smokeParticleSystem.stop();
       this.smokeParticleSystem.dispose();
       this.smokeParticleSystem = null;
     }
 
+
+    if (this.mesh) {
+      const mat = this.mesh.material;
+      if (mat) {
+        if ((mat as any).albedoTexture) {
+          (mat as any).albedoTexture.dispose();
+        }
+        if ((mat as any).diffuseTexture) {
+          (mat as any).diffuseTexture.dispose();
+        }
+
+        mat.dispose(false, true);
+      }
+
+      this.mesh.dispose(false, true);
+      this.mesh = null as any;
+    }
     if (this.meshGroup) {
       this.meshGroup.dispose();
       this.meshGroup = null;
     }
   }
+
 }

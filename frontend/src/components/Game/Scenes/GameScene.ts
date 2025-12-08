@@ -18,6 +18,7 @@ import { Network } from "@/components/Game/network/network";
 import { MatchState } from "../network/GameState";
 import { Room } from "colyseus.js";
 import { paddleColors, paddleTextures } from "@/types/game/paddle";
+import { Color4 } from "@babylonjs/core";
 
 // Environment variable
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -64,6 +65,7 @@ export class Game {
     canvas: HTMLCanvasElement,
     match: Match,
     userId: string,
+    onGameReady: () => void,
     isAIMode: boolean = false
   ) {
     if (!canvas) {
@@ -95,6 +97,11 @@ export class Game {
 
     this.engine = new Engine(canvas, true, { adaptToDeviceRatio: true });
     this.scene = new Scene(this.engine);
+
+    this.scene.clearColor = new Color4(0, 0, 0, 0);
+
+
+    this.Init().then(() => onGameReady())
   }
 
   /****
@@ -116,7 +123,7 @@ export class Game {
 
       // Network
       if (!this.isAIMode) {
-        this.net = new Network(`wss://10.13.3.5:4433/matches`, this.match);
+        this.net = new Network(`wss://10.13.3.10:4433/matches`, this.match);
         this.room = await this.net.join(this.userId);
       } else {
         this.net = null as any;
@@ -218,8 +225,6 @@ export class Game {
    * Public entry point for starting the game.
    */
   async start() {
-    console.log("Game initialized and started.");
-    await this.Init();
     this.arena.updateTableEdgesMaterial(true, true);
     this.camera.GameIntroAnimation();
 
@@ -238,6 +243,26 @@ export class Game {
    * Cleanup
    */
   dispose() {
+    this.engine.stopRenderLoop()
+
+    if (this.room) {
+      this.room.removeAllListeners();
+      this.room.leave();
+      this.room = null;
+    }
+
+    if (this.net) {
+      this.net.leave()
+    }
+
+    this.ball?.dispose();
+    this.hostPaddle?.dispose();
+    this.guestPaddle?.dispose();
+    this.arena?.dispose();
+    this.camera?.dispose();
+    this.light?.dispose();
+
+
     this.scene.dispose();
     this.engine.dispose();
   }

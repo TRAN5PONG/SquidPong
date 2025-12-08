@@ -71,7 +71,9 @@ export class MatchRoom extends Room<MatchState> {
       _client.meta = { role: "spectator", userId: options.userId };
       return true;
     }
-  
+    
+
+    console.log(players, "not includes :", options.userId)
     return false;
   }
   

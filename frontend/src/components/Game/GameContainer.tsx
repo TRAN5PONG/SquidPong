@@ -16,6 +16,7 @@ import { Game } from "./Scenes/GameScene";
 import { db } from "@/db";
 import { useNavigate } from "@/contexts/RouterProvider";
 import { useSounds } from "@/contexts/SoundProvider";
+import { LoaderSpinner } from "../Loader/Loader";
 
 const StyledGame = styled("div")`
   width: 100%;
@@ -115,6 +116,16 @@ const StyledGame = styled("div")`
     border: 1px solid rgba(255, 255, 255, 0.4);
     outline: none;
   }
+
+  .LoadingSPN{
+    position: absolute;
+    left : 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color : white;
+    font-family : var(--squid_font);
+    font-size: 1rem;
+  }
 `;
 
 const GameContiner = () => {
@@ -125,6 +136,7 @@ const GameContiner = () => {
   const matchId = useRouteParam("/game/:id", "id");
   const [match, setMatch] = useState<Match | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [gameReady, setGameReady] = useState(false);
   // Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<Game | null>(null);
@@ -170,8 +182,14 @@ const GameContiner = () => {
   useEffect(() => {
     if (!match || !user?.id || !canvasRef.current || gameRef.current) return;
 
-    gameRef.current = new Game(canvasRef.current, match, user.id, false);
-    gameRef.current.start();
+    const onGameReady = () => {
+      setTimeout(() => {
+        setGameReady(true)
+        gameRef.current?.start()
+      }, 1500);
+    }
+
+    gameRef.current = new Game(canvasRef.current, match, user.id, onGameReady, false);
     setTimeout(() => {
       entranceSound.play();
     }, 500);
@@ -181,7 +199,10 @@ const GameContiner = () => {
       gameRef.current?.dispose();
       netRef.current = null;
     };
-  }, [match, user?.id, canvasRef.current]);
+  }, [match, user?.id]);
+
+
+
   useEffect(() => {
     if (gameRef.current?.arena) {
       gameRef.current.arena.setOnReadyHover(inGameOnReadyHover);
@@ -207,7 +228,6 @@ const GameContiner = () => {
   }, [gameRef.current]);
 
   const navigate = useNavigate();
-
   const onPause = () => {
     if (!netRef.current) return;
 
@@ -217,23 +237,10 @@ const GameContiner = () => {
     if (!netRef.current) return;
     netRef.current.sendMessage("player:give-up");
   };
-  const onReady = () => {
-    if (!netRef.current) return;
-
-    gameRef.current?.arena.stopTableEdgesPulse();
-    gameRef.current?.camera.setupPosition();
-    netRef.current.sendMessage("player:ready");
-  };
-  const onReset = () => {
-    if (!netRef.current) return;
-
-    gameRef.current?.camera.playCameraAnimations();
-
-    // netRef.current.sendMessage("game:reset");
-  };
 
   // if (notFound) return <NotFound />;
   // if (!match) return <LoaderSpinner />;
+
 
   return (
     <StyledGame>
@@ -245,13 +252,11 @@ const GameContiner = () => {
       <ScoreBoard
         net={netRef.current}
         match={match}
-        startCinematicCamera={() => {}}
-        resetCamera={() => {}}
       />
       <div className="GameSettings">
         {matchPhase === "playing" ||
-        matchPhase === "paused" ||
-        matchPhase === "waiting" ? (
+          matchPhase === "paused" ||
+          matchPhase === "waiting" ? (
           <button className="GiveUpButton BtnSecondary" onClick={onGiveUp}>
             <GiveUpIcon size={20} fill="var(--main_color)" />
             Give up
@@ -277,13 +282,12 @@ const GameContiner = () => {
           ))}
         </div>
 
-        {/* {matchPhase === "waiting" && (
-          <button className="ReadyBtn" onClick={onReady}>
-            Ready
-          </button>
-        )} */}
       </div>
       <canvas ref={canvasRef} className="game-canvas"></canvas>;
+
+      {
+        !gameReady && <span className="LoadingSPN">Loading...</span>
+      }
     </StyledGame>
   );
 };

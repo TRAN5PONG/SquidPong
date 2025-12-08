@@ -460,17 +460,79 @@ export class Arena {
   /**
    * Cleanup
    */
-  dispose() {
-    // Stop animation loop
+  public dispose(): void {
     if (this.impactObserver) {
       this.scene.onBeforeRenderObservable.remove(this.impactObserver);
       this.impactObserver = null;
     }
 
-    // Dispose all active effects
+    if (this.pulseObserver) {
+      this.scene.onBeforeRenderObservable.remove(this.pulseObserver);
+      this.pulseObserver = null;
+    }
+
     for (const effect of this.impactEffects) {
-      effect.mesh.dispose();
+      effect.mesh.dispose(false, true);
     }
     this.impactEffects = [];
+
+    if (this.boardGUI) {
+      this.boardGUI.dispose();
+      this.boardGUI = null;
+    }
+
+    if (this.ScoreText) this.ScoreText = null;
+    if (this.gameStatusText) this.gameStatusText = null;
+    if (this.playersNamesText) this.playersNamesText = null;
+
+    const readyPlane = this.scene.getMeshByName("buttonPlane");
+    if (readyPlane) {
+      if (readyPlane.material) readyPlane.material.dispose(true, true);
+      readyPlane.dispose(false, true);
+    }
+
+    if (this.TableEdgesMaterial) {
+      const mat = this.TableEdgesMaterial as any;
+      if (mat.diffuseTexture) mat.diffuseTexture.dispose();
+      if (mat.emissiveTexture) mat.emissiveTexture.dispose();
+      if (mat.opacityTexture) mat.opacityTexture.dispose();
+      this.TableEdgesMaterial.dispose(false, true);
+      this.TableEdgesMaterial = null;
+    }
+
+    const meshesToDispose: (AbstractMesh | Mesh | TransformNode | null)[] = [
+      this.BoardMesh,
+      this.TableBaseMesh,
+      this.floorMesh,
+      this.TableEdgesMesh,
+      this.Mesh,
+    ];
+
+    for (let m of meshesToDispose) {
+      if (m) {
+        if ((m as AbstractMesh).material) {
+          const mat = (m as any).material;
+
+          if (mat.diffuseTexture) mat.diffuseTexture.dispose();
+          if (mat.emissiveTexture) mat.emissiveTexture.dispose();
+          if (mat.opacityTexture) mat.opacityTexture.dispose();
+          if (mat.albedoTexture) mat.albedoTexture.dispose();
+
+          mat.dispose(false, true);
+        }
+
+        m.dispose(false, true);
+      }
+    }
+    this.BoardMesh = null;
+    this.TableBaseMesh = null;
+    this.floorMesh = null;
+    this.TableEdgesMesh = null;
+    this.Mesh = null;
+    this.onReady = undefined;
+    this.onReadyHover = undefined;
+    this.Light = null as any;
+    this.net = null as any;
   }
+
 }

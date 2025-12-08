@@ -15,8 +15,16 @@ const StyledSpectatePage = styled("div")`
   width: 100vw;
   height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 80px 10%;
+  h1{
+    color : white;
+    font-family: var(--span_font);
+    font-size: 1.5rem;
+    text-align: left;
+  }
   .MatchesContainer {
     width: 100%;
     height: 100%;
@@ -32,6 +40,7 @@ const StyledSpectatePage = styled("div")`
     gap: 10px;
     align-items: center;
     justify-content: center;
+
   }
 `;
 const SpectatePage = () => {
@@ -54,6 +63,7 @@ const SpectatePage = () => {
   }, []);
   return (
     <StyledSpectatePage>
+      <h1>in-progress games :</h1>
       <div className="MatchesContainer scroll-y">
         {matches.map((m) => {
           const opponent1Rank = getRankMetaData(

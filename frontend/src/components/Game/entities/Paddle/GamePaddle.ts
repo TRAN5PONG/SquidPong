@@ -85,4 +85,37 @@ export class Paddle extends BasePaddle {
     if (!this.mesh) return Vector3.Zero();
     return this.mesh.rotation.clone();
   }
+
+
+  public dispose(): void {
+    if (this.mesh) {
+      const meshes = this.mesh.getChildMeshes(true);
+
+      for (const m of meshes) {
+        const mat = m.material;
+        if (mat) {
+          if ((mat as any).albedoTexture) {
+            (mat as any).albedoTexture.dispose();
+          }
+          if ((mat as any).diffuseTexture) {
+            (mat as any).diffuseTexture.dispose();
+          }
+          if ((mat as any).emissiveTexture) {
+            (mat as any).emissiveTexture.dispose();
+          }
+          if ((mat as any).opacityTexture) {
+            (mat as any).opacityTexture.dispose();
+          }
+
+          mat.dispose(false, true);
+        }
+      }
+
+      this.mesh.dispose(false, true);
+      this.mesh = null as any;
+    }
+
+    this.options = undefined;
+  }
+
 }

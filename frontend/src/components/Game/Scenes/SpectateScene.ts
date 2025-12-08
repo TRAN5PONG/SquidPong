@@ -30,7 +30,10 @@ export class SpectateScene {
   // Network
   net: Network;
   room: Room<MatchState>;
-  
+
+  // handlers
+  resizeHandler: () => void;
+
   // User
   userId: string;
   userName: string;
@@ -91,7 +94,7 @@ export class SpectateScene {
 
       // network
       this.net = new Network(
-        "wss://10.13.3.5:4433/matches",
+        "wss://10.13.3.10:4433/matches",
         this.match,
         "spectate"
       );
@@ -184,9 +187,10 @@ export class SpectateScene {
       this.scene.render();
     });
 
-    window.addEventListener("resize", () => {
+    this.resizeHandler = () => {
       this.engine.resize();
-    });
+    };
+    window.addEventListener("resize", this.resizeHandler);
   }
   /**
    * Getters
@@ -196,6 +200,37 @@ export class SpectateScene {
   }
 
   dispose() {
+    this.engine.stopRenderLoop();
+
+    window.removeEventListener("resize", this.resizeHandler);
+
+    if (this.room) {
+      this.room.removeAllListeners();
+      this.room.leave();
+      this.room = null;
+    }
+    if (this.net) {
+      this.net.leave();
+    }
+
+    this.ball?.dispose();
+    this.hostPaddle?.dispose();
+    this.guestPaddle?.dispose();
+    this.arena?.dispose();
+    this.camera?.dispose();
+    this.light?.dispose();
+
+    this.scene.dispose();
+
     this.engine.dispose();
+
+    this.ball =
+      this.hostPaddle =
+      this.guestPaddle =
+      this.arena =
+      this.camera =
+      this.light =
+      null as any;
   }
+
 }

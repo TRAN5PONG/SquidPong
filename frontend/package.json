@@ -9,15 +9,16 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@babylonjs/core": "^8.14.2",
+    "@babylonjs/core": "^7.31.0",
     "@types/node": "^22.15.30",
     "@types/scheduler": "^0.26.0",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "@babylonjs/inspector": "^8.14.2",
-    "@babylonjs/loaders": "^8.14.2",
+    "@babylonjs/inspector": "^7.31.0",
+    "@babylonjs/loaders": "^7.31.0",
+    "@babylonjs/materials": "^7.31.0",
     "@dimforge/rapier3d-compat": "^0.18.0",
     "colyseus.js": "^0.16.19",
     "gsap": "^3.13.0",

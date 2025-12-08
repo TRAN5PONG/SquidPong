@@ -122,8 +122,6 @@ const StyledScoreBoard = styled("div")`
 interface ScoreBoardProps {
   net: Network | null;
   match: Match | null;
-  startCinematicCamera: () => void;
-  resetCamera: () => void;
 }
 const ScoreBoard = (props: ScoreBoardProps) => {
   const { toasts } = useAppContext();
@@ -149,7 +147,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
 
 
   // context
-  const {user} = useAppContext();
+  const { user } = useAppContext();
 
   useEffect(() => {
     if (!props.match) return;
@@ -175,7 +173,6 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     props.net.on(
       "player:connected",
       (playerId: string, player: MatchPlayer) => {
-        console.log("reachs");
         if (playerId === host?.id)
           setHost({
             ...host,
@@ -236,23 +233,10 @@ const ScoreBoard = (props: ScoreBoardProps) => {
           : null;
 
     const lastPlayedRef = useRef<number | null>(null);
-    const lastPausedRef = useRef<boolean>(false);
 
-    // Handle pause sound — only play once when pause starts
-    if (matchPhase === "paused" && !lastPausedRef.current) {
-      if (pauseAmbientSound.isMuffled) pauseAmbientSound.setMuffled(false);
-      pauseAmbientSound.play();
-      props.startCinematicCamera();
-      lastPausedRef.current = true;
-    } else if (matchPhase !== "paused") {
-      pauseAmbientSound.stop();
-      props.resetCamera();
-      lastPausedRef.current = false;
-    }
 
     if (activeCountdown === 5 && matchPhase !== "paused") {
       pauseAmbientSound.setMuffled(true);
-      props.resetCamera();
     }
 
     // If no countdown, reset tracking and exit
@@ -274,6 +258,15 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     // Save last played value
     lastPlayedRef.current = activeCountdown;
   }, [countdownValue, pauseCountdown, matchPhase]);
+
+  useEffect(() => {
+    if (matchPhase === "paused") {
+      if (pauseAmbientSound.isMuffled) pauseAmbientSound.setMuffled(false);
+      pauseAmbientSound.play();
+    } else {
+      pauseAmbientSound.stop();
+    }
+  }, [matchPhase])
 
   // Elapsed timer effect
   useEffect(() => {

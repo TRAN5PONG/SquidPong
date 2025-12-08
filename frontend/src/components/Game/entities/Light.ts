@@ -59,24 +59,45 @@ export class Light {
     this.directionalLight.position = new Vector3(1, 10, 0);
     this.directionalLight.intensity = 1.2;
 
+    // ============================================
+    // IMPROVED SHADOW SETTINGS FOR SMOOTHNESS
+    // ============================================
     this.directionalLightShadowGenerator = new ShadowGenerator(
-      4096, // Increased from 2048 for better quality
+      2048, // Increased from 2048 for better quality
       this.directionalLight
     );
 
-    this.directionalLightShadowGenerator.usePercentageCloserFiltering = true;
-    this.directionalLightShadowGenerator.filteringQuality = ShadowGenerator.QUALITY_HIGH;
+    // OPTION 1: PCF with Poisson Sampling (Good balance)
+    this.directionalLightShadowGenerator.usePoissonSampling = true;
+
+    // OPTION 2: Blur Exponential Shadow Map (Smoother but more expensive)
+    // Uncomment this block and comment out usePoissonSampling above:
+    // this.directionalLightShadowGenerator.useBlurExponentialShadowMap = true;
+    // this.directionalLightShadowGenerator.useKernelBlur = true;
+    // this.directionalLightShadowGenerator.blurKernel = 64; // Higher = smoother
+    // this.directionalLightShadowGenerator.blurScale = 2;
+
+    // OPTION 3: Contact Hardening Shadow (Most realistic, varies softness by distance)
+    // Uncomment this block and comment out usePoissonSampling above:
+    // this.directionalLightShadowGenerator.useContactHardeningShadow = true;
+    // this.directionalLightShadowGenerator.contactHardeningLightSizeUVRatio = 0.05;
+    // this.directionalLightShadowGenerator.filteringQuality = ShadowGenerator.QUALITY_HIGH;
+
+    // OPTION 4: Percentage Closer Soft Shadows (PCSS) - Best quality
+    // Uncomment this block and comment out usePoissonSampling above:
+    // this.directionalLightShadowGenerator.usePercentageCloserFiltering = true;
+    // this.directionalLightShadowGenerator.filteringQuality = ShadowGenerator.QUALITY_HIGH;
 
     // Core settings
     this.directionalLightShadowGenerator.setDarkness(0.3); // Lighter shadows
-    this.directionalLightShadowGenerator.bias = 0.0001; // Slightly increased to reduce acne
-    
+    this.directionalLightShadowGenerator.bias = 0.00005; // Slightly increased to reduce acne
+
     // Improve filtering quality
     this.directionalLightShadowGenerator.filteringQuality = ShadowGenerator.QUALITY_HIGH;
-    
+
     // Enable frustum edge falloff for smoother edges at shadow boundaries
     this.directionalLightShadowGenerator.frustumEdgeFalloff = 1.0;
-    
+
     // Set normal bias to reduce shadow acne on slopes
     this.directionalLightShadowGenerator.normalBias = 0.02;
 
@@ -84,6 +105,12 @@ export class Light {
     this.directionalLight.shadowMinZ = 1;
     this.directionalLight.shadowMaxZ = 100;
 
+    // Optional: Increase shadow frustum size if shadows are cut off
+    // this.directionalLight.autoUpdateExtends = false;
+    // this.directionalLight.orthoLeft = -20;
+    // this.directionalLight.orthoRight = 20;
+    // this.directionalLight.orthoTop = 20;
+    // this.directionalLight.orthoBottom = -20;
   }
 
   addShadowCaster(mesh: AbstractMesh) {
@@ -118,6 +145,34 @@ export class Light {
       this.ambientLight.intensity = val;
     }
   }
+
+  dispose() {
+    if (this.directionalLightShadowGenerator) {
+      this.directionalLightShadowGenerator.dispose();
+      this.directionalLightShadowGenerator = null;
+    }
+
+    if (this.shadowGenerator) {
+      this.shadowGenerator.dispose();
+      this.shadowGenerator = null;
+    }
+
+    if (this.spotLight) {
+      this.spotLight.dispose();
+      this.spotLight = null;
+    }
+
+    if (this.directionalLight) {
+      this.directionalLight.dispose();
+      this.directionalLight = null;
+    }
+
+    if (this.ambientLight) {
+      this.ambientLight.dispose();
+      this.ambientLight = null;
+    }
+  }
+
 }
 
 /*
