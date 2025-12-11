@@ -14,6 +14,8 @@ import { Vec3 } from "@/types/network";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Debug } from "../entities/Debug";
 
+const GAME_SOCKET = import.meta.env.VITE_GAME_SOCKET;
+
 export class SpectateScene {
   match!: Match;
   canvas: HTMLCanvasElement;
@@ -94,7 +96,7 @@ export class SpectateScene {
 
       // network
       this.net = new Network(
-        "wss://10.13.2.6:4433/matches",
+        `${GAME_SOCKET}`,
         this.match,
         "spectate"
       );

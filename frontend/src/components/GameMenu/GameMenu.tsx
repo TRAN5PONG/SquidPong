@@ -196,6 +196,9 @@ const GameMenu = () => {
         type: "error",
         message: "No match found. Please join a match first.",
       });
+
+    if (match.currentMatch?.mode === "ONE_VS_AI")
+      return navigate(`/game/${match.currentMatch.id}`)
     const userPlayerId =
       match.currentMatch?.opponent1.userId === user?.id
         ? match.currentMatch?.opponent1.userId
@@ -234,7 +237,7 @@ const GameMenu = () => {
     currentPath === "/bounce-game" ||
     currentPath === "/"
   )
-    return null; // Don't show the menu in game or spectate mode
+    return null;
 
   return (
     <StyledGameMenu
@@ -248,9 +251,8 @@ const GameMenu = () => {
         {menuElements.map((el) => (
           <div
             key={el.name}
-            className={`BottomMenuEl ${
-              el.navigateTo === currentPath ? "active" : ""
-            }`}
+            className={`BottomMenuEl ${el.navigateTo === currentPath ? "active" : ""
+              }`}
             onMouseEnter={() => {
               el_hoverSound.play();
             }}

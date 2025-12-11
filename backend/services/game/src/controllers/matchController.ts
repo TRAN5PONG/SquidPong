@@ -63,17 +63,6 @@ export async function AiMatch(request: FastifyRequest, reply: FastifyReply) {
         throw new Error("Error creating user player");
       }
 
-      // fetch ai player
-      const aiPlayer = await tx.user.upsert({
-        where: { userId: 5 },
-        create: {
-          userId: 5,
-        },
-        update: {},
-      });
-
-      if (!aiPlayer) throw new Error("Erro creating AI player");
-
       // create match player for user
       const userMatchPlayer = await createMatchPlayer(
         userId,
@@ -83,13 +72,7 @@ export async function AiMatch(request: FastifyRequest, reply: FastifyReply) {
         tx
       );
       // create match player for AI
-      const aiMatchPlayer = await createMatchPlayer(
-        5,
-        aiPlayer.id,
-        false,
-        true,
-        tx
-      );
+      const aiMatchPlayer = await createAiMacthPlayer(tx);
       // create match
       const match = await tx.match.create({
         data: {
@@ -224,13 +207,14 @@ export async function createMatchPlayer(
   // Fetch user info from user service
   const res = await fetch(`http://user:4002/api/user/id/${remoteUserId}`);
   if (!res.ok) throw new Error("Failed to fetch user data");
+
   const Resp = await res.json();
   const userData = Resp.data as User;
 
   // Create the match player record in local DB
   return tx.matchPlayer.create({
     data: {
-      userId: localUserId, // ✅ Use local UUID here
+      userId: localUserId,
       gmUserId: remoteUserId.toString(),
       isHost,
       isAI,
@@ -243,19 +227,21 @@ export async function createMatchPlayer(
     },
   });
 }
-// export async function createAiMacthPlayer(
-//     return tx.matchPlayer.create({
-//   data: {
-//     isAI : true,
-//     characterId: ,
-//     paddleId: userData.playerSelectedPaddle,
-//     avatarUrl: userData.avatar,
-//     rankDivision: userData.rankDivision,
-//     rankTier: userData.rankTier,
-//     username: userData.username,
-//   },
-// });
-// )
+export async function createAiMacthPlayer(
+  tx: Prisma.TransactionClient = prisma
+) {
+  return tx.matchPlayer.create({
+    data: {
+      isAI: true,
+      characterId: "Boss",
+      paddleId: "Red",
+      avatarUrl: "https://media.tenor.com/CVLHiD2orA8AAAAe/squid-game-dolls-staring-at-each-other.png",
+      rankDivision: "MASTER",
+      rankTier: "II",
+      username: "SquidPong_ai",
+    },
+  });
+}
 export async function createMatchSetting(
   matchId: string,
   mode: "ONE_VS_ONE" | "ONE_VS_AI",

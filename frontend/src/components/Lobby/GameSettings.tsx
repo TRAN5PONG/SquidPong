@@ -409,6 +409,8 @@ const GameSettings = (props: GameSettingsProps) => {
       if (!prev) return prev;
       return { ...prev, isReady: !prev.isReady };
     });
+    if (props.selectedMode === "ONE_VS_AI")
+      return;
     if (match.currentMatch?.opponent1.userId === user?.id) {
       socketManager.sendMessage({
         type: "game",
@@ -545,7 +547,7 @@ const GameSettings = (props: GameSettingsProps) => {
           {props.selectedMode ? `${props.selectedMode}` : "No mode selected."}
         </span>
 
-        {props.selectedMode === "Tournament" ? (
+        {props.selectedMode === "TOURNAMENT" ? (
           <div className="TournamentModeSettings GameSettings">
             {/* <h2>world cup</h2>
             // <span>Round 2</span> */}
@@ -664,8 +666,8 @@ const GameSettings = (props: GameSettingsProps) => {
               />
             </div>
           </div>
-        ) : props.selectedMode === "1vsAI" ? (
-          <div className="_1vsAiSettings GameSettings">
+        ) : props.selectedMode === "ONE_VS_AI" ? (
+          <div className="_ONE_VS_AISettings GameSettings">
             <div className="Option">
               <span>Difficulty</span>
               <select
@@ -692,9 +694,8 @@ const GameSettings = (props: GameSettingsProps) => {
         )}
 
         <div
-          className={`GameCard ${
-            props.selectedMode === "BounceChallenge" ? "Hide" : ""
-          }`}
+          className={`GameCard ${props.selectedMode === "BounceChallenge" ? "Hide" : ""
+            }`}
         >
           <div className="Player Opponent1">
             <Avatar
@@ -736,18 +737,18 @@ const GameSettings = (props: GameSettingsProps) => {
             )}
             <div className="PlayerInfo" key={OpponentPlayer?.id}>
               <h2>
-                {props.selectedMode === "1vsAI"
+                {props.selectedMode === "ONE_VS_AI"
                   ? "AI Opponent"
                   : OpponentPlayer?.username
-                  ? OpponentPlayer?.username
-                  : "No Opponent"}
+                    ? OpponentPlayer?.username
+                    : "No Opponent"}
               </h2>
               <span className="PlayerInfoStatus">
-                {OpponentPlayer?.isReady || props.selectedMode === "1vsAI"
+                {OpponentPlayer?.isReady || props.selectedMode === "ONE_VS_AI"
                   ? "Oponent Ready"
                   : OpponentPlayer?.isReady
-                  ? "Ready"
-                  : "Not Ready"}
+                    ? "Ready"
+                    : "Not Ready"}
               </span>
             </div>
           </div>
@@ -785,7 +786,7 @@ const GameSettings = (props: GameSettingsProps) => {
             </button>
           ) : null}
 
-          {props.selectedMode === "1vsAI" ? (
+          {props.selectedMode === "ONE_VS_AI" && !currentMatch ? (
             <button
               className={`ReadyBtn ${userPlayer?.isReady ? "ready" : ""}`}
               onClick={handleCreateAIMatch}

@@ -456,12 +456,12 @@ const Lobby = () => {
           </div>
           <div
             className={`VSAIMode secMode ${
-              selectedMode === "1vsAI" ? "selected" : ""
+              selectedMode === "ONE_VS_AI" ? "selected" : ""
             }`}
-            onClick={() => onModeSelect("1vsAI")}
+            onClick={() => onModeSelect("ONE_VS_AI")}
             onMouseEnter={() => el_hoverSound.play()}
           >
-            <img src="/assets/1vsAI.png" />
+            <img src="/assets/ONE_VS_AI.png" />
             <h1>VS AI</h1>
           </div>
           <div

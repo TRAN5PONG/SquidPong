@@ -21,8 +21,7 @@ import { paddleColors, paddleTextures } from "@/types/game/paddle";
 import { Color4 } from "@babylonjs/core";
 
 // Environment variable
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const IP = import.meta.env.VITE_IP;
+const GAME_SOCKET = import.meta.env.VITE_GAME_SOCKET;
 
 export class Game {
   // Game data
@@ -104,9 +103,7 @@ export class Game {
     this.Init().then(() => onGameReady())
   }
 
-  /****
-   * Init
-   */
+
   private async Init() {
     try {
       // Physics
@@ -123,7 +120,7 @@ export class Game {
 
       // Network
       if (!this.isAIMode) {
-        this.net = new Network(`wss://10.13.2.6:4433/matches`, this.match);
+        this.net = new Network(GAME_SOCKET, this.match);
         this.room = await this.net.join(this.userId);
       } else {
         this.net = null as any;
@@ -192,10 +189,6 @@ export class Game {
       throw error;
     }
   }
-
-  /*****
-   * Start the render/update loop.
-   */
   private startRenderLoop() {
     const FIXED_DT = 1 / 60; // Physics timestep: 60Hz
     let accumulator = 0;
@@ -220,10 +213,6 @@ export class Game {
       this.scene.render();
     });
   }
-
-  /*****
-   * Public entry point for starting the game.
-   */
   async start() {
     this.arena.updateTableEdgesMaterial(true, true);
     this.camera.GameIntroAnimation();
@@ -231,6 +220,10 @@ export class Game {
     this.isGameReady = true;
     this.startRenderLoop();
   }
+
+  /**
+   * Handlers
+   */
 
   /*****
    * Getters

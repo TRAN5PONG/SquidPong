@@ -197,15 +197,8 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     });
     props.net.on("game:paused", (data) => {
       setPauseBy(data.by);
-      console.log("Game paused", data.by);
     });
-    props.net.on("game:pause-denied", (data) => {
-      toasts?.addToastToQueue({
-        type: "error",
-        message: `Pause denied: ${data.reason}`,
-        duration: 4000,
-      });
-    });
+
     props.net.on("game:pause-tick", (data) => {
       setPauseCountdown(data.remainingPauseTime);
     });
@@ -220,7 +213,18 @@ const ScoreBoard = (props: ScoreBoardProps) => {
         }
       });
     });
-    // Time
+
+
+    return () => {
+      props.net?.off("phase:changed", ()=>{})
+      props.net?.off("countdown:updated", ()=>{})
+      props.net?.off("winner:declared", ()=>{})
+      props.net?.off("player:connected", ()=>{})
+      props.net?.off("game:paused", ()=>{})
+      props.net?.off("game:pause-tick", ()=>{})
+      props.net?.off("player:disconnected", ()=>{})
+      props.net?.off("score:update", ()=>{})
+    }
   }, [props.net, host, guest]);
 
   useEffect(() => {
@@ -235,7 +239,7 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     const lastPlayedRef = useRef<number | null>(null);
 
 
-    if (activeCountdown === 5 && matchPhase !== "paused") {
+    if (activeCountdown === 5) {
       pauseAmbientSound.setMuffled(true);
     }
 
@@ -259,14 +263,6 @@ const ScoreBoard = (props: ScoreBoardProps) => {
     lastPlayedRef.current = activeCountdown;
   }, [countdownValue, pauseCountdown, matchPhase]);
 
-  useEffect(() => {
-    if (matchPhase === "paused") {
-      if (pauseAmbientSound.isMuffled) pauseAmbientSound.setMuffled(false);
-      pauseAmbientSound.play();
-    } else {
-      pauseAmbientSound.stop();
-    }
-  }, [matchPhase])
 
   // Elapsed timer effect
   useEffect(() => {

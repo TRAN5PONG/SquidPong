@@ -130,7 +130,7 @@ const StyledGame = styled("div")`
 
 const GameContiner = () => {
   // Context
-  const { user } = useAppContext();
+  const { user, toasts } = useAppContext();
 
   // Get Match
   const matchId = useRouteParam("/game/:id", "id");
@@ -145,7 +145,7 @@ const GameContiner = () => {
   const [matchPhase, setMatchPhase] = useState<MatchPhase>("waiting");
   const [winnerId, setWinnerId] = useState<string | null>(null);
   // Sounds
-  const { entranceSound } = useSounds();
+  const { entranceSound, pauseAmbientSound } = useSounds();
 
   // InGame callbacks
   const inGameOnReadyHover = (isMuffled: boolean) => {
@@ -189,9 +189,9 @@ const GameContiner = () => {
       }, 1500);
     }
 
-    gameRef.current = new Game(canvasRef.current, match, user.id, onGameReady, false);
+    gameRef.current = new Game(canvasRef.current, match, user.id, onGameReady, match.mode === "ONE_VS_AI");
     setTimeout(() => {
-      entranceSound.play();
+      // entranceSound.play();
     }, 500);
     netRef.current = gameRef.current.net;
 
@@ -200,8 +200,6 @@ const GameContiner = () => {
       netRef.current = null;
     };
   }, [match, user?.id]);
-
-
 
   useEffect(() => {
     if (gameRef.current?.arena) {
@@ -212,10 +210,15 @@ const GameContiner = () => {
   // == Network Listeners
   useEffect(() => {
     if (!netRef.current) return;
-    netRef.current.on("phase:changed", setMatchPhase);
+    netRef.current.on("phase:changed", (data) => {
+      if (data !== "paused") {
+        pauseAmbientSound.stop();
+        gameRef.current?.camera.stopCameraAnimations()
+      }
+      setMatchPhase(data);
+    });
     netRef.current.on("winner:declared", setWinnerId);
     netRef.current.on("game:ended", (data) => setWinnerId(data.winnerId));
-
     netRef.current.on("score:update", (data) => {
       Object.entries(data.scores).forEach(([playerId, score]) => {
         if (playerId === match?.opponent1.id) {
@@ -225,6 +228,31 @@ const GameContiner = () => {
         }
       });
     });
+    netRef.current.on("game:paused", (data) => {
+      onPaused();
+    });
+    netRef.current.on("game:pause-denied", (data) => {
+      toasts?.addToastToQueue({
+        type: "error",
+        message: `Pause denied: ${data.reason}`,
+        duration: 4000,
+      });
+    });
+    netRef.current.on("game:resumed", () => {
+      gameRef.current?.camera.stopCameraAnimations();
+      gameRef.current?.camera.setupPosition();
+      pauseAmbientSound.stop();
+    })
+
+
+    return () => {
+      netRef.current?.off("phase:changed", () => { })
+      netRef.current?.off("winner:declared", () => { })
+      netRef.current?.off("game:ended", () => { })
+      netRef.current?.off("score:update", () => { })
+      netRef.current?.off("game:paused", () => { })
+      netRef.current?.off("game:pause-denied", () => { })
+    }
   }, [gameRef.current]);
 
   const navigate = useNavigate();
@@ -233,6 +261,11 @@ const GameContiner = () => {
 
     netRef.current.sendMessage("game:pause");
   };
+  const onPaused = () => {
+    gameRef.current?.camera.playCameraAnimations();
+    pauseAmbientSound.play();
+  }
+
   const onGiveUp = () => {
     if (!netRef.current) return;
     netRef.current.sendMessage("player:give-up");

@@ -763,7 +763,7 @@ const MatchHistoryItems: Match[] = [
     duration: 1500, // 1500 seconds is 25 minutes
     opponent1: MatchPlayer1,
     opponent2: MatchPlayer2,
-    mode: "1vsAI",
+    mode: "ONE_VS_AI",
     status: "completed",
     completedAt: new Date(2024, 10, 1, 11, 25, 0),
     winnerId: "1",

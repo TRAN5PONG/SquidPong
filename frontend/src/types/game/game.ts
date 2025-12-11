@@ -4,7 +4,7 @@ import { rank_tier, RankDivision } from "./rank";
 export type powerUps = "fireBall" | "freezeBall" | "shield" | "Confusion";
 export type GameMode =
   | "ONE_VS_ONE"
-  | "1vsAI"
+  | "ONE_VS_AI"
   | "TOURNAMENT"
   | "BounceChallenge";
 export type ScoreLimit = 5 | 10 | 15 | 20;
@@ -45,7 +45,7 @@ export interface MatchPlayer {
 export interface GameSettings {
   // ballSize: number;
   // ballSpeed: number;
-  aiDifficulty?: AIDifficulty; // Difficulty level of the AI (only for 1vsAI mode)
+  aiDifficulty?: AIDifficulty; // Difficulty level of the AI (only for ONE_VS_AI mode)
   rules: GameRules;
   requiredCurrency: number; // Currency required to play the match
 }
