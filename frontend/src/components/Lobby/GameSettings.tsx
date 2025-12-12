@@ -49,7 +49,7 @@ const StyledGameSettings = styled("div")`
       background-color: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: rgba(255, 255, 255, 0.8);
-      font-family: var(--span_font);
+      font-family: var(--main_font);
       outline: none;
       border: none;
       border-radius: 5px;
@@ -72,13 +72,14 @@ const StyledGameSettings = styled("div")`
         justify-content: flex-start;
         gap: 25px;
         padding: 3px 10px;
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         .CoinsInput {
           outline: none;
           border: none;
           height: 30px;
           width: 130px;
           border-radius: 4px;
+          font-family: var(--main_font);
           padding: 5px;
           background-color: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.1);
@@ -109,7 +110,7 @@ const StyledGameSettings = styled("div")`
       span {
         color: rgba(255, 255, 255, 0.5);
         font-family: var(--span_font);
-        font-size: 1rem;
+        font-size: 1.1rem;
         text-align: center;
         margin-left: -45px;
       }
@@ -119,19 +120,20 @@ const StyledGameSettings = styled("div")`
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-family: var(--squid_font);
+      font-family: var(--span_font);
       h2 {
         color: white;
         line-height: 1.2rem;
       }
       span {
+        font-size: 1.2rem;
         color: rgba(255, 255, 255, 0.5);
       }
     }
     .SelectedModeHeader {
-      font-family: var(--span_font);
+      font-family: var(--main_font);
       color: rgba(255, 255, 255, 0.5);
-      font-size: 1rem;
+      font-size: 1.2rem;
       text-align: center;
       display: block;
       width: 100%;
@@ -186,7 +188,7 @@ const StyledGameSettings = styled("div")`
         .MatchStatus {
           position: absolute;
           bottom: -15px;
-          font-family: var(--span_font);
+          font-family: var(--main_font);
           font-size: 0.8rem;
           color: rgba(255, 255, 255, 0.5);
         }
@@ -218,7 +220,7 @@ const StyledGameSettings = styled("div")`
             gap: 5px;
           }
           .PlayerInfoStatus {
-            font-family: var(--span_font);
+            font-family: var(--main_font);
             color: rgba(255, 255, 255, 0.5);
             font-size: 0.8rem;
             line-height: 1rem;
@@ -245,6 +247,9 @@ const StyledGameSettings = styled("div")`
         .PlayerInfo {
           align-items: flex-end;
         }
+      }
+      .Player.Opponent2 .PlayerInfo .PlayerInfoStatus{
+margin-left: 0px;
       }
       .Player.Opponent2 .InviteIcon {
         cursor: pointer;
@@ -544,7 +549,7 @@ const GameSettings = (props: GameSettingsProps) => {
     >
       <div className="Container">
         <span className="SelectedModeHeader">
-          {props.selectedMode ? `${props.selectedMode}` : "No mode selected."}
+          {props.selectedMode ? `${props.selectedMode}` : "No mode selected"}
         </span>
 
         {props.selectedMode === "TOURNAMENT" ? (

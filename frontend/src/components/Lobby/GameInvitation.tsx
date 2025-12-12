@@ -52,9 +52,9 @@ const StyledGameInvitationCard = styled("div")`
     pointer-events: none;
     z-index: 1;
     background: ${(props: { isExpired: boolean }) =>
-      props.isExpired
-        ? "linear-gradient(-40deg, rgba(255,0,0,0.1) 0%, rgba(255,0,0,0) 50%)"
-        : "none"};
+    props.isExpired
+      ? "linear-gradient(-40deg, rgba(255,0,0,0.1) 0%, rgba(255,0,0,0) 50%)"
+      : "none"};
   }
 
   .InviteAvatar {
@@ -75,9 +75,9 @@ const StyledGameInvitationCard = styled("div")`
       backdrop-filter: blur(5px);
       border-radius: 5px;
       fill: ${(props: { isFromUser: boolean }) =>
-        props.isFromUser
-          ? "var(--light_green_hover)"
-          : "rgba(255,255,255, 0.6)"};
+    props.isFromUser
+      ? "var(--light_green_hover)"
+      : "rgba(255,255,255, 0.6)"};
       transform: scaleX(
         ${(props: { isFromUser: boolean }) => (props.isFromUser ? -1 : 1)}
       );
@@ -98,7 +98,7 @@ const StyledGameInvitationCard = styled("div")`
       align-items: center;
       height: 100%;
       h1 {
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         color: rgba(255, 255, 255, 0.8);
         font-size: 0.9rem;
       }
@@ -112,7 +112,7 @@ const StyledGameInvitationCard = styled("div")`
         align-items: center;
         gap: 3px;
         color: rgba(255, 255, 255, 0.3);
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         font-size: 0.75rem;
       }
     }
@@ -135,7 +135,7 @@ const StyledGameInvitationCard = styled("div")`
           gap: 5px;
           border-radius: 5px;
           color: rgba(255, 255, 255, 0.5);
-          font-family: var(--span_font);
+          font-family: var(--main_font);
           font-size: 0.9rem;
           padding: 0 5px;
           &.PowerUpsIcon {
@@ -211,7 +211,7 @@ interface GameInvitationCardProps {
   invitation: GameInvitationType;
   userId: string;
   onClick?: () => void;
-  onAction?: () => void;
+  onAction?: (invitation: GameInvitationType) => void;
 }
 const GameInvitationCard = (props: GameInvitationCardProps) => {
   const isFromUser = props.invitation.sender.id === props.userId;
@@ -231,7 +231,7 @@ const GameInvitationCard = (props: GameInvitationCardProps) => {
           message: "Invite cancelled",
           duration: 3000,
         });
-        props.onAction && props.onAction();
+        props.onAction && props.onAction(resp.data);
       }
     } catch (error: any) {
       toasts.addToastToQueue({
@@ -250,7 +250,7 @@ const GameInvitationCard = (props: GameInvitationCardProps) => {
           type: "success",
           message: "Invitation declined successfully.",
         });
-        props.onAction && props.onAction();
+        props.onAction && props.onAction(resp.data);
       }
     } catch (err: any) {
       toasts.addToastToQueue({
@@ -267,7 +267,7 @@ const GameInvitationCard = (props: GameInvitationCardProps) => {
           type: "success",
           message: "Invitation accepted! Setting the game...",
         });
-        props.onAction && props.onAction();
+        props.onAction && props.onAction(resp.data);
       }
     } catch (err: any) {
       toasts.addToastToQueue({
@@ -295,14 +295,14 @@ const GameInvitationCard = (props: GameInvitationCardProps) => {
             {props.invitation.status === "ACCEPTED"
               ? "accepted"
               : props.invitation.status === "DECLINED"
-              ? "declined"
-              : props.invitation.status === "CANCELLED"
-              ? "cancelled"
-              : props.invitation.status === "EXPIRED"
-              ? "expired"
-              : props.invitation.expiresAt
-              ? `expires in ${timeUntil(props.invitation.expiresAt)}`
-              : "PENDING"}
+                ? "declined"
+                : props.invitation.status === "CANCELLED"
+                  ? "cancelled"
+                  : props.invitation.status === "EXPIRED"
+                    ? "expired"
+                    : props.invitation.expiresAt
+                      ? `expires in ${timeUntil(props.invitation.expiresAt)}`
+                      : "PENDING"}
           </span>
         </div>
 

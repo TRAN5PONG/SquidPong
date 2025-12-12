@@ -48,7 +48,7 @@ const StyledSearchModal = styled("div")`
     width: 100%;
     .SearchCatg {
       color: white;
-      font-family: var(--span_font);
+      font-family: var(--main_font);
       min-width: 100%;
       font-size: 1rem;
       font-weight: 100;
@@ -90,11 +90,12 @@ const StyledSearchPlayerBox = styled("div")`
     .SearchPlayerInfosFullName {
       display: flex;
       align-items: center;
+      color: rgba(255,255,255, 0.7);
       gap: 3px;
     }
     .SearchPlayerInfosUserName {
-      font-size: 0.9rem;
-      opacity: 0.7;
+      font-size: 0.8rem;
+      opacity: 0.3;
       color: var(--text_color_light);
       font-weight: 100;
     }
@@ -151,6 +152,7 @@ const StyledSearchTournamentBox = styled("div")`
     .TournamentInfosName {
       font-family: var(--main_font);
       font-size: 1rem;
+      color: rgba(255,255,255, 0.7);
       font-weight: 500;
     }
     .TournamentInfosDesc {
@@ -200,6 +202,7 @@ const StyledSearchGroupBox = styled("div")`
       font-family: var(--main_font);
       font-size: 1rem;
       font-weight: 500;
+      color: rgba(255,255,255, 0.7);
     }
     span {
       font-family: var(--main_font);

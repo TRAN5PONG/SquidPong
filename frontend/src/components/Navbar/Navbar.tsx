@@ -75,7 +75,7 @@ const StyledNav = styled("div")`
       border: none;
       border-radius: 5px;
       font-family: var(--main_font);
-      font-size: 1rem;
+      font-size: 0.9rem;
       border: 1px solid rgba(255, 255, 255, 0.06);
       background-color: transparent;
       color: white;
@@ -226,7 +226,7 @@ const Navbar = () => {
         );
         // setIsLoadingConversations(false);
       }
-    } catch (err: any) {}
+    } catch (err: any) { }
   };
 
   useEffect(() => {
@@ -238,13 +238,13 @@ const Navbar = () => {
         onClick() {
           try {
             markNotificationAsRead(data.id);
-          } catch (error) {}
+          } catch (error) { }
         },
       });
       fetchNotifications();
     });
     return () => {
-      socketManager.unsubscribe("notification", () => {});
+      socketManager.unsubscribe("notification", () => { });
     };
   }, []);
 
@@ -253,6 +253,16 @@ const Navbar = () => {
     fetchNotifications();
     fetchConversations();
   }, [user]);
+
+  useEffect(() => {
+    if (query.length === 0) {
+      setShowSearchModal(false);
+    }
+    else {
+      if (!ShowSearchModal)
+        setShowSearchModal(true)
+    }
+  }, [query])
 
   return (
     <StyledNav className="GlassMorphism" avatar={user.avatar}>
@@ -263,8 +273,8 @@ const Navbar = () => {
           type="text"
           className="GlassMorphism"
           placeholder="Search a player, tournament..."
-          onFocus={() => setShowSearchModal(true)}
           value={query}
+          onFocus={() =>  query && setShowSearchModal(true)}
           onChange={(e: any) => {
             setQuery(e.target.value);
           }}
@@ -283,9 +293,8 @@ const Navbar = () => {
 
       <div className="Right">
         <div
-          className={`RightEl ${
-            notifications.some((notif) => !notif.isRead) ? "NotificationON" : ""
-          }`}
+          className={`RightEl ${notifications.some((notif) => !notif.isRead) ? "NotificationON" : ""
+            }`}
           onClick={toggleNotificationModal}
         >
           <NotificationIcon

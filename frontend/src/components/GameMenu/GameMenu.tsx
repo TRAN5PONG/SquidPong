@@ -195,7 +195,7 @@ const GameMenu = () => {
       toasts.addToastToQueue({
         type: "error",
         message: "No match found. Please join a match first.",
-      });
+      }); // 
 
     if (match.currentMatch?.mode === "ONE_VS_AI")
       return navigate(`/game/${match.currentMatch.id}`)

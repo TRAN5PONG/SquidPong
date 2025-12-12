@@ -40,7 +40,6 @@ import {
   sendFriendRequest,
 } from "@/api/user";
 import Skeleton from "../Skeleton/Skeleton";
-import { sendMessage } from "@/api/chat";
 import { timeAgo } from "@/utils/time";
 import { getPlayerLastMatches } from "@/api/match";
 
@@ -57,17 +56,14 @@ const StyledProfileModal = styled("div")`
   flex-direction: column;
   align-items: center;
   .ProfileHeadline {
-    font-family: var(--span_font);
-    font-weight: 600;
-    font-size: 1.1rem;
+    font-family: var(--main_font);
+    font-size: 1rem;
     margin-bottom: 5px;
-    color: white;
+    color: rgba(255,255,255, 0.8);
     text-align: left;
     opacity: 0.7;
     .ProfileHeadlineSpn {
-      font-size: 1rem;
       opacity: 0.5;
-      font-family: var(--main_font);
     }
   }
 
@@ -94,6 +90,7 @@ const StyledProfileModal = styled("div")`
       display: flex;
       flex-direction: column;
       margin-bottom: -50px;
+      gap: 5px;
       h1 {
         margin: 0;
         padding: 0;
@@ -104,11 +101,7 @@ const StyledProfileModal = styled("div")`
         gap: 10px;
       }
       .userName {
-        color: rgba(255, 255, 255, 0.8);
-      }
-      .Bio {
-        color: rgba(255, 255, 255, 0.6);
-        margin-top: 10px;
+        color: rgba(255, 255, 255, 0.5);
       }
     }
     .Avatar {
@@ -132,13 +125,13 @@ const StyledProfileModal = styled("div")`
         width: 10px;
         height: 10px;
         background-color: ${(props: { userStatus: UserStatus }) =>
-          props.userStatus === "ONLINE"
-            ? "#4ade80"
-            : props.userStatus === "OFFLINE"
-            ? "#888888"
-            : props.userStatus === "DONOTDISTURB"
-            ? "#f04f4f"
-            : props.userStatus === "IDLE"
+    props.userStatus === "ONLINE"
+      ? "#4ade80"
+      : props.userStatus === "OFFLINE"
+        ? "#888888"
+        : props.userStatus === "DONOTDISTURB"
+          ? "#f04f4f"
+          : props.userStatus === "IDLE"
             ? "#facc15"
             : "white"};
 
@@ -235,9 +228,9 @@ const StyledProfileModal = styled("div")`
         border: 1px solid rgba(255, 255, 255, 0.05);
 
         .Bio_txt {
-          font-family: var(--main_font);
+          font-family: var(--span_font);
           font-weight: 400;
-          color: rgba(255, 255, 255, 0.8);
+          color: rgba(255, 255, 255, 0.5);
           font-size: 1rem;
           line-height: 1;
           margin-top: 5px;
@@ -291,9 +284,9 @@ const StyledProfileModal = styled("div")`
             }
           }
           .NoFriendsText {
-            font-family: var(--main_font);
+            font-family: var(--span_font);
             font-weight: 400;
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255, 255, 255, 0.4);
             font-size: 1rem;
           }
         }
@@ -346,13 +339,12 @@ const StyledProfileModal = styled("div")`
         }
         span {
           z-index: 1;
-          font-family: var(--squid_font);
+          font-family: var(--main_font);
           font-size: 1.2rem;
           white-space: nowrap;
         }
       }
       .StatElValue {
-        font-weight: 600;
         font-size: 1.2rem;
         opacity: 0.7;
       }
@@ -379,9 +371,9 @@ const StyledProfileModal = styled("div")`
         left: 20px;
         bottom: 5px;
         span {
-          font-family: var(--span_font);
+          font-family: var(--main_font);
           font-weight: 600;
-          font-size: 0.8rem;
+          font-size: 0.6rem;
           color: rgba(255, 255, 255, 0.7);
           position: relative;
           display: flex;
@@ -399,7 +391,7 @@ const StyledProfileModal = styled("div")`
       }
 
       h2 {
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         font-weight: 600;
         font-size: 1rem;
         color: rgba(255, 255, 255, 0.7);
@@ -417,21 +409,22 @@ const StyledProfileModal = styled("div")`
       text-align: center;
       padding: 30px;
       color: rgba(255, 255, 255, 0.5);
-      font-family: var(--main_font);
+      font-family: var(--span_font);
       font-size: 1rem;
     }
   }
 `;
-
 interface UserWithRelations extends User {
   relationshipStatus:
-    | "NO_RELATIONSHIP"
-    | "FRIENDS"
-    | "REQUEST_SENT"
-    | "REQUEST_RECEIVED"
-    | "YOU_BLOCKED"
-    | "BLOCKED_YOU";
+  | "NO_RELATIONSHIP"
+  | "FRIENDS"
+  | "REQUEST_SENT"
+  | "REQUEST_RECEIVED"
+  | "YOU_BLOCKED"
+  | "BLOCKED_YOU";
 }
+
+
 const Profile = () => {
   const [profileData, setProfileData] =
     Zeroact.useState<UserWithRelations | null>(null);
@@ -654,7 +647,9 @@ const Profile = () => {
 
         {user?.username === profileData.username ? (
           <div className="ActionBtns">
-            <button className="actionBtn AddFriendBtn">Settings</button>
+            <button className="actionBtn AddFriendBtn"
+            onClick={()=>navigate("/settings/account")}
+            >Settings</button>
           </div>
         ) : (
           <div className="ActionBtns">
@@ -668,8 +663,8 @@ const Profile = () => {
               {profileData.relationshipStatus === "FRIENDS"
                 ? "Unfriend"
                 : profileData.relationshipStatus === "REQUEST_SENT"
-                ? "Request Sent"
-                : "Add Friend"}
+                  ? "Request Sent"
+                  : "Add Friend"}
               {profileData.relationshipStatus === "REQUEST_SENT" ? (
                 <PendingIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
               ) : (
@@ -727,10 +722,10 @@ const Profile = () => {
               <span className="StatElValue">
                 {profileStats.gamesWon > 0
                   ? (
-                      (profileStats.gamesWon /
-                        (profileStats.gamesWon + profileStats.gamesLost)) *
-                      100
-                    ).toFixed(2) + "%"
+                    (profileStats.gamesWon /
+                      (profileStats.gamesWon + profileStats.gamesLost)) *
+                    100
+                  ).toFixed(2) + "%"
                   : "0%"}
               </span>
             </div>
@@ -738,9 +733,7 @@ const Profile = () => {
             <div className="StatEl BorderBottomEffect">
               <span className="StatElName">streak</span>
               <span className="StatElValue">
-                {profileStats.winStreak > 0
-                  ? profileStats.winStreak + " wins"
-                  : profileStats.loseStreak + " losses"}
+                {profileStats.winStreak}
               </span>
             </div>
 
@@ -780,8 +773,8 @@ const Profile = () => {
                 winRate={
                   profileStats.playedTournament > 0
                     ? (profileStats.wonTournament /
-                        profileStats.playedTournament) *
-                      100
+                      profileStats.playedTournament) *
+                    100
                     : 0
                 }
               />
@@ -796,10 +789,10 @@ const Profile = () => {
                 winRate={
                   profileStats.playedVsAI > 0
                     ? ((profileStats.easyWins +
-                        profileStats.mediumWins +
-                        profileStats.hardWins) /
-                        profileStats.playedVsAI) *
-                      100
+                      profileStats.mediumWins +
+                      profileStats.hardWins) /
+                      profileStats.playedVsAI) *
+                    100
                     : 0
                 }
               />
@@ -816,7 +809,7 @@ const Profile = () => {
               matchHistory.map((match) => {
                 return (
                   <GameHistoryItem
-                    key={match.id}
+                    // key={match.id}
                     match={match}
                     userId={profileData.userId}
                   />
@@ -934,10 +927,9 @@ const StyledDonutChart = styled("div")`
     content: "${(props: any) => props.winRate.toFixed(0)}%";
     position: absolute;
     color: white;
-    font-weight: bold;
     z-index: 2;
-    font-size: 1.2rem;
-    font-family: var(--span_font);
+    font-size: 1.3rem;
+    font-family: var(--main_font);
   }
 `;
 

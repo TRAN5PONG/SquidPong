@@ -58,18 +58,23 @@ const StyledUserBanner = styled("div")`
     align-items: flex-start;
     position: relative;
     cursor: pointer;
+    gap: 3px;
 
     h1 {
       color: white;
-      font-family: var(--span_font);
-      font-size: 1rem;
+      font-family: var(--main_font);
+      text-transform: uppercase;
+      font-size: 1.2rem;
       line-height: 1rem;
+      font-weight: 500;
       z-index: 2;
     }
     span {
       color: white;
-      font-family: var(--span_font);
+      font-family: var(--main_font);
+      color : rgba(255,255,255, 0.7);
       font-size: 0.8rem;
+      font-weight: 500;
       line-height: 1rem;
       z-index: 2;
     }
@@ -156,7 +161,7 @@ const StyledUserBanner = styled("div")`
       z-index: 2;
       margin-left: -50px;
       color: white;
-      font-family: var(--squid_font);
+      font-family: var(--main_font);
       font-size: 0.8rem;
       line-height: 1rem;
     }

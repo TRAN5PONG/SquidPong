@@ -103,7 +103,7 @@ const StyledInviteOponent = styled("div")`
         margin-bottom: 60px;
         span {
           color: rgba(255, 255, 255, 0.5);
-          font-family: var(--span_font);
+          font-family: var(--main_font);
           font-size: 1rem;
           display: flex;
           align-items: center;
@@ -142,7 +142,7 @@ const StyledInviteOponent = styled("div")`
           margin-bottom: 15px;
           span {
             color: rgba(255, 255, 255, 0.5);
-            font-family: var(--span_font);
+            font-family: var(--main_font);
             font-size: 1rem;
           }
           .ExpireOptions {
@@ -171,14 +171,13 @@ const StyledInviteOponent = styled("div")`
 
           span {
             color: rgba(255, 255, 255, 0.5);
-            font-family: var(--span_font);
+            font-family: var(--main_font);
             font-size: 1rem;
           }
           .InviteOptions {
             display: flex;
             align-items: center;
             gap: 10px;
-            height: 60px;
             input[type="radio"] {
               accent-color: var(--main_color);
               cursor: pointer;
@@ -206,7 +205,7 @@ const StyledInviteOponent = styled("div")`
         gap: 10px;
         span {
           color: rgba(255, 255, 255, 0.5);
-          font-family: var(--span_font);
+          font-family: var(--main_font);
           font-size: 1rem;
         }
         .SelectedOpponentContainer {
@@ -281,7 +280,7 @@ const StyledInviteOponent = styled("div")`
     z-index: 2;
     span {
       color: rgba(255, 255, 255, 0.5);
-      font-family: var(--span_font);
+      font-family: var(--main_font);
       font-size: 1rem;
       margin-top: 40px;
     }
@@ -301,7 +300,7 @@ const StyledInviteOponent = styled("div")`
         border: none;
         background-color: rgba(255, 255, 255, 0.1);
         color: rgba(255, 255, 255, 0.8);
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         outline: 1px solid rgba(255, 255, 255, 0.15);
       }
       .JoinBtn {
@@ -363,6 +362,7 @@ const StyledInviteOponent = styled("div")`
       width: 150px;
       height: 40px;
       border-radius: 5px;
+      font-family: var(--main_font);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -522,7 +522,7 @@ const StyledInviteOponent = styled("div")`
         justify-content: center;
         span {
           color: rgba(255, 255, 255, 0.5);
-          font-family: var(--span_font);
+          font-family: var(--main_font);
           font-size: 1rem;
           display: flex;
           align-items: center;
@@ -571,7 +571,7 @@ const StyledInviteOponent = styled("div")`
       }
 
       span {
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         color: rgba(255, 255, 255, 0.8);
         font-size: 1.2rem;
         letter-spacing: 2px;
@@ -592,7 +592,7 @@ const StyledInviteOponent = styled("div")`
         gap: 10px;
         .InviteSettingElName {
           color: rgba(255, 255, 255, 0.5);
-          font-family: var(--span_font);
+          font-family: var(--main_font);
           font-size: 1rem;
           margin-bottom: 3px;
           width: 130px;
@@ -621,6 +621,7 @@ const StyledInviteOponent = styled("div")`
         width: 150px;
         height: 40px;
         display: flex;
+        font-family: var(--main_font);
         align-items: center;
         justify-content: center;
         border-radius: 5px;
@@ -762,12 +763,12 @@ export const InviteOponent = (props: InviteOponentProps) => {
         selectedExpireOption === "never"
           ? null
           : new Date(
-              Date.now() +
-                { "30min": 30, "1hr": 60, "4hr": 240, "24hr": 1440 }[
-                  selectedExpireOption
-                ] *
-                  60000
-            ),
+            Date.now() +
+            { "30min": 30, "1hr": 60, "4hr": 240, "24hr": 1440 }[
+            selectedExpireOption
+            ] *
+            60000
+          ),
         "Join my game!"
       );
       if (res) {
@@ -927,12 +928,12 @@ export const InviteOponent = (props: InviteOponentProps) => {
         {ModalMode === "invite"
           ? "Invite Oponent"
           : ModalMode === "join"
-          ? "Join Game"
-          : ModalMode === "InvitationsList"
-          ? "My Invitations"
-          : ModalMode === "inviteData"
-          ? "Invitation"
-          : "Select Oponent"}
+            ? "Join Game"
+            : ModalMode === "InvitationsList"
+              ? "My Invitations"
+              : ModalMode === "inviteData"
+                ? "Invitation"
+                : "Select Oponent"}
       </h1>
 
       {isLoading ? (
@@ -1104,7 +1105,7 @@ export const InviteOponent = (props: InviteOponentProps) => {
             />
             <button
               className="BtnPrimary JoinBtn"
-              // onClick={() => handleJoinWithCode()}
+            // onClick={() => handleJoinWithCode()}
             >
               Join
             </button>
@@ -1133,8 +1134,8 @@ export const InviteOponent = (props: InviteOponentProps) => {
                       props.setSelectedInvitation(invitation);
                       setModalMode("inviteData");
                     }}
-                    onAction={() => {
-                      // todo
+                    onAction={(invitation) => {
+                      props.setSelectedInvitation(invitation);
                     }}
                   />
                 );
@@ -1171,11 +1172,10 @@ export const InviteOponent = (props: InviteOponentProps) => {
               </span>
               <span>
                 <PowerUpsIcon
-                  fill={`${
-                    props.selectedInvitation.allowPowerUps
+                  fill={`${props.selectedInvitation.allowPowerUps
                       ? "var(--green_color)"
                       : "var(--red_color)"
-                  }`}
+                    }`}
                   size={20}
                 />
                 {props.selectedInvitation.allowPowerUps
@@ -1252,14 +1252,14 @@ export const InviteOponent = (props: InviteOponentProps) => {
                   {!props.selectedInvitation.expiresAt
                     ? "Never"
                     : isTheSelectedInvitationExpired
-                    ? "Expired"
-                    : days > 0
-                    ? `${days}d ${hours}h ${minutes}m`
-                    : hours > 0
-                    ? `${hours}h ${minutes}m ${seconds}s`
-                    : minutes > 0
-                    ? `${minutes}m ${seconds}s`
-                    : `${seconds}s`}
+                      ? "Expired"
+                      : days > 0
+                        ? `${days}d ${hours}h ${minutes}m`
+                        : hours > 0
+                          ? `${hours}h ${minutes}m ${seconds}s`
+                          : minutes > 0
+                            ? `${minutes}m ${seconds}s`
+                            : `${seconds}s`}
                 </span>
               </div>
             )}

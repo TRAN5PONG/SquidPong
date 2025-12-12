@@ -36,11 +36,11 @@ const StyledSettings = styled("div")`
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 70px 20%;
+  padding: 55px 20%;
   overflow-y: scroll;
   .Banner {
     width: 100%;
-    min-height: 250px;
+    min-height: 270px;
     background-color: var(--bg_color_light);
     border-radius: 5px;
     display: flex;
@@ -60,14 +60,23 @@ const StyledSettings = styled("div")`
       display: flex;
       flex-direction: column;
       margin-bottom: -55px;
+      gap: 3px;
       h1 {
         margin: 0;
         padding: 0;
         line-height: 0.8;
         font-size: 1.6rem;
         text-transform: uppercase;
+        font-weight: 100;
+        letter-spacing: 1px;
+        font-family: var(--main_font);
+        color : rgba(255,255,255, 0.8);
         display: flex;
         gap: 10px;
+      }
+      p{
+        font-family : var(--span_font);
+        color : rgba(255,255,255,0.6);
       }
     }
     .EditIcon {
@@ -124,6 +133,10 @@ const StyledSettings = styled("div")`
         border-radius: 3px;
         border: 1px solid rgba(255, 255, 255, 0.05);
         cursor: pointer;
+        transition: 0.2s ease-in-out;
+        svg{
+          width: 20px;
+        }
         &:hover {
           background-color: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.1);
@@ -145,9 +158,10 @@ const StyledSettings = styled("div")`
           }
         }
         span {
-          color: rgba(255, 255, 255, 0.5);
+          color: rgba(255, 255, 255, 0.3);
           font-family: var(--main_font);
-          font-size: 1.1rem;
+          font-size: 1rem;
+          letter-spacing: 1px;
         }
       }
     }
@@ -158,15 +172,16 @@ const StyledSettings = styled("div")`
       border-radius: 5px;
       .Spliter {
         width: 100%;
-        height: 30px;
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: flex-start;
         padding: 0 20px;
         font-family: var(--span_font);
+        text-transform: uppercase;
         font-size: 1rem;
         font-weight: 600;
-        color: rgba(255, 255, 255, 0.8);
+        color: rgba(255, 255, 255, 0.6);
         margin-bottom: 10px;
         text-transform: uppercase;
         background: linear-gradient(
@@ -196,7 +211,7 @@ const StyledSettings = styled("div")`
         height: 38px;
         border: none;
         border-radius: 5px;
-        font-family: var(--main_font);
+        font-family: var(--span_font);
         background-color: var(--bg_color_super_light);
         border: 1px solid rgba(255, 255, 255, 0.05);
         color: rgba(255, 255, 255, 0.3);
@@ -264,17 +279,20 @@ const StyledSettings = styled("div")`
     }
   }
   .Preferences_Container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     .PrefElement {
       width: 100%;
-      height: 40px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-family: var(--main_font);
       font-size: 1rem;
+      text-transform: uppercase;
       font-weight: 100;
       padding: 0 20px;
-      color: rgba(255, 255, 255, 0.6);
+      color: rgba(255, 255, 255, 0.3);
     }
   }
   .Privacy_Container {
@@ -395,8 +413,8 @@ const StyledSettings = styled("div")`
         }
       }
       .NoneSPN {
-        color: rgba(255, 255, 255, 0.6);
-        font-family: var(--main_font);
+        color: rgba(255, 255, 255, 0.4);
+        font-family: var(--span_font);
         font-size: 1rem;
       }
     }
@@ -853,7 +871,7 @@ const Settings = () => {
 
   useEffect(() => {
     console.log(Preferences)
-  },[Preferences])
+  }, [Preferences])
 
   if (currentMod === "404") return <NotFound />;
   if (!currentMod || !user) return <LoaderSpinner />;
@@ -883,7 +901,7 @@ const Settings = () => {
           />
         </div>
         <div className="ProfileDetails">
-          <h1 className="ProfileDetailsUserName">
+          <h1 >
             {user.firstName + " " + user.lastName}
             {user.isVerified && (
               <VerifiedIcon fill="var(--main_color)" size={20} />
@@ -899,20 +917,19 @@ const Settings = () => {
             className={`Item ${currentMod === "account" ? "active" : ""}`}
             onClick={() => navigate("/settings/account")}
           >
-            <PersonIcon size={20} fill="rgba(255, 255, 255, 0.5)" />
+            <PersonIcon size={15} fill="rgba(255, 255, 255, 0.5)" />
             <span>Account</span>
           </div>
           <div
             className={`Item ${currentMod === "BlockedUsers" ? "active" : ""}`}
             onClick={() => navigate("/settings/blocked_users")}
           >
-            <PersonIcon size={20} fill="rgba(255, 255, 255, 0.5)" />
+            <PersonIcon size={15} fill="rgba(255, 255, 255, 0.5)" />
             <span>Blocked users</span>
           </div>
           <div
-            className={`Item ${
-              currentMod === "friendRequests" ? "active" : ""
-            }`}
+            className={`Item ${currentMod === "friendRequests" ? "active" : ""
+              }`}
             onClick={() => navigate("/settings/friendRequests")}
           >
             <FriendsIcon size={20} fill="rgba(255, 255, 255, 0.5)" />
@@ -1177,18 +1194,16 @@ const Settings = () => {
               <span className="Spliter">Friend Requests :</span>
               <div className="RequestsFilter">
                 <div
-                  className={`FilterItem ${
-                    currentCurrentFRMod === "sent" ? "active" : ""
-                  }`}
+                  className={`FilterItem ${currentCurrentFRMod === "sent" ? "active" : ""
+                    }`}
                   onClick={() => setCurrentFRMod("sent")}
                 >
                   <BackIcon size={25} fill="rgba(255, 255, 255, 0.5)" />
                   Sent requests
                 </div>
                 <div
-                  className={`FilterItem ${
-                    currentCurrentFRMod === "received" ? "active" : ""
-                  }`}
+                  className={`FilterItem ${currentCurrentFRMod === "received" ? "active" : ""
+                    }`}
                   onClick={() => setCurrentFRMod("received")}
                 >
                   <BackIcon size={25} fill="rgba(255, 255, 255, 0.5)" />
@@ -1208,7 +1223,7 @@ const Settings = () => {
                           <span>{user.username}</span>
                           <button
                             className="cancelRequestBtn"
-                            onClick={() => {}}
+                            onClick={() => { }}
                           >
                             Cancel Request
                           </button>
@@ -1297,11 +1312,11 @@ const StyledPrefToggle = styled("div")`
     height: 20px;
     top: 1px;
     background-color: ${(props: { isEnabled: boolean }) =>
-      props.isEnabled ? "rgb(116, 218, 116)" : "rgba(255,255,255, 0.1)"};
+    props.isEnabled ? "rgb(116, 218, 116)" : "rgba(255,255,255, 0.1)"};
     border-radius: 50%;
     transition: transform 0.3s ease-in-out;
     transform: ${(props: { isEnabled: boolean }) =>
-      props.isEnabled ? "translateX(22px)" : "translateX(1px)"};
+    props.isEnabled ? "translateX(22px)" : "translateX(1px)"};
   }
 `;
 interface PrefToggleProps {
