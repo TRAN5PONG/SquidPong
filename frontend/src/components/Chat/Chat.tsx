@@ -202,7 +202,7 @@ const StyledMaximizedConv = styled("div")`
         cursor: pointer;
         font-family: var(--main_font);
         font-size: 1rem;
-        color: white;
+        color: rgba(255,255,255, 0.5);
         border-radius: 5px;
         transition: 0.1s ease-in-out;
         &:hover {
@@ -219,7 +219,6 @@ const StyledMaximizedConv = styled("div")`
       gap: 10px;
       padding: 0 10px;
       cursor: pointer;
-      font-family: var(--main_font);
       font-size: 1rem;
       color: white;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -228,7 +227,7 @@ const StyledMaximizedConv = styled("div")`
         margin: 0;
         font-weight: 100;
         font-family: var(--main_font);
-        font-size: 1.1rem;
+        font-size: 1rem;
         color: rgba(255, 255, 255, 0.5);
       }
     }
@@ -249,9 +248,9 @@ const StyledMaximizedConv = styled("div")`
           gap: 10px;
           padding: 0 10px;
           cursor: pointer;
-          font-family: var(--main_font);
+          font-family: var(--span_font);
           font-size: 1rem;
-          color: white;
+          color: rgba(255,255,255, 0.7);
           border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           .memberAvatar {
             width: 35px;
@@ -279,9 +278,12 @@ const StyledMaximizedConv = styled("div")`
       flex-direction: column;
       .membersContainer {
         display: flex;
+        align-items: center;
+        justify-content: center;
         .noRequestsText {
-          color: rgba(255, 255, 255, 0.5);
-          font-family: var(--main_font);
+          color: rgba(255, 255, 255, 0.3);
+          font-family: var(--span_font);
+          margin-top: 15px;
         }
         .member {
           width: 100%;
@@ -337,7 +339,7 @@ const StyledMaximizedConv = styled("div")`
       rgb(27, 26, 31, 0.7),
       rgba(255, 255, 255, 0)
     );
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-left: none;
     border-right: none;
     border-radius: 4px 4px 0 0;
@@ -404,16 +406,17 @@ const StyledMaximizedConv = styled("div")`
       width: 100%;
       height: 100%;
       padding: 0 40px;
-      outline: none;
-      border: none;
       font-size: 1rem;
       background-color: var(--bg_color_super_light);
-      border: 1px solid rgba(255, 255, 255, 0.1);
       color: white;
-      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.7);
+      outline: none;
+      border: 1px solid rgba(255,255,255, 0.04);
+      font-family: var(--span_font);
+      /* box-shadow: 0px 0px 10px rgba(0, 0, 0, 1); */
     }
     input::placeholder {
       color: white;
+      font-family: var(--main_font);
       opacity: 0.3;
     }
   }
@@ -1066,7 +1069,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
                   setSettingModalView("members");
                 }}
               >
-                <GroupIcon fill="white" size={20} /> members
+                <GroupIcon fill="rgba(255,255,255, 0.5)" size={20} /> members
               </div>
               <div
                 className="SettingsElement"
@@ -1074,15 +1077,15 @@ const MaximizedConv = (props: MaximizedConvProps) => {
                   setSettingModalView("settingsList");
                 }}
               >
-                <SettingsIcon fill="white" size={20} /> group settings
+                <SettingsIcon fill="rgba(255,255,255, 0.5)" size={20} /> group settings
               </div>
               <div className="SettingsElement" onClick={handleLeaveGroup}>
-                <SignOutIcon fill="white" size={20} /> leave group
+                <SignOutIcon fill="rgba(255,255,255, 0.5)" size={20} /> leave group
               </div>
 
               {isAdmin && (
                 <div className="SettingsElement" onClick={handleDeleteGroup}>
-                  <SignOutIcon fill="white" size={20} /> delete group
+                  <SignOutIcon fill="rgba(255,255,255, 0.5)" size={20} /> delete group
                 </div>
               )}
               {isAdmin && (
@@ -1092,7 +1095,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
                     setSettingModalView("requests");
                   }}
                 >
-                  <PersonIcon fill="white" size={20} /> membership requests
+                  <PersonIcon fill="rgba(255,255,255, 0.5)" size={20} /> membership requests
                 </div>
               )}
             </div>

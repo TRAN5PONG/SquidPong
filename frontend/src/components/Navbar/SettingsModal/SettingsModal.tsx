@@ -29,11 +29,12 @@ const StyledSettingsModal = styled("div")`
     width: 100%;
     height: 40px;
     display: flex;
-    color: white;
+    color: rgba(255,255,255, 0.7);
     align-items: center;
     justify-content: flex-start;
     gap: 5px;
     font-family: var(--main_font);
+    font-size: 0.9rem;
     padding: 5px;
     border-radius: 8px;
     cursor: pointer;

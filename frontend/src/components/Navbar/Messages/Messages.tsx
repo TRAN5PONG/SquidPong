@@ -52,8 +52,9 @@ const SyledChatModal = styled("div")`
       padding: 5px;
       h2 {
         font-family: var(--main_font);
-        font-size: 1.2rem;
-        color: rgba(255, 255, 255, 0.9);
+        font-weight: 100;
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
       }
       .NewChatBtn {
         width: 120px;
@@ -65,12 +66,12 @@ const SyledChatModal = styled("div")`
         border-radius: 3px;
         font-family: var(--main_font);
         font-size: 0.9rem;
-        font-weight: 600;
+        font-weight: 100;
         gap: 7px;
         margin-top: auto;
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.5);
+        color: rgba(255, 255, 255, 0.3);
         transition: 0.2s ease-in-out;
         svg {
           transition: 0.2s ease-in-out;
@@ -93,14 +94,16 @@ const SyledChatModal = styled("div")`
     display: flex;
     flex-direction: column;
     gap: 5px;
+    padding: 2px;
     .NewChatContainerHeader {
       display: flex;
       align-items: center;
       justify-content: flex-start;
       h2 {
         font-family: var(--main_font);
-        font-size: 1.1rem;
-        color: rgba(255, 255, 255, 0.7);
+        font-weight: 100;
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.5);
         flex: 1;
         font-weight: 100;
       }
@@ -137,10 +140,11 @@ const SyledChatModal = styled("div")`
         border-radius: 3px;
         background-color: rgba(255, 255, 255, 0.04);
         color: white;
-        font-family: var(--main_font);
+        font-family: var(--span_font);
         font-size: 1rem;
+        font-weight: 500;
         outline: none;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.04);
         margin: 0px;
         padding-left: 10px;
       }
@@ -155,8 +159,8 @@ const SyledChatModal = styled("div")`
       .UserItem {
         width: 100%;
         height: 40px;
-        background-color: var(--bg_color_light);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: rgba(78, 94, 131, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.04);
         border-radius: 5px;
         display: flex;
         align-items: center;
@@ -178,26 +182,27 @@ const SyledChatModal = styled("div")`
           gap: 2px;
           font-family: var(--main_font);
           font-size: 0.9rem;
-          color: white;
 
           .UserItemName {
             display: flex;
             align-items: center;
             gap: 5px;
             justify-content: flex-start;
+            color: rgba(255, 255, 255, 0.8);
           }
           .UserItemStatus {
             font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.5);
+            font-family: var(--span_font);
           }
         }
         .StartConvBtn {
           width: 40px;
           height: 40px;
-          background-color: rgba(68, 85, 126, 0.2);
-          color: rgba(255, 255, 255, 0.4);
+          background-color: rgba(78, 94, 131, 0.1);
+          color: var(--main_color);
           font-family: var(--main_font);
-          border: 1px solid rgb(68, 85, 126, 0.3);
+          border: 1px solid rgba(78, 94, 131, 0.1);
           border-radius: 3px;
           cursor: pointer;
           transition: 0.1s ease-in-out;
@@ -205,14 +210,14 @@ const SyledChatModal = styled("div")`
           align-items: center;
           justify-content: center;
           &:hover {
-            background-color: var(--bg_color_super_light);
+            background-color: rgba(78, 94, 131, 0.4);
           }
         }
       }
     }
     .NFoundSpan {
-      color: rgba(255, 255, 255, 0.5);
-      font-family: var(--main_font);
+      color: rgba(255, 255, 255, 0.2);
+      font-family: var(--span_font);
       margin-top: 5px;
       text-align: center;
     }
@@ -221,7 +226,7 @@ const SyledChatModal = styled("div")`
       height: 40px;
       background-color: transparent;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 5px;
+      border-radius: 3px;
       font-family: var(--main_font);
       font-size: 1rem;
       color: rgba(255, 255, 255, 0.5);
@@ -230,9 +235,9 @@ const SyledChatModal = styled("div")`
       justify-content: center;
       gap: 10px;
       cursor: pointer;
-      transition: 0.1s ease-in-out;
+      transition: 0.2s ease-in-out;
       &:hover {
-        background-color: var(--bg_color_light);
+        background-color: var(--main_color);
       }
     }
   }
@@ -458,7 +463,7 @@ const ChatModal = (props: ChatModalProps) => {
               className="NewChatBtn"
               onClick={() => setCurrentView("newChat")}
             >
-              <NewChatIcon fill="rgba(255, 255, 255, 0.5)" size={15} />
+              <NewChatIcon fill="rgba(255, 255, 255, 0.3)" size={15} />
               <span>Create DM</span>
             </div>
           </div>
@@ -534,7 +539,7 @@ const ChatModal = (props: ChatModalProps) => {
                     className="StartConvBtn"
                     onClick={() => startNewConversation(user.userId.toString())}
                   >
-                    <ChatIcon size={15} fill="rgba(68, 85, 126, 1)" />
+                    <ChatIcon size={15} fill="rgb(78, 94, 131)" />
                   </button>
                 </div>
               ))
@@ -617,7 +622,6 @@ const StyledChatItem = styled("div")`
   cursor: pointer;
   background-color: ${(props: any) =>
     props.isRead ? "var(--bg_color_light)" : "var(--bg_color)"};
-  border: 1px solid rgba(255, 255, 255, 0.05);
   &:hover {
     background-color: var(--bg_color_super_light);
   }
@@ -663,21 +667,21 @@ const StyledChatItem = styled("div")`
       font-family: var(--main_font);
       font-weight: 500;
       font-size: 1rem;
-      color: white;
+      color: rgba(255,255,255, 0.7);
     }
     .ChatItemLastMessage {
-      font-family: var(--main_font);
+      font-family: var(--span_font);
       font-size: 0.9rem;
-      color: white;
+      color: rgba(255,255,255, 0.5);
       display: flex;
       align-items: center;
       opacity: 0.9;
     }
   }
   .ChatItemTime {
-    font-family: var(--main_font);
+    font-family: var(--span_font);
     font-size: 0.8rem;
-    color: white;
+    color: rgba(255,255,255, 0.5);
     opacity: 0.6;
   }
 `;

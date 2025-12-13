@@ -67,6 +67,22 @@ const StyledTournament = styled("div")`
     margin-top: 55px;
     gap: 10px;
     position: relative;
+    &:before {
+       width: 100%;
+      height: 100%;
+      content: "";
+      position: absolute;
+      background : linear-gradient(
+          0deg,
+          rgba(19, 18, 23, 1) 0%,
+          rgba(19, 18, 23, 0.9) 50%,
+          rgba(19, 18, 23, 0.8) 100%
+        );
+      opacity: 0.98;
+      right: 0;
+      top: 0;
+      z-index: 3;
+    }
     &:after {
       width: 100%;
       height: 100%;
@@ -74,16 +90,11 @@ const StyledTournament = styled("div")`
       position: absolute;
       top: 0;
       left: 0;
-      background-image: linear-gradient(
-          0deg,
-          rgba(19, 18, 23, 0.8) 0%,
-          rgba(19, 18, 23, 0.8) 50%,
-          rgba(19, 18, 23, 0.8) 100%
-        ),
-        url("/assets/TournamentAvatar.jpg");
-      background-position: center;
-      background-size: cover;
-      z-index: -1;
+      filter: grayscale(1);
+      background: url("/assets/TournamentBanner.jpg");
+        background-position: center;
+        background-size: cover;
+      z-index: 2;
     }
 
     .LogoContainer {
@@ -92,10 +103,10 @@ const StyledTournament = styled("div")`
       justify-content: center;
       width: 200px;
       height: 250px;
-      background-color: rgba(0, 0, 0, 0.1);
+    
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 10px;
+      z-index: 3;
       .TrophyImg {
         width: 90%;
         height: auto;
@@ -111,6 +122,7 @@ const StyledTournament = styled("div")`
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      z-index: 3;
       .UpperInfo {
         width: 100%;
         display: flex;
@@ -161,6 +173,7 @@ const StyledTournament = styled("div")`
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      z-index: 3;
 
       .OrganizerInfo {
         display: flex;
@@ -613,7 +626,7 @@ const Tournament = () => {
     });
 
     return () => {
-      socketManager.unsubscribe("tournament-update", () => {});
+      socketManager.unsubscribe("tournament-update", () => { });
     };
   }, []);
   useEffect(() => {
@@ -754,9 +767,8 @@ const Tournament = () => {
 
       return (
         <div
-          className={`RoundGame ${reverse ? "Reversed" : ""} ${
-            isSemiFinal ? "SemiFinal" : ""
-          }`}
+          className={`RoundGame ${reverse ? "Reversed" : ""} ${isSemiFinal ? "SemiFinal" : ""
+            }`}
           data-round={round + 1}
           players-count={playersCount}
           key={`${game.opponent1Id}-${game.opponent2Id}`}
@@ -837,7 +849,7 @@ const Tournament = () => {
                   Prize Pool :
                   {tournament.participationFee
                     ? tournament.participationFee * tournament.maxPlayers +
-                      " coins"
+                    " coins"
                     : "No Prize Pool"}
                 </span>
               </div>
@@ -857,10 +869,10 @@ const Tournament = () => {
                   {tournament.status === "REGISTRATION"
                     ? "Registration Open"
                     : tournament.status === "IN_PROGRESS"
-                    ? "In Progress" + tournament.currentRound
-                    : tournament.status === "COMPLETED"
-                    ? "Completed"
-                    : "Cancelled"}
+                      ? "In Progress" + tournament.currentRound
+                      : tournament.status === "COMPLETED"
+                        ? "Completed"
+                        : "Cancelled"}
                 </span>
               </div>
             </div>
@@ -955,18 +967,18 @@ const Tournament = () => {
 
                 const roundGames =
                   tournament.rounds?.[round]?.matches &&
-                  tournament.rounds[round].matches.length > 0
+                    tournament.rounds[round].matches.length > 0
                     ? tournament.rounds[round].matches
                     : Array.from({ length: expectedMatches }, () => ({
-                        id: "",
-                        tournamentId: tournament.id,
-                        round: "QUALIFIERS" as TournamentRound,
-                        status: "PENDING" as const,
-                        opponent1Id: "",
-                        opponent2Id: "",
-                        opponent1Score: 0,
-                        opponent2Score: 0,
-                      }));
+                      id: "",
+                      tournamentId: tournament.id,
+                      round: "QUALIFIERS" as TournamentRound,
+                      status: "PENDING" as const,
+                      opponent1Id: "",
+                      opponent2Id: "",
+                      opponent1Score: 0,
+                      opponent2Score: 0,
+                    }));
 
                 const leftGames = roundGames.slice(0, roundGames.length / 2);
 
@@ -984,18 +996,18 @@ const Tournament = () => {
                 );
                 const roundGames =
                   tournament.rounds?.[round]?.matches &&
-                  tournament.rounds[round].matches.length > 0
+                    tournament.rounds[round].matches.length > 0
                     ? tournament.rounds[round].matches
                     : Array.from({ length: expectedMatches }, () => ({
-                        id: "",
-                        tournamentId: tournament.id,
-                        round: "QUALIFIERS" as TournamentRound,
-                        status: "PENDING" as const,
-                        opponent1Id: "",
-                        opponent2Id: "",
-                        opponent1Score: 0,
-                        opponent2Score: 0,
-                      }));
+                      id: "",
+                      tournamentId: tournament.id,
+                      round: "QUALIFIERS" as TournamentRound,
+                      status: "PENDING" as const,
+                      opponent1Id: "",
+                      opponent2Id: "",
+                      opponent1Score: 0,
+                      opponent2Score: 0,
+                    }));
                 const rightGames = roundGames.slice(
                   roundGames.length / 2,
                   roundGames.length
@@ -1117,9 +1129,9 @@ const StyledTournamentPlayer = styled("div")`
 
   .AvatarContainer {
     margin-left: ${(props: { reversed: boolean }) =>
-      !props.reversed ? "-10px" : "0px"};
+    !props.reversed ? "-10px" : "0px"};
     margin-right: ${(props: { reversed: boolean }) =>
-      props.reversed ? "-10px" : "0px"};
+    props.reversed ? "-10px" : "0px"};
   }
 
   .TournamentPlayerInfo {
@@ -1127,7 +1139,7 @@ const StyledTournamentPlayer = styled("div")`
     display: flex;
     align-items: center;
     justify-content: ${(props: any) =>
-      props.reversed ? "flex-end" : "flex-start"};
+    props.reversed ? "flex-end" : "flex-start"};
     padding: 0px 5px;
     cursor: pointer;
     span {
@@ -1159,10 +1171,10 @@ const StyledTournamentPlayer = styled("div")`
 const TournamentPlayer = (
   props:
     | (Partial<TournamentPlayerType> & {
-        reversed?: boolean;
-        toBeDisplayed?: boolean;
-        Score?: number;
-      })
+      reversed?: boolean;
+      toBeDisplayed?: boolean;
+      Score?: number;
+    })
     | null
 ) => {
   const isReversed = props?.reversed || false;
@@ -1175,9 +1187,8 @@ const TournamentPlayer = (
 
   return (
     <StyledTournamentPlayer
-      className={`GlassMorphism BorderBottomEffect ${
-        props?.isEliminated ? "Eliminated" : ""
-      }`}
+      className={`GlassMorphism BorderBottomEffect ${props?.isEliminated ? "Eliminated" : ""
+        }`}
       reversed={isReversed}
     >
       <div className="AvatarContainer">
@@ -1191,9 +1202,8 @@ const TournamentPlayer = (
         }}
       >
         <h3
-          className={`TournamentPlayerInfoUsername ${
-            props?.isEliminated ? "Eliminated" : ""
-          }`}
+          className={`TournamentPlayerInfoUsername ${props?.isEliminated ? "Eliminated" : ""
+            }`}
         >
           <span>{props?.userName}</span>
         </h3>

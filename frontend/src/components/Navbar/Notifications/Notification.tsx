@@ -42,10 +42,10 @@ const StyledModal = styled("div")`
     justify-content: space-between;
     padding: 0px 2px;
     h1 {
-      font-size: 1.2rem;
-      color: white;
+      font-size: 1rem;
+      color: rgba(255,255,255, 0.7);
       font-family: var(--main_font);
-      font-weight: 600;
+      font-weight: 100;
     }
     .NotificationHeaderActions {
       display: flex;
@@ -55,15 +55,15 @@ const StyledModal = styled("div")`
       cursor: pointer;
       span {
         font-size: 0.9rem;
-        color: #ffffffaa;
-        font-family: var(--main_font);
+        color: rgba(255,255,255,0.4);
+        font-family: var(--span_font);
       }
       &:hover {
         span {
-          color: #ffffffdd;
+          color: rgba(255, 255, 255, 0.7);
         }
         svg {
-          fill: #ffffffdd;
+          fill: rgba(255,255,255,0.7);
         }
       }
     }
@@ -85,8 +85,8 @@ const StyledModal = styled("div")`
       transition: 0.1s ease-in-out;
       span {
         font-size: 0.9rem;
-        color: #ffffffcc;
-        font-family: var(--main_font);
+        color: #ffffff65;
+        font-family: var(--span_font);
       }
       &:hover {
         background-color: var(--bg_color_super_light);
@@ -109,9 +109,9 @@ const StyledModal = styled("div")`
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #e7e7e7;
-    font-size: 0.8rem;
-    font-family: var(--main_font);
+    color: #e7e7e778;
+    font-size: 1rem;
+    font-family: var(--span_font);
     opacity: 0.5;
   }
 `;
@@ -151,7 +151,7 @@ const Notification = (props: NotificationProps) => {
       <div className="NotoficationHeader">
         <h1>Notifications</h1>
         <div className="NotificationHeaderActions">
-          <SeenIcon size={16} fill="rgba(255,255,255,0.7)" />
+          <SeenIcon size={16} fill="rgba(255,255,255,0.4)" />
           <span>Mark all as read</span>
         </div>
       </div>

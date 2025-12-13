@@ -20,7 +20,6 @@ const StyledToastContainer = styled("div")`
     justify-content: flex-start;
     gap: 10px;
     color: white;
-    font-family: var(--main_font);
     font-weight: 500;
     background-color: rgba(45, 56, 82, 0.5);
     border: 1px solid rgba(45, 56, 82, 1);
@@ -81,7 +80,7 @@ const StyledToastContainer = styled("div")`
     .ToastInfo {
       font-size: 14px;
       color: rgb(107, 134, 196);
-      font-family: var(--span_font);
+      font-family: var(--main_font);
     }
 
     &.Toast--animateIn {

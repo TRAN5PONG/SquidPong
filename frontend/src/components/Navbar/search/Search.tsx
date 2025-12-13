@@ -46,6 +46,7 @@ const StyledSearchModal = styled("div")`
     justify-content: center;
     gap: 3px;
     width: 100%;
+    margin-bottom: 15px;
     .SearchCatg {
       color: white;
       font-family: var(--main_font);
@@ -69,6 +70,27 @@ const StyledSearchPlayerBox = styled("div")`
   transition: 0.2s ease-in-out;
   color: white;
   border: 1px solid var(--bg_color_light);
+  position: relative;
+  &:after{
+    position: absolute;
+    content: "";
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+background:
+  linear-gradient(
+    90deg,
+    rgba(19, 18, 23) 10%,
+    rgba(19, 18, 23, 0.7) 80%,
+    rgba(19, 18, 23, 1) 100%
+  ),
+  url(${(props: any) => props.banner});
+
+    overflow: hidden;
+    z-index: -1;
+
+  }
   &:hover {
     background-color: var(--bg_color_light);
   }
@@ -158,7 +180,7 @@ const StyledSearchTournamentBox = styled("div")`
     .TournamentInfosDesc {
       font-family: var(--main_font);
       font-size: 0.9rem;
-      opacity: 0.7;
+      opacity: 0.3;
       font-weight: 100;
     }
   }
@@ -372,57 +394,57 @@ const SearchModal = (props: {
         {players.length > 0 ? <h1 className="SearchCatg">Players</h1> : null}
         {isLoading
           ? Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton
-                dark={true}
-                width="100%"
-                height="50px"
-                borderRadius={5}
-                gap={5}
-                animation="hybrid"
-                index={index + 1}
-              />
-            ))
+            <Skeleton
+              dark={true}
+              width="100%"
+              height="50px"
+              borderRadius={5}
+              gap={5}
+              animation="hybrid"
+              index={index + 1}
+            />
+          ))
           : players.length > 0 &&
-            players.map((player: User) => {
-              console.log(player)
-              return (
-                <StyledSearchPlayerBox avatar={player.avatar}>
-                  <div className="Avatar" />
-                  <div
-                    className="SearchPlayerInfos"
-                    onClick={() => {
-                      navigate(`/user/${player.username}`);
-                      props.onClose();
-                    }}
-                  >
-                    <span className="SearchPlayerInfosFullName">
-                      {player.firstName + " " + player.lastName}
-                      {player.isVerified && (
-                        <VerifiedIcon fill="var(--main_color)" size={15} />
-                      )}
-                    </span>
-                    <span className="SearchPlayerInfosUserName">
-                      {"@" + player.username}
-                    </span>
-                  </div>
-                  <div className="ActionsBtns">
-                    {player.id !== user?.id && (
-                      <a
-                        onClick={() =>
-                          sendFriendRequest_(player.userId.toString())
-                        }
-                      >
-                        <AddFriendIcon
-                          fill="white"
-                          size={20}
-                          className="AddFriendIcon"
-                        />
-                      </a>
+          players.map((player: User) => {
+            console.log(player)
+            return (
+              <StyledSearchPlayerBox avatar={player.avatar} banner={player.banner}>
+                <div className="Avatar" />
+                <div
+                  className="SearchPlayerInfos"
+                  onClick={() => {
+                    navigate(`/user/${player.username}`);
+                    props.onClose();
+                  }}
+                >
+                  <span className="SearchPlayerInfosFullName">
+                    {player.firstName + " " + player.lastName}
+                    {player.isVerified && (
+                      <VerifiedIcon fill="var(--main_color)" size={15} />
                     )}
-                  </div>
-                </StyledSearchPlayerBox>
-              );
-            })}
+                  </span>
+                  <span className="SearchPlayerInfosUserName">
+                    {"@" + player.username}
+                  </span>
+                </div>
+                <div className="ActionsBtns">
+                  {player.id !== user?.id && (
+                    <a
+                      onClick={() =>
+                        sendFriendRequest_(player.userId.toString())
+                      }
+                    >
+                      <AddFriendIcon
+                        fill="white"
+                        size={20}
+                        className="AddFriendIcon"
+                      />
+                    </a>
+                  )}
+                </div>
+              </StyledSearchPlayerBox>
+            );
+          })}
       </div>
       <div className="SearchCatgContainer">
         {tournaments.length > 0 ? (
@@ -431,49 +453,49 @@ const SearchModal = (props: {
 
         {isLoading
           ? Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton
-                dark={true}
-                width="100%"
-                height="50px"
-                borderRadius={5}
-                gap={5}
-                animation="hybrid"
-                index={index + 1}
-              />
-            ))
+            <Skeleton
+              dark={true}
+              width="100%"
+              height="50px"
+              borderRadius={5}
+              gap={5}
+              animation="hybrid"
+              index={index + 1}
+            />
+          ))
           : tournaments.length > 0 &&
-            tournaments.map((tournament) => {
-              return (
-                <StyledSearchTournamentBox
-                  onClick={() => {
-                    navigate(`/tournament/${tournament.id}`);
-                    props.onClose();
-                  }}
-                >
-                  <div className="Avatar">
-                    <TrophyIcon fill="white" size={30} />
-                  </div>
-                  <div className="TournamentInfos">
-                    <span className="TournamentInfosName">
-                      {tournament.name}
-                    </span>
-                    <span className="TournamentInfosDesc">
-                      {tournament.status === "REGISTRATION"
-                        ? "Registration is open."
-                        : tournament.status === "READY"
+          tournaments.map((tournament) => {
+            return (
+              <StyledSearchTournamentBox
+                onClick={() => {
+                  navigate(`/tournament/${tournament.id}`);
+                  props.onClose();
+                }}
+              >
+                <div className="Avatar">
+                  <TrophyIcon fill="white" size={30} />
+                </div>
+                <div className="TournamentInfos">
+                  <span className="TournamentInfosName">
+                    {tournament.name}
+                  </span>
+                  <span className="TournamentInfosDesc">
+                    {tournament.status === "REGISTRATION"
+                      ? "Registration is open."
+                      : tournament.status === "READY"
                         ? "Tournament is ready to start."
                         : tournament.status === "IN_PROGRESS"
-                        ? "Tournament is in progress."
-                        : tournament.status === "COMPLETED"
-                        ? "Tournament has been completed."
-                        : tournament.status === "CANCELLED"
-                        ? "Tournament has been cancelled."
-                        : ""}
-                    </span>
-                  </div>
-                </StyledSearchTournamentBox>
-              );
-            })}
+                          ? "Tournament is in progress."
+                          : tournament.status === "COMPLETED"
+                            ? "Tournament has been completed."
+                            : tournament.status === "CANCELLED"
+                              ? "Tournament has been cancelled."
+                              : ""}
+                  </span>
+                </div>
+              </StyledSearchTournamentBox>
+            );
+          })}
       </div>
       <div className="SearchCatgContainer">
         {groups.length > 0 && <h1 className="SearchCatg">Groups</h1>}

@@ -35,7 +35,7 @@ const StyledTournaments = styled("div")`
   .NoSPN {
     font-family: var(--span_font);
     font-size: 1.2rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.4);
     grid-column: span 2;
     text-align: center;
   }
@@ -166,13 +166,14 @@ const StyledTournamentCard = styled("div")`
       position: relative;
       height: 100%;
       .CardHeaderInfosName {
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         font-size: 1.2rem;
-        font-weight: 600;
+        font-weight : 100;
         color: white;
+        margin-top: 10px;
       }
       .CardHeaderInfosDesc {
-        font-family: var(--main_font);
+        font-family: var(--span_font);
         font-size: 0.9rem;
         color: rgba(255, 255, 255, 0.7);
       }
@@ -210,9 +211,9 @@ const StyledTournamentCard = styled("div")`
       align-items: center;
       justify-content: flex-start;
       gap: 5px;
-      font-family: var(--main_font);
+      font-family: var(--span_font);
       font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.5);
     }
     .CardBodyParticipationFee {
       width: 100%;
@@ -221,11 +222,12 @@ const StyledTournamentCard = styled("div")`
       align-items: center;
       justify-content: flex-start;
       gap: 5px;
-      font-family: var(--main_font);
+      font-family: var(--span_font);
       font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.5);
       svg {
         filter: grayscale(100%);
+        opacity: 0.5;
       }
     }
     .CardBodyParticipantsCount {
@@ -235,9 +237,9 @@ const StyledTournamentCard = styled("div")`
       align-items: center;
       justify-content: flex-start;
       gap: 5px;
-      font-family: var(--main_font);
+      font-family: var(--span_font);
       font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.5);
     }
   }
   .CardBtn {
@@ -278,7 +280,7 @@ const TournamentCard = (props: Tournament) => {
         });
         setTournament(resp.data);
         setIsUserParticipant(
-          resp.data.participants.some((p) => Number(p.userId) === Number(user?.userId))
+          resp.data.participants.some((p : any) => Number(p.userId) === Number(user?.userId))
         );
       } else throw new Error(resp.message);
     } catch (err) {
@@ -324,7 +326,7 @@ const TournamentCard = (props: Tournament) => {
 
       <div className="CardBody">
         <div className="CardBodyTournamentStatus">
-          <InfosIcon size={20} fill="rgba(255, 255, 255, 0.8)" />
+          <InfosIcon size={18} fill="rgba(255, 255, 255, 0.4)" />
           <span>
             {tournament.status === "REGISTRATION"
               ? "Registration Open"
@@ -338,7 +340,7 @@ const TournamentCard = (props: Tournament) => {
           </span>
         </div>
         <div className="CardBodyParticipationFee">
-          <CoinIcon size={20} fill="rgba(255, 255, 255, 0.8)" />
+          <CoinIcon size={18} fill="rgba(255, 255, 255, 0.4)" />
           <span>
             {tournament.participationFee
               ? `Participation Fee: ${tournament.participationFee} Coins`
@@ -346,7 +348,7 @@ const TournamentCard = (props: Tournament) => {
           </span>
         </div>
         <div className="CardBodyParticipantsCount">
-          <PersonIcon size={20} fill="rgba(255, 255, 255, 0.8)" />
+          <PersonIcon size={18} fill="rgba(255, 255, 255, 0.4)" />
           <span>
             {tournament.participants.length} / {tournament.maxPlayers}{" "}
             Participants
@@ -512,7 +514,7 @@ const CreateTournamentModal = (props: CreateTournamentModalProps) => {
       <input
         type="number"
         placeholder="Participation Fee (Coins)"
-        value={participationFee}
+          value={participationFee === 0 ? "" : participationFee}
         onChange={(e: any) => setParticipationFee(Number(e.target.value))}
       />
       <button className="CreateBtn" onClick={handleCreateTournament}>
@@ -536,7 +538,7 @@ const StyledCreateTournamentModal = styled("div")`
   input {
     width: 100%;
     height: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 5px;
     background-color: var(--bg_color_super_light);
     color: white;
@@ -549,7 +551,7 @@ const StyledCreateTournamentModal = styled("div")`
   textarea {
     width: 100%;
     height: 100px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 5px;
     background-color: var(--bg_color_super_light);
     color: white;
@@ -565,10 +567,11 @@ const StyledCreateTournamentModal = styled("div")`
   select {
     width: 100%;
     height: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 5px;
     background-color: var(--bg_color_super_light);
-    color: white;
+    color: rgba(255,255,255, 0.4);
+    padding-right: 10px;
     padding: 0 10px;
     font-family: var(--span_font);
     font-size: 1rem;

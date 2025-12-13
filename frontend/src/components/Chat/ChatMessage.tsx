@@ -67,6 +67,7 @@ const StyledChatMessage = styled("div")`
       display: flex;
       align-items: flex-start;
       justify-content: flex-start;
+      font-family: var(--span_font);
       padding-left: 26px;
       span {
         opacity: 0.3;
@@ -76,7 +77,7 @@ const StyledChatMessage = styled("div")`
       font-size: 0.9rem;
       color: white;
       opacity: 0.6;
-      font-family: var(--main_font);
+      font-family: var(--span_font);
     }
   }
   .MsgContent {
@@ -226,7 +227,7 @@ const StyledChatMessage = styled("div")`
       .ChatMsgText {
         font-size: 1rem;
         font-weight: 500;
-        color: white;
+        color: rgba(255,255,255, 0.7);
         white-space: pre-wrap;
         word-wrap: break-word;
         min-height: 20px;
@@ -321,8 +322,9 @@ const StyledChatMessage = styled("div")`
           }
         }
         .ChatMsgDate {
-          font-size: 0.8rem;
+          font-size: 0.9rem;
           color: white;
+          font-family: var(--span_font);
           opacity: 0.4;
         }
       }
