@@ -99,12 +99,11 @@ const StyledChatMessage = styled("div")`
     .ChatMsg {
       width: ${(props: any) => (props.isMe ? "90%" : "80%")};
       background-color: ${(props: any) =>
-        props.isMe ? "var(--main_color)" : "var(--bg_color_super_light)"};
+    props.isMe ? "var(--main_color)" : "var(--bg_color_super_light)"};
       border: 1px solid rgba(256, 256, 256, 0.05);
       padding: 5px 5px 0px 5px;
       border-radius: ${(props: any) =>
-        props.isMe ? "10px 10px 10px 10px" : "0px 10px 10px 10px"};
-      font-family: var(--main_font);
+    props.isMe ? "10px 10px 10px 10px" : "0px 10px 10px 10px"};
       position: relative;
       display: flex;
       flex-direction: column;
@@ -226,7 +225,8 @@ const StyledChatMessage = styled("div")`
       }
       .ChatMsgText {
         font-size: 1rem;
-        font-weight: 500;
+        font-family: var(--span_font);
+        font-weight:500;
         color: rgba(255,255,255, 0.7);
         white-space: pre-wrap;
         word-wrap: break-word;
@@ -692,7 +692,7 @@ const ChatMessaegeEl = (props: {
                     <div className="GameOption">
                       <InfosIcon fill="gray" size={17} />
                       <span>
-                        Expires in: 
+                        Expires in:
                         {timeUntil(
                           msgInviteData?.OneVsOneInvitationExpiration!
                         )}
@@ -743,9 +743,8 @@ const ChatMessaegeEl = (props: {
                 <span>😀</span>
               </div>
               <div
-                className={`ReactionsTooltip ${
-                  showReactionsTooltip ? "active" : ""
-                }`}
+                className={`ReactionsTooltip ${showReactionsTooltip ? "active" : ""
+                  }`}
               >
                 {Object.entries(reactions).map(([name, emoji]) => (
                   <span

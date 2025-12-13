@@ -174,10 +174,10 @@ const StyledSelectCharacter = styled("div")`
         font-family: var(--squid_font);
       }
       p {
-        font-family: var(--main_font);
+        font-family: var(--span_font);
+        color: rgba(255,255,255, 0.5);
         font-weight: 100;
         font-size: 1rem;
-        line-height: 1.5;
         margin: 0;
       }
     }
@@ -223,10 +223,10 @@ const StyledCharacterCard = styled("div")`
   );
   height: 230px;
   width: 200px;
-  border-radius: 5px;
+  border-radius: 10px;
   border: 1px solid
     ${(props: any) =>
-      props.isSelected ? "rgba(255, 105, 117, 0.6)" : "rgba(255,255,255, 0.1)"};
+      props.isSelected ? "rgba(255, 105, 117, 0.3)" : "rgba(255,255,255, 0.05)"};
   display: flex;
   justify-content: center;
   align-items: center;
@@ -279,13 +279,13 @@ const StyledCharacterCard = styled("div")`
     font-size: 20rem;
     font-family: var(--squid_font);
     color: ${(props: any) =>
-      props.isSelected ? "rgba(112, 33, 39, 0.6)" : "rgba(255,255,255,0.05)"};
+      props.isSelected ? "rgba(112, 33, 39, 0.5)" : "rgba(255,255,255,0.02)"};
   }
   &:hover {
     &:after {
       opacity: 1;
     }
-    border: 1px solid var(--main_color);
+    border: 1px solid rgba(255, 105, 117, 0.3);
     .CharacterImgContainer .CharacterImg {
       filter: grayscale(0);
     }
@@ -338,7 +338,7 @@ const CharacterCard = (props: CharacterCardProps) => {
         <img src={props.character.avatar} className="CharacterImg" />
       </div>
       <h2>{props.character.name}</h2>
-      {props.isLocked && <PasswordIcon stroke="white" className="LockedIcon" />}
+      {props.isLocked && <PasswordIcon stroke="rgba(255,255,255, 0.4)" className="LockedIcon" size={20}/>}
     </StyledCharacterCard>
   );
 };
@@ -356,8 +356,7 @@ const PowerElement = styled("div")`
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    border: 1px solid rgba(202, 47, 60, 0.4);
-    border-bottom: none;
+    border: 1px solid rgba(202, 47, 60, 0.3);
     &:after {
       content: "";
       position: absolute;

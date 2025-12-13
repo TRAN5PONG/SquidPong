@@ -134,7 +134,7 @@ const StyledHome = styled("div")`
         font-family: var(--main_font);
         position: absolute;
         bottom: 30px;
-        font-size: 1.5rem;
+        font-size: 1rem;
         z-index: 2;
         opacity: 0.8;
       }
@@ -157,7 +157,7 @@ const StyledHome = styled("div")`
 const Home = () => {
   const ImgRef = useRef<HTMLImageElement>(null);
   const MainContainerRef = useRef<HTMLDivElement>(null);
-  const [showModal, setShowModal] = Zeroact.useState(false);
+  const [showModal, setShowModal] = Zeroact.useState(true);
   const [isHoveredOnBtn, setIsHoveredOnBtn] = Zeroact.useState(false);
 
   const { backgroundSound } = useSounds();
@@ -256,7 +256,7 @@ const StyledCTAModal = styled("div")`
   .HeaderLine {
     font-size: 1.2rem;
     margin-bottom: 16px;
-    font-family: var(--span_font);
+    font-family: var(--main_font);
     color: rgba(255, 255, 255, 0.7);
   }
   .LoginContainer {
@@ -317,6 +317,7 @@ const StyledCTAModal = styled("div")`
       align-items: center;
       position: relative;
 
+
       &:has(input:focus) {
         .FormGroupIcon {
           fill: var(--main_color);
@@ -342,19 +343,23 @@ const StyledCTAModal = styled("div")`
         color: white;
         padding-left: 45px;
         font-size: 1.1rem;
-        font-family: var(--main_font);
+        font-family: var(--span_font);
         outline: none;
         &:focus {
           border-color: #424246;
         }
       }
+      
     }
     .ChangeModeText {
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.5);
+      font-family: var(--span_font);
     }
     .ForgotPassSpan {
       cursor: pointer;
       text-decoration: underline;
+      font-family: var(--span_font);
+
       color: rgba(255, 255, 255, 0.7);
       &:hover {
         color: white;
@@ -370,6 +375,26 @@ const StyledCTAModal = styled("div")`
         color: var(--main_color_hover);
       }
     }
+    button{
+      background: linear-gradient(
+        135deg,
+        rgba(116, 16, 24, 0.95),
+        rgb(202, 47, 60),
+        rgba(116, 16, 24, 0.95)
+      );
+      background-size: 300% 300%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      cursor: pointer;
+     transition: border 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    &:hover{
+        animation: gradientMove 2.5s ease infinite;
+  border-color: var(--main_color_hover);
+  box-shadow:
+    0 0 0 1px rgba(202, 47, 60, 0.7),
+    0 8px 20px rgba(202, 47, 60, 0.25);
+    }
+    }
   }
   .AlternativeLogin {
     width: 100%;
@@ -383,6 +408,8 @@ const StyledCTAModal = styled("div")`
       margin: 10px 0;
       font-size: 1.2rem;
       color: rgba(255, 255, 255, 0.8);
+      font-family: var(--main_font);
+
       font-weight: bold;
       position: relative;
       display: flex;

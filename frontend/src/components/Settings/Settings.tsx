@@ -469,8 +469,8 @@ const StyledSettings = styled("div")`
         gap: 5px;
         padding: 10px;
         .NoElsSpan {
-          color: rgba(255, 255, 255, 0.6);
-          font-family: var(--main_font);
+          color: rgba(255, 255, 255, 0.3);
+          font-family: var(--span_font);
           font-size: 1rem;
         }
 

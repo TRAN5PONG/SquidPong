@@ -19,12 +19,11 @@ const StyledSpectatePage = styled("div")`
   align-items: center;
   justify-content: center;
   padding: 80px 10%;
-  h1{
-    color : white;
-    font-family: var(--span_font);
-    font-size: 1.5rem;
-    text-align: left;
-  }
+ 
+      .NotFound{
+      font-family: var(--span_font);
+      color: rgba(255,255,255, 0.6);
+    }
   .MatchesContainer {
     width: 100%;
     height: 100%;
@@ -63,58 +62,62 @@ const SpectatePage = () => {
   }, []);
   return (
     <StyledSpectatePage>
-      <h1>in-progress games :</h1>
-      <div className="MatchesContainer scroll-y">
-        {matches.map((m) => {
-          const opponent1Rank = getRankMetaData(
-            m.opponent1.rankDivision,
-            "III"
-          );
-          const opponent2Rank = getRankMetaData(m.opponent2.rankDivision, "II");
-          const opponent1Character = characters.find(
-            (c) => c.id === m.opponent1.characterId
-          );
-          const opponent2Character = characters.find(
-            (c) => c.id === m.opponent2.characterId
-          );
+      {
+        matches.length > 0 ? (
+          <div className="MatchesContainer scroll-y">
+            {matches.map((m) => {
+              const opponent1Rank = getRankMetaData(
+                m.opponent1.rankDivision,
+                "III"
+              );
+              const opponent2Rank = getRankMetaData(m.opponent2.rankDivision, "II");
+              const opponent1Character = characters.find(
+                (c) => c.id === m.opponent1.characterId
+              );
+              const opponent2Character = characters.find(
+                (c) => c.id === m.opponent2.characterId
+              );
 
-          return (
-            <StyledSpectateCard>
-              <span className="MatchStatus">{m.status}</span>
-              <div className="MatchPlayers">
-                <div className="AvatarContainer opponent1Avatar">
-                  <Avatar
-                    avatarUrl={m.opponent1.avatarUrl}
-                    rank={opponent1Rank!}
-                  />
-                  <span className="OpponentUsername">
-                    {m.opponent1.username}
-                  </span>
-                </div>
+              return (
+                <StyledSpectateCard>
+                  <span className="MatchStatus">{m.status}</span>
+                  <div className="MatchPlayers">
+                    <div className="AvatarContainer opponent1Avatar">
+                      <Avatar
+                        avatarUrl={m.opponent1.avatarUrl}
+                        rank={opponent1Rank!}
+                      />
+                      <span className="OpponentUsername">
+                        {m.opponent1.username}
+                      </span>
+                    </div>
 
-                <div className="AvatarContainer opponent2Avatar">
-                  <Avatar
-                    avatarUrl={m.opponent2.avatarUrl}
-                    rank={opponent2Rank!}
-                  />
-                  <span className="OpponentUsername">
-                    {m.opponent2.username}
-                  </span>
-                </div>
-                <img className="Opponent1" src={opponent1Character?.image} />
-                <span className="VsSpn">VS</span>
-                <img className="Opponent2" src={opponent2Character?.image} />
-              </div>
-              <button
-                className="WatchBtn"
-                onClick={() => navigate(`/spectate/game/${m.id}`)}
-              >
-                Watch
-              </button>
-            </StyledSpectateCard>
-          );
-        })}
-      </div>
+                    <div className="AvatarContainer opponent2Avatar">
+                      <Avatar
+                        avatarUrl={m.opponent2.avatarUrl}
+                        rank={opponent2Rank!}
+                      />
+                      <span className="OpponentUsername">
+                        {m.opponent2.username}
+                      </span>
+                    </div>
+                    <img className="Opponent1" src={opponent1Character?.image} />
+                    <span className="VsSpn">VS</span>
+                    <img className="Opponent2" src={opponent2Character?.image} />
+                  </div>
+                  <button
+                    className="WatchBtn"
+                    onClick={() => navigate(`/spectate/game/${m.id}`)}
+                  >
+                    Watch
+                  </button>
+                </StyledSpectateCard>
+              );
+            })}
+          </div>
+        ) : <span className="NotFound">No active games found!</span>
+      }
+
     </StyledSpectatePage>
   );
 };

@@ -9,10 +9,10 @@ import Zeroact, { useEffect, useRef, useState } from "@/lib/Zeroact";
 import { styled } from "@/lib/Zerostyle";
 import { Match, MatchPlayer } from "@/types/game/game";
 import { MatchPhase, MatchState } from "../network/GameState";
-import { Room } from "colyseus.js";
 import { Network } from "../network/network";
 import { useAppContext } from "@/contexts/AppProviders";
 import { formatTime } from "@/utils/time";
+import { MatchResultOverlay } from "./MatchResultOverlay";
 
 const StyledScoreBoard = styled("div")`
   width: 80%;
@@ -78,7 +78,7 @@ const StyledScoreBoard = styled("div")`
       align-items: center;
       justify-content: center;
       span {
-        font-family: var(--span_font);
+        font-family: var(--squid_font);
         font-weight: 100;
         font-size: 1.8rem;
         color: #887115;
@@ -92,7 +92,7 @@ const StyledScoreBoard = styled("div")`
       align-items: center;
       justify-content: center;
       span {
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         font-weight: 100;
         font-size: 1rem;
         color: #887115;
@@ -103,21 +103,7 @@ const StyledScoreBoard = styled("div")`
   .OponentCard:first-child {
     /* transform: translate(-30px, 1px); */
   }
-  .RoundNumber {
-    background-color: var(--main_color);
-    width: 100px;
-    height: 30px;
-    border-radius: 0px 0px 5px 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    h1 {
-      font-family: var(--main_font);
-      font-weight: 100;
-      font-size: 1.3rem;
-      color: white;
-    }
-  }
+
 `;
 interface ScoreBoardProps {
   net: Network | null;
@@ -413,7 +399,7 @@ const OponentCard = styled("div")`
     margin-left: ${(props: any) => (props.isRightSide ? "-20px" : "0")};
 
     span {
-      font-family: var(--span_font);
+      font-family: var(--main_font);
       font-weight: 100;
       font-size: 1.4rem;
       color: white;
