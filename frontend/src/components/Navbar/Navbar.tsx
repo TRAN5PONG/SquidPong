@@ -74,8 +74,8 @@ const StyledNav = styled("div")`
       padding: 5px 30px;
       border: none;
       border-radius: 5px;
-      font-family: var(--main_font);
-      font-size: 0.9rem;
+      font-family: var(--span_font);
+      font-size: 1rem;
       border: 1px solid rgba(255, 255, 255, 0.06);
       background-color: transparent;
       color: white;

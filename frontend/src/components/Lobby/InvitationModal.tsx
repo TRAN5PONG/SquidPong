@@ -1173,8 +1173,8 @@ export const InviteOponent = (props: InviteOponentProps) => {
               <span>
                 <PowerUpsIcon
                   fill={`${props.selectedInvitation.allowPowerUps
-                      ? "var(--green_color)"
-                      : "var(--red_color)"
+                    ? "var(--green_color)"
+                    : "var(--red_color)"
                     }`}
                   size={20}
                 />
@@ -1200,13 +1200,17 @@ export const InviteOponent = (props: InviteOponentProps) => {
                 size={30}
               />
             </a>
-            <a onClick={handleInviteOpponentByMessage}>
-              <InviteIcon
-                className="InviteIcon"
-                fill="var(--main_color)"
-                size={30}
-              />
-            </a>
+            {
+              props.selectedInvitation.type === "PRIVATE" && props.selectedInvitation.sender.id === user?.id && (
+                <a onClick={handleInviteOpponentByMessage}>
+                  <InviteIcon
+                    className="InviteIcon"
+                    fill="var(--main_color)"
+                    size={30}
+                  />
+                </a>
+              )
+            }
           </div>
 
           <div className="InviteSettings">

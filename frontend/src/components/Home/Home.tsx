@@ -6,6 +6,7 @@ import {
   GoogleIcon,
   PasswordIcon,
   PersonIcon,
+  ScanIcon,
   SquidIcon,
   UpRightArrowIcon,
 } from "../Svg/Svg";
@@ -301,6 +302,22 @@ const StyledCTAModal = styled("div")`
     justify-content: center;
     align-items: center;
   }
+  .changePasswordContainer{
+        flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .TwofaAuthContainer {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
   .FormContainer {
     width: 100%;
     display: flex;
@@ -504,7 +521,9 @@ type CTAModalType =
   | "signup"
   | "resetPassword"
   | "verifyEmail"
-  | "changePassword";
+  | "changePassword"
+  | "2faAuth"
+  ;
 
 const CTAModal = ({ onClose }: { onClose: () => void }) => {
   const [currentMode, setCurrentMode] = Zeroact.useState<CTAModalType>("login");
@@ -527,18 +546,25 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
   // Shared input states
   const [email, setEmail] = Zeroact.useState("");
   const [password, setPassword] = Zeroact.useState("");
+  const [dupNewPass, setDupNewPass] = Zeroact.useState("");
   const [userName, setUserName] = Zeroact.useState("");
   const [firstName, setFirstName] = Zeroact.useState("");
   const [lastName, setLastName] = Zeroact.useState("");
   const [tmpEmail, setTmpEmail] = Zeroact.useState("");
   // Email verification input
   const [verificationCode, setVerificationCode] = Zeroact.useState("");
+  // 2fa verification
+  const [TwoFACode, setTwoFACode] = Zeroact.useState("");
 
-  const modalRef = useRef<HTMLDivElement>(null);
 
   // CTX
   const { toasts, setUser } = useAppContext();
   const navigate = useNavigate();
+
+  // refs
+  const modalRef = useRef<HTMLDivElement>(null);
+  const passInputRef = useRef<HTMLInputElement>(null);
+  const dupPassInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -556,6 +582,18 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
 
   const handleChangePassword = async (e: any) => {
     e.preventDefault();
+
+    if (password !== dupNewPass) {
+      toasts.addToastToQueue({
+        message: "invalid password.",
+        type: "error"
+      })
+      setDupNewPass("");
+      setPassword("");
+      if (passInputRef.current) passInputRef.current.value = "";
+      if (dupPassInputRef.current) dupPassInputRef.current.value = "";
+      return;
+    }
     const resp = await resetPassword(email, verificationCode, password);
     if (resp.success) {
       toasts.addToastToQueue({
@@ -592,6 +630,9 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
       toasts.addToastToQueue({ type: "error", message: error.message });
     }
   };
+  const handleTWOFAVerify = async (e: any) => {
+    e.preventDefault();
+  }
   const handleSignup = async (e: any) => {
     e.preventDefault();
     try {
@@ -935,37 +976,69 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
             <button onClick={handleEmailVerification}>Verify</button>
           </div>
         </div>
+      ) : currentMode === "changePassword" ? (
+        <div className="changePasswordContainer">
+          <h1 className="HeaderLine">Change your password</h1>
+
+
+          <div className="FormContainer">
+
+            <div className="FormGroup" key="password">
+              <PasswordIcon
+                size={25}
+                stroke="rgba(255,255,255, 0.5)"
+                className="FormGroupIcon PasswordIcon"
+              />
+              <input
+                type="password"
+                placeholder="new Password"
+                required
+                value={password}
+                onChange={(e: any) => setPassword(e.target.value)}
+                ref={passInputRef}
+              />
+            </div>
+            <div className="FormGroup" key="password">
+              <PasswordIcon
+                size={25}
+                stroke="rgba(255,255,255, 0.5)"
+                className="FormGroupIcon PasswordIcon"
+              />
+              <input
+                type="password"
+                placeholder="new Password"
+                required
+                value={dupNewPass}
+                onChange={(e: any) => setDupNewPass(e.target.value)}
+                ref={dupPassInputRef}
+              />
+            </div>
+
+            <button onClick={handleChangePassword}>Change Password</button>
+          </div>
+
+        </div>
       ) : (
-        <div>
-          <h1>CHANGE PASS</h1>
+        <div className="TwofaAuthContainer">
+          <h1 className="HeaderLine">2fA VERIFICATION</h1>
 
-          <div className="FormGroup" key="email">
-            <input
-              type="text"
-              maxLength={6}
-              placeholder="XXXXXX"
-              value={verificationCode}
-              onChange={(e: any) => setVerificationCode(e.target.value)}
-              required
-              key="verificationCode"
-            />
-          </div>
-          <div className="FormGroup" key="password">
-            <PasswordIcon
-              size={25}
-              stroke="rgba(255,255,255, 0.5)"
-              className="FormGroupIcon PasswordIcon"
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              required
-              value={password}
-              onChange={(e: any) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <button onClick={handleChangePassword}>Change Password</button>
+          <form className="FormContainer" onSubmit={handleResetPassword}>
+            <div className="FormGroup" key="email">
+              <ScanIcon
+                size={20}
+                fill="rgba(255,255,255, 0.5)"
+                className="FormGroupIcon"
+              />
+              <input
+                type="text"
+                placeholder="Enter Your Code"
+                required
+                value={TwoFACode}
+                onChange={(e: any) => setTwoFACode(e.target.value)}
+              />
+            </div>
+            <button>Verify</button>
+          </form>
         </div>
       )}
     </StyledCTAModal>

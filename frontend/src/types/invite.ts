@@ -8,7 +8,6 @@ export type InvitationStatus =
   | "declined"
   | "cancelled"
   | "expired";
-export type GameInvitation = RegularMatchInvitation | TournamentInvitation;
 
 export interface BaseGameInvitation {
   id: string;

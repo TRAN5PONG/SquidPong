@@ -42,7 +42,13 @@ const StyledTournaments = styled("div")`
   .CreateTournamentBtn {
     width: 400px;
     height: 50px;
-    background-color: var(--main_color);
+          background: linear-gradient(
+        135deg,
+        rgba(116, 16, 24, 0.95),
+        rgb(202, 47, 60),
+        rgba(116, 16, 24, 0.95)
+      );
+      background-size: 300% 300%;
     border-radius: 8px;
     border: none;
     font-family: var(--squid_font);
@@ -56,10 +62,14 @@ const StyledTournaments = styled("div")`
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: background-color 0.3s ease;
     cursor: pointer;
-    &:hover {
-      background-color: rgb(168, 33, 44);
+     transition: border 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    &:hover{
+        animation: gradientMove 2.5s ease infinite;
+  border-color: var(--main_color_hover);
+  box-shadow:
+    0 0 0 1px rgba(202, 47, 60, 0.7),
+    0 8px 20px rgba(202, 47, 60, 0.25);
     }
   }
 `;
@@ -280,7 +290,7 @@ const TournamentCard = (props: Tournament) => {
         });
         setTournament(resp.data);
         setIsUserParticipant(
-          resp.data.participants.some((p : any) => Number(p.userId) === Number(user?.userId))
+          resp.data.participants.some((p: any) => Number(p.userId) === Number(user?.userId))
         );
       } else throw new Error(resp.message);
     } catch (err) {
@@ -331,12 +341,12 @@ const TournamentCard = (props: Tournament) => {
             {tournament.status === "REGISTRATION"
               ? "Registration Open"
               : tournament.status === "READY"
-              ? "Ready to Start"
-              : tournament.status === "IN_PROGRESS"
-              ? "In Progress"
-              : tournament.status === "COMPLETED"
-              ? "Completed"
-              : "Cancelled"}
+                ? "Ready to Start"
+                : tournament.status === "IN_PROGRESS"
+                  ? "In Progress"
+                  : tournament.status === "COMPLETED"
+                    ? "Completed"
+                    : "Cancelled"}
           </span>
         </div>
         <div className="CardBodyParticipationFee">
@@ -357,13 +367,12 @@ const TournamentCard = (props: Tournament) => {
       </div>
 
       <button
-        className={`CardBtn ${
-          (tournament.status !== "REGISTRATION" &&
+        className={`CardBtn ${(tournament.status !== "REGISTRATION" &&
             tournament.status !== "COMPLETED") ||
-          isUserParticipant
+            isUserParticipant
             ? "disabled"
             : ""
-        }`}
+          }`}
         onclick={() => {
           handleJoinTournament();
         }}
@@ -371,14 +380,14 @@ const TournamentCard = (props: Tournament) => {
         {isUserParticipant
           ? "Joined"
           : tournament.status === "REGISTRATION"
-          ? "Join"
-          : tournament.status === "READY"
-          ? "full"
-          : tournament.status === "IN_PROGRESS"
-          ? "full"
-          : tournament.status === "COMPLETED"
-          ? "View Results"
-          : "Cancelled"}
+            ? "Join"
+            : tournament.status === "READY"
+              ? "full"
+              : tournament.status === "IN_PROGRESS"
+                ? "full"
+                : tournament.status === "COMPLETED"
+                  ? "View Results"
+                  : "Cancelled"}
       </button>
     </StyledTournamentCard>
   );
@@ -514,7 +523,7 @@ const CreateTournamentModal = (props: CreateTournamentModalProps) => {
       <input
         type="number"
         placeholder="Participation Fee (Coins)"
-          value={participationFee === 0 ? "" : participationFee}
+        value={participationFee === 0 ? "" : participationFee}
         onChange={(e: any) => setParticipationFee(Number(e.target.value))}
       />
       <button className="CreateBtn" onClick={handleCreateTournament}>
@@ -538,7 +547,7 @@ const StyledCreateTournamentModal = styled("div")`
   input {
     width: 100%;
     height: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 5px;
     background-color: var(--bg_color_super_light);
     color: white;
@@ -551,7 +560,7 @@ const StyledCreateTournamentModal = styled("div")`
   textarea {
     width: 100%;
     height: 100px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 5px;
     background-color: var(--bg_color_super_light);
     color: white;
@@ -567,7 +576,7 @@ const StyledCreateTournamentModal = styled("div")`
   select {
     width: 100%;
     height: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 5px;
     background-color: var(--bg_color_super_light);
     color: rgba(255,255,255, 0.4);

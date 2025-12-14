@@ -140,13 +140,13 @@ const StyledMaximizedConv = styled("div")`
           width: 10px;
           height: 10px;
           background-color: ${(props: { userState: UserStatus }) =>
-            props.userState === "ONLINE"
-              ? "#15e215"
-              : props.userState === "IDLE"
-              ? "#f7d315"
-              : props.userState === "DONOTDISTURB"
-              ? "#f71515"
-              : ""};
+    props.userState === "ONLINE"
+      ? "#15e215"
+      : props.userState === "IDLE"
+        ? "#f7d315"
+        : props.userState === "DONOTDISTURB"
+          ? "#f71515"
+          : ""};
           border-radius: 50%;
           bottom: -1px;
           right: -2px;
@@ -495,7 +495,7 @@ export const ChatContainer = () => {
       try {
         const resp = await getMessages(id);
         if (resp.success && resp.data) {
-          if (resp.data.group?.matchId) return; 
+          if (resp.data.group?.matchId) return;
           setConversations((prevs) => {
             const existing = prevs.find((c) => c.id === resp.data!.id);
             if (existing) return prevs; // Already exists
@@ -540,10 +540,10 @@ export const ChatContainer = () => {
 
           const updatedMessages = messageExists
             ? conv.messages.map((m) => {
-                if (m.id === data.id) {
-                  return { ...m, ...data };
-                } else return m;
-              })
+              if (m.id === data.id) {
+                return { ...m, ...data };
+              } else return m;
+            })
             : [...conv.messages, data];
 
           const updatedConv = {
@@ -820,12 +820,12 @@ const MaximizedConv = (props: MaximizedConvProps) => {
             conv.id === props.conversation.id
               ? conv.group
                 ? ({
-                    ...conv,
-                    group: {
-                      ...conv.group,
-                      imageUrl: newImageUrl,
-                    },
-                  } as ConversationWithView)
+                  ...conv,
+                  group: {
+                    ...conv.group,
+                    imageUrl: newImageUrl,
+                  },
+                } as ConversationWithView)
                 : conv
               : conv
           )
@@ -894,6 +894,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
     if (!inputRef.current) return;
 
     inputRef.current.addEventListener("focus", () => {
+      console.log("reachs")
       markConvAsRead();
       props.setConversations((prevs) =>
         prevs.map((conv) =>
@@ -902,10 +903,9 @@ const MaximizedConv = (props: MaximizedConvProps) => {
       );
     });
     return () => {
-      if (!inputRef.current) return;
-      inputRef.current.removeEventListener("focus", () => {});
+      inputRef.current?.removeEventListener("focus", () => { });
     };
-  }, []);
+  }, [inputRef.current]);
   useEffect(() => {
     requestAnimationFrame(() => {
       if (messagesRef.current) {
@@ -950,7 +950,7 @@ const MaximizedConv = (props: MaximizedConvProps) => {
         (chattingWith as User).avatar || (chattingWith as ChatGroup).imageUrl
       }
       ref={MaximizedContainerRef}
-      // userState={chattingWith.status}
+    // userState={chattingWith.status}
     >
       <div className="chat-header">
         <div className="chat-controls">

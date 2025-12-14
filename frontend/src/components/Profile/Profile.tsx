@@ -934,7 +934,6 @@ const StyledDonutChart = styled("div")`
 `;
 
 export function WinLossDonut(props: { winRate: number }) {
-  console.log(props.winRate);
   const [winRT, setWinRate] = useState(props.winRate || 0);
   useEffect(() => {
     if (props.winRate) {

@@ -141,25 +141,25 @@ const StyledSettings = styled("div")`
           background-color: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.1);
           svg {
-            fill: white;
+            fill: rgba(255, 255, 255, 0.7);
           }
           span {
-            color: white;
+            color: rgba(255, 255, 255, 0.7);
           }
         }
         &.active {
           background-color: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.11);
           svg {
-            fill: white;
+            fill: rgba(255, 255, 255, 0.8);
           }
           span {
-            color: white;
+            color: rgba(255, 255, 255, 0.8);
           }
         }
         span {
           color: rgba(255, 255, 255, 0.3);
-          font-family: var(--main_font);
+          font-family: var(--span_font);
           font-size: 1rem;
           letter-spacing: 1px;
         }
@@ -177,7 +177,7 @@ const StyledSettings = styled("div")`
         align-items: center;
         justify-content: flex-start;
         padding: 0 20px;
-        font-family: var(--span_font);
+        font-family: var(--main_font);
         text-transform: uppercase;
         font-size: 1rem;
         font-weight: 600;
@@ -287,10 +287,8 @@ const StyledSettings = styled("div")`
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-family: var(--main_font);
+      font-family: var(--span_font);
       font-size: 1rem;
-      text-transform: uppercase;
-      font-weight: 100;
       padding: 0 20px;
       color: rgba(255, 255, 255, 0.3);
     }

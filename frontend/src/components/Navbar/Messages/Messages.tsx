@@ -82,8 +82,8 @@ const SyledChatModal = styled("div")`
       }
     }
     .NFoundSpan {
-      color: rgba(255, 255, 255, 0.5);
-      font-family: var(--main_font);
+      color: rgba(255, 255, 255, 0.3);
+      font-family: var(--span_font);
       margin-top: 5px;
       text-align: center;
     }

@@ -20,6 +20,7 @@ const StyledTwoFAModal = styled("div")`
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
+  z-index: 999;
   .QRCodeHeader {
     display: flex;
     align-items: center;
@@ -27,8 +28,9 @@ const StyledTwoFAModal = styled("div")`
     gap: 10px;
     padding: 20px;
     flex-direction: column;
+  
     h2 {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       color: rgba(255, 255, 255, 0.8);
       font-family: var(--main_font);
     }
@@ -85,8 +87,8 @@ const StyledTwoFAModal = styled("div")`
         padding: 10px;
         span {
           font-size: 0.9rem;
-          color: rgba(255, 255, 255, 0.6);
-          font-family: var(--main_font);
+          color: rgba(255, 255, 255, 0.4);
+          font-family: var(--span_font);
         }
       }
       .QRCodeManualInput {

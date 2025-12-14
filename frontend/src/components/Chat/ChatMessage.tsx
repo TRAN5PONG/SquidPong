@@ -21,9 +21,10 @@ import { timeAgo, timeUntil } from "@/utils/time";
 import { ConversationWithView } from "./Chat";
 import { Tournament } from "@/types/game/tournament";
 import { getTournament } from "@/api/tournament";
-import { getInvitationByCode } from "@/api/gameInvitation";
+import { AcceptInvite, cancelInvite, DeclineInvite, getInvitationByCode } from "@/api/gameInvitation";
 import { useAppContext } from "@/contexts/AppProviders";
-import { GameInvitation } from "@/types/invite";
+import { useNavigate } from "@/contexts/RouterProvider";
+import { GameInvitation, GameMode } from "@/types/game/game";
 
 const StyledChatMessage = styled("div")`
   width: 100%;
@@ -92,6 +93,8 @@ const StyledChatMessage = styled("div")`
       height: 35px;
       border-radius: 5px;
       background-image: url("${(props: { avatar: string }) => props.avatar}");
+      border: 1px solid rgba(255,255,255, 0.01);
+      cursor: pointer;
       background-size: cover;
       background-position: center;
       display: ${(props: any) => props.isMe && "none"};
@@ -114,7 +117,7 @@ const StyledChatMessage = styled("div")`
         width: 100%;
         height: 250px;
         background-color: #f7f1f1;
-        border: 1px solid #d3d3d3eb;
+        border: 1px solid rgba(255,255,255, 0.5);
         border-radius: 5px;
         display: flex;
         flex-direction: column;
@@ -133,10 +136,12 @@ const StyledChatMessage = styled("div")`
           padding: 2px 0px;
           h1 {
             font-size: 1.1rem;
+            font-family: var(--main_font);
             opacity: 0.7;
           }
           span {
             font-size: 0.9rem;
+            font-family: var(--span_font);
             color: gray;
           }
           &:after {
@@ -148,8 +153,8 @@ const StyledChatMessage = styled("div")`
             top: 0;
             background: linear-gradient(
               90deg,
-              rgba(131, 58, 180, 0.2) 0%,
-              rgba(131, 58, 180, 0.1) 50%,
+              rgba(180, 58, 133, 0.2) 0%,
+              rgba(180, 58, 143, 0.1) 50%,
               rgba(131, 58, 180, 0) 100%
             );
           }
@@ -182,6 +187,7 @@ const StyledChatMessage = styled("div")`
             gap: 10px;
             span {
               color: gray;
+              font-family: var(--span_font);
             }
           }
         }
@@ -202,6 +208,7 @@ const StyledChatMessage = styled("div")`
             border: 1px solid var(--light_red_hover);
             &:hover {
               background-color: var(--light_red_hover);
+                color: rgba(255,255,255, 0.6);
             }
           }
           .AcceptButton {
@@ -214,12 +221,31 @@ const StyledChatMessage = styled("div")`
               background-color: var(--light_green_hover);
             }
           }
+          .CancelButton {
+            width: 100%;
+            border-radius: 4px;
+            background-color: transparent;
+            color: var(--light_red_hover);
+            font-weight: bold;
+            border: 1px solid var(--light_red_hover);
+            &:hover {
+              background-color: var(--light_red_hover);
+                color: rgba(255,255,255, 0.6);
+            }
+          }
           button {
             height: 30px;
             border: 1px solid #d3d3d3ab;
+            font-family: var(--main_font);
             border-radius: 5px;
             cursor: pointer;
             transition: 0.2s ease-in-out;
+            &:disabled {
+              cursor: not-allowed;
+              background-color: transparent;
+              border: 1px solid rgba(0, 0, 0, 0.1);
+              color : rgba(0, 0, 0, 0.3);
+            }
           }
         }
       }
@@ -322,7 +348,7 @@ const StyledChatMessage = styled("div")`
           }
         }
         .ChatMsgDate {
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           color: white;
           font-family: var(--span_font);
           opacity: 0.4;
@@ -422,7 +448,8 @@ const ChatMessaegeEl = (props: {
   /**
    * Context
    */
-  const { inviteModal } = useAppContext();
+  const { inviteModal, toasts, match } = useAppContext();
+  const navigate = useNavigate();
 
   /**
    * Message
@@ -525,6 +552,66 @@ const ChatMessaegeEl = (props: {
     localMessage.reactions as unknown as ChatReaction[]
   );
 
+  /**
+   * ONE_VS_ONE INVITATION
+   */
+  const handleCancelInvitation = async (invitationId: string) => {
+    try {
+      const resp = await cancelInvite(invitationId);
+
+      if (resp) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Invitation cancelled successfully.",
+        });
+        inviteModal.setSelectedInvitation(null)
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "Failed to cancel invitation.",
+      });
+    }
+  };
+  const handleDeclineInvitation = async (invitationId: string) => {
+    try {
+      const resp = await DeclineInvite(invitationId);
+
+      if (resp) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Invitation declined successfully.",
+        });
+        inviteModal.setSelectedInvitation(null)
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "Failed to decline invitation.",
+      });
+    }
+  };
+  const handleAcceptInvitation = async (invitationId: string) => {
+    try {
+      const resp = await AcceptInvite(invitationId);
+
+      if (resp) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: resp.message || "Invitation accepted successfully.==",
+        });
+        inviteModal.setSelectedInvitation(null);
+        match.setCurrentMatch(resp.data.match);
+        inviteModal.setSelectedMode(resp.data.match.mode as GameMode);
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "Failed to accept invitation.",
+      });
+    }
+  };
+
   function scrollToMessage(messageId?: number) {
     if (!messageId) return;
 
@@ -564,6 +651,7 @@ const ChatMessaegeEl = (props: {
       try {
         const resp = await getInvitationByCode(props.message.invitationCode!);
         if (resp) {
+          console.log("----resp:", resp)
           setOnevsoneInvitation(resp);
           setmsgInviteData({
             coins: resp.requiredCurrency,
@@ -613,7 +701,7 @@ const ChatMessaegeEl = (props: {
         </div>
       )}
       <div className="MsgContent">
-        <div className="ChatMessageFrom" />
+        <div className="ChatMessageFrom" onClick={() => navigate(`/user/${props.message.sender.username}`)} />
         <div className="ChatMsg">
           <div className="MsgOptions">
             <div className="OptsContainer">
@@ -701,18 +789,31 @@ const ChatMessaegeEl = (props: {
                   )}
                 </div>
 
-                <div className="ActionButtons">
-                  <button className="DiclineButton">X</button>
-                  <button
-                    className="AcceptButton"
-                    disabled={
-                      msgInviteData?.tournamentStatus === "ONGOING" ||
-                      msgInviteData?.OneVsOneInvitationStatus === "accepted"
-                    }
-                  >
-                    Accept
-                  </button>
-                </div>
+                {
+                  !props.isUser ? (
+                    <div className="ActionButtons">
+                      <button className="DiclineButton" disabled={
+                        msgInviteData?.tournamentStatus === "ONGOING" ||
+                        msgInviteData?.OneVsOneInvitationStatus !== "PENDING"
+                      } onClick={() => handleDeclineInvitation(onevsoneInvitation?.id!)}>X</button>
+                      <button
+                        className="AcceptButton"
+                        disabled={
+                          msgInviteData?.tournamentStatus === "ONGOING" ||
+                          msgInviteData?.OneVsOneInvitationStatus !== "PENDING"
+                        }
+                        onClick={() => handleAcceptInvitation(onevsoneInvitation?.id!)}
+                      >
+                        Accept
+                      </button>
+                    </div>) : (<div className="ActionButtons">
+                      <button className="CancelButton" disabled={
+                        msgInviteData?.tournamentStatus === "ONGOING" ||
+                        msgInviteData?.OneVsOneInvitationStatus !== "PENDING"
+                      } onClick={() => handleCancelInvitation(onevsoneInvitation?.id!)}>Cancel</button>
+                    </div>)
+                }
+
               </div>
             )}
           <div
