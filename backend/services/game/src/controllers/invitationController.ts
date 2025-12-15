@@ -116,6 +116,7 @@ export async function createInvitation(
         create: {
           id: userData.id,
           userId: userData.userId,
+          username: userData.username,
           stats: { create: {} },
         },
       });
@@ -130,6 +131,7 @@ export async function createInvitation(
           create: {
             id: receiverData.id,
             userId: receiverData.userId,
+            username: userData.username,
             stats: { create: {} },
           },
         });
@@ -287,6 +289,7 @@ export async function AcceptInvitation(
     create: {
       id: userData.id,
       userId: userData.userId,
+      username: userData.username,
       stats: { create: {} },
     },
   });

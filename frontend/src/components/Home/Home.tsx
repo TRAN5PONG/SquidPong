@@ -158,7 +158,7 @@ const StyledHome = styled("div")`
 const Home = () => {
   const ImgRef = useRef<HTMLImageElement>(null);
   const MainContainerRef = useRef<HTMLDivElement>(null);
-  const [showModal, setShowModal] = Zeroact.useState(true);
+  const [showModal, setShowModal] = Zeroact.useState(false);
   const [isHoveredOnBtn, setIsHoveredOnBtn] = Zeroact.useState(false);
 
   const { backgroundSound } = useSounds();

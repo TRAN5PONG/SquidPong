@@ -42,6 +42,7 @@ import {
 import Skeleton from "../Skeleton/Skeleton";
 import { timeAgo } from "@/utils/time";
 import { getPlayerLastMatches } from "@/api/match";
+import { newConversation } from "@/api/chat";
 
 const StyledProfileModal = styled("div")`
   height: 100%;
@@ -436,7 +437,7 @@ const Profile = () => {
   const [showConfirmationModal, setShowConfirmationModal] =
     Zeroact.useState(false);
   const userId = useRouteParam("/user/:id", "id");
-  const { modal, toasts, user, inviteModal } = useAppContext();
+  const { modal, toasts, user, inviteModal, chat } = useAppContext();
   const navigate = useNavigate();
 
   const handleFriendAddUnfriend = async (receiverId: string) => {
@@ -496,6 +497,24 @@ const Profile = () => {
     inviteModal.setSelectedOpponent(profileData);
     inviteModal.setIsInviteModalOpen(true);
   };
+  const handleContactUser = async () => {
+    if (!profileData) return
+    try {
+      const resp = await newConversation(profileData.userId);
+      if (resp.success) {
+        const conversationId = resp.data.chatId;
+        if (chat.activeConversations?.includes(conversationId)) {
+          return;
+        }
+        chat.setActiveConversations([
+          ...(chat.activeConversations || []),
+          conversationId,
+        ]);
+      }
+    } catch (err) {
+      console.error("Error starting new conversation:", err);
+    }
+  }
   const handleBlockUser = () => {
     if (!profileData) return;
 
@@ -648,7 +667,7 @@ const Profile = () => {
         {user?.username === profileData.username ? (
           <div className="ActionBtns">
             <button className="actionBtn AddFriendBtn"
-            onClick={()=>navigate("/settings/account")}
+              onClick={() => navigate("/settings/account")}
             >Settings</button>
           </div>
         ) : (
@@ -674,6 +693,7 @@ const Profile = () => {
             <button
               className="actionBtn"
               disabled={profileData.relationshipStatus === "BLOCKED_YOU"}
+              onClick={() => handleContactUser()}
             >
               <MessageIcon size={23} fill="rgba(255, 255, 255, 0.7)" />
             </button>

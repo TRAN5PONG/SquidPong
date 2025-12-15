@@ -461,6 +461,7 @@ const StyledNotificationItem = styled("div")`
       background: rgba(27, 26, 31, 0.1);
       backdrop-filter: blur(5px);
       border: 1px solid rgba(151, 147, 165, 0.1);
+      
 
       .NotifTypeIcon {
         transition: 0.1s ease-in-out;
@@ -472,7 +473,6 @@ const StyledNotificationItem = styled("div")`
   }
   .NotificationContent {
     flex: 1;
-    font-family: var(--main_font);
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -483,15 +483,17 @@ const StyledNotificationItem = styled("div")`
     }
     h1 {
       font-size: 0.9rem;
+      font-family: var(--main_font);
       color: #ffffffcc;
-      font-weight: 600;
+      font-weight: 100;
       display: flex;
       flex-direction: column;
       gap : 2px;
       span {
         font-size: 0.9rem;
         color: #ffffff89;
-        font-weight: 100;
+    font-family: var(--span_font);
+        font-weight: 300;
       }
     }
     .ActionsBtns {

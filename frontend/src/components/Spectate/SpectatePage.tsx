@@ -51,8 +51,8 @@ const SpectatePage = () => {
       try {
         const resp = await getAllMatches();
         if (resp.data) {
-          setMatches(resp.data);
-          // setMatches(Array(20).fill(resp.data).flat().slice(0, 10));
+          const matches: Match[] = resp.data.filter((m: Match) => m.mode === "ONE_VS_ONE" || m.mode === "TOURNAMENT")
+          setMatches(matches);
         }
       } catch (err) {
         console.error(err);

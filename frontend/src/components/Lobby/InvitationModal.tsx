@@ -3,6 +3,7 @@ import {
   cancelInvite,
   createInvite,
   DeclineInvite,
+  getInvitationByCode,
   getUserGameInvitations,
 } from "@/api/gameInvitation";
 import { getUserFriends, SearchUsers } from "@/api/user";
@@ -710,6 +711,7 @@ export const InviteOponent = (props: InviteOponentProps) => {
   useEffect(() => {
     popupSound.play();
     if (props.selectedInvitation) setModalMode("inviteData");
+    console.log(props.selectedInvitation)
   }, [props.selectedInvitation]);
 
   // Invitation Handlers
@@ -852,25 +854,25 @@ export const InviteOponent = (props: InviteOponentProps) => {
       setOpponentsList(Users.data);
     }
   };
-  // const handleJoinWithCode = async () => {
-  //   try {
-  //     const invite = await getInvitationByCode(code);
-  //     if (invite) {
-  //       toasts.addToastToQueue({
-  //         type: "success",
-  //         message: "Invitation found!",
-  //       });
-  //       console.log(invite);
-  //       setSelectedInvitation(invite);
-  //       setModalMode("inviteData");
-  //     }
-  //   } catch (err: any) {
-  //     toasts.addToastToQueue({
-  //       type: "error",
-  //       message: err.message || "Failed to join with code.",
-  //     });
-  //   }
-  // };
+  const handleJoinWithCode = async () => {
+    try {
+      const invite = await getInvitationByCode(code);
+      if (invite) {
+        toasts.addToastToQueue({
+          type: "success",
+          message: "Invitation found!",
+        });
+        console.log(invite);
+        props.setSelectedInvitation(invite);
+        setModalMode("inviteData");
+      }
+    } catch (err: any) {
+      toasts.addToastToQueue({
+        type: "error",
+        message: err.message || "Failed to join with code.",
+      });
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1105,7 +1107,7 @@ export const InviteOponent = (props: InviteOponentProps) => {
             />
             <button
               className="BtnPrimary JoinBtn"
-            // onClick={() => handleJoinWithCode()}
+            onClick={() => handleJoinWithCode()}
             >
               Join
             </button>

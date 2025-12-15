@@ -380,13 +380,13 @@ const ChatModal = (props: ChatModalProps) => {
     };
   }, [ModalRef, props]);
 
-  const OnMessageClick = (conversation: Conversation) => {
-    if (chat.activeConversations?.includes(conversation.id)) {
+  const OnMessageClick = (conversationId: string) => {
+    if (chat.activeConversations?.includes(conversationId)) {
       return;
     }
     chat.setActiveConversations([
       ...(chat.activeConversations || []),
-      conversation.id,
+      conversationId,
     ]);
     props.onClose();
   };
@@ -418,7 +418,7 @@ const ChatModal = (props: ChatModalProps) => {
       const resp = await newConversation(friendId);
       if (resp.success) {
         props.refetch_conversations();
-        setCurrentView("chats");
+        OnMessageClick(resp.data.chatId)
       }
     } catch (err) {
       console.error("Error starting new conversation:", err);
@@ -487,7 +487,7 @@ const ChatModal = (props: ChatModalProps) => {
                   <ChatItem
                     converstation={converstaion}
                     userId={user?.userId}
-                    onClick={OnMessageClick}
+                    onClick={() => OnMessageClick(converstaion.id)}
                   />
                 );
               })
@@ -646,11 +646,11 @@ const StyledChatItem = styled("div")`
       height: 8px;
       border-radius: 50%;
       background-color: ${(props: { userStatus: UserStatus }) =>
-        props.userStatus === "ONLINE"
-          ? "var(--green_color)"
-          : props.userStatus === "IDLE"
-          ? "var(--yellow_color)"
-          : props.userStatus === "DONOTDISTURB"
+    props.userStatus === "ONLINE"
+      ? "var(--green_color)"
+      : props.userStatus === "IDLE"
+        ? "var(--yellow_color)"
+        : props.userStatus === "DONOTDISTURB"
           ? "var(--red_color)"
           : "var(--gray_color)"};
       border: 1px solid rgba(255, 255, 255, 0.4);
@@ -728,7 +728,7 @@ const ChatItem = (props: ChatItemProps) => {
         <div className="ChatItemLastMessage">
           <span>
             {isLastMessageFromUser &&
-            props.converstation.lastMessage?.status === "DELIVERED" ? (
+              props.converstation.lastMessage?.status === "DELIVERED" ? (
               <SeenIcon size={20} fill="rgba(255,255,255, 0.3)" />
             ) : isLastMessageFromUser &&
               props.converstation.lastMessage?.status === "READ" ? (
@@ -743,8 +743,8 @@ const ChatItem = (props: ChatItemProps) => {
               ? props.converstation.lastMessage.invitationCode
                 ? "Sent an invitation."
                 : props.converstation.lastMessage.content.length > 15
-                ? props.converstation.lastMessage.content.slice(0, 15) + "..."
-                : props.converstation.lastMessage.content
+                  ? props.converstation.lastMessage.content.slice(0, 15) + "..."
+                  : props.converstation.lastMessage.content
               : "No messages yet."}
           </span>
         </div>

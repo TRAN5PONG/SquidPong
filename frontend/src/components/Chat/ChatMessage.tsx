@@ -93,7 +93,8 @@ const StyledChatMessage = styled("div")`
       height: 35px;
       border-radius: 5px;
       background-image: url("${(props: { avatar: string }) => props.avatar}");
-      border: 1px solid rgba(255,255,255, 0.01);
+      background-color: rgba(255,255,255, 0.03);
+      border: 1px solid rgba(255,255,255, 0.08);
       cursor: pointer;
       background-size: cover;
       background-position: center;
