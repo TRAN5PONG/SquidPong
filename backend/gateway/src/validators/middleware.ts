@@ -30,7 +30,9 @@ export async function authenticateUser(req: FastifyRequest, res: FastifyReply)
     '/api/auth/reset-password', 
     '/api/auth/intra', 
     '/api/auth/google', 
-    '/api/auth/refresh'
+    '/api/auth/refresh',
+
+    '/api/2fa/authenticator/verify'
   ];
 
 

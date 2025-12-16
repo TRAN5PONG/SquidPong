@@ -7,7 +7,7 @@ export interface ApiResponse<T = any> {
 }
 interface signinData {
   is2FAEnabled: boolean;
-  token: string;
+  twoFAToken: string;
 }
 // Signin
 export async function login(
@@ -230,7 +230,7 @@ export async function TwoFA_verify(
   twoFAToken: string,
   code: string
 ): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/2fa/$authenticator/verify`, {
+  const response = await fetch(`${API_BASE_URL}/2fa/authenticator/verify`, {
     method: "POST",
     credentials: "include",
     headers: {

@@ -77,8 +77,15 @@ export async function enableTwoFAHandler(req: FastifyRequest, res: FastifyReply)
 
     if (method == AUTHENTICATOR)
     {
-      if(await enableAuthenticatorCode(id, user.twoFASecret!, code.toString()) == false)
-        throw new Error("Error in 2fa  change later")
+      await enableAuthenticatorCode(id, user.twoFASecret!, code.toString())
+      const serviceUrl = `http://user:4002/api/user/db`;
+    await fetch(serviceUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-user-id': id.toString()},
+      body: JSON.stringify({
+        preferences: { twoFactorEnabled: true },
+      }),
+    });
 
     }
 
@@ -114,9 +121,9 @@ export async function verifyTwoFAHandler(req: FastifyRequest, res: FastifyReply)
     if (!user) throw new Error(UserProfileMessage.USER_NOT_FOUND);
 
     if (twoFAMethod == AUTHENTICATOR)
-      verifyAuthenticatorCode(userId, user.twoFASecret!, code);
+      await verifyAuthenticatorCode(userId, user.twoFASecret!, code);
     else
-      verifyEmailCode(userId, code);
+     await  verifyEmailCode(userId, code);
 
     await redis.del(redisKey);
     await setJwtTokens(res, userId);

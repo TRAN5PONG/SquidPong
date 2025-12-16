@@ -113,7 +113,6 @@ export async function enableEmailCode(email: string, code: string)
 
 export async function verifyAuthenticatorCode(id: number,twoFASecret : string , code: string)
 {
-
   const isValid = authenticator.check(code, twoFASecret);
   if (!isValid)
     throw new Error(TwoFA.INVALID_2FA_CODE);

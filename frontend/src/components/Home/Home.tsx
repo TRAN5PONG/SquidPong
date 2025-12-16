@@ -24,6 +24,7 @@ import {
   requestPasswordReset,
   resetPassword,
   signUp,
+  TwoFA_verify,
   verifyEmail,
 } from "@/api/auth";
 import { LoaderSpinner } from "../Loader/Loader";
@@ -554,6 +555,7 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
   // Email verification input
   const [verificationCode, setVerificationCode] = Zeroact.useState("");
   // 2fa verification
+  const [TwoFAToken, setTwoFAToken] = Zeroact.useState("");
   const [TwoFACode, setTwoFACode] = Zeroact.useState("");
 
 
@@ -612,14 +614,21 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
     e.preventDefault();
     try {
       const resp = await login(email, password);
-      if (resp.success) {
+      if (resp.data && resp.data.is2FAEnabled) {
+        setTwoFAToken(resp.data.twoFAToken);
+        setIsLoading(true);
+        setTimeout(() => {
+          setCurrentMode("2faAuth")
+          setIsLoading(false);
+        }, 1000);
+      }
+      else if (resp.success) {
         toasts.addToastToQueue({
           type: "success",
           message: "Login successful!",
         });
         const userData = await getUserProfile();
         if (userData.success) {
-          console.log("User data::", userData);
           setUser(userData.data!);
           socketManager.connect(`${import.meta.env.VITE_IP}`);
           navigate("/lobby");
@@ -632,6 +641,18 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
   };
   const handleTWOFAVerify = async (e: any) => {
     e.preventDefault();
+    try {
+      const resp = await TwoFA_verify(TwoFAToken, TwoFACode);
+
+      if (resp.success) {
+        const userData = await getUserProfile();
+        setUser(userData.data!);
+        socketManager.connect(`${import.meta.env.VITE_IP}`);
+        navigate("/lobby");
+      }
+    } catch (err: any) {
+      console.log(err)
+    }
   }
   const handleSignup = async (e: any) => {
     e.preventDefault();
@@ -1022,7 +1043,7 @@ const CTAModal = ({ onClose }: { onClose: () => void }) => {
         <div className="TwofaAuthContainer">
           <h1 className="HeaderLine">2fA VERIFICATION</h1>
 
-          <form className="FormContainer" onSubmit={handleResetPassword}>
+          <form className="FormContainer" onSubmit={handleTWOFAVerify}>
             <div className="FormGroup" key="email">
               <ScanIcon
                 size={20}

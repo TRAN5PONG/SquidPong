@@ -135,7 +135,7 @@ const twofaRoutes: Route[] = [
     method: "POST",
     url: "/api/2fa/:method/verify",
     handler: twofaController.verifyTwoFAHandler,
-    // schema: verify2FASchema,
+    schema: verify2FASchema,
   },
 
   {

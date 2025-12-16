@@ -104,6 +104,13 @@ const Tournaments = () => {
 
   return (
     <StyledTournaments className="scroll-y">
+      <button
+        className="CreateTournamentBtn"
+        onClick={() => setShowCreateTournamentModal(true)}
+      >
+        <ChallengeIcon size={20} fill="white" />
+        Create Tournament
+      </button>
       {tournaments.length > 0 ? (
         tournaments.map((tournament: Tournament) => {
           return <TournamentCard {...tournament} />;
@@ -121,20 +128,15 @@ const Tournaments = () => {
         <span className="NoSPN">No tournaments available.</span>
       )}
 
+
+
       {showCreateTournamentModal ? (
         <CreateTournamentModal
           onClose={() => setShowCreateTournamentModal(false)}
           refreshTournaments={() => fetchTournaments()}
         />
-      ) : (
-        <button
-          className="CreateTournamentBtn"
-          onClick={() => setShowCreateTournamentModal(true)}
-        >
-          <ChallengeIcon size={20} fill="white" />
-          Create Tournament
-        </button>
-      )}
+      ) : null}
+
     </StyledTournaments>
   );
 };
@@ -368,10 +370,10 @@ const TournamentCard = (props: Tournament) => {
 
       <button
         className={`CardBtn ${(tournament.status !== "REGISTRATION" &&
-            tournament.status !== "COMPLETED") ||
-            isUserParticipant
-            ? "disabled"
-            : ""
+          tournament.status !== "COMPLETED") ||
+          isUserParticipant
+          ? "disabled"
+          : ""
           }`}
         onclick={() => {
           handleJoinTournament();
