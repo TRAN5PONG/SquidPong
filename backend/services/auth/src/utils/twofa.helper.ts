@@ -78,12 +78,11 @@ export async function enableAuthenticatorCode(id: number,twoFASecret : string , 
 {
 
   if(!twoFASecret)
-    return false;
-    // throw new Error("2FA secret not found. Please setup 2FA first.");
+    throw new Error("2FA secret not found. Please setup 2FA first.");
 
   const isValid = authenticator.check(code, twoFASecret);
   if (!isValid)
-    return false;
+    throw new Error("invalid code")
 
   await prisma.user.update({
     where: { id },
