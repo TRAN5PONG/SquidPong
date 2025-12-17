@@ -64,8 +64,8 @@ export async function createProfileHandler(
   body["avatar"] =
     body["avatar"] ||
     `${
-      process.env.BACKEND_URL || "http://localhost:4000"
-    }:4433/api/user/avatars/default.png`;
+      process.env.BACKEND_URL || "https://localhost:4433"
+    }/api/user/avatars/default.png`;
   try {
     checkSecretToken(req);
 

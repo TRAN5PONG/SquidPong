@@ -36,4 +36,12 @@ re: fclean up
 logs:
 	docker compose -f ${FILE} logs -f
 
-.PHONY: up start status down stop fclean re logs
+localhost:
+	${change-backend-url} localhost
+	docker compose -f ${FILE} up --build
+	@echo ""
+	@echo "Waiting for services to start..."
+	@sleep 5
+	@${check-services}
+
+.PHONY: up start status down stop fclean re logs localhost
