@@ -309,7 +309,7 @@ const GameContiner = () => {
 
         <div className="PowerUps">
           {GamePowerUps.map((p) => (
-            <div key={p.type} className="PowerUp">
+            <div key={p.type} className="PowerUp" onClick={() => gameRef.current?.ball.activateFireEffect()}>
               <img src={p.image} alt={p.type} title={p.type} />
             </div>
           ))}
