@@ -1,7 +1,7 @@
 <!-- Demo Video (GitHub-safe: clickable preview) -->
 <p align="center">
    <a href="https://vimeo.com/1148070523" target="_blank" rel="noopener noreferrer">
-      <img src="demo/4.webp" alt="Watch the SquidPong demo video" width="800">
+      <img src="demo/4.webp" alt="Watch the SquidPong demo video!!" width="800">
    </a>
 </p>
 
